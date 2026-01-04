@@ -1,12 +1,12 @@
 # Horticalc (molar‑correct) – Projekt
 
-Ziel: deinen Excel‑Düngerrechner **1:1 inhaltlich** nachbauen, aber mit **professioneller, simpler Struktur**:
+Ziel: Meinen Excel‑Düngerrechner **1:1 inhaltlich** nachbauen, aber mit **professioneller, simpler Struktur**:
 
 - **kein Excel‑Backend**
 - alle Stammdaten in **lesbaren Textdateien** (CSV/YAML)
 - Core‑Logik als **kleines Python‑Backend** (CLI zuerst, GUI später)
 
-Diese ZIP‑Version ist bewusst „minimal, aber produktiv“: du kannst direkt eine Rezeptdatei rechnen lassen.
+Rechnungen passieren im Backend mit Python, Ionen und Oxide und Anionen + Kationen bilanzierung.
 
 ---
 
@@ -37,7 +37,6 @@ Die Tabellenansicht ist auf **kompakte, ausrichtbare Spalten** optimiert (Zebra�
 
 ### Voraussetzungen
 - Python 3.10+
-- (Optional) Node.js nur dann, wenn du später ein SPA‑Build nutzt. Aktuell **nicht nötig**.
 
 ### Setup (Windows / PowerShell)
 

@@ -262,6 +262,7 @@ class CalcResult:
 
     def to_dict(self) -> dict:
         from .metrics import format_npks
+        from .ec import compute_ec
 
         return {
             "liters": self.liters,
@@ -270,6 +271,7 @@ class CalcResult:
             "ions_mmol_per_l": self.ions_mmol_l,
             "ions_meq_per_l": self.ions_meq_l,
             "ion_balance": self.ion_balance,
+            "ec": compute_ec(self.ions_mmol_l),
             "npk_metrics": format_npks(self),
             "sluijsmann": self.sluijsmann,
         }

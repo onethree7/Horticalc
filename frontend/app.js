@@ -5,20 +5,19 @@ const calculateButton = document.querySelector("#calculateBtn");
 const apiBaseInput = document.querySelector("#apiBase");
 const addRowButton = document.querySelector("#addFertilizerRow");
 
-const ppmHeaderRow = document.querySelector("#ppmHeaderRow");
-const ppmValueRow = document.querySelector("#ppmValueRow");
-const nFormHeaderRow = document.querySelector("#nFormHeaderRow");
-const nFormValueRow = document.querySelector("#nFormValueRow");
-const ionMmolHeaderRow = document.querySelector("#ionMmolHeaderRow");
-const ionMmolValueRow = document.querySelector("#ionMmolValueRow");
-const ionMeqHeaderRow = document.querySelector("#ionMeqHeaderRow");
-const ionMeqValueRow = document.querySelector("#ionMeqValueRow");
-const ionBalanceHeaderRow = document.querySelector("#ionBalanceHeaderRow");
-const ionBalanceValueRow = document.querySelector("#ionBalanceValueRow");
+const ppmTableBody = document.querySelector("#ppmTable tbody");
+const nFormTableBody = document.querySelector("#nFormTable tbody");
+const ionMmolTableBody = document.querySelector("#ionMmolTable tbody");
+const ionMeqTableBody = document.querySelector("#ionMeqTable tbody");
+const ionBalanceTableBody = document.querySelector("#ionBalanceTable tbody");
 
 let fertilizerOptions = [];
 const selectedFertilizers = [{ name: "", form: "", weight: "" }];
 const fertilizerAmounts = [0];
+const numberFormatter = new Intl.NumberFormat("de-DE", {
+  minimumFractionDigits: 3,
+  maximumFractionDigits: 3,
+});
 
 function apiBase() {
   return apiBaseInput.value.replace(/\/$/, "");
@@ -102,30 +101,63 @@ function renderCalculatorTable() {
   }
 }
 
-function renderTable(rowEl, values) {
-  rowEl.innerHTML = "";
-  values.forEach((value) => {
-    const cell = document.createElement("td");
-    cell.textContent = value;
-    rowEl.appendChild(cell);
+function formatNumber(value) {
+  if (Number.isFinite(value)) {
+    return numberFormatter.format(value);
+  }
+  return "-";
+}
+
+function renderKeyValueTable(tableBody, entries) {
+  tableBody.innerHTML = "";
+  entries.forEach(([key, value]) => {
+    const row = document.createElement("tr");
+    const keyCell = document.createElement("td");
+    keyCell.textContent = key;
+    const valueCell = document.createElement("td");
+    valueCell.textContent = formatNumber(Number(value));
+    row.append(keyCell, valueCell);
+    tableBody.appendChild(row);
   });
 }
 
-function renderHeader(rowEl, headers) {
-  rowEl.innerHTML = "";
-  headers.forEach((header) => {
-    const cell = document.createElement("th");
-    cell.textContent = header;
-    rowEl.appendChild(cell);
-  });
+function formatSeries(values) {
+  return values.map((value) => formatNumber(value)).join(" / ");
 }
 
-function renderKeyValueTable(headerRow, valueRow, entries) {
-  const headers = entries.map(([key]) => key);
-  const values = entries.map(([, value]) => Number(value).toFixed(3));
+function renderNFormsTable(tableBody, data) {
+  tableBody.innerHTML = "";
+  const fertNh4 = Number(data.N_from_fert_NH4 || 0);
+  const fertNo3 = Number(data.N_from_fert_NO3 || 0);
+  const fertUrea = Number(data.N_from_fert_urea || 0);
+  const waterNh4 = Number(data.N_from_water_NH4 || 0);
+  const waterNo3 = Number(data.N_from_water_NO3 || 0);
 
-  renderHeader(headerRow, headers);
-  renderTable(valueRow, values);
+  const fertTotal = fertNh4 + fertNo3 + fertUrea;
+  const waterTotal = waterNh4 + waterNo3;
+  const overallTotal = fertTotal + waterTotal;
+
+  const rows = [
+    [
+      "N aus Dünger (NH4 / NO3 / Urea)",
+      `${formatSeries([fertNh4, fertNo3, fertUrea])} (Σ ${formatNumber(fertTotal)})`,
+    ],
+    [
+      "N aus Wasser (NH4 / NO3)",
+      `${formatSeries([waterNh4, waterNo3])} (Σ ${formatNumber(waterTotal)})`,
+    ],
+    ["N gesamt (Formen)", formatNumber(overallTotal)],
+  ];
+
+  rows.forEach(([label, value]) => {
+    const row = document.createElement("tr");
+    const labelCell = document.createElement("td");
+    labelCell.textContent = label;
+    const valueCell = document.createElement("td");
+    valueCell.textContent = value;
+    row.append(labelCell, valueCell);
+    tableBody.appendChild(row);
+  });
 }
 
 function buildPayload() {
@@ -165,19 +197,18 @@ async function calculate() {
 
 function renderCalculation(data) {
   const elementEntries = Object.entries(data.elements_mg_per_l || {});
-  renderKeyValueTable(ppmHeaderRow, ppmValueRow, elementEntries);
+  renderKeyValueTable(ppmTableBody, elementEntries);
 
-  const nFormEntries = Object.entries(data.n_forms_mg_per_l || {});
-  renderKeyValueTable(nFormHeaderRow, nFormValueRow, nFormEntries);
+  renderNFormsTable(nFormTableBody, data.n_forms_mg_per_l || {});
 
   const ionMmolEntries = Object.entries(data.ions_mmol_per_l || {});
-  renderKeyValueTable(ionMmolHeaderRow, ionMmolValueRow, ionMmolEntries);
+  renderKeyValueTable(ionMmolTableBody, ionMmolEntries);
 
   const ionMeqEntries = Object.entries(data.ions_meq_per_l || {});
-  renderKeyValueTable(ionMeqHeaderRow, ionMeqValueRow, ionMeqEntries);
+  renderKeyValueTable(ionMeqTableBody, ionMeqEntries);
 
   const ionBalanceEntries = Object.entries(data.ion_balance || {});
-  renderKeyValueTable(ionBalanceHeaderRow, ionBalanceValueRow, ionBalanceEntries);
+  renderKeyValueTable(ionBalanceTableBody, ionBalanceEntries);
 }
 
 function addFertilizerRow() {

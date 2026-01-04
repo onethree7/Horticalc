@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 from .data_io import Fertilizer, load_fertilizers, load_molar_masses, load_recipe, load_water_profile, repo_root
+from .sluijsmann import compute_sluijsmann
 
 
 COMP_COLS: List[str] = [
@@ -257,6 +258,7 @@ class CalcResult:
     ions_mmol_l: Dict[str, float]
     ions_meq_l: Dict[str, float]
     ion_balance: Dict[str, float]
+    sluijsmann: Dict[str, float | dict]
 
     def to_dict(self) -> dict:
         from .metrics import format_npks
@@ -269,6 +271,7 @@ class CalcResult:
             "ions_meq_per_l": self.ions_meq_l,
             "ion_balance": self.ion_balance,
             "npk_metrics": format_npks(self),
+            "sluijsmann": self.sluijsmann,
         }
 
 
@@ -321,6 +324,13 @@ def compute_solution(
         phosphate_species,
     )
 
+    sluijsmann = compute_sluijsmann(
+        liters=liters,
+        oxides_mg_l=oxides,
+        elements_mg_l=elements,
+        config=recipe.get("sluijsmann"),
+    )
+
     return CalcResult(
         liters=liters,
         elements_mg_l=elements,
@@ -328,6 +338,7 @@ def compute_solution(
         ions_mmol_l=ions_mmol,
         ions_meq_l=ions_meq,
         ion_balance=ion_balance,
+        sluijsmann=sluijsmann,
     )
 
 

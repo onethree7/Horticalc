@@ -205,7 +205,12 @@ def _compute_ions(
     for el, charge in (("K", +1), ("Ca", +2), ("Mg", +2), ("Na", +1)):
         mg_l_el = elements.get(el, 0.0)
         if mg_l_el:
-            label = f"{el}{'+' if charge > 0 else ''}{charge if charge not in (1, -1) else ''}".replace("+1", "+")
+            if abs(charge) == 1:
+                label = f"{el}{'+' if charge > 0 else '-'}"
+            elif charge > 0:
+                label = f"{el}{charge}+"
+            else:
+                label = f"{el}^{abs(charge)}-"
             add_ion(label, mg_l_el, el, charge)
 
     # Anions

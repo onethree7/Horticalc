@@ -34,6 +34,10 @@ def round0(value: float) -> int:
     return int(Decimal(str(value)).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
+def round1(value: float) -> float:
+    return float(Decimal(str(value)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP))
+
+
 def _get_sources(result: CalcResult | Mapping[str, object]) -> tuple[Mapping[str, float], Mapping[str, float]]:
     if is_dataclass(result):
         data = asdict(result)
@@ -104,11 +108,36 @@ def format_npks(result: CalcResult | Mapping[str, object]) -> dict[str, str | di
         k_pct = round0(k2o / total_npk * 100.0)
         npk_npk_pct = f"{n_pct}-{p_pct}-{k_pct}"
 
+    def ratio_string(label: str, numerator: float, denominator: float) -> str:
+        if numerator <= 0.0:
+            return f"{label}=0:0"
+        if denominator <= 0.0:
+            return f"{label}=1:0"
+        ratio = round1(denominator / numerator)
+        ratio_str = f"{ratio:.1f}".rstrip("0").rstrip(".")
+        return f"{label}=1:{ratio_str}"
+
+    npk_ratios = {
+        "N:K": ratio_string("N:K", n_total, float(elements.get("K", 0.0) or 0.0)),
+        "CaO:K2O": ratio_string("CaO:K2O", cao, k2o),
+        "MgO:CaO": ratio_string("MgO:CaO", mgo, cao),
+        "Na2O:MgO": ratio_string("Na2O:MgO", float(oxides.get("Na2O", 0.0) or 0.0), mgo),
+        "SO4:P2O5": ratio_string("SO4:P2O5", float(oxides.get("SO4", 0.0) or 0.0), p2o5),
+        "P2O5:K2O": ratio_string("P2O5:K2O", p2o5, k2o),
+        "Fe:MgO": ratio_string("Fe:MgO", float(elements.get("Fe", 0.0) or 0.0), mgo),
+        "CO3:SiO2": ratio_string(
+            "CO3:SiO2",
+            float(oxides.get("CO3", 0.0) or 0.0),
+            float(oxides.get("SiO2", 0.0) or 0.0),
+        ),
+    }
+
     return {
         "npk_all_pct": npk_all_pct,
         "npk_p_norm": npk_p_norm,
         "npk_npk_pct": npk_npk_pct,
         "n_form_pct": n_form_pct,
+        "npk_ratios": npk_ratios,
         "npk_values": {
             "n_total": n_total,
             "p2o5": p2o5,

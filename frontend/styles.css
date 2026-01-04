@@ -111,6 +111,18 @@ main {
   margin-top: 1rem;
 }
 
+.inline-actions {
+  margin: 0 0 0.75rem 0;
+}
+
+.inline-actions button {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
 .summary {
   margin-top: 1.5rem;
 }

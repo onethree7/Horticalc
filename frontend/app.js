@@ -1,19 +1,24 @@
-const ROW_COUNT = 10;
-
 const fertilizerSelectTable = document.querySelector("#fertilizerSelectTable tbody");
 const calculatorTable = document.querySelector("#calculatorTable tbody");
 const reloadButton = document.querySelector("#reloadData");
 const calculateButton = document.querySelector("#calculateBtn");
 const apiBaseInput = document.querySelector("#apiBase");
+const addRowButton = document.querySelector("#addFertilizerRow");
 
 const ppmHeaderRow = document.querySelector("#ppmHeaderRow");
 const ppmValueRow = document.querySelector("#ppmValueRow");
-const ionHeaderRow = document.querySelector("#ionHeaderRow");
-const ionValueRow = document.querySelector("#ionValueRow");
+const nFormHeaderRow = document.querySelector("#nFormHeaderRow");
+const nFormValueRow = document.querySelector("#nFormValueRow");
+const ionMmolHeaderRow = document.querySelector("#ionMmolHeaderRow");
+const ionMmolValueRow = document.querySelector("#ionMmolValueRow");
+const ionMeqHeaderRow = document.querySelector("#ionMeqHeaderRow");
+const ionMeqValueRow = document.querySelector("#ionMeqValueRow");
+const ionBalanceHeaderRow = document.querySelector("#ionBalanceHeaderRow");
+const ionBalanceValueRow = document.querySelector("#ionBalanceValueRow");
 
 let fertilizerOptions = [];
-const selectedFertilizers = Array.from({ length: ROW_COUNT }, () => ({ name: "", form: "", weight: "" }));
-const fertilizerAmounts = Array.from({ length: ROW_COUNT }, () => 0);
+const selectedFertilizers = [{ name: "", form: "", weight: "" }];
+const fertilizerAmounts = [0];
 
 function apiBase() {
   return apiBaseInput.value.replace(/\/$/, "");
@@ -39,7 +44,7 @@ function createSelect(options, onChange) {
 
 function renderSelectionTable() {
   fertilizerSelectTable.innerHTML = "";
-  for (let i = 0; i < ROW_COUNT; i += 1) {
+  for (let i = 0; i < selectedFertilizers.length; i += 1) {
     const row = document.createElement("tr");
 
     const indexCell = document.createElement("td");
@@ -72,7 +77,7 @@ function renderSelectionTable() {
 
 function renderCalculatorTable() {
   calculatorTable.innerHTML = "";
-  for (let i = 0; i < ROW_COUNT; i += 1) {
+  for (let i = 0; i < selectedFertilizers.length; i += 1) {
     const row = document.createElement("tr");
 
     const indexCell = document.createElement("td");
@@ -115,6 +120,14 @@ function renderHeader(rowEl, headers) {
   });
 }
 
+function renderKeyValueTable(headerRow, valueRow, entries) {
+  const headers = entries.map(([key]) => key);
+  const values = entries.map(([, value]) => Number(value).toFixed(3));
+
+  renderHeader(headerRow, headers);
+  renderTable(valueRow, values);
+}
+
 function buildPayload() {
   const fertilizers = selectedFertilizers
     .map((fert, index) => ({ name: fert.name, grams: fertilizerAmounts[index] }))
@@ -152,18 +165,26 @@ async function calculate() {
 
 function renderCalculation(data) {
   const elementEntries = Object.entries(data.elements_mg_per_l || {});
-  const elementHeaders = elementEntries.map(([key]) => key);
-  const elementValues = elementEntries.map(([, value]) => value.toFixed(3));
-
-  renderHeader(ppmHeaderRow, elementHeaders);
-  renderTable(ppmValueRow, elementValues);
+  renderKeyValueTable(ppmHeaderRow, ppmValueRow, elementEntries);
 
   const nFormEntries = Object.entries(data.n_forms_mg_per_l || {});
-  const ionHeaders = nFormEntries.map(([key]) => key);
-  const ionValues = nFormEntries.map(([, value]) => value.toFixed(3));
+  renderKeyValueTable(nFormHeaderRow, nFormValueRow, nFormEntries);
 
-  renderHeader(ionHeaderRow, ionHeaders);
-  renderTable(ionValueRow, ionValues);
+  const ionMmolEntries = Object.entries(data.ions_mmol_per_l || {});
+  renderKeyValueTable(ionMmolHeaderRow, ionMmolValueRow, ionMmolEntries);
+
+  const ionMeqEntries = Object.entries(data.ions_meq_per_l || {});
+  renderKeyValueTable(ionMeqHeaderRow, ionMeqValueRow, ionMeqEntries);
+
+  const ionBalanceEntries = Object.entries(data.ion_balance || {});
+  renderKeyValueTable(ionBalanceHeaderRow, ionBalanceValueRow, ionBalanceEntries);
+}
+
+function addFertilizerRow() {
+  selectedFertilizers.push({ name: "", form: "", weight: "" });
+  fertilizerAmounts.push(0);
+  renderSelectionTable();
+  renderCalculatorTable();
 }
 
 async function init() {
@@ -179,6 +200,7 @@ async function init() {
 }
 
 reloadButton.addEventListener("click", init);
+addRowButton.addEventListener("click", addFertilizerRow);
 calculateButton.addEventListener("click", async () => {
   try {
     const data = await calculate();

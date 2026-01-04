@@ -19,7 +19,10 @@
     <main>
       <section class="block">
         <h2>1) Vorauswahl der Düngerkomponenten</h2>
-        <p class="hint">Wähle bis zu 10 Dünger aus der Datenbank.</p>
+        <p class="hint">Wähle Dünger aus der Datenbank, das Plus fügt weitere Zeilen hinzu.</p>
+        <div class="actions inline-actions">
+          <button id="addFertilizerRow" type="button">+</button>
+        </div>
         <div class="table-wrap">
           <table class="grid" id="fertilizerSelectTable">
             <thead>
@@ -76,12 +79,42 @@
         <h2>3) Einzelne Ionen (mg/l)</h2>
         <p class="hint">Aufschlüsselung nach Ionen &amp; N-Formen.</p>
         <div class="table-wrap">
-          <table class="grid" id="ionTable">
+          <table class="grid" id="nFormTable">
             <thead>
-              <tr id="ionHeaderRow"></tr>
+              <tr id="nFormHeaderRow"></tr>
             </thead>
             <tbody>
-              <tr id="ionValueRow"></tr>
+              <tr id="nFormValueRow"></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-wrap">
+          <table class="grid" id="ionMmolTable">
+            <thead>
+              <tr id="ionMmolHeaderRow"></tr>
+            </thead>
+            <tbody>
+              <tr id="ionMmolValueRow"></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-wrap">
+          <table class="grid" id="ionMeqTable">
+            <thead>
+              <tr id="ionMeqHeaderRow"></tr>
+            </thead>
+            <tbody>
+              <tr id="ionMeqValueRow"></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-wrap">
+          <table class="grid" id="ionBalanceTable">
+            <thead>
+              <tr id="ionBalanceHeaderRow"></tr>
+            </thead>
+            <tbody>
+              <tr id="ionBalanceValueRow"></tr>
             </tbody>
           </table>
         </div>

@@ -17,13 +17,98 @@ Voraussetzung: Python 3.10+.
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .
+python -m pip install -U pip setuptools wheel
+python -m pip install -r requirements.txt
+python -m pip install -e .
 
 # Testlauf (Golden Recipe)
 horticalc recipes/golden.yml --pretty
 
 # Ergebnis in Datei
 horticalc recipes/golden.yml --pretty --out solutions/golden_output.json
+```
+
+---
+
+## GUI + API (Web UI)
+
+Die GUI ist aktuell ein **statisches Frontend** unter `frontend/` und nutzt die **FastAPI**‑API unter `api/`.
+
+### Voraussetzungen
+- Python 3.10+
+- (Optional) Node.js nur dann, wenn du später ein SPA‑Build nutzt. Aktuell **nicht nötig**.
+
+### Setup (Windows / PowerShell)
+
+```powershell
+git clone https://github.com/onethree7/Horticalc
+cd Horticalc
+
+Remove-Item -Recurse -Force .\.venv
+py -m venv .venv
+.\.venv\Scripts\python -m pip install -U pip setuptools wheel
+.\.venv\Scripts\python -m pip install -r .\requirements.txt
+.\.venv\Scripts\python -m pip install -e .\
+```
+
+### Setup (Linux / macOS)
+
+```bash
+git clone https://github.com/onethree7/Horticalc
+cd Horticalc
+
+rm -rf .venv
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip setuptools wheel
+python -m pip install -r requirements.txt
+python -m pip install -e .
+```
+
+### Backend starten (Terminal 1)
+
+```bash
+python -m uvicorn api.app:app --host 0.0.0.0 --port 8000
+```
+
+API‑Check:
+```
+http://127.0.0.1:8000/health
+```
+
+### Frontend starten (Terminal 2)
+
+```bash
+python -m http.server 5173 --directory frontend
+```
+
+Frontend‑URL:
+```
+http://127.0.0.1:5173/
+```
+
+---
+
+## Troubleshooting (wichtig)
+
+### 1) `ModuleNotFoundError: horticalc`
+**Ursache:** Bei src‑Layout fehlt `PYTHONPATH` oder Paket ist nicht installiert.  
+**Fix:** Immer im Repo `python -m pip install -e .` ausführen.
+
+### 2) `No module named uvicorn` trotz Installation
+**Ursache:** `pip` zeigt auf eine andere Python‑Installation/venv.  
+**Fix:** Immer **denselben Interpreter** nutzen:
+```bash
+python -m pip -V
+python -c "import sys; print(sys.executable)"
+```
+Falls nötig: `.\.venv\Scripts\python -m pip ...` (Windows).
+
+### 3) 404 bei `http.server`
+**Ursache:** Der Webserver zeigt nicht auf den `frontend/`‑Ordner oder dort fehlt `index.html`.  
+**Fix:** exakt so starten:
+```bash
+python -m http.server 5173 --directory frontend
 ```
 
 ---
@@ -111,6 +196,12 @@ Hinweis: Phosphat‑Ladung ist pH‑abhängig; deshalb ist `phosphate_species` k
 ├── solutions/
 │   └── golden_output.json
 │   └── green_go_12_12_36_output.json
+├── api/
+│   └── app.py
+├── frontend/
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
 ├── src/horticalc/
 │   ├── __init__.py
 │   ├── __main__.py

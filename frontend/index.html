@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Horticalc GUI</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="page-header">
+      <h1>Horticalc – Düngercalculator</h1>
+      <div class="api-config">
+        <label for="apiBase">API Base URL</label>
+        <input id="apiBase" type="url" value="http://localhost:8000" />
+        <button id="reloadData">Dünger laden</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="block">
+        <h2>1) Vorauswahl der Düngerkomponenten</h2>
+        <p class="hint">Wähle bis zu 10 Dünger aus der Datenbank.</p>
+        <div class="table-wrap">
+          <table class="grid" id="fertilizerSelectTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Dünger (Dropdown)</th>
+                <th>Form</th>
+                <th>Gewicht</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- rows inserted by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div class="table-actions">
+          <button id="addRowBtn" type="button">+ Zeile hinzufügen</button>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>2) Düngercalculator</h2>
+        <p class="hint">Mengen eingeben und Berechnung starten.</p>
+        <div class="table-wrap">
+          <table class="grid" id="calculatorTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Düngername</th>
+                <th>Menge (g)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- rows inserted by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div class="actions">
+          <button id="calculateBtn">Berechnen</button>
+        </div>
+        <div class="summary">
+          <h3>Zentraler Wert: Nährstoffm. Dünger + Wasser (ppm, mg/l)</h3>
+          <div class="table-wrap">
+            <table class="grid" id="ppmTable">
+              <thead>
+                <tr id="ppmHeaderRow"></tr>
+              </thead>
+              <tbody>
+                <tr id="ppmValueRow"></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>3) Einzelne Ionen (mg/l)</h2>
+        <p class="hint">Aufschlüsselung nach Ionen &amp; N-Formen.</p>
+        <div class="table-wrap">
+          <table class="grid" id="ionTable">
+            <thead>
+              <tr id="ionHeaderRow"></tr>
+            </thead>
+            <tbody>
+              <tr id="ionValueRow"></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>EC (späterer Schritt)</h2>
+        <p class="hint">Dieser Bereich ist vorbereitet, die EC-Logik folgt später.</p>
+        <div class="placeholder">EC-Block (Placeholder)</div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

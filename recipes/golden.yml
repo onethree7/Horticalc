@@ -1,0 +1,16 @@
+name: golden_test
+liters: 10.0
+water_profile: default
+phosphate_species: H2PO4
+urea_as_nh4: false
+fertilizers:
+- name: Yara Tera CALCINIT
+  grams: 2
+- name: K+S EPSO Top Bittersalz 16-39
+  grams: 6
+- name: Agrolution Special 313 14-7-14+14CaO+TE
+  grams: 9
+- name: Compo Hakaphos Basis3 3-15-36(+4)
+  grams: 0
+- name: S3 Kaliwasser 28 Be
+  grams: 1

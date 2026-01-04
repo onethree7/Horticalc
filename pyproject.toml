@@ -1,0 +1,15 @@
+[project]
+name = "duengerrechner"
+version = "0.1.0"
+description = "Düngerrechner (molar-correct) – CSV/YAML Backend statt Excel"
+requires-python = ">=3.10"
+dependencies = [
+  "PyYAML>=6.0",
+]
+
+[project.scripts]
+duengerrechner = "duengerrechner.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"

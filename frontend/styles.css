@@ -134,6 +134,10 @@ main {
   table-layout: auto;
 }
 
+.summary .nutrient-grid {
+  min-width: max-content;
+}
+
 .nutrient-grid th,
 .nutrient-grid td {
   white-space: nowrap;
@@ -207,7 +211,9 @@ main {
 }
 
 .summary .table-wrap {
-  overflow-x: visible;
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .data-grid {

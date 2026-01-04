@@ -151,6 +151,10 @@ main {
   width: 4.5rem;
 }
 
+.nutrient-grid col.col-row-label {
+  width: 7.5rem;
+}
+
 .nutrient-grid col.col-n-total,
 .nutrient-grid col.col-nh4,
 .nutrient-grid col.col-no3,
@@ -174,6 +178,16 @@ main {
 .nutrient-grid col.col-si,
 .nutrient-grid col.col-sio2 {
   width: 4.6rem;
+}
+
+.nutrient-grid--summary th.row-label,
+.nutrient-grid--summary td.row-label {
+  text-align: left;
+  font-weight: 600;
+}
+
+.nutrient-grid--summary thead th:first-child {
+  text-align: left;
 }
 
 .section-divider {

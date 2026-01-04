@@ -32,7 +32,6 @@ const oxideIntegerKeys = new Set([
   "NH4",
   "NO3",
   "Ur-N",
-  "UREA",
   "P2O5",
   "K2O",
   "CaO",
@@ -160,11 +159,12 @@ function renderKeyValueTable(tableBody, entries) {
   });
 }
 
-function renderSummaryTable(table, oxides, elements, nFormsRaw, nFormsElement) {
+function renderSummaryTable(table, oxides, elements, nForms) {
   table.innerHTML = "";
-  const { value: nTotalValue, tooltip: nTotalTooltip } = buildOxideNTotalDetails(nFormsRaw);
-  const { value: nTotalElementValue, tooltip: nTotalElementTooltip } =
-    buildElementNTotalDetails(nFormsElement);
+  const { value: nTotalValue, tooltip: nTotalTooltip } = buildOxideNTotalDetails(oxides);
+  const { value: nTotalElementValue, tooltip: nTotalElementTooltip } = buildElementNTotalDetails(
+    nForms,
+  );
   const oxideMap = new Map(Object.entries(oxides));
   if (Number.isFinite(nTotalValue)) {
     oxideMap.set("N_total", nTotalValue);
@@ -298,15 +298,11 @@ function formatOxideValue(key, value) {
   return nutrientFormatter.format(value);
 }
 
-function buildOxideNTotalDetails(nFormsRaw) {
-  if (!nFormsRaw) {
-    return { value: Number.NaN, tooltip: "" };
-  }
-
+function buildOxideNTotalDetails(oxides) {
   const parts = [
-    ["NH4", Number(nFormsRaw.NH4)],
-    ["NO3", Number(nFormsRaw.NO3)],
-    ["UREA", Number(nFormsRaw.UREA)],
+    ["NH4", Number(oxides["NH4"])],
+    ["NO3", Number(oxides["NO3"])],
+    ["Ur-N", Number(oxides["Ur-N"])],
   ].filter(([, value]) => Number.isFinite(value));
 
   const sum = parts.reduce((total, [, value]) => total + value, 0);
@@ -320,19 +316,19 @@ function buildOxideNTotalDetails(nFormsRaw) {
   return { value, tooltip };
 }
 
-function buildElementNTotalDetails(nFormsElement) {
-  if (!nFormsElement) {
+function buildElementNTotalDetails(nForms) {
+  if (!nForms) {
     return { value: Number.NaN, tooltip: "" };
   }
 
-  const nh4Value = Number(nFormsElement.N_FROM_NH4);
-  const no3Value = Number(nFormsElement.N_FROM_NO3);
-  const ureaValue = Number(nFormsElement.N_FROM_UREA);
+  const nh4Value = Number(nForms.N_ION_AUS_NH4);
+  const no3Value = Number(nForms.N_ION_AUS_NO3);
+  const ureaValue = Number(nForms.N_ION_AUS_UREA);
 
   const parts = [
     ["NH4", nh4Value],
     ["NO3", no3Value],
-    ["UREA", ureaValue],
+    ["Ur-N", ureaValue],
   ].filter(([, value]) => Number.isFinite(value));
 
   const sum = parts.reduce((total, [, value]) => total + value, 0);
@@ -395,9 +391,8 @@ async function calculate() {
 function renderCalculation(data) {
   const oxides = data.oxides_mg_per_l || {};
   const elements = data.elements_mg_per_l || {};
-  const nFormsRaw = data.n_forms_raw_mg_per_l || {};
-  const nFormsElement = data.n_forms_element_mg_per_l || {};
-  renderSummaryTable(summaryTable, oxides, elements, nFormsRaw, nFormsElement);
+  const nForms = data.n_forms_mg_per_l || {};
+  renderSummaryTable(summaryTable, oxides, elements, nForms);
 
   const ionMeqEntries = Object.entries(data.ions_meq_per_l || {});
   renderKeyValueTable(ionMeqTableBody, ionMeqEntries);
@@ -465,7 +460,7 @@ async function init() {
   } catch (error) {
     renderSelectionTable();
     renderCalculatorTable();
-    renderSummaryTable(summaryTable, {}, {}, {}, {});
+    renderSummaryTable(summaryTable, {}, {});
   }
 }
 

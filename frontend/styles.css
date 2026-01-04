@@ -143,10 +143,6 @@ main {
   white-space: nowrap;
 }
 
-.nutrient-grid--bold tbody td {
-  font-weight: 700;
-}
-
 .nutrient-grid col {
   width: 4.5rem;
 }
@@ -188,13 +184,6 @@ main {
 
 .nutrient-grid--summary thead th:first-child {
   text-align: left;
-}
-
-.section-divider {
-  height: 1px;
-  background: #2b3543;
-  margin: 1.5rem 0;
-  border: 0;
 }
 
 .grid--data th:first-child,
@@ -280,12 +269,6 @@ main {
   -webkit-overflow-scrolling: touch;
 }
 
-.table-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
 .data-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -303,11 +286,4 @@ main {
   margin: 0 0 0.5rem 0;
   font-size: 1rem;
   color: #c6d0dc;
-}
-
-.placeholder {
-  padding: 1rem;
-  border: 1px dashed #3a4555;
-  border-radius: 8px;
-  color: #97a2b1;
 }

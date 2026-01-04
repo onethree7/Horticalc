@@ -321,11 +321,9 @@ function buildElementNTotalDetails(nForms) {
     return { value: Number.NaN, tooltip: "" };
   }
 
-  const nh4Value =
-    Number(nForms.N_from_fert_NH4) + Number(nForms.N_from_water_NH4 || 0);
-  const no3Value =
-    Number(nForms.N_from_fert_NO3) + Number(nForms.N_from_water_NO3 || 0);
-  const ureaValue = Number(nForms.N_from_fert_urea);
+  const nh4Value = Number(nForms.N_ION_AUS_NH4);
+  const no3Value = Number(nForms.N_ION_AUS_NO3);
+  const ureaValue = Number(nForms.N_ION_AUS_UREA);
 
   const parts = [
     ["NH4", nh4Value],

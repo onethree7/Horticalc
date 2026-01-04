@@ -83,6 +83,7 @@ main {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  table-layout: fixed;
 }
 
 .grid th,
@@ -91,10 +92,25 @@ main {
   padding: 0.45rem 0.6rem;
   text-align: left;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .grid th {
   background: #1a2230;
+}
+
+.grid tbody tr:nth-child(even) {
+  background: #121925;
+}
+
+.grid tbody tr:hover {
+  background: #1a2332;
+}
+
+.grid-dense th,
+.grid-dense td {
+  min-width: 5.5rem;
 }
 
 .grid select,
@@ -105,6 +121,42 @@ main {
   color: inherit;
   padding: 0.25rem 0.4rem;
   border-radius: 4px;
+}
+
+.combobox {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.combobox input {
+  width: 100%;
+}
+
+.combobox .combo-hint {
+  color: #9aa6b5;
+  font-size: 0.75rem;
+}
+
+.col-index {
+  width: 3.5rem;
+}
+
+.col-name {
+  width: 22rem;
+}
+
+.col-form {
+  width: 8rem;
+}
+
+.col-weight {
+  width: 8rem;
+}
+
+.col-amount {
+  width: 10rem;
 }
 
 .actions {

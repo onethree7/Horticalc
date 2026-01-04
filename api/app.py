@@ -8,7 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from horticalc.core import compute_solution
-from horticalc.data_io import load_fertilizers, load_molar_masses, load_water_profile, repo_root
+from horticalc.data_io import (
+    load_fertilizers,
+    load_molar_masses,
+    load_recipe,
+    load_water_profile,
+    repo_root,
+)
 
 
 app = FastAPI(title="Horticalc API", version="0.1.0")
@@ -23,6 +29,7 @@ app.add_middleware(
 FERTILIZERS = load_fertilizers()
 MOLAR_MASSES = load_molar_masses()
 WATER_PROFILES_DIR = repo_root() / "data" / "water_profiles"
+DEFAULT_RECIPE_PATH = repo_root() / "recipes" / "default.yml"
 
 
 class FertilizerEntry(BaseModel):
@@ -71,6 +78,13 @@ def water_profiles() -> List[str]:
     if not WATER_PROFILES_DIR.exists():
         return []
     return sorted([p.name for p in WATER_PROFILES_DIR.glob("*.yml")])
+
+
+@app.get("/recipes/default")
+def default_recipe() -> dict:
+    if not DEFAULT_RECIPE_PATH.exists():
+        raise HTTPException(status_code=404, detail="Default recipe not found")
+    return load_recipe(DEFAULT_RECIPE_PATH)
 
 
 @app.post("/calculate", response_model=CalculationResponse)

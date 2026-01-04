@@ -5,7 +5,7 @@ const calculateButton = document.querySelector("#calculateBtn");
 const apiBaseInput = document.querySelector("#apiBase");
 const addRowButton = document.querySelector("#addFertilizerRow");
 
-const ppmTableBody = document.querySelector("#ppmTable tbody");
+const ppmTable = document.querySelector("#ppmTable");
 const nFormTableBody = document.querySelector("#nFormTable tbody");
 const ionMmolTableBody = document.querySelector("#ionMmolTable tbody");
 const ionMeqTableBody = document.querySelector("#ionMeqTable tbody");
@@ -18,6 +18,21 @@ const numberFormatter = new Intl.NumberFormat("de-DE", {
   minimumFractionDigits: 3,
   maximumFractionDigits: 3,
 });
+const nutrientColumnOrder = [
+  "N_total",
+  "P",
+  "K",
+  "Ca",
+  "Mg",
+  "S",
+  "Cl",
+  "Fe",
+  "Mn",
+  "Cu",
+  "Zn",
+  "B",
+  "Mo",
+];
 
 function apiBase() {
   return apiBaseInput.value.replace(/\/$/, "");
@@ -121,6 +136,47 @@ function renderKeyValueTable(tableBody, entries) {
   });
 }
 
+function renderHorizontalTable(table, entries, orderedKeys = []) {
+  table.innerHTML = "";
+  const dataMap = new Map(entries);
+  const ordered = orderedKeys.filter((key) => key);
+  const remaining = entries
+    .map(([key]) => key)
+    .filter((key) => !ordered.includes(key));
+  const columns = [...ordered, ...remaining];
+
+  if (!columns.length) {
+    return;
+  }
+
+  const colgroup = document.createElement("colgroup");
+  columns.forEach(() => {
+    const col = document.createElement("col");
+    colgroup.appendChild(col);
+  });
+  table.appendChild(colgroup);
+
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  columns.forEach((key) => {
+    const th = document.createElement("th");
+    th.textContent = key;
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  const valueRow = document.createElement("tr");
+  columns.forEach((key) => {
+    const td = document.createElement("td");
+    td.textContent = formatNumber(Number(dataMap.get(key)));
+    valueRow.appendChild(td);
+  });
+  tbody.appendChild(valueRow);
+  table.appendChild(tbody);
+}
+
 function formatSeries(values) {
   return values.map((value) => formatNumber(value)).join(" / ");
 }
@@ -179,6 +235,14 @@ async function fetchFertilizers() {
   return response.json();
 }
 
+async function fetchDefaultRecipe() {
+  const response = await fetch(`${apiBase()}/recipes/default`);
+  if (!response.ok) {
+    throw new Error("Fehler beim Laden des Default-Rezepts");
+  }
+  return response.json();
+}
+
 async function calculate() {
   const payload = buildPayload();
   const response = await fetch(`${apiBase()}/calculate`, {
@@ -197,7 +261,7 @@ async function calculate() {
 
 function renderCalculation(data) {
   const elementEntries = Object.entries(data.elements_mg_per_l || {});
-  renderKeyValueTable(ppmTableBody, elementEntries);
+  renderHorizontalTable(ppmTable, elementEntries, nutrientColumnOrder);
 
   renderNFormsTable(nFormTableBody, data.n_forms_mg_per_l || {});
 
@@ -209,6 +273,31 @@ function renderCalculation(data) {
 
   const ionBalanceEntries = Object.entries(data.ion_balance || {});
   renderKeyValueTable(ionBalanceTableBody, ionBalanceEntries);
+}
+
+function applyRecipe(recipe) {
+  const fertilizers = Array.isArray(recipe.fertilizers) ? recipe.fertilizers : [];
+  selectedFertilizers.length = 0;
+  fertilizerAmounts.length = 0;
+
+  fertilizers.forEach((entry) => {
+    const name = entry.name || "";
+    const match = fertilizerOptions.find((opt) => opt.name === name);
+    selectedFertilizers.push({
+      name,
+      form: match ? match.form : "",
+      weight: match ? match.weight_factor : "",
+    });
+    fertilizerAmounts.push(Number(entry.grams) || 0);
+  });
+
+  if (!selectedFertilizers.length) {
+    selectedFertilizers.push({ name: "", form: "", weight: "" });
+    fertilizerAmounts.push(0);
+  }
+
+  renderSelectionTable();
+  renderCalculatorTable();
 }
 
 function addFertilizerRow() {
@@ -226,8 +315,16 @@ async function init() {
     fertilizerOptions = [];
   }
 
-  renderSelectionTable();
-  renderCalculatorTable();
+  try {
+    const recipe = await fetchDefaultRecipe();
+    applyRecipe(recipe);
+    const data = await calculate();
+    renderCalculation(data);
+  } catch (error) {
+    renderSelectionTable();
+    renderCalculatorTable();
+    renderHorizontalTable(ppmTable, [], nutrientColumnOrder);
+  }
 }
 
 reloadButton.addEventListener("click", init);

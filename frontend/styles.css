@@ -124,6 +124,22 @@ main {
   white-space: normal;
 }
 
+.grid--matrix th,
+.grid--matrix td {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.nutrient-grid col {
+  width: 6.5rem;
+  min-width: 6.5rem;
+}
+
+.nutrient-grid th,
+.nutrient-grid td {
+  white-space: nowrap;
+}
+
 .grid--data th:first-child,
 .grid--data td:first-child {
   width: 45%;

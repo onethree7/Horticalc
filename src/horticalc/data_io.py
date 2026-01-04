@@ -18,7 +18,7 @@ class Fertilizer:
 
 
 def repo_root() -> Path:
-    # this file lives in .../src/duengerrechner/data_io.py
+    # this file lives in .../src/horticalc/data_io.py
     return Path(__file__).resolve().parents[2]
 
 

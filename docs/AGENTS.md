@@ -17,7 +17,7 @@ Aus dem Excel wurden die folgenden Artefakte in Textform übernommen:
 - `solutions/golden_output.json` – Ergebnis der Golden Recipe Berechnung (als Basis für manuelle Checks)
 
 ### 2) Core-Rechenlogik
-`src/duengerrechner/core.py` implementiert:
+`src/horticalc/core.py` implementiert:
 
 - Stöchiometrische Umrechnung Oxide → Elemente über Molmassen
 - N-Formen: NH4-N, NO3-N, Urea-N separat
@@ -25,7 +25,7 @@ Aus dem Excel wurden die folgenden Artefakte in Textform übernommen:
 - Ionenbilanz (meq/L) für Hauptionen
 
 ### 3) CLI
-`duengerrechner recipes/golden.yml --pretty` druckt ein kompaktes JSON auf stdout.
+`horticalc recipes/golden.yml --pretty` druckt ein kompaktes JSON auf stdout.
 
 ## Konventionen & Entscheidungen
 

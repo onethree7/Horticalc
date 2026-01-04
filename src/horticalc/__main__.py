@@ -9,8 +9,8 @@ from .core import run_recipe
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
-        prog="duengerrechner",
-        description="Düngerrechner (molar‑correct) – CSV/YAML Backend",
+        prog="horticalc",
+        description="Horticalc (molar‑correct) – CSV/YAML Backend",
     )
     parser.add_argument(
         "recipe",

@@ -27,9 +27,7 @@ const nutrientIntegerFormatter = new Intl.NumberFormat("de-DE", {
   maximumFractionDigits: 0,
 });
 const oxideColumnOrder = [
-  "NH4",
-  "NO3",
-  "Ur-N",
+  "N_total",
   "P2O5",
   "K2O",
   "CaO",
@@ -64,6 +62,7 @@ const nutrientColumnOrder = [
 const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
 const nutrientTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "Si"]);
 const oxideIntegerKeys = new Set([
+  "N_total",
   "NH4",
   "NO3",
   "Ur-N",
@@ -229,7 +228,15 @@ function renderHorizontalTable(
 
   columns.forEach((key) => {
     const td = document.createElement("td");
-    td.textContent = formatCellValue(key, Number(dataMap.get(key)));
+    const formatted = formatCellValue(key, Number(dataMap.get(key)));
+    if (formatted && typeof formatted === "object") {
+      td.textContent = formatted.text;
+      if (formatted.title) {
+        td.title = formatted.title;
+      }
+    } else {
+      td.textContent = formatted;
+    }
     td.dataset.key = key;
     td.classList.add(`col-${normalizeColumnKey(key)}`);
     valueRow.appendChild(td);
@@ -294,6 +301,24 @@ function formatOxideValue(key, value) {
   return nutrientFormatter.format(value);
 }
 
+function buildOxideNTotalDetails(oxides) {
+  const parts = [
+    ["NH4", Number(oxides["NH4"])],
+    ["NO3", Number(oxides["NO3"])],
+    ["Ur-N", Number(oxides["Ur-N"])],
+  ].filter(([, value]) => Number.isFinite(value));
+
+  const sum = parts.reduce((total, [, value]) => total + value, 0);
+  const value = parts.length ? sum : Number.NaN;
+  const tooltip = parts.length
+    ? `Summe aus:\n${parts
+        .map(([label, partValue]) => `${label}=${formatOxideValue(label, partValue)} mg/l`)
+        .join("\n")}`
+    : "";
+
+  return { value, tooltip };
+}
+
 function buildPayload() {
   const fertilizers = selectedFertilizers
     .map((fert, index) => ({ name: fert.name, grams: fertilizerAmounts[index] }))
@@ -341,8 +366,25 @@ function renderCalculation(data) {
   const elementEntries = Object.entries(data.elements_mg_per_l || {});
   renderHorizontalTable(ppmTable, elementEntries, nutrientColumnOrder, nutrientFormatter, formatNutrientValue);
 
-  const oxideEntries = Object.entries(data.oxides_mg_per_l || {});
-  renderHorizontalTable(oxideTable, oxideEntries, oxideColumnOrder, nutrientFormatter, formatOxideValue);
+  const oxides = data.oxides_mg_per_l || {};
+  const { value: nTotalValue, tooltip: nTotalTooltip } = buildOxideNTotalDetails(oxides);
+  const oxideEntries = Object.entries(oxides).filter(
+    ([key]) => !["NH4", "NO3", "Ur-N"].includes(key),
+  );
+  oxideEntries.push(["N_total", nTotalValue]);
+  renderHorizontalTable(oxideTable, oxideEntries, oxideColumnOrder, nutrientFormatter, (key, value) => {
+    const formatted = formatOxideValue(key, value);
+    if (key === "N_total" && nTotalTooltip) {
+      return { text: formatted, title: nTotalTooltip };
+    }
+    return formatted;
+  });
+  if (nTotalTooltip) {
+    const header = oxideTable.querySelector('th[data-key="N_total"]');
+    if (header) {
+      header.title = nTotalTooltip;
+    }
+  }
 
   const ionMeqEntries = Object.entries(data.ions_meq_per_l || {});
   renderKeyValueTable(ionMeqTableBody, ionMeqEntries);

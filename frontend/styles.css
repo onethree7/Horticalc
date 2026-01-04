@@ -143,7 +143,7 @@ main {
   white-space: nowrap;
 }
 
-.nutrient-grid tbody td {
+.nutrient-grid--bold tbody td {
   font-weight: 700;
 }
 
@@ -213,7 +213,7 @@ main {
 }
 
 .grid--form .col-amount {
-  width: 9rem;
+  width: 7rem;
 }
 
 .grid select,
@@ -224,6 +224,13 @@ main {
   color: inherit;
   padding: 0.25rem 0.4rem;
   border-radius: 4px;
+}
+
+.grid--form input[type="number"] {
+  max-width: 6rem;
+  margin: 0 auto;
+  display: block;
+  text-align: right;
 }
 
 .actions {
@@ -257,6 +264,12 @@ main {
   overflow-x: auto;
   max-width: 100%;
   -webkit-overflow-scrolling: touch;
+}
+
+.table-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .data-grid {

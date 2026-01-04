@@ -18,7 +18,7 @@
 
     <main>
       <section class="block">
-        <h2>1) Vorauswahl der Düngerkomponenten</h2>
+        <h2>Vorauswahl der Düngerkomponenten</h2>
         <div class="actions inline-actions">
           <button id="addFertilizerRow" type="button">+</button>
           <button id="removeFertilizerRow" type="button">-</button>
@@ -48,7 +48,7 @@
       </section>
 
       <section class="block">
-        <h2>2) Düngercalculator</h2>
+        <h2>Düngercalculator</h2>
         <p class="hint">Mengen eingeben und Berechnung starten.</p>
         <div class="table-wrap">
           <table class="grid grid--form" id="calculatorTable">
@@ -73,25 +73,26 @@
           <button id="calculateBtn">Berechnen</button>
         </div>
         <div class="summary">
-          <h3>Zentraler Wert: Nährstoffm. Dünger + Wasser (ppm, mg/l)</h3>
-          <div class="table-card">
-            <div class="table-wrap">
-              <table class="grid grid--matrix nutrient-grid" id="ppmTable"></table>
+          <h3>Gelöste Ionen: Dünger + Wasser (ppm, mg/l)</h3>
+          <div class="table-stack">
+            <div class="table-card">
+              <h3>Oxidformen (ppm, mg/l)</h3>
+              <div class="table-wrap">
+                <table class="grid grid--matrix nutrient-grid" id="oxideTable"></table>
+              </div>
+            </div>
+            <div class="table-card">
+              <div class="table-wrap">
+                <table class="grid grid--matrix nutrient-grid nutrient-grid--bold" id="ppmTable"></table>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       <section class="block">
-        <h2>3) Ionenbilanz</h2>
+        <h2>Ionenbilanz</h2>
         <p class="hint">Bilanzwerte basieren auf den Ionen in meq/L.</p>
-        <div class="table-card">
-          <h3>Oxidformen (ppm, mg/l)</h3>
-          <div class="table-wrap">
-            <table class="grid grid--matrix nutrient-grid" id="oxideTable"></table>
-          </div>
-        </div>
-        <hr class="section-divider" aria-hidden="true" />
         <div class="data-grid">
           <div class="table-card">
             <h3>Ionen (meq/L)</h3>

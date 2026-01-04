@@ -83,6 +83,7 @@ main {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  table-layout: fixed;
 }
 
 .grid th,
@@ -91,10 +92,20 @@ main {
   padding: 0.45rem 0.6rem;
   text-align: left;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .grid th {
   background: #1a2230;
+}
+
+.grid tbody tr:nth-child(even) {
+  background: #141b26;
+}
+
+.grid tbody tr:hover {
+  background: #1b2432;
 }
 
 .grid select,
@@ -105,6 +116,75 @@ main {
   color: inherit;
   padding: 0.25rem 0.4rem;
   border-radius: 4px;
+}
+
+.col-index {
+  width: 3rem;
+}
+
+.col-name {
+  width: 26rem;
+}
+
+.col-form {
+  width: 7rem;
+}
+
+.col-weight,
+.col-amount {
+  width: 8rem;
+}
+
+.col-label {
+  width: 12rem;
+}
+
+.col-wide {
+  width: 32rem;
+}
+
+.combo {
+  position: relative;
+}
+
+.combo input {
+  width: 100%;
+}
+
+.combo-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #111824;
+  border: 1px solid #2b3543;
+  border-radius: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 20;
+  box-shadow: 0 10px 20px rgba(8, 12, 18, 0.6);
+}
+
+.combo-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.35rem 0.6rem;
+  background: transparent;
+  color: inherit;
+  border: none;
+  cursor: pointer;
+}
+
+.combo-item:hover,
+.combo-item.is-active {
+  background: #1c2836;
+}
+
+.combo-meta {
+  color: #8a97a8;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.6rem;
 }
 
 .actions {

@@ -27,10 +27,10 @@
           <table class="grid" id="fertilizerSelectTable">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Dünger (Dropdown)</th>
-                <th>Form</th>
-                <th>Gewicht</th>
+                <th class="col-index">#</th>
+                <th class="col-name">Dünger (Dropdown)</th>
+                <th class="col-form">Form</th>
+                <th class="col-weight">Gewicht</th>
               </tr>
             </thead>
             <tbody>
@@ -47,9 +47,9 @@
           <table class="grid" id="calculatorTable">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Düngername</th>
-                <th>Menge (g)</th>
+                <th class="col-index">#</th>
+                <th class="col-name">Düngername</th>
+                <th class="col-amount">Menge (g)</th>
               </tr>
             </thead>
             <tbody>
@@ -81,10 +81,14 @@
         <div class="table-wrap">
           <table class="grid" id="nFormTable">
             <thead>
-              <tr id="nFormHeaderRow"></tr>
+              <tr>
+                <th class="col-label">N Herkunft</th>
+                <th class="col-wide">Werte (NH4/NO3/Urea/Wasser)</th>
+                <th class="col-amount">Summe N</th>
+              </tr>
             </thead>
             <tbody>
-              <tr id="nFormValueRow"></tr>
+              <tr id="nFormRow"></tr>
             </tbody>
           </table>
         </div>

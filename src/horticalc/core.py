@@ -259,6 +259,8 @@ class CalcResult:
     ion_balance: Dict[str, float]
 
     def to_dict(self) -> dict:
+        from .metrics import format_npks
+
         return {
             "liters": self.liters,
             "elements_mg_per_l": self.elements_mg_l,
@@ -266,6 +268,7 @@ class CalcResult:
             "ions_mmol_per_l": self.ions_mmol_l,
             "ions_meq_per_l": self.ions_meq_l,
             "ion_balance": self.ion_balance,
+            "npk_metrics": format_npks(self),
         }
 
 

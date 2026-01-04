@@ -1,0 +1,123 @@
+:root {
+  color-scheme: dark;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  background-color: #10141b;
+  color: #e8edf2;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #0d1016;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #2a313c;
+  background: #131923;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.api-config {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.api-config input {
+  padding: 0.35rem 0.6rem;
+  background: #0f141d;
+  border: 1px solid #2b3543;
+  color: inherit;
+  border-radius: 4px;
+}
+
+button {
+  background: #2e63ff;
+  color: #fff;
+  border: none;
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #3f73ff;
+}
+
+main {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.block {
+  background: #131923;
+  border: 1px solid #2b3543;
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+
+.block h2 {
+  margin-top: 0;
+}
+
+.hint {
+  color: #b4bdc8;
+  margin-bottom: 1rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.grid th,
+.grid td {
+  border: 1px solid #2b3543;
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.grid th {
+  background: #1a2230;
+}
+
+.grid select,
+.grid input {
+  width: 100%;
+  background: #0f141d;
+  border: 1px solid #2b3543;
+  color: inherit;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+}
+
+.actions {
+  margin-top: 1rem;
+}
+
+.summary {
+  margin-top: 1.5rem;
+}
+
+.placeholder {
+  padding: 1rem;
+  border: 1px dashed #3a4555;
+  border-radius: 8px;
+  color: #97a2b1;
+}

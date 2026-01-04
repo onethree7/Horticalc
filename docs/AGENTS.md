@@ -22,8 +22,7 @@ Aus dem Excel wurden die folgenden Artefakte in Textform übernommen:
 `src/horticalc/core.py` implementiert:
 
 - Stöchiometrische Umrechnung Oxide → Elemente über Molmassen
-- N-Formen: NH4-N, NO3-N, Urea-N separat
-- Wasser: NH4/NO3 als Moleküle → N
+- N-Formen: NH4/NO3 als Moleküle, Urea-N als Element; Auswertung in N_NH4/N_NO3/N_UREA
 - Ionenbilanz (meq/L) für Hauptionen
 
 ### 3) CLI
@@ -32,8 +31,8 @@ Aus dem Excel wurden die folgenden Artefakte in Textform übernommen:
 ## Konventionen & Entscheidungen
 
 ### Stickstoff
-- In `fertilizers.csv` sind `NH4`, `NO3`, `Ur-N` **N-Anteile als Element N**.
-- Für die Ionenbilanz werden daraus (bei Bedarf) NH4 bzw. NO3 als Moleküle berechnet.
+- In `fertilizers.csv` sind `NH4` und `NO3` **immer Moleküle** (wie im Wasserprofil).
+- `Ur-N` bleibt **Element‑N**.
 - `urea_as_nh4` ist eine Option (Hydrolyse), default **false**.
 
 ### Phosphat-Ladung

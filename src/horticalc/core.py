@@ -72,7 +72,7 @@ def _form_to_element(mg_l: float, mm: Dict[str, float], form: str) -> Tuple[str,
 
 
 def _n_molecule_to_n_element(mg_l_molecule: float, mm: Dict[str, float], molecule: str) -> float:
-    # molecule is NH4 or NO3
+    # molecule is NH4 or NO3 (always molecule-based for NH4/NO3 inputs)
     if molecule == "NH4":
         return mg_l_molecule * _mm(mm, "N") / _mm(mm, "NH4")
     if molecule == "NO3":
@@ -94,6 +94,137 @@ def _urea_element_to_molecule(mg_l_n: float, mm: Dict[str, float]) -> float:
 
 def _urea_molecule_to_element(mg_l_urea: float, mm: Dict[str, float]) -> float:
     return mg_l_urea * (2 * _mm(mm, "N")) / _mm(mm, "UREA")
+
+
+def collect_forms_mg_l(
+    recipe: dict,
+    fertilizers: Dict[str, Fertilizer],
+    liters: float,
+) -> Dict[str, float]:
+    # NH4/NO3 are always treated as molecules (fertilizers + water); Ur-N stays as element N.
+    forms_mg_l: Dict[str, float] = {k: 0.0 for k in COMP_COLS}
+    for entry in recipe.get("fertilizers", []):
+        name = str(entry.get("name") or "").strip()
+        grams = float(entry.get("grams") or 0.0)
+        if grams == 0.0:
+            continue
+        if name not in fertilizers:
+            raise KeyError(f"Unbekannter Dünger im Rezept: '{name}'")
+
+        fert = fertilizers[name]
+        eff_g = grams * float(fert.weight_factor or 1.0)
+        for key, frac in fert.comp.items():
+            if key not in forms_mg_l:
+                continue
+            forms_mg_l[key] += eff_g * float(frac) * 1000.0 / liters
+    return forms_mg_l
+
+
+def merge_water_forms(
+    forms_mg_l: Dict[str, float],
+    water_mg_l: Dict[str, float] | None,
+) -> Tuple[Dict[str, float], Dict[str, float]]:
+    water_forms = dict(water_mg_l or {})
+    merged_keys = set(forms_mg_l) | set(water_forms)
+    merged = {
+        key: float(forms_mg_l.get(key, 0.0)) + float(water_forms.get(key, 0.0))
+        for key in merged_keys
+    }
+    return merged, water_forms
+
+
+def forms_to_elements(
+    forms: Dict[str, float],
+    mm: Dict[str, float],
+    n_species_context: Dict[str, float],
+) -> Dict[str, float]:
+    elements: Dict[str, float] = {}
+    elements["N_total"] = n_species_context["n_total"]
+    elements["N_NH4"] = n_species_context["n_from_nh4"]
+    elements["N_NO3"] = n_species_context["n_from_no3"]
+    elements["N_UREA"] = n_species_context["n_from_urea"]
+
+    # OXIDBERECHNUNG: Oxide/Anionen in Elemente überführen
+    for ox in ("P2O5", "K2O", "CaO", "MgO", "Na2O"):
+        mg_l = float(forms.get(ox, 0.0))
+        if mg_l:
+            el, val = _oxide_to_element(mg_l, mm, ox)
+            elements[el] = elements.get(el, 0.0) + val
+
+    for f in ("SO4", "CO3", "SiO2", "Cl", "Fe", "Mn", "Cu", "Zn", "B", "Mo"):
+        mg_l = float(forms.get(f, 0.0))
+        if mg_l:
+            el, val = _form_to_element(mg_l, mm, f)
+            elements[el] = elements.get(el, 0.0) + val
+
+    return elements
+
+
+def elements_to_ions(
+    elements: Dict[str, float],
+    forms: Dict[str, float],
+    mm: Dict[str, float],
+    phosphate_species: str,
+    n_species_context: Dict[str, float],
+) -> Tuple[Dict[str, float], Dict[str, float], Dict[str, float]]:
+    ions_mmol: Dict[str, float] = {}
+    ions_meq: Dict[str, float] = {}
+
+    # IONENABLEITUNG: Ionentabelle aus Molekül-/Elementdaten ableiten
+    def add_ion(label: str, mg_l_val: float, mm_key: str, charge: int) -> None:
+        mmol = 0.0 if mg_l_val == 0 else mg_l_val / _mm(mm, mm_key)
+        ions_mmol[label] = mmol
+        ions_meq[label] = mmol * charge
+
+    # Cations
+    add_ion("NH4+", n_species_context["nh4_mg_l_raw"], "NH4", charge=+1)
+
+    for el, charge in (("K", +1), ("Ca", +2), ("Mg", +2), ("Na", +1)):
+        mg_l_el = float(elements.get(el, 0.0))
+        if mg_l_el:
+            label = f"{el}{'+' if charge > 0 else ''}{charge if charge not in (1, -1) else ''}".replace("+1", "+")
+            add_ion(label, mg_l_el, el, charge)
+
+    # Anions
+    add_ion("NO3-", n_species_context["no3_mg_l_raw"], "NO3", charge=-1)
+
+    p_mg_l = float(elements.get("P", 0.0))
+    if p_mg_l:
+        po4_mg_l = p_mg_l * _mm(mm, "PO4") / _mm(mm, "P")
+        if phosphate_species.upper() == "HPO4":
+            add_ion("HPO4^2-", po4_mg_l, "PO4", charge=-2)
+        else:
+            add_ion("H2PO4-", po4_mg_l, "PO4", charge=-1)
+
+    so4_mg_l = float(forms.get("SO4", 0.0))
+    if so4_mg_l:
+        add_ion("SO4^2-", so4_mg_l, "SO4", charge=-2)
+
+    cl_mg_l = float(elements.get("Cl", 0.0))
+    if cl_mg_l:
+        add_ion("Cl-", cl_mg_l, "Cl", charge=-1)
+
+    hco3_mg_l = float(forms.get("HCO3", 0.0))
+    if hco3_mg_l:
+        add_ion("HCO3-", hco3_mg_l, "HCO3", charge=-1)
+    co3_mg_l = float(forms.get("CO3", 0.0))
+    if co3_mg_l:
+        add_ion("CO3^2-", co3_mg_l, "CO3", charge=-2)
+
+    cations_sum = sum(v for v in ions_meq.values() if v > 0)
+    anions_sum = -sum(v for v in ions_meq.values() if v < 0)
+    denom = (cations_sum + anions_sum)
+    err_signed = 0.0 if denom == 0 else (cations_sum - anions_sum) / denom * 100.0
+    err_abs = abs(err_signed)
+
+    ion_balance = {
+        "cations_meq_per_l": cations_sum,
+        "anions_meq_per_l": anions_sum,
+        "error_percent_signed": err_signed,
+        "error_percent_abs": err_abs,
+    }
+
+    return ions_mmol, ions_meq, ion_balance
 
 
 @dataclass
@@ -129,156 +260,52 @@ def compute_solution(
     urea_as_nh4 = bool(recipe.get("urea_as_nh4", False))
     phosphate_species = str(recipe.get("phosphate_species", "H2PO4"))
 
-    # 1) Contributions from fertilizers -> mg/L in their declared forms
-    forms_mg_l: Dict[str, float] = {k: 0.0 for k in COMP_COLS}
-    for entry in recipe.get("fertilizers", []):
-        name = str(entry.get("name") or "").strip()
-        grams = float(entry.get("grams") or 0.0)
-        if grams == 0.0:
-            continue
-        if name not in fertilizers:
-            raise KeyError(f"Unbekannter Dünger im Rezept: '{name}'")
+    # 1) sammeln: Contributions from fertilizers -> mg/L in their declared forms
+    forms_mg_l = collect_forms_mg_l(recipe, fertilizers, liters)
 
-        fert = fertilizers[name]
-        eff_g = grams * float(fert.weight_factor or 1.0)
-        for key, frac in fert.comp.items():
-            if key not in forms_mg_l:
-                continue
-            forms_mg_l[key] += eff_g * float(frac) * 1000.0 / liters
+    # 2) Wasserprofile sauber kombinieren
+    merged_forms, water_forms = merge_water_forms(forms_mg_l, water_mg_l)
 
-    # 2) Add water baseline (water profile is in mg/L of its own forms)
-    # Water NH4/NO3 are interpreted as molecules (NH4, NO3), NOT "N as ...".
-    # To merge with fertilizer model, we keep them in separate variables and convert later.
-    water_forms = dict(water_mg_l)
-
-    # 3) Compute element totals (mg/L)
-    elements: Dict[str, float] = {}
-
-    # Nitrogen from fertilizers (already as element N)
-    n_fert_from_nh4 = float(forms_mg_l.get("NH4", 0.0))
-    n_fert_from_no3 = float(forms_mg_l.get("NO3", 0.0))
+    # 3) N-Spezies ableiten (NH4/NO3 sind immer Moleküle, auch im Dünger)
+    fert_nh4_mg_l = float(forms_mg_l.get("NH4", 0.0))
+    fert_no3_mg_l = float(forms_mg_l.get("NO3", 0.0))
     n_fert_from_urea = float(forms_mg_l.get("Ur-N", 0.0))
-
-    # Nitrogen from water (molecules)
     water_nh4_mg_l = float(water_forms.get("NH4", 0.0))
     water_no3_mg_l = float(water_forms.get("NO3", 0.0))
 
-    # Raw forms (molecules) for NH4/NO3 + Urea
-    fert_nh4_mg_l_as_nh4 = _n_element_to_molecule(n_fert_from_nh4, mm, "NH4") if n_fert_from_nh4 else 0.0
-    fert_no3_mg_l_as_no3 = _n_element_to_molecule(n_fert_from_no3, mm, "NO3") if n_fert_from_no3 else 0.0
     urea_mg_l = _urea_element_to_molecule(n_fert_from_urea, mm) if n_fert_from_urea else 0.0
     urea_as_nh4_mg_l = _n_element_to_molecule(n_fert_from_urea, mm, "NH4") if (urea_as_nh4 and n_fert_from_urea) else 0.0
 
-    nh4_mg_l_raw = water_nh4_mg_l + fert_nh4_mg_l_as_nh4 + urea_as_nh4_mg_l
-    no3_mg_l_raw = water_no3_mg_l + fert_no3_mg_l_as_no3
+    nh4_mg_l_raw = water_nh4_mg_l + fert_nh4_mg_l + urea_as_nh4_mg_l
+    no3_mg_l_raw = water_no3_mg_l + fert_no3_mg_l
 
     n_from_nh4 = _n_molecule_to_n_element(nh4_mg_l_raw, mm, "NH4") if nh4_mg_l_raw else 0.0
     n_from_no3 = _n_molecule_to_n_element(no3_mg_l_raw, mm, "NO3") if no3_mg_l_raw else 0.0
     n_from_urea = _urea_molecule_to_element(urea_mg_l, mm) if urea_mg_l else 0.0
 
     n_total = n_from_nh4 + n_from_no3 + n_from_urea
-    elements["N_total"] = n_total
-    elements["N_NH4"] = n_from_nh4
-    elements["N_NO3"] = n_from_no3
-    elements["N_UREA"] = n_from_urea
-
-    oxides = {key: 0.0 for key in OXIDE_FORM_COLS}
-    oxides["N_total"] = n_total
-    for form in (
-        "P2O5",
-        "K2O",
-        "CaO",
-        "MgO",
-        "Na2O",
-        "SO4",
-        "Fe",
-        "Mn",
-        "Cu",
-        "Zn",
-        "B",
-        "Mo",
-        "Cl",
-        "CO3",
-        "SiO2",
-    ):
-        oxides[form] = float(forms_mg_l.get(form, 0.0)) + float(water_forms.get(form, 0.0))
-
-    # Oxides from fertilizers
-    for ox in ("P2O5", "K2O", "CaO", "MgO", "Na2O"):
-        mg_l = float(forms_mg_l.get(ox, 0.0)) + float(water_forms.get(ox, 0.0))
-        if mg_l:
-            el, val = _oxide_to_element(mg_l, mm, ox)
-            elements[el] = elements.get(el, 0.0) + val
-
-    # Other forms (SO4, CO3, SiO2, Cl + traces)
-    for f in ("SO4", "CO3", "SiO2", "Cl", "Fe", "Mn", "Cu", "Zn", "B", "Mo"):
-        mg_l = float(forms_mg_l.get(f, 0.0)) + float(water_forms.get(f, 0.0))
-        if mg_l:
-            el, val = _form_to_element(mg_l, mm, f)
-            elements[el] = elements.get(el, 0.0) + val
-
-    # 4) Ion balance (meq/L) – use molecule forms
-    ions_mmol: Dict[str, float] = {}
-    ions_meq: Dict[str, float] = {}
-
-    def add_ion(label: str, mg_l_val: float, mm_key: str, charge: int) -> None:
-        mmol = 0.0 if mg_l_val == 0 else mg_l_val / _mm(mm, mm_key)
-        ions_mmol[label] = mmol
-        ions_meq[label] = mmol * charge
-
-    # Cations
-    # NH4+: fertilizer NH4-N -> NH4 molecule; plus water NH4 molecule
-    add_ion("NH4+", nh4_mg_l_raw, "NH4", charge=+1)
-
-    # K+, Ca2+, Mg2+, Na+ from element totals (convert to mmol)
-    for el, charge in (("K", +1), ("Ca", +2), ("Mg", +2), ("Na", +1)):
-        mg_l_el = float(elements.get(el, 0.0))
-        if mg_l_el:
-            add_ion(f"{el}{'+' if charge>0 else ''}{charge if charge not in (1,-1) else ''}".replace("+1", "+"), mg_l_el, el, charge)
-
-    # Anions
-    # NO3-: fertilizer NO3-N -> NO3 molecule; plus water NO3 molecule
-    add_ion("NO3-", no3_mg_l_raw, "NO3", charge=-1)
-
-    # Phosphate: derive PO4 mass from P element
-    p_mg_l = float(elements.get("P", 0.0))
-    if p_mg_l:
-        po4_mg_l = p_mg_l * _mm(mm, "PO4") / _mm(mm, "P")
-        if phosphate_species.upper() == "HPO4":
-            add_ion("HPO4^2-", po4_mg_l, "PO4", charge=-2)
-        else:
-            add_ion("H2PO4-", po4_mg_l, "PO4", charge=-1)
-
-    # Sulfate
-    so4_mg_l = float(forms_mg_l.get("SO4", 0.0)) + float(water_forms.get("SO4", 0.0))
-    if so4_mg_l:
-        add_ion("SO4^2-", so4_mg_l, "SO4", charge=-2)
-
-    # Chloride
-    cl_mg_l = float(elements.get("Cl", 0.0))
-    if cl_mg_l:
-        add_ion("Cl-", cl_mg_l, "Cl", charge=-1)
-
-    # Bicarbonate/Carbonate from water profile if provided
-    hco3_mg_l = float(water_forms.get("HCO3", 0.0))
-    if hco3_mg_l:
-        add_ion("HCO3-", hco3_mg_l, "HCO3", charge=-1)
-    co3_mg_l = float(forms_mg_l.get("CO3", 0.0)) + float(water_forms.get("CO3", 0.0))
-    if co3_mg_l:
-        add_ion("CO3^2-", co3_mg_l, "CO3", charge=-2)
-
-    cations_sum = sum(v for v in ions_meq.values() if v > 0)
-    anions_sum = -sum(v for v in ions_meq.values() if v < 0)
-    denom = (cations_sum + anions_sum)
-    err_signed = 0.0 if denom == 0 else (cations_sum - anions_sum) / denom * 100.0
-    err_abs = abs(err_signed)
-
-    ion_balance = {
-        "cations_meq_per_l": cations_sum,
-        "anions_meq_per_l": anions_sum,
-        "error_percent_signed": err_signed,
-        "error_percent_abs": err_abs,
+    n_species_context = {
+        "n_total": n_total,
+        "n_from_nh4": n_from_nh4,
+        "n_from_no3": n_from_no3,
+        "n_from_urea": n_from_urea,
+        "nh4_mg_l_raw": nh4_mg_l_raw,
+        "no3_mg_l_raw": no3_mg_l_raw,
     }
+
+    # 4) Elemente/Oxide aus Formen ableiten
+    elements = forms_to_elements(merged_forms, mm, n_species_context)
+    oxides = {key: float(merged_forms.get(key, 0.0)) for key in OXIDE_FORM_COLS}
+    oxides["N_total"] = n_total
+
+    # 5) Ionentabelle berechnen
+    ions_mmol, ions_meq, ion_balance = elements_to_ions(
+        elements,
+        merged_forms,
+        mm,
+        phosphate_species,
+        n_species_context,
+    )
 
     return CalcResult(
         liters=liters,

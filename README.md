@@ -96,7 +96,8 @@ Export aus deinem Sheet **„DüngerTab“**.
 
 Wichtig:
 - Die Analysenwerte sind **Massenanteile** (z.B. `0,14` = 14%).
-- `NH4`, `NO3`, `Ur-N` sind **N‑Anteile als Element N** und werden zu `N_NH4`, `N_NO3`, `N_UREA` aggregiert.
+- `NH4` und `NO3` sind **immer Moleküle** (auch in der Düngerdatei); daraus wird `N_NH4`/`N_NO3` berechnet.
+- `Ur-N` ist **N als Element** (Urea‑N) und wird zu `N_UREA` aggregiert.
 - `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O` sind Oxid‑Deklarationen (wie Düngeretikett).
 - `SO4`, `CO3`, `SiO2`, `Cl` etc. sind als die jeweilige Form gespeichert.
 - `Gewicht` ist ein Faktor für Flüssigdünger (z.B. Dichte/Be): **effektive Gramm = Gramm * Gewicht**.
@@ -137,8 +138,9 @@ Umrechnungen sind **stöchiometrisch** über Molmassen:
 - `K2O → K` mit Faktor `2*M(K)/M(K2O)`
 - `CaO → Ca`, `MgO → Mg`, `Na2O → Na`, `SO4 → S`, `SiO2 → Si`, `CO3 → C`
 
-Bei Wasserwerten wird `NH4`/`NO3` als **Molekül** interpretiert und zu `N_NH4`/`N_NO3` umgerechnet (z.B. NO3→N ist /4,427).
-Bei Düngern ist `NH4`, `NO3`, `Ur-N` als **N‑Anteil** hinterlegt und wird entsprechend zu `N_NH4`, `N_NO3`, `N_UREA` gerechnet.
+`NH4`/`NO3` werden **immer als Molekül** interpretiert (Wasserprofile und Düngerdatei).
+Die Umrechnung zu Element‑N folgt z.B. `NH4 * M(N)/M(NH4)` bzw. `NO3 * M(N)/M(NO3)`.
+`Ur-N` bleibt **Element‑N** (Urea‑N) und wird separat zu `N_UREA` gerechnet.
 
 ### Ionenbilanz (meq/L)
 

@@ -43,6 +43,7 @@ class RecipeRequest(BaseModel):
     urea_as_nh4: bool = False
     phosphate_species: str = Field(default="H2PO4")
     water_profile_name: Optional[str] = None
+    # NH4/NO3 are always molecule-based inputs; Ur-N stays element-N.
     water_mg_l: Optional[Dict[str, float]] = None
 
 

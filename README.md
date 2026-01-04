@@ -48,7 +48,7 @@ Remove-Item -Recurse -Force .\.venv
 py -m venv .venv
 .\.venv\Scripts\python -m pip install -U pip setuptools wheel
 .\.venv\Scripts\python -m pip install -r .\requirements.txt
-.\.venv\Scripts\python -m pip install -e .
+.\.venv\Scripts\python -m pip install -e .\
 ```
 
 ### Setup (Linux / macOS)
@@ -67,16 +67,7 @@ python -m pip install -e .
 
 ### Backend starten (Terminal 1)
 
-Wichtig: nutze **denselben Python‑Interpreter**, mit dem du installiert hast (z. B. `.venv`).
-
-**Windows (PowerShell):**
-```powershell
-.\.venv\Scripts\python -m uvicorn api.app:app --host 0.0.0.0 --port 8000
-```
-
-**Linux / macOS:**
 ```bash
-source .venv/bin/activate
 python -m uvicorn api.app:app --host 0.0.0.0 --port 8000
 ```
 
@@ -87,14 +78,7 @@ http://127.0.0.1:8000/health
 
 ### Frontend starten (Terminal 2)
 
-**Windows (PowerShell):**
-```powershell
-.\.venv\Scripts\python -m http.server 5173 --directory frontend
-```
-
-**Linux / macOS:**
 ```bash
-source .venv/bin/activate
 python -m http.server 5173 --directory frontend
 ```
 
@@ -103,10 +87,28 @@ Frontend‑URL:
 http://127.0.0.1:5173/
 ```
 
-### Dev-Start (Windows, ein Befehl)
+---
 
-```powershell
-.\start_dev.bat
+## Troubleshooting (wichtig)
+
+### 1) `ModuleNotFoundError: horticalc`
+**Ursache:** Bei src‑Layout fehlt `PYTHONPATH` oder Paket ist nicht installiert.  
+**Fix:** Immer im Repo `python -m pip install -e .` ausführen.
+
+### 2) `No module named uvicorn` trotz Installation
+**Ursache:** `pip` zeigt auf eine andere Python‑Installation/venv.  
+**Fix:** Immer **denselben Interpreter** nutzen:
+```bash
+python -m pip -V
+python -c "import sys; print(sys.executable)"
+```
+Falls nötig: `.\.venv\Scripts\python -m pip ...` (Windows).
+
+### 3) 404 bei `http.server`
+**Ursache:** Der Webserver zeigt nicht auf den `frontend/`‑Ordner oder dort fehlt `index.html`.  
+**Fix:** exakt so starten:
+```bash
+python -m http.server 5173 --directory frontend
 ```
 
 ---

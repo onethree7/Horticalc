@@ -1,11 +1,10 @@
-const MAX_ROWS = 10;
+const ROW_COUNT = 10;
 
 const fertilizerSelectTable = document.querySelector("#fertilizerSelectTable tbody");
 const calculatorTable = document.querySelector("#calculatorTable tbody");
 const reloadButton = document.querySelector("#reloadData");
 const calculateButton = document.querySelector("#calculateBtn");
 const apiBaseInput = document.querySelector("#apiBase");
-const addRowButton = document.querySelector("#addRowBtn");
 
 const ppmHeaderRow = document.querySelector("#ppmHeaderRow");
 const ppmValueRow = document.querySelector("#ppmValueRow");
@@ -13,9 +12,8 @@ const ionHeaderRow = document.querySelector("#ionHeaderRow");
 const ionValueRow = document.querySelector("#ionValueRow");
 
 let fertilizerOptions = [];
-let activeRowCount = 1;
-const selectedFertilizers = Array.from({ length: MAX_ROWS }, () => ({ name: "", form: "", weight: "" }));
-const fertilizerAmounts = Array.from({ length: MAX_ROWS }, () => 0);
+const selectedFertilizers = Array.from({ length: ROW_COUNT }, () => ({ name: "", form: "", weight: "" }));
+const fertilizerAmounts = Array.from({ length: ROW_COUNT }, () => 0);
 
 function apiBase() {
   return apiBaseInput.value.replace(/\/$/, "");
@@ -41,7 +39,7 @@ function createSelect(options, onChange) {
 
 function renderSelectionTable() {
   fertilizerSelectTable.innerHTML = "";
-  for (let i = 0; i < activeRowCount; i += 1) {
+  for (let i = 0; i < ROW_COUNT; i += 1) {
     const row = document.createElement("tr");
 
     const indexCell = document.createElement("td");
@@ -70,12 +68,11 @@ function renderSelectionTable() {
     row.append(indexCell, selectCell, formCell, weightCell);
     fertilizerSelectTable.appendChild(row);
   }
-  addRowButton.disabled = activeRowCount >= MAX_ROWS;
 }
 
 function renderCalculatorTable() {
   calculatorTable.innerHTML = "";
-  for (let i = 0; i < activeRowCount; i += 1) {
+  for (let i = 0; i < ROW_COUNT; i += 1) {
     const row = document.createElement("tr");
 
     const indexCell = document.createElement("td");
@@ -182,13 +179,6 @@ async function init() {
 }
 
 reloadButton.addEventListener("click", init);
-addRowButton.addEventListener("click", () => {
-  if (activeRowCount < MAX_ROWS) {
-    activeRowCount += 1;
-    renderSelectionTable();
-    renderCalculatorTable();
-  }
-});
 calculateButton.addEventListener("click", async () => {
   try {
     const data = await calculate();

@@ -1,0 +1,10 @@
+name: green_go_12_12_36_check
+liters: 10.0
+water_profile: default
+phosphate_species: H2PO4
+urea_as_nh4: false
+fertilizers:
+- name: Biolchim Green-Go 12-12-36
+  grams: 5
+- name: Biolchim Microfol Combi
+  grams: 1

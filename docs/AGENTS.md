@@ -14,7 +14,9 @@ Aus dem Excel wurden die folgenden Artefakte in Textform übernommen:
 - `data/molar_masses.yml` – entspricht „MolareMasse“ (+ kleine Ergänzungen: C, Cl, CO3, SiO2)
 - `data/water_profiles/default.yml` – entspricht „Wasserwerte“ (bereits mit deinem Verdünnungsfaktor angewandt)
 - `recipes/golden.yml` – Golden Recipe Test
+- `recipes/green_go_12_12_36.yml` – zusätzlicher Regressionstest
 - `solutions/golden_output.json` – Ergebnis der Golden Recipe Berechnung (als Basis für manuelle Checks)
+- `solutions/green_go_12_12_36_output.json` – Ergebnis des zweiten Regressionstests
 
 ### 2) Core-Rechenlogik
 `src/horticalc/core.py` implementiert:
@@ -43,3 +45,6 @@ Aus dem Excel wurden die folgenden Artefakte in Textform übernommen:
 1. **Vergleich gegen Excel**: aktuell manuell über `solutions/golden_output.json` + Excel-Screenshot.
 2. **Mehr Rezepte** als Regressionstests.
 3. **GUI** aufsetzen (separates Paket, Core bleibt headless).
+
+## Zuletzt bearbeitetes Feature
+- `docs/feature_regression_tests.md`

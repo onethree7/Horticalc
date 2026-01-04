@@ -75,17 +75,7 @@
           <h3>Zentraler Wert: Nährstoffm. Dünger + Wasser (ppm, mg/l)</h3>
           <div class="table-card">
             <div class="table-wrap">
-              <table class="grid grid--data" id="ppmTable">
-                <thead>
-                  <tr>
-                    <th>Stoff</th>
-                    <th>ppm (mg/L)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <!-- rows inserted by JS -->
-                </tbody>
-              </table>
+              <table class="grid grid--matrix nutrient-grid" id="ppmTable"></table>
             </div>
           </div>
         </div>
@@ -143,21 +133,25 @@
               </table>
             </div>
           </div>
-          <div class="table-card">
-            <h3>Ionenbilanz</h3>
-            <div class="table-wrap">
-              <table class="grid grid--data" id="ionBalanceTable">
-                <thead>
-                  <tr>
-                    <th>Bilanz</th>
-                    <th>Wert</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <!-- rows inserted by JS -->
-                </tbody>
-              </table>
-            </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>4) Ionenbilanz</h2>
+        <p class="hint">Separierte Darstellung der Kationen/Anionen-Bilanz.</p>
+        <div class="table-card">
+          <div class="table-wrap">
+            <table class="grid grid--data" id="ionBalanceTable">
+              <thead>
+                <tr>
+                  <th>Bilanz</th>
+                  <th>Wert</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- rows inserted by JS -->
+              </tbody>
+            </table>
           </div>
         </div>
       </section>

@@ -152,32 +152,38 @@ def compute_solution(
     elements: Dict[str, float] = {}
 
     # Nitrogen from fertilizers (already as element N)
-    n_nh4 = float(forms_mg_l.get("NH4", 0.0))
-    n_no3 = float(forms_mg_l.get("NO3", 0.0))
-    n_urea = float(forms_mg_l.get("Ur-N", 0.0))
+    n_fert_from_nh4 = float(forms_mg_l.get("NH4", 0.0))
+    n_fert_from_no3 = float(forms_mg_l.get("NO3", 0.0))
+    n_fert_from_urea = float(forms_mg_l.get("Ur-N", 0.0))
 
     # Nitrogen from water (molecules)
     water_nh4_mg_l = float(water_forms.get("NH4", 0.0))
     water_no3_mg_l = float(water_forms.get("NO3", 0.0))
-    water_n_from_nh4 = _n_molecule_to_n_element(water_nh4_mg_l, mm, "NH4") if water_nh4_mg_l else 0.0
-    water_n_from_no3 = _n_molecule_to_n_element(water_no3_mg_l, mm, "NO3") if water_no3_mg_l else 0.0
+    # Elementares N aus dem jeweiligen Ionen-Typ (z.B. NO3 * (N / NO3) == 0.226...)
+    n_ion_aus_nh4_wasser = _n_molecule_to_n_element(water_nh4_mg_l, mm, "NH4") if water_nh4_mg_l else 0.0
+    n_ion_aus_no3_wasser = _n_molecule_to_n_element(water_no3_mg_l, mm, "NO3") if water_no3_mg_l else 0.0
 
-    n_total = n_nh4 + n_no3 + n_urea + water_n_from_nh4 + water_n_from_no3
+    n_ion_aus_nh4 = n_fert_from_nh4 + n_ion_aus_nh4_wasser
+    n_ion_aus_no3 = n_fert_from_no3 + n_ion_aus_no3_wasser
+    n_total = n_ion_aus_nh4 + n_ion_aus_no3 + n_fert_from_urea
     elements["N_total"] = n_total
 
     # Also expose the split
     n_forms = {
-        "N_from_fert_NH4": n_nh4,
-        "N_from_fert_NO3": n_no3,
-        "N_from_fert_urea": n_urea,
-        "N_from_water_NH4": water_n_from_nh4,
-        "N_from_water_NO3": water_n_from_no3,
+        "N_ION_AUS_NH4": n_ion_aus_nh4,
+        "N_ION_AUS_NO3": n_ion_aus_no3,
+        "N_ION_AUS_UREA": n_fert_from_urea,
+        "N_FERT_AUS_NH4": n_fert_from_nh4,
+        "N_FERT_AUS_NO3": n_fert_from_no3,
+        "N_FERT_AUS_UREA": n_fert_from_urea,
+        "N_WASSER_AUS_NH4": n_ion_aus_nh4_wasser,
+        "N_WASSER_AUS_NO3": n_ion_aus_no3_wasser,
     }
 
     oxides = {key: 0.0 for key in OXIDE_FORM_COLS}
-    oxides["NH4"] = n_nh4 + water_n_from_nh4
-    oxides["NO3"] = n_no3 + water_n_from_no3
-    oxides["Ur-N"] = n_urea
+    oxides["NH4"] = n_ion_aus_nh4
+    oxides["NO3"] = n_ion_aus_no3
+    oxides["Ur-N"] = n_fert_from_urea
     for form in (
         "P2O5",
         "K2O",
@@ -222,8 +228,8 @@ def compute_solution(
 
     # Cations
     # NH4+: fertilizer NH4-N -> NH4 molecule; plus water NH4 molecule
-    fert_nh4_mg_l_as_nh4 = _n_element_to_molecule(n_nh4, mm, "NH4") if n_nh4 else 0.0
-    urea_as_nh4_mg_l = _n_element_to_molecule(n_urea, mm, "NH4") if (urea_as_nh4 and n_urea) else 0.0
+    fert_nh4_mg_l_as_nh4 = _n_element_to_molecule(n_fert_from_nh4, mm, "NH4") if n_fert_from_nh4 else 0.0
+    urea_as_nh4_mg_l = _n_element_to_molecule(n_fert_from_urea, mm, "NH4") if (urea_as_nh4 and n_fert_from_urea) else 0.0
     nh4_mg_l_total = water_nh4_mg_l + fert_nh4_mg_l_as_nh4 + urea_as_nh4_mg_l
     add_ion("NH4+", nh4_mg_l_total, "NH4", charge=+1)
 
@@ -235,7 +241,7 @@ def compute_solution(
 
     # Anions
     # NO3-: fertilizer NO3-N -> NO3 molecule; plus water NO3 molecule
-    fert_no3_mg_l_as_no3 = _n_element_to_molecule(n_no3, mm, "NO3") if n_no3 else 0.0
+    fert_no3_mg_l_as_no3 = _n_element_to_molecule(n_fert_from_no3, mm, "NO3") if n_fert_from_no3 else 0.0
     no3_mg_l_total = water_no3_mg_l + fert_no3_mg_l_as_no3
     add_ion("NO3-", no3_mg_l_total, "NO3", charge=-1)
 

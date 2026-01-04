@@ -7,6 +7,7 @@ const addRowButton = document.querySelector("#addFertilizerRow");
 const removeRowButton = document.querySelector("#removeFertilizerRow");
 
 const ppmTable = document.querySelector("#ppmTable");
+const oxideTable = document.querySelector("#oxideTable");
 const ionMeqTableBody = document.querySelector("#ionMeqTable tbody");
 const ionBalanceTableBody = document.querySelector("#ionBalanceTable tbody");
 
@@ -29,6 +30,26 @@ const nutrientTraceFormatter = new Intl.NumberFormat("de-DE", {
   minimumFractionDigits: 0,
   maximumFractionDigits: 4,
 });
+const oxideColumnOrder = [
+  "NH4",
+  "NO3",
+  "P2O5",
+  "K2O",
+  "CaO",
+  "MgO",
+  "Na2O",
+  "SO4",
+  "Fe",
+  "Mn",
+  "Cu",
+  "Zn",
+  "B",
+  "Mo",
+  "Cl",
+  "CO3",
+  "SiO2",
+  "Ur-N",
+];
 const nutrientColumnOrder = [
   "N_total",
   "P",
@@ -264,6 +285,9 @@ function renderCalculation(data) {
   const elementEntries = Object.entries(data.elements_mg_per_l || {});
   renderHorizontalTable(ppmTable, elementEntries, nutrientColumnOrder, nutrientFormatter, formatNutrientValue);
 
+  const oxideEntries = Object.entries(data.oxides_mg_per_l || {});
+  renderHorizontalTable(oxideTable, oxideEntries, oxideColumnOrder, nutrientFormatter);
+
   const ionMeqEntries = Object.entries(data.ions_meq_per_l || {});
   renderKeyValueTable(ionMeqTableBody, ionMeqEntries);
 
@@ -331,6 +355,7 @@ async function init() {
     renderSelectionTable();
     renderCalculatorTable();
     renderHorizontalTable(ppmTable, [], nutrientColumnOrder);
+    renderHorizontalTable(oxideTable, [], oxideColumnOrder);
   }
 }
 

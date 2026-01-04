@@ -96,6 +96,8 @@ class CalcResult:
     liters: float
     elements_mg_l: Dict[str, float]
     n_forms_mg_l: Dict[str, float]
+    n_forms_raw_mg_l: Dict[str, float]
+    n_forms_element_mg_l: Dict[str, float]
     oxides_mg_l: Dict[str, float]
     ions_mmol_l: Dict[str, float]
     ions_meq_l: Dict[str, float]
@@ -106,6 +108,8 @@ class CalcResult:
             "liters": self.liters,
             "elements_mg_per_l": self.elements_mg_l,
             "n_forms_mg_per_l": self.n_forms_mg_l,
+            "n_forms_raw_mg_per_l": self.n_forms_raw_mg_l,
+            "n_forms_element_mg_per_l": self.n_forms_element_mg_l,
             "oxides_mg_per_l": self.oxides_mg_l,
             "ions_mmol_per_l": self.ions_mmol_l,
             "ions_meq_per_l": self.ions_meq_l,
@@ -168,6 +172,31 @@ def compute_solution(
     n_total = n_ion_aus_nh4 + n_ion_aus_no3 + n_fert_from_urea
     elements["N_total"] = n_total
 
+    # Raw molecule forms (NH4/NO3/UREA)
+    fert_nh4_mg_l_as_nh4 = _n_element_to_molecule(n_fert_from_nh4, mm, "NH4") if n_fert_from_nh4 else 0.0
+    fert_no3_mg_l_as_no3 = _n_element_to_molecule(n_fert_from_no3, mm, "NO3") if n_fert_from_no3 else 0.0
+    urea_mg_l = (
+        n_fert_from_urea * _mm(mm, "UREA") / (2 * _mm(mm, "N"))
+        if n_fert_from_urea
+        else 0.0
+    )
+    urea_as_nh4_mg_l = _n_element_to_molecule(n_fert_from_urea, mm, "NH4") if (urea_as_nh4 and n_fert_from_urea) else 0.0
+    nh4_mg_l_total = water_nh4_mg_l + fert_nh4_mg_l_as_nh4 + urea_as_nh4_mg_l
+    no3_mg_l_total = water_no3_mg_l + fert_no3_mg_l_as_no3
+
+    n_forms_raw = {
+        "NH4": nh4_mg_l_total,
+        "NO3": no3_mg_l_total,
+        "UREA": urea_mg_l,
+    }
+
+    n_forms_element = {
+        "N_FROM_NH4": _n_molecule_to_n_element(nh4_mg_l_total, mm, "NH4") if nh4_mg_l_total else 0.0,
+        "N_FROM_NO3": _n_molecule_to_n_element(no3_mg_l_total, mm, "NO3") if no3_mg_l_total else 0.0,
+        "N_FROM_UREA": urea_mg_l * (2 * _mm(mm, "N")) / _mm(mm, "UREA") if urea_mg_l else 0.0,
+    }
+    n_forms_element["N_TOTAL"] = sum(n_forms_element.values())
+
     # Also expose the split
     n_forms = {
         "N_ION_AUS_NH4": n_ion_aus_nh4,
@@ -228,9 +257,6 @@ def compute_solution(
 
     # Cations
     # NH4+: fertilizer NH4-N -> NH4 molecule; plus water NH4 molecule
-    fert_nh4_mg_l_as_nh4 = _n_element_to_molecule(n_fert_from_nh4, mm, "NH4") if n_fert_from_nh4 else 0.0
-    urea_as_nh4_mg_l = _n_element_to_molecule(n_fert_from_urea, mm, "NH4") if (urea_as_nh4 and n_fert_from_urea) else 0.0
-    nh4_mg_l_total = water_nh4_mg_l + fert_nh4_mg_l_as_nh4 + urea_as_nh4_mg_l
     add_ion("NH4+", nh4_mg_l_total, "NH4", charge=+1)
 
     # K+, Ca2+, Mg2+, Na+ from element totals (convert to mmol)
@@ -241,8 +267,6 @@ def compute_solution(
 
     # Anions
     # NO3-: fertilizer NO3-N -> NO3 molecule; plus water NO3 molecule
-    fert_no3_mg_l_as_no3 = _n_element_to_molecule(n_fert_from_no3, mm, "NO3") if n_fert_from_no3 else 0.0
-    no3_mg_l_total = water_no3_mg_l + fert_no3_mg_l_as_no3
     add_ion("NO3-", no3_mg_l_total, "NO3", charge=-1)
 
     # Phosphate: derive PO4 mass from P element
@@ -289,6 +313,8 @@ def compute_solution(
         liters=liters,
         elements_mg_l=elements,
         n_forms_mg_l=n_forms,
+        n_forms_raw_mg_l=n_forms_raw,
+        n_forms_element_mg_l=n_forms_element,
         oxides_mg_l=oxides,
         ions_mmol_l=ions_mmol,
         ions_meq_l=ions_meq,

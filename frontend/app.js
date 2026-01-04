@@ -6,8 +6,6 @@ const apiBaseInput = document.querySelector("#apiBase");
 const addRowButton = document.querySelector("#addFertilizerRow");
 
 const ppmTable = document.querySelector("#ppmTable");
-const nFormTableBody = document.querySelector("#nFormTable tbody");
-const ionMmolTableBody = document.querySelector("#ionMmolTable tbody");
 const ionMeqTableBody = document.querySelector("#ionMeqTable tbody");
 const ionBalanceTableBody = document.querySelector("#ionBalanceTable tbody");
 
@@ -17,6 +15,10 @@ const fertilizerAmounts = [0];
 const numberFormatter = new Intl.NumberFormat("de-DE", {
   minimumFractionDigits: 3,
   maximumFractionDigits: 3,
+});
+const nutrientFormatter = new Intl.NumberFormat("de-DE", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
 });
 const nutrientColumnOrder = [
   "N_total",
@@ -116,9 +118,9 @@ function renderCalculatorTable() {
   }
 }
 
-function formatNumber(value) {
+function formatNumber(value, formatter = numberFormatter) {
   if (Number.isFinite(value)) {
-    return numberFormatter.format(value);
+    return formatter.format(value);
   }
   return "-";
 }
@@ -136,7 +138,7 @@ function renderKeyValueTable(tableBody, entries) {
   });
 }
 
-function renderHorizontalTable(table, entries, orderedKeys = []) {
+function renderHorizontalTable(table, entries, orderedKeys = [], formatter = numberFormatter) {
   table.innerHTML = "";
   const dataMap = new Map(entries);
   const ordered = orderedKeys.filter((key) => key);
@@ -170,50 +172,11 @@ function renderHorizontalTable(table, entries, orderedKeys = []) {
   const valueRow = document.createElement("tr");
   columns.forEach((key) => {
     const td = document.createElement("td");
-    td.textContent = formatNumber(Number(dataMap.get(key)));
+    td.textContent = formatNumber(Number(dataMap.get(key)), formatter);
     valueRow.appendChild(td);
   });
   tbody.appendChild(valueRow);
   table.appendChild(tbody);
-}
-
-function formatSeries(values) {
-  return values.map((value) => formatNumber(value)).join(" / ");
-}
-
-function renderNFormsTable(tableBody, data) {
-  tableBody.innerHTML = "";
-  const fertNh4 = Number(data.N_from_fert_NH4 || 0);
-  const fertNo3 = Number(data.N_from_fert_NO3 || 0);
-  const fertUrea = Number(data.N_from_fert_urea || 0);
-  const waterNh4 = Number(data.N_from_water_NH4 || 0);
-  const waterNo3 = Number(data.N_from_water_NO3 || 0);
-
-  const fertTotal = fertNh4 + fertNo3 + fertUrea;
-  const waterTotal = waterNh4 + waterNo3;
-  const overallTotal = fertTotal + waterTotal;
-
-  const rows = [
-    [
-      "N aus Dünger (NH4 / NO3 / Urea)",
-      `${formatSeries([fertNh4, fertNo3, fertUrea])} (Σ ${formatNumber(fertTotal)})`,
-    ],
-    [
-      "N aus Wasser (NH4 / NO3)",
-      `${formatSeries([waterNh4, waterNo3])} (Σ ${formatNumber(waterTotal)})`,
-    ],
-    ["N gesamt (Formen)", formatNumber(overallTotal)],
-  ];
-
-  rows.forEach(([label, value]) => {
-    const row = document.createElement("tr");
-    const labelCell = document.createElement("td");
-    labelCell.textContent = label;
-    const valueCell = document.createElement("td");
-    valueCell.textContent = value;
-    row.append(labelCell, valueCell);
-    tableBody.appendChild(row);
-  });
 }
 
 function buildPayload() {
@@ -261,12 +224,7 @@ async function calculate() {
 
 function renderCalculation(data) {
   const elementEntries = Object.entries(data.elements_mg_per_l || {});
-  renderHorizontalTable(ppmTable, elementEntries, nutrientColumnOrder);
-
-  renderNFormsTable(nFormTableBody, data.n_forms_mg_per_l || {});
-
-  const ionMmolEntries = Object.entries(data.ions_mmol_per_l || {});
-  renderKeyValueTable(ionMmolTableBody, ionMmolEntries);
+  renderHorizontalTable(ppmTable, elementEntries, nutrientColumnOrder, nutrientFormatter);
 
   const ionMeqEntries = Object.entries(data.ions_meq_per_l || {});
   renderKeyValueTable(ionMeqTableBody, ionMeqEntries);

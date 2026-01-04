@@ -20,8 +20,8 @@ body {
   background: #131923;
   gap: 1rem;
   flex-wrap: wrap;
-  max-width: 1200px;
   margin: 0 auto;
+  max-width: 100%;
 }
 
 .page-header h1 {
@@ -61,8 +61,8 @@ main {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  max-width: 1200px;
   margin: 0 auto;
+  max-width: 100%;
 }
 
 .block {
@@ -130,14 +130,17 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
-.nutrient-grid col {
-  width: 6.5rem;
-  min-width: 6.5rem;
+.nutrient-grid {
+  table-layout: auto;
 }
 
 .nutrient-grid th,
 .nutrient-grid td {
   white-space: nowrap;
+}
+
+.nutrient-grid tbody td {
+  font-weight: 700;
 }
 
 .grid--data th:first-child,
@@ -201,6 +204,10 @@ main {
 
 .summary {
   margin-top: 1.5rem;
+}
+
+.summary .table-wrap {
+  overflow-x: visible;
 }
 
 .data-grid {

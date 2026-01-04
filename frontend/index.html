@@ -24,7 +24,13 @@
           <button id="addFertilizerRow" type="button">+</button>
         </div>
         <div class="table-wrap">
-          <table class="grid" id="fertilizerSelectTable">
+          <table class="grid grid--form" id="fertilizerSelectTable">
+            <colgroup>
+              <col class="col-index" />
+              <col class="col-name" />
+              <col class="col-form" />
+              <col class="col-weight" />
+            </colgroup>
             <thead>
               <tr>
                 <th>#</th>
@@ -44,7 +50,12 @@
         <h2>2) Düngercalculator</h2>
         <p class="hint">Mengen eingeben und Berechnung starten.</p>
         <div class="table-wrap">
-          <table class="grid" id="calculatorTable">
+          <table class="grid grid--form" id="calculatorTable">
+            <colgroup>
+              <col class="col-index" />
+              <col class="col-name" />
+              <col class="col-amount" />
+            </colgroup>
             <thead>
               <tr>
                 <th>#</th>
@@ -62,15 +73,20 @@
         </div>
         <div class="summary">
           <h3>Zentraler Wert: Nährstoffm. Dünger + Wasser (ppm, mg/l)</h3>
-          <div class="table-wrap">
-            <table class="grid" id="ppmTable">
-              <thead>
-                <tr id="ppmHeaderRow"></tr>
-              </thead>
-              <tbody>
-                <tr id="ppmValueRow"></tr>
-              </tbody>
-            </table>
+          <div class="table-card">
+            <div class="table-wrap">
+              <table class="grid grid--data" id="ppmTable">
+                <thead>
+                  <tr>
+                    <th>Stoff</th>
+                    <th>ppm (mg/L)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- rows inserted by JS -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
@@ -78,45 +94,71 @@
       <section class="block">
         <h2>3) Einzelne Ionen (mg/l)</h2>
         <p class="hint">Aufschlüsselung nach Ionen &amp; N-Formen.</p>
-        <div class="table-wrap">
-          <table class="grid" id="nFormTable">
-            <thead>
-              <tr id="nFormHeaderRow"></tr>
-            </thead>
-            <tbody>
-              <tr id="nFormValueRow"></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="table-wrap">
-          <table class="grid" id="ionMmolTable">
-            <thead>
-              <tr id="ionMmolHeaderRow"></tr>
-            </thead>
-            <tbody>
-              <tr id="ionMmolValueRow"></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="table-wrap">
-          <table class="grid" id="ionMeqTable">
-            <thead>
-              <tr id="ionMeqHeaderRow"></tr>
-            </thead>
-            <tbody>
-              <tr id="ionMeqValueRow"></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="table-wrap">
-          <table class="grid" id="ionBalanceTable">
-            <thead>
-              <tr id="ionBalanceHeaderRow"></tr>
-            </thead>
-            <tbody>
-              <tr id="ionBalanceValueRow"></tr>
-            </tbody>
-          </table>
+        <div class="data-grid">
+          <div class="table-card">
+            <h3>N-Formen</h3>
+            <div class="table-wrap">
+              <table class="grid grid--data" id="nFormTable">
+                <thead>
+                  <tr>
+                    <th>Quelle</th>
+                    <th>mg/L</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- rows inserted by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="table-card">
+            <h3>Ionen (mmol/L)</h3>
+            <div class="table-wrap">
+              <table class="grid grid--data" id="ionMmolTable">
+                <thead>
+                  <tr>
+                    <th>Ion</th>
+                    <th>mmol/L</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- rows inserted by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="table-card">
+            <h3>Ionen (meq/L)</h3>
+            <div class="table-wrap">
+              <table class="grid grid--data" id="ionMeqTable">
+                <thead>
+                  <tr>
+                    <th>Ion</th>
+                    <th>meq/L</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- rows inserted by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="table-card">
+            <h3>Ionenbilanz</h3>
+            <div class="table-wrap">
+              <table class="grid grid--data" id="ionBalanceTable">
+                <thead>
+                  <tr>
+                    <th>Bilanz</th>
+                    <th>Wert</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- rows inserted by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </section>
 

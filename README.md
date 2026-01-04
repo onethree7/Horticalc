@@ -33,6 +33,7 @@ horticalc recipes/golden.yml --pretty --out solutions/golden_output.json
 ## GUI + API (Web UI)
 
 Die GUI ist aktuell ein **statisches Frontend** unter `frontend/` und nutzt die **FastAPI**‑API unter `api/`.
+Die Tabellenansicht ist auf **kompakte, ausrichtbare Spalten** optimiert (Zebra‑Streifen, feste Spaltenbreiten, N‑Formen gruppiert).
 
 ### Voraussetzungen
 - Python 3.10+
@@ -85,30 +86,6 @@ python -m http.server 5173 --directory frontend
 Frontend‑URL:
 ```
 http://127.0.0.1:5173/
-```
-
----
-
-## Troubleshooting (wichtig)
-
-### 1) `ModuleNotFoundError: horticalc`
-**Ursache:** Bei src‑Layout fehlt `PYTHONPATH` oder Paket ist nicht installiert.  
-**Fix:** Immer im Repo `python -m pip install -e .` ausführen.
-
-### 2) `No module named uvicorn` trotz Installation
-**Ursache:** `pip` zeigt auf eine andere Python‑Installation/venv.  
-**Fix:** Immer **denselben Interpreter** nutzen:
-```bash
-python -m pip -V
-python -c "import sys; print(sys.executable)"
-```
-Falls nötig: `.\.venv\Scripts\python -m pip ...` (Windows).
-
-### 3) 404 bei `http.server`
-**Ursache:** Der Webserver zeigt nicht auf den `frontend/`‑Ordner oder dort fehlt `index.html`.  
-**Fix:** exakt so starten:
-```bash
-python -m http.server 5173 --directory frontend
 ```
 
 ---

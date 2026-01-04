@@ -18,6 +18,10 @@ body {
   padding: 1.5rem 2rem;
   border-bottom: 1px solid #2a313c;
   background: #131923;
+  gap: 1rem;
+  flex-wrap: wrap;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .page-header h1 {
@@ -57,6 +61,8 @@ main {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .block {
@@ -83,6 +89,7 @@ main {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  table-layout: fixed;
 }
 
 .grid th,
@@ -91,10 +98,63 @@ main {
   padding: 0.45rem 0.6rem;
   text-align: left;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .grid th {
   background: #1a2230;
+  white-space: normal;
+}
+
+.grid tbody tr:nth-child(odd) {
+  background: #111722;
+}
+
+.grid tbody tr:nth-child(even) {
+  background: #0e131c;
+}
+
+.grid tbody tr:hover {
+  background: #182133;
+}
+
+.grid--data th,
+.grid--data td {
+  white-space: normal;
+}
+
+.grid--data th:first-child,
+.grid--data td:first-child {
+  width: 45%;
+  font-weight: 600;
+}
+
+.grid--data th:last-child,
+.grid--data td:last-child {
+  width: 55%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.grid--form .col-index {
+  width: 3.25rem;
+}
+
+.grid--form .col-name {
+  width: 18rem;
+}
+
+.grid--form .col-form {
+  width: 8rem;
+}
+
+.grid--form .col-weight {
+  width: 7rem;
+}
+
+.grid--form .col-amount {
+  width: 9rem;
 }
 
 .grid select,
@@ -125,6 +185,25 @@ main {
 
 .summary {
   margin-top: 1.5rem;
+}
+
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.table-card {
+  background: #0f141d;
+  border: 1px solid #2b3543;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.table-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #c6d0dc;
 }
 
 .placeholder {

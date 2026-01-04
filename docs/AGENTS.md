@@ -47,4 +47,4 @@ Aus dem Excel wurden die folgenden Artefakte in Textform übernommen:
 3. **GUI** aufsetzen (separates Paket, Core bleibt headless).
 
 ## Zuletzt bearbeitetes Feature
-- `docs/feature_regression_tests.md`
+- `docs/feature_frontend_table_layout.md`

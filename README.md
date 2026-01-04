@@ -58,6 +58,9 @@ Ein Rezept definiert:
 - optional: `phosphate_species` (`H2PO4` oder `HPO4`) für die Ladungsbilanz
 - optional: `urea_as_nh4` (Default `false`) – wenn `true`, zählt Urea‑N als NH4+ (Hydrolyse)
 
+Zusätzlich zum Golden-Recipe gibt es einen zweiten Regressionstest:
+- `recipes/green_go_12_12_36.yml`
+
 ---
 
 ## Was genau wird gerechnet?
@@ -104,8 +107,10 @@ Hinweis: Phosphat‑Ladung ist pH‑abhängig; deshalb ist `phosphate_species` k
 │       └── default.yml
 ├── recipes/
 │   └── golden.yml
+│   └── green_go_12_12_36.yml
 ├── solutions/
 │   └── golden_output.json
+│   └── green_go_12_12_36_output.json
 ├── src/horticalc/
 │   ├── __init__.py
 │   ├── __main__.py

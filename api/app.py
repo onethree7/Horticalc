@@ -50,6 +50,8 @@ class CalculationResponse(BaseModel):
     liters: float
     elements_mg_per_l: Dict[str, float]
     n_forms_mg_per_l: Dict[str, float]
+    n_forms_raw_mg_per_l: Dict[str, float]
+    n_forms_element_mg_per_l: Dict[str, float]
     oxides_mg_per_l: Dict[str, float]
     ions_mmol_per_l: Dict[str, float]
     ions_meq_per_l: Dict[str, float]

@@ -101,6 +101,16 @@ def _normalize_mg_l(values: Dict[str, float]) -> Dict[str, float]:
     return {str(k): float(v) for k, v in values.items()}
 
 
+def _ion_label(formula: str, charge: int) -> str:
+    if charge == 1:
+        return f"{formula}+"
+    if charge == -1:
+        return f"{formula}-"
+    if charge > 1:
+        return f"{formula}{charge}+"
+    return f"{formula}^{abs(charge)}-"
+
+
 def _compute_nitrogen(
     mm: Dict[str, float],
     forms_mg_l: Dict[str, float],
@@ -194,45 +204,45 @@ def _compute_ions(
     ions_mmol: Dict[str, float] = {}
     ions_meq: Dict[str, float] = {}
 
-    def add_ion(label: str, mg_l_val: float, mm_key: str, charge: int) -> None:
+    def add_ion(formula: str, mg_l_val: float, mm_key: str, charge: int) -> None:
         mmol = 0.0 if mg_l_val == 0 else mg_l_val / _mm(mm, mm_key)
+        label = _ion_label(formula, charge)
         ions_mmol[label] = mmol
         ions_meq[label] = mmol * charge
 
     # Cations
-    add_ion("NH4+", nh4_mg_l_raw, "NH4", charge=+1)
+    add_ion("NH4", nh4_mg_l_raw, "NH4", charge=+1)
 
     for el, charge in (("K", +1), ("Ca", +2), ("Mg", +2), ("Na", +1)):
         mg_l_el = elements.get(el, 0.0)
         if mg_l_el:
-            label = f"{el}{'+' if charge > 0 else ''}{charge if charge not in (1, -1) else ''}".replace("+1", "+")
-            add_ion(label, mg_l_el, el, charge)
+            add_ion(el, mg_l_el, el, charge)
 
     # Anions
-    add_ion("NO3-", no3_mg_l_raw, "NO3", charge=-1)
+    add_ion("NO3", no3_mg_l_raw, "NO3", charge=-1)
 
     p_mg_l = elements.get("P", 0.0)
     if p_mg_l:
         po4_mg_l = p_mg_l * _mm(mm, "PO4") / _mm(mm, "P")
         if phosphate_species.upper() == "HPO4":
-            add_ion("HPO4^2-", po4_mg_l, "PO4", charge=-2)
+            add_ion("HPO4", po4_mg_l, "PO4", charge=-2)
         else:
-            add_ion("H2PO4-", po4_mg_l, "PO4", charge=-1)
+            add_ion("H2PO4", po4_mg_l, "PO4", charge=-1)
 
     so4_mg_l = forms_mg_l.get("SO4", 0.0) + water_forms.get("SO4", 0.0)
     if so4_mg_l:
-        add_ion("SO4^2-", so4_mg_l, "SO4", charge=-2)
+        add_ion("SO4", so4_mg_l, "SO4", charge=-2)
 
     cl_mg_l = elements.get("Cl", 0.0)
     if cl_mg_l:
-        add_ion("Cl-", cl_mg_l, "Cl", charge=-1)
+        add_ion("Cl", cl_mg_l, "Cl", charge=-1)
 
     hco3_mg_l = water_forms.get("HCO3", 0.0)
     if hco3_mg_l:
-        add_ion("HCO3-", hco3_mg_l, "HCO3", charge=-1)
+        add_ion("HCO3", hco3_mg_l, "HCO3", charge=-1)
     co3_mg_l = forms_mg_l.get("CO3", 0.0) + water_forms.get("CO3", 0.0)
     if co3_mg_l:
-        add_ion("CO3^2-", co3_mg_l, "CO3", charge=-2)
+        add_ion("CO3", co3_mg_l, "CO3", charge=-2)
 
     cations_sum = sum(v for v in ions_meq.values() if v > 0)
     anions_sum = -sum(v for v in ions_meq.values() if v < 0)

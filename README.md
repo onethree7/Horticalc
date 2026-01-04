@@ -1,4 +1,4 @@
-# Düngerrechner (molar‑correct) – Projekt
+# Horticalc (molar‑correct) – Projekt
 
 Ziel: deinen Excel‑Düngerrechner **1:1 inhaltlich** nachbauen, aber mit **professioneller, simpler Struktur**:
 
@@ -20,10 +20,10 @@ source .venv/bin/activate
 pip install -e .
 
 # Testlauf (Golden Recipe)
-duengerrechner recipes/golden.yml --pretty
+horticalc recipes/golden.yml --pretty
 
 # Ergebnis in Datei
-duengerrechner recipes/golden.yml --pretty --out solutions/golden_output.json
+horticalc recipes/golden.yml --pretty --out solutions/golden_output.json
 ```
 
 ---
@@ -106,7 +106,7 @@ Hinweis: Phosphat‑Ladung ist pH‑abhängig; deshalb ist `phosphate_species` k
 │   └── golden.yml
 ├── solutions/
 │   └── golden_output.json
-├── src/duengerrechner/
+├── src/horticalc/
 │   ├── __init__.py
 │   ├── __main__.py
 │   ├── core.py

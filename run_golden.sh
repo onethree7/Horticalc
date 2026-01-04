@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-python3 -m duengerrechner recipes/golden.yml --pretty
+python3 -m horticalc recipes/golden.yml --pretty

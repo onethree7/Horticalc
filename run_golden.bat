@@ -1,2 +1,2 @@
 @echo off
-python -m duengerrechner recipes\golden.yml --pretty
+python -m horticalc recipes\golden.yml --pretty

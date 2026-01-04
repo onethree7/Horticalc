@@ -159,11 +159,11 @@ function renderKeyValueTable(tableBody, entries) {
   });
 }
 
-function renderSummaryTable(table, oxides, elements, nForms) {
+function renderSummaryTable(table, oxides, elements, nFormsRaw, nFormsElement) {
   table.innerHTML = "";
-  const { value: nTotalValue, tooltip: nTotalTooltip } = buildOxideNTotalDetails(oxides);
+  const { value: nTotalValue, tooltip: nTotalTooltip } = buildOxideNTotalDetails(nFormsRaw);
   const { value: nTotalElementValue, tooltip: nTotalElementTooltip } = buildElementNTotalDetails(
-    nForms,
+    nFormsElement,
   );
   const oxideMap = new Map(Object.entries(oxides));
   if (Number.isFinite(nTotalValue)) {
@@ -298,11 +298,15 @@ function formatOxideValue(key, value) {
   return nutrientFormatter.format(value);
 }
 
-function buildOxideNTotalDetails(oxides) {
+function buildOxideNTotalDetails(nFormsRaw) {
+  if (!nFormsRaw) {
+    return { value: Number.NaN, tooltip: "" };
+  }
+
   const parts = [
-    ["NH4", Number(oxides["NH4"])],
-    ["NO3", Number(oxides["NO3"])],
-    ["Ur-N", Number(oxides["Ur-N"])],
+    ["NH4", Number(nFormsRaw["NH4"])],
+    ["NO3", Number(nFormsRaw["NO3"])],
+    ["Ur-N", Number(nFormsRaw["Ur-N"])],
   ].filter(([, value]) => Number.isFinite(value));
 
   const sum = parts.reduce((total, [, value]) => total + value, 0);
@@ -316,14 +320,14 @@ function buildOxideNTotalDetails(oxides) {
   return { value, tooltip };
 }
 
-function buildElementNTotalDetails(nForms) {
-  if (!nForms) {
+function buildElementNTotalDetails(nFormsElement) {
+  if (!nFormsElement) {
     return { value: Number.NaN, tooltip: "" };
   }
 
-  const nh4Value = Number(nForms.N_ION_AUS_NH4);
-  const no3Value = Number(nForms.N_ION_AUS_NO3);
-  const ureaValue = Number(nForms.N_ION_AUS_UREA);
+  const nh4Value = Number(nFormsElement.N_from_NH4);
+  const no3Value = Number(nFormsElement.N_from_NO3);
+  const ureaValue = Number(nFormsElement.N_from_UREA);
 
   const parts = [
     ["NH4", nh4Value],
@@ -391,8 +395,9 @@ async function calculate() {
 function renderCalculation(data) {
   const oxides = data.oxides_mg_per_l || {};
   const elements = data.elements_mg_per_l || {};
-  const nForms = data.n_forms_mg_per_l || {};
-  renderSummaryTable(summaryTable, oxides, elements, nForms);
+  const nFormsRaw = data.n_forms_raw_mg_per_l || {};
+  const nFormsElement = data.n_forms_element_mg_per_l || {};
+  renderSummaryTable(summaryTable, oxides, elements, nFormsRaw, nFormsElement);
 
   const ionMeqEntries = Object.entries(data.ions_meq_per_l || {});
   renderKeyValueTable(ionMeqTableBody, ionMeqEntries);

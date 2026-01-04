@@ -1,0 +1,359 @@
+DU BIST CODEX. Arbeite im Repo “Horticalc”. Ziel: EC18 und EC25 (elektrische Leitfähigkeit) wissenschaftlich sauber aus dem bereits vorhandenen Ionen-Output berechnen und im JSON “--pretty” ausgeben, inkl. reproduzierbarer Doku (README + EC.MD) mit Quellen, Formeln, Einheiten, Grenzen, Workflow.
+
+========================================
+0) IST-ZUSTAND / INPUT
+========================================
+Horticalc erzeugt bereits:
+- ions_mmol_per_l: dict[str, float] mit Keys wie:
+  "NH4+", "K+", "Ca+2", "Mg+2", "Na+",
+  "NO3-", "H2PO4-", "SO4^2-", "Cl-",
+  "HCO3-", "CO3^2-"
+- ions_meq_per_l: existiert, aber EC soll NICHT aus meq abgeleitet werden, sondern aus ionischer Leitfähigkeits-Summe.
+- ion_balance: liefert cations/anions meq und error_percent; EC-Berechnung soll optional “EC imbalance” vorbereiten (nur wenn gemessene EC existiert – sonst nur strukturelle Vorbereitung).
+
+Der User will im output neue Sektion:
+"ec": { ... } mit mindestens:
+- ec_mS_per_cm_18C
+- ec_mS_per_cm_25C
+zusätzlich stark erwünscht:
+- breakdown pro Ion (Beitrag)
+- transport numbers pro Ion (Anteil an Gesamt-EC)
+- verwendete Methode + Parameter + Quellenhinweise
+
+========================================
+1) WISSENSCHAFTLICHE METHODE / PRIMÄRQUELLE
+========================================
+Primärmodell: McCleskey, Nordstrom, Ryan, Ball (2012), Geochimica et Cosmochimica Acta 77, 369–382, DOI: 10.1016/j.gca.2011.10.031
+
+Wir implementieren GENAU diese Kerngleichungen:
+
+(2) Temperatur-Normierung (optional/zusätzlich):
+    j25 = j / (1 + a*(T - 25°C))
+    a typischerweise 0.019–0.020 (instrumentenabhängig)
+    -> Das ist NICHT die Hauptberechnung, nur ein zusätzliches “ATC/EC25_from_T” Feature.
+
+(6) Transportzahl in Mischlösung:
+    t_i = (k_i * m_i) / Σ(k_j * m_j)
+
+(7) Leitfähigkeit aus Spezies:
+    j = Σ(k_i * m_i)
+
+(8) Ionische molale Leitfähigkeit als Funktion von Temperatur und Ionenstärke:
+    k(T,I) = k0(T) - [ A(T) * sqrt(I) / (1 + B*sqrt(I)) ]
+    (genau diese Form)
+
+(9) Ionenstärke:
+    I = 0.5 * Σ( m_i * z_i^2 )
+
+WICHTIG: McCleskey nutzt molality (m, mol/kg). k hat Einheit:
+    k: mS * kg / (cm * mol)
+und j kommt dann automatisch in:
+    j: mS/cm
+
+Table 1 aus McCleskey liefert für jedes Ion:
+- k0(T) als Polynom: a2*T^2 + a1*T + a0
+- A(T) als Polynom: b2*T^2 + b1*T + b0
+- B als Konstante (dimensionslos)
+- Ionenliste enthält u.a. K+, Na+, Ca2+, Mg2+, Cl-, SO4^2-, NO3-, HCO3-, CO3^2- etc.
+
+========================================
+2) SEKUNDÄRQUELLE / FALLBACK-IONEN
+========================================
+Für Ionen, die NICHT in McCleskey Table 1 parametrisiert sind (bei uns relevant: H2PO4-),
+nutzen wir Vanysek (CRC Handbook of Chemistry and Physics, 93rd ed.), Tabelle “Ionic Conductivity and Diffusion at Infinite Dilution”:
+- liefert molare/äquivalente Leitfähigkeit λ° bei 25°C (in 10^-4 m^2 S mol^-1; numerisch gleich S cm^2/mol)
+- enthält H2PO4- = 36 (bei 25°C)
+- Hinweis: typische Ionen steigen 2–3% pro °C von 25°C aus gesehen (grobe Näherung)
+
+Fallback-Implementierung MUSS sauber dokumentieren:
+- Das ist Infinite-Dilution (ideal), ohne Ionenstärke-Korrektur.
+- Temperatur-Scaling ist nur Näherung; implementiere als konfigurierbaren Parameter beta_default=0.022 (Mitte aus 0.02–0.03).
+- Für 18°C: λ(18)=λ(25)*[1 + beta*(18-25)].
+- Für 25°C: λ(25) unverändert.
+- Wenn der User “wissenschaftlich strenger” will: Schalter, der Temperatur-Scaling deaktiviert und 18°C dann mit λ(25) rechnet (und groß warnt).
+
+Einheiten-Konsistenz:
+- Wir summieren Beiträge in mS/cm.
+- Für diese Fallback-Ionen rechnen wir Beitrag als:
+    contribution_i(mS/cm) = λ_i(T) * c_i(mol/L)
+  denn: (S cm^2/mol) * (mol/L) numerisch -> mS/cm (weil L=1000 cm^3 und *1000 für mS cancelt).
+- Danach addieren wir diesen Beitrag zu McCleskey-Summe (mS/cm).
+- Diese “gemischte” Einheitentranslation ist zulässig im Verdünnungsbereich; muss in EC.MD EXPLIZIT hergeleitet und begrenzt werden.
+- Optional: alternative konsistente Variante: nimm rho=1 kg/L und setze m≈c, dann darf man λ° numerisch als k° interpretieren. Dokumentiere beide Sichtweisen und entscheide eine (ich empfehle: contribution_i = λ*c, weil numerisch stabil und sauber herleitbar).
+
+========================================
+3) IMPLEMENTATIONSPLAN (CODE)
+========================================
+3.1 Lokalisieren:
+- Finde die Stelle, wo das Ergebnisdict gebaut wird (das JSON im --pretty).
+- Dort existiert bereits ions_mmol_per_l.
+- Hänge “ec” an dieses Ergebnisdict.
+
+3.2 Neues Modul:
+- Lege neues Modul an, z.B. src/horticalc/ec.py (oder passend zu Repo-Struktur).
+- API:
+    def compute_ec(
+        ions_mmol_per_l: dict[str, float],
+        temps_c: tuple[float, ...] = (18.0, 25.0),
+        density_kg_per_l: float = 1.0,
+        fallback_temp_beta_per_c: float = 0.022,
+        include_breakdown: bool = True,
+        include_transport_numbers: bool = True,
+        include_atc_to_25: bool = True,
+        atc_alpha_per_c: float = 0.019,
+    ) -> dict
+
+Return-Format (Vorschlag):
+{
+  "method": "McCleskey2012(Eq7-9,Table1) + VanysekCRC93(fallback)",
+  "inputs": {
+    "temps_c": [18.0,25.0],
+    "density_kg_per_l": 1.0,
+    "fallback_temp_beta_per_c": 0.022,
+    "atc_alpha_per_c": 0.019
+  },
+  "ionic_strength_mol_per_kg": <float>,           # aus molality, temperatur-invariant (bei fixer density)
+  "ec_mS_per_cm": {"18.0": <float>, "25.0": <float>},
+  "ec_uS_per_cm": {"18.0": <float>, "25.0": <float>},
+  "contrib_mS_per_cm": {
+      "18.0": {"K+":..., "NO3-":..., ...},
+      "25.0": {...}
+  },
+  "transport_numbers": {
+      "18.0": {"K+":..., ...},                    # Summe = 1.0 (numerisch toleriert)
+      "25.0": {...}
+  },
+  "warnings": [ ... ],
+  "coverage": {
+      "mccleskey_ions_used": [...],
+      "fallback_ions_used": [...],
+      "ignored_ions": [...]
+  },
+  "atc": {                                         # optional: Normierung auf 25 aus dem jeweiligen T
+      "ec25_from_18_mS_per_cm": <float>,
+      "ec25_from_18_uS_per_cm": <float>
+  }
+}
+
+3.3 Parsing / Mapping der Ion Keys:
+- Implementiere robusten Parser für Keys aus ions_mmol_per_l:
+  Beispiele:
+    "Ca+2" => species="Ca", z=+2
+    "SO4^2-" => species="SO4", z=-2
+    "CO3^2-" => species="CO3", z=-2
+    "NH4+" => z=+1
+    "NO3-" => z=-1
+- Parserregel:
+  - akzeptiere Formen:
+    a) <FORMULA><SIGN><DIGITS?>  (Ca+2, Mg+2)
+    b) <FORMULA>^<DIGITS><SIGN>  (SO4^2-, CO3^2-)
+    c) <FORMULA><SIGN>           (K+, NO3-)
+  - gib canonical key zurück, die mit Parametertabellen matcht, z.B.:
+    "Ca2+", "Mg2+", "SO4^2-", "CO3^2-", "HCO3-", "NO3-", "Cl-", "K+", "Na+", "NH4+", "H2PO4-"
+  - Für McCleskey mapping musst du z.B. "Ca+2" intern zu "Ca2+" normalisieren.
+
+3.4 Molality aus mmol/L:
+- ions_mmol_per_l -> c_mol_per_l = mmol/1000
+- molality m_i (mol/kg water) approximieren über density_kg_per_l:
+    m_i = c_mol_per_l / density_kg_per_l
+  (bei density=1.0: mol/L == mol/kg)
+- Dokumentiere: Das ist Näherung, weil echte Dichte von Temperatur+TDS abhängt; aber in Nährlösungen im üblichen Bereich ok. Stelle density param bereit.
+
+3.5 Ionenstärke:
+- I = 0.5 * Σ(m_i * z_i^2)
+- Nutze NUR geladene Spezies aus ions_mmol_per_l.
+- neutrals (z.B. Urea) sind hier nicht drin und tragen nicht bei – gut.
+
+3.6 McCleskey Parameter (Table 1) exakt als Datenstruktur:
+Baue Dict exakt aus Table 1 (Achtung: Vorzeichen, Dezimalstellen, B-Werte).
+Mindestens für unsere Ionen:
+K+, Na+, NH4+, Ca2+, Mg2+, Cl-, SO4^2-, NO3-, HCO3-, CO3^2-
+Optional vollständig (inkl. H+, OH-, Fe2+, Zn2+ etc.), aber mindestens die obigen.
+
+Beispielstruktur:
+MCCLESKEY = {
+ "K+":   {"k0": (0.003046, 1.261, 40.70),  "A": (0.00535, 0.9316, 22.59),  "B": 1.5, "z": +1},
+ "Na+":  {"k0": (0.003763, 0.8770, 26.23), "A": (0.00027, 1.141, 32.07),   "B": 1.7, "z": +1},
+ "NH4+": {"k0": (0.003341, 1.285, 39.04),  "A": (0.00132, 0.6070, 11.19),  "B": 0.3, "z": +1},
+ "Ca2+": {"k0": (0.009645, 1.984, 62.28),  "A": (0.03174, 2.334, 132.3),   "B": 2.8, "z": +2},
+ "Mg2+": {"k0": (0.01068, 1.695, 57.16),   "A": (0.02453, 1.915, 80.50),   "B": 2.1, "z": +2},
+ "Cl-":  {"k0": (0.003817, 1.337, 40.99),  "A": (0.00613, 0.9469, 22.01),  "B": 1.5, "z": -1},
+ "SO4^2-":{"k0": (0.01037, 2.838, 82.37),   "A": (0.03324, 5.889, 193.5),   "B": 2.6, "z": -2},
+ "NO3-": {"k0": (0.001925, 1.214, 39.90),  "A": (0.00118, 0.5045, 23.31),  "B": 0.1, "z": -1},
+ "HCO3-":{"k0": (0.000614, 0.9048, 21.14), "A": (-0.00503, 0.8957, 10.97), "B": 0.1, "z": -1},
+ "CO3^2-":{"k0": (-0.000326, 2.998, 64.03),"A": (-0.00181, 5.542, 120.2),  "B": 2.3, "z": -2},
+}
+
+Implementiere Evaluator:
+k0 = a2*T*T + a1*T + a0
+A  = b2*T*T + b1*T + b0
+k  = k0 - (A*sqrtI)/(1 + B*sqrtI)
+
+3.7 Fallback (Vanysek/CRC93):
+FALLBACK_LAMBDA25 = {
+ "H2PO4-": 36.0,     # (10^-4 m^2 S/mol) numerisch S cm^2/mol
+ # optional: weitere, falls mal gebraucht
+}
+
+lambda_T = lambda_25 * (1 + beta*(T-25))
+contrib(mS/cm) = lambda_T * c_mol_per_l
+
+WARNUNG: kein Ionenstärke-Term; dokumentiere das als Limit.
+
+3.8 Summenbildung:
+Für jedes T in (18,25):
+- berechne I (einmal; gleich für alle T bei fixer density)
+- berechne McCleskey-Beiträge:
+    contrib_i = k_i(T,I) * m_i            # mS/cm
+- berechne fallback-Beiträge:
+    contrib_i = lambda_T * c_i            # mS/cm
+- ec_T = Σ contrib_i
+- transport numbers:
+    t_i = contrib_i / ec_T
+- speichere breakdown & t_i
+
+3.9 ATC/Normierung optional:
+Wenn include_atc_to_25:
+- aus ec_18 berechne ec25_from_18:
+  ec25 = ec18 / (1 + alpha*(18-25))
+alpha default 0.019 (Dokument: “typisch 0.019–0.020”).
+
+========================================
+4) INTEGRATION IN OUTPUT / CLI
+========================================
+4.1 JSON Output:
+- Ergänze im result dict eine neue top-level Sektion "ec" exakt wie oben.
+- Stelle sicher: ec_18 und ec_25 sind IMMER vorhanden, sobald ions_mmol_per_l vorhanden ist.
+- Werte runden? NICHT aggressiv. Gib floats mit sinnvoller Präzision (z.B. 6 Nachkommastellen intern, in pretty Ausgabe Standard json float).
+- Falls Parser auf unbekanntes Ion trifft:
+  - ignoriere Beitrag, aber logge Warning in "warnings" und liste Ion unter coverage.ignored_ions.
+
+4.2 Optional: neue CLI Flags (nur wenn sinnvoll, nicht zwingend):
+- --ec-beta 0.022
+- --ec-density 1.0
+- --ec-atc-alpha 0.019
+Aber default muss ohne Flags funktionieren.
+
+========================================
+5) WISSENSCHAFTLICHE DOKU (README + EC.MD)
+========================================
+5.1 README.md:
+- Kurzer Abschnitt “Electrical Conductivity (EC)”:
+  - was wird berechnet: EC18, EC25, basierend auf ionischer Zusammensetzung
+  - Hinweis: neutrals tragen nicht bei (Urea)
+  - Pfad zur ausführlichen Doku: EC.MD
+  - Beispielaufruf:
+      horticalc recipes/golden.yml --pretty
+    und Hinweis wo im JSON die EC steht.
+
+5.2 EC.MD (NEUES DOKUFILE, ausführlich):
+MUSS enthalten:
+A) Motivation:
+- Warum ionenbasiert (nicht ppm/TDS-Faktor)
+- Warum McCleskey: validiert für natürliche Wässer, großer Bereich in T und I
+
+B) Formeln (mit Nummern und Einheiten):
+- Eq (7), (8), (9) und (6) exakt.
+- Zeige Einheitendurchrechnung:
+  - k [mS kg/(cm mol)], m [mol/kg] => k*m [mS/cm]
+- Zeige was I ist und warum z^2.
+
+C) Parameter:
+- Table 1 Parameterliste, als Tabelle (oder referenzierte JSON/py dict).
+- Hinweis: “Transkribiert aus Table 1 in McCleskey 2012; DOI …”
+- Liste welche Ionen abgedeckt sind (coverage).
+
+D) Fallback:
+- Warum H2PO4- fallback nötig (nicht in McCleskey Table 1, aber in Rezept-Ionenoutput).
+- λ°(25°C) = 36 (CRC/Vanysek).
+- Temperaturkorrektur beta (2–3%/°C) als Näherung, beta default 0.022.
+- Grenzen: keine Ionenstärke-Korrektur, nur verdünnt plausibel.
+- Schalter/Parameter zum Deaktivieren/Anpassen.
+
+E) Temperatur:
+- EC steigt typischerweise 1–3%/°C.
+- Unterschied zwischen:
+  - “EC bei Temperatur T” (physikalisch)
+  - “EC25 / ATC” (instrumenten-/algorithmusabhängig)
+- Eq (2) (ATC) und warum nur optional.
+
+F) Grenzen / Annahmen:
+- Dichte = 1.0 kg/L default (konfigurierbar), echte Dichte hängt von TDS/T ab.
+- Genauigkeit hängt an Speziation: Wenn wichtige Ionen fehlen (z.B. H+, OH-, Komplexe), ist EC unvollständig.
+- Trace metals: werden nur berücksichtigt, wenn als ionische Spezies im ions_mmol_per_l existieren.
+- pH/Carbonat-System: HCO3-/CO3^2- hängt an pH; wir verwenden die bereits ausgegebene Speziation.
+
+G) Workflow:
+- Schrittfolge: recipe -> salts -> ions_mmol_per_l -> I -> k(T,I) -> EC18/25 -> breakdown -> transport numbers.
+- Wie debuggen:
+  - breakdown checken (Top-Beiträger)
+  - transport numbers sum=1 prüfen
+  - coverage warnings checken
+
+H) Quellen (vollständig, sauber):
+- McCleskey RB, Nordstrom DK, Ryan JN, Ball JW. “A new method of calculating electrical conductivity with applications to natural waters.” Geochimica et Cosmochimica Acta 77 (2012) 369–382. DOI: 10.1016/j.gca.2011.10.031
+  - Verweise: Eq (2), (6)–(9), Table 1.
+- Vanysek P. “Ionic Conductivity and Diffusion at Infinite Dilution.” In: CRC Handbook of Chemistry and Physics, 93rd Edition.
+  - Verweise: λ° Tabellenwerte (u.a. H2PO4- = 36 @25°C), Temperaturhinweis 2–3%/°C.
+- (Optional, nur wenn erwähnt): Robinson & Stokes “Electrolyte Solutions” (für Hintergrund zu Temperaturabhängigkeit/Leitfähigkeit), aber nicht als Primärdatenquelle, außer du belegst es.
+
+========================================
+6) TESTS (MUSS)
+========================================
+Lege Unit-Tests an (pytest), Ziel: Regressionssicher & Einheiten-check.
+
+Tests:
+T1: Parser:
+- "Ca+2" -> canonical "Ca2+", z=+2
+- "SO4^2-" -> canonical "SO4^2-", z=-2
+- "NH4+" -> z=+1
+- "NO3-" -> z=-1
+- "CO3^2-" -> z=-2
+- "H2PO4-" -> z=-1
+
+T2: McCleskey Param-Eval:
+- Für jede McCleskey-ion:
+  - I=0 => k(T,0)=k0(T) (weil Term verschwindet).
+  - Prüfe numeric bei T=25 (nur k0) exakt.
+  - Prüfe k(T,I) gegen manuell berechnetes Beispiel (kleines I, z.B. I=0.01), 1–2 Ionen, toleranz 1e-9.
+
+T3: Ionic strength:
+- Mit definierter Ionenliste (z.B. 1 mmol/L Ca2+ = 0.001 mol/L):
+  - m=0.001 (bei density=1)
+  - Beitrag zu I: 0.5*m*z^2 = 0.5*0.001*4=0.002
+  - addiere noch 1 mmol/L Cl- (z=-1): 0.5*0.001*1=0.0005
+  - I_total=0.0025
+  - exakt testen.
+
+T4: Fallback H2PO4-:
+- Bei 1 mmol/L H2PO4-:
+  - c=0.001 mol/L
+  - bei 25°C: contrib = 36*0.001 = 0.036 mS/cm
+  - bei 18°C mit beta=0.022: lambda18=lambda25*(1-0.154)=~30.456 ; contrib~0.030456 mS/cm
+  - teste mit toleranz.
+
+T5: Transport numbers:
+- Summe(t_i)≈1 (abs error < 1e-12) für ein Beispiel.
+
+========================================
+7) AKZEPTANZKRITERIEN
+========================================
+- “horticalc recipes/golden.yml --pretty” zeigt im JSON zusätzlich:
+  - "ec": { ... "ec_mS_per_cm": {"18.0":..., "25.0":...}, ... }
+- ec_18 und ec_25 existieren IMMER (wenn ions_mmol_per_l existiert)
+- breakdown und transport_numbers existieren und sind plausibel:
+  - alle contributions >= 0
+  - transport numbers sum ~ 1
+- EC.MD existiert und enthält:
+  - Formeln + Einheiten + Parameter + Quellen + Workflow + Annahmen + Grenzen
+- README verweist auf EC.MD
+- Tests grün
+
+========================================
+8) WICHTIGE NICHT-ZIELE / FALLEN
+========================================
+- KEINE Bro-Science “ppm->EC” Faktoren.
+- Keine “EC Wasser + EC Dünger” lineare Addition ohne Neuberechnung: falls später gewünscht, muss man EC aus kombinierter Ionensuppe neu berechnen (nicht zwingend jetzt).
+- Keine stillen Annahmen ohne Doku: density, beta, alpha, fallback, fehlende Spezies müssen als warnings & in EC.MD stehen.
+
+GO.

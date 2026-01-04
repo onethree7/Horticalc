@@ -4,6 +4,7 @@ const reloadButton = document.querySelector("#reloadData");
 const calculateButton = document.querySelector("#calculateBtn");
 const apiBaseInput = document.querySelector("#apiBase");
 const addRowButton = document.querySelector("#addFertilizerRow");
+const removeRowButton = document.querySelector("#removeFertilizerRow");
 
 const ppmTable = document.querySelector("#ppmTable");
 const ionMeqTableBody = document.querySelector("#ionMeqTable tbody");
@@ -20,6 +21,14 @@ const nutrientFormatter = new Intl.NumberFormat("de-DE", {
   minimumFractionDigits: 0,
   maximumFractionDigits: 2,
 });
+const nutrientIntegerFormatter = new Intl.NumberFormat("de-DE", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+const nutrientTraceFormatter = new Intl.NumberFormat("de-DE", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 4,
+});
 const nutrientColumnOrder = [
   "N_total",
   "P",
@@ -35,6 +44,8 @@ const nutrientColumnOrder = [
   "B",
   "Mo",
 ];
+const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg"]);
+const nutrientTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "Si"]);
 
 function apiBase() {
   return apiBaseInput.value.replace(/\/$/, "");
@@ -138,7 +149,13 @@ function renderKeyValueTable(tableBody, entries) {
   });
 }
 
-function renderHorizontalTable(table, entries, orderedKeys = [], formatter = numberFormatter) {
+function renderHorizontalTable(
+  table,
+  entries,
+  orderedKeys = [],
+  formatter = numberFormatter,
+  formatValue = null,
+) {
   table.innerHTML = "";
   const dataMap = new Map(entries);
   const ordered = orderedKeys.filter((key) => key);
@@ -170,13 +187,34 @@ function renderHorizontalTable(table, entries, orderedKeys = [], formatter = num
 
   const tbody = document.createElement("tbody");
   const valueRow = document.createElement("tr");
+  const formatCellValue =
+    typeof formatValue === "function"
+      ? formatValue
+      : (key, value) => formatNumber(value, formatter);
+
   columns.forEach((key) => {
     const td = document.createElement("td");
-    td.textContent = formatNumber(Number(dataMap.get(key)), formatter);
+    td.textContent = formatCellValue(key, Number(dataMap.get(key)));
     valueRow.appendChild(td);
   });
   tbody.appendChild(valueRow);
   table.appendChild(tbody);
+}
+
+function formatNutrientValue(key, value) {
+  if (!Number.isFinite(value)) {
+    return "-";
+  }
+
+  if (nutrientIntegerKeys.has(key)) {
+    return nutrientIntegerFormatter.format(value);
+  }
+
+  if (nutrientTraceKeys.has(key)) {
+    return nutrientTraceFormatter.format(value);
+  }
+
+  return nutrientFormatter.format(value);
 }
 
 function buildPayload() {
@@ -224,7 +262,7 @@ async function calculate() {
 
 function renderCalculation(data) {
   const elementEntries = Object.entries(data.elements_mg_per_l || {});
-  renderHorizontalTable(ppmTable, elementEntries, nutrientColumnOrder, nutrientFormatter);
+  renderHorizontalTable(ppmTable, elementEntries, nutrientColumnOrder, nutrientFormatter, formatNutrientValue);
 
   const ionMeqEntries = Object.entries(data.ions_meq_per_l || {});
   renderKeyValueTable(ionMeqTableBody, ionMeqEntries);
@@ -265,6 +303,17 @@ function addFertilizerRow() {
   renderCalculatorTable();
 }
 
+function removeFertilizerRow() {
+  if (selectedFertilizers.length <= 1) {
+    return;
+  }
+
+  selectedFertilizers.pop();
+  fertilizerAmounts.pop();
+  renderSelectionTable();
+  renderCalculatorTable();
+}
+
 async function init() {
   try {
     fertilizerOptions = await fetchFertilizers();
@@ -287,6 +336,7 @@ async function init() {
 
 reloadButton.addEventListener("click", init);
 addRowButton.addEventListener("click", addFertilizerRow);
+removeRowButton.addEventListener("click", removeFertilizerRow);
 calculateButton.addEventListener("click", async () => {
   try {
     const data = await calculate();

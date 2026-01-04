@@ -153,6 +153,13 @@ Ergebnis:
 
 Hinweis: Phosphat‑Ladung ist pH‑abhängig; deshalb ist `phosphate_species` konfigurierbar.
 
+### Electrical Conductivity (EC)
+
+Der Core berechnet EC **ionenbasiert** aus der vorhandenen Ionenzusammensetzung.
+Ausgabe ist in der Ergebnis‑JSON unter `ec` enthalten (EC bei 18 °C und 25 °C).
+
+Details, Formeln, Einheiten, Parameter und Quellen stehen in [`docs/EC.md`](docs/EC.md).
+
 ---
 
 ## Ordnerstruktur

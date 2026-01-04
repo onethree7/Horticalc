@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 
 from .data_io import Fertilizer, load_fertilizers, load_molar_masses, load_recipe, load_water_profile, repo_root
 
@@ -35,6 +35,14 @@ OXIDE_FORM_COLS: List[str] = [
     "CO3",
     "SiO2",
 ]
+
+SLUIJSMANN_DEFAULTS = {
+    "arable": 1.0,
+    "grassland": 0.8,
+}
+
+SO3_FROM_SO4_FACTOR = 80.063 / 96.06
+SO3_FROM_S_FACTOR = 80.063 / 32.065
 
 
 def _mm(mm: Dict[str, float], key: str) -> float:
@@ -249,6 +257,75 @@ def _compute_ions(
     return ions_mmol, ions_meq, ion_balance
 
 
+def _compute_sluijsmann(
+    recipe: dict,
+    oxides_mg_l: Dict[str, float],
+    elements_mg_l: Dict[str, float],
+    liters: float,
+) -> Dict[str, Any]:
+    cfg = recipe.get("sluijsmann")
+    if not isinstance(cfg, dict):
+        cfg = {}
+
+    mode = str(cfg.get("mode") or recipe.get("sluijsmann_mode") or "arable").strip().lower()
+    n_override = cfg.get("n", recipe.get("sluijsmann_n"))
+    n_factor = float(n_override) if n_override is not None else float(SLUIJSMANN_DEFAULTS.get(mode, 1.0))
+
+    ca_o = float(oxides_mg_l.get("CaO", 0.0) or 0.0)
+    mg_o = float(oxides_mg_l.get("MgO", 0.0) or 0.0)
+    k2_o = float(oxides_mg_l.get("K2O", 0.0) or 0.0)
+    na2_o = float(oxides_mg_l.get("Na2O", 0.0) or 0.0)
+    p2_o5 = float(oxides_mg_l.get("P2O5", 0.0) or 0.0)
+
+    so3 = float(oxides_mg_l.get("SO3", 0.0) or 0.0)
+    if not so3:
+        so4 = float(oxides_mg_l.get("SO4", 0.0) or 0.0)
+        if so4:
+            so3 = so4 * SO3_FROM_SO4_FACTOR
+        else:
+            s_val = float(elements_mg_l.get("S", 0.0) or 0.0)
+            if s_val:
+                so3 = s_val * SO3_FROM_S_FACTOR
+
+    cl_val = float(oxides_mg_l.get("Cl", 0.0) or 0.0)
+    if not cl_val:
+        cl_val = float(elements_mg_l.get("Cl", 0.0) or 0.0)
+
+    n_total = float(elements_mg_l.get("N_total", 0.0) or 0.0)
+
+    terms = {
+        "+CaO": ca_o,
+        "+1.4*MgO": 1.4 * mg_o,
+        "+0.6*K2O": 0.6 * k2_o,
+        "+0.9*Na2O": 0.9 * na2_o,
+        "-0.4*P2O5": -0.4 * p2_o5,
+        "-0.7*SO3": -0.7 * so3,
+        "-0.8*Cl": -0.8 * cl_val,
+        "-n*N": -n_factor * n_total,
+    }
+
+    e_mg_per_l = sum(terms.values())
+
+    return {
+        "mode": mode,
+        "n": n_factor,
+        "E_mg_CaOeq_per_l": e_mg_per_l,
+        "E_kg_CaOeq_per_m3": e_mg_per_l / 1000.0,
+        "E_g_CaOeq_for_batch": e_mg_per_l * liters / 1000.0,
+        "inputs_mg_per_l": {
+            "CaO": ca_o,
+            "MgO": mg_o,
+            "K2O": k2_o,
+            "Na2O": na2_o,
+            "P2O5": p2_o5,
+            "SO3": so3,
+            "Cl": cl_val,
+            "N": n_total,
+        },
+        "terms_mg_per_l": terms,
+    }
+
+
 @dataclass
 class CalcResult:
     liters: float
@@ -257,6 +334,7 @@ class CalcResult:
     ions_mmol_l: Dict[str, float]
     ions_meq_l: Dict[str, float]
     ion_balance: Dict[str, float]
+    sluijsmann: Dict[str, Any]
 
     def to_dict(self) -> dict:
         from .metrics import format_npks
@@ -269,6 +347,7 @@ class CalcResult:
             "ions_meq_per_l": self.ions_meq_l,
             "ion_balance": self.ion_balance,
             "npk_metrics": format_npks(self),
+            "sluijsmann": self.sluijsmann,
         }
 
 
@@ -320,6 +399,7 @@ def compute_solution(
         no3_mg_l_raw,
         phosphate_species,
     )
+    sluijsmann = _compute_sluijsmann(recipe, oxides, elements, liters)
 
     return CalcResult(
         liters=liters,
@@ -328,6 +408,7 @@ def compute_solution(
         ions_mmol_l=ions_mmol,
         ions_meq_l=ions_meq,
         ion_balance=ion_balance,
+        sluijsmann=sluijsmann,
     )
 
 

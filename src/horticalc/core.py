@@ -19,8 +19,6 @@ COMP_COLS: List[str] = [
 ]
 
 OXIDE_FORM_COLS: List[str] = [
-    "NH4",
-    "NO3",
     "P2O5",
     "K2O",
     "CaO",
@@ -36,7 +34,6 @@ OXIDE_FORM_COLS: List[str] = [
     "Cl",
     "CO3",
     "SiO2",
-    "Ur-N",
 ]
 
 
@@ -103,9 +100,6 @@ def _urea_molecule_to_element(mg_l_urea: float, mm: Dict[str, float]) -> float:
 class CalcResult:
     liters: float
     elements_mg_l: Dict[str, float]
-    n_forms_mg_l: Dict[str, float]
-    n_forms_raw_mg_l: Dict[str, float]
-    n_forms_element_mg_l: Dict[str, float]
     oxides_mg_l: Dict[str, float]
     ions_mmol_l: Dict[str, float]
     ions_meq_l: Dict[str, float]
@@ -115,9 +109,6 @@ class CalcResult:
         return {
             "liters": self.liters,
             "elements_mg_per_l": self.elements_mg_l,
-            "n_forms_mg_per_l": self.n_forms_mg_l,
-            "n_forms_raw_mg_per_l": self.n_forms_raw_mg_l,
-            "n_forms_element_mg_per_l": self.n_forms_element_mg_l,
             "oxides_mg_per_l": self.oxides_mg_l,
             "ions_mmol_per_l": self.ions_mmol_l,
             "ions_meq_per_l": self.ions_meq_l,
@@ -187,36 +178,12 @@ def compute_solution(
 
     n_total = n_from_nh4 + n_from_no3 + n_from_urea
     elements["N_total"] = n_total
-
-    n_forms_raw = {
-        "NH4": nh4_mg_l_raw,
-        "NO3": no3_mg_l_raw,
-        "Ur-N": urea_mg_l,
-    }
-
-    n_forms_element = {
-        "N_from_NH4": n_from_nh4,
-        "N_from_NO3": n_from_no3,
-        "N_from_UREA": n_from_urea,
-        "N_total": n_total,
-    }
-
-    # Backward-compatible split
-    n_forms = {
-        "N_ION_AUS_NH4": n_from_nh4,
-        "N_ION_AUS_NO3": n_from_no3,
-        "N_ION_AUS_UREA": n_from_urea,
-        "N_FERT_AUS_NH4": n_fert_from_nh4,
-        "N_FERT_AUS_NO3": n_fert_from_no3,
-        "N_FERT_AUS_UREA": n_fert_from_urea,
-        "N_WASSER_AUS_NH4": _n_molecule_to_n_element(water_nh4_mg_l, mm, "NH4") if water_nh4_mg_l else 0.0,
-        "N_WASSER_AUS_NO3": _n_molecule_to_n_element(water_no3_mg_l, mm, "NO3") if water_no3_mg_l else 0.0,
-    }
+    elements["N_NH4"] = n_from_nh4
+    elements["N_NO3"] = n_from_no3
+    elements["N_UREA"] = n_from_urea
 
     oxides = {key: 0.0 for key in OXIDE_FORM_COLS}
-    oxides["NH4"] = nh4_mg_l_raw
-    oxides["NO3"] = no3_mg_l_raw
-    oxides["Ur-N"] = urea_mg_l
+    oxides["N_total"] = n_total
     for form in (
         "P2O5",
         "K2O",
@@ -316,9 +283,6 @@ def compute_solution(
     return CalcResult(
         liters=liters,
         elements_mg_l=elements,
-        n_forms_mg_l=n_forms,
-        n_forms_raw_mg_l=n_forms_raw,
-        n_forms_element_mg_l=n_forms_element,
         oxides_mg_l=oxides,
         ions_mmol_l=ions_mmol,
         ions_meq_l=ions_meq,

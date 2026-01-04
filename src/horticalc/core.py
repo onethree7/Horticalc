@@ -18,6 +18,27 @@ COMP_COLS: List[str] = [
     "Fe", "Mn", "Cu", "Zn", "B", "Mo",
 ]
 
+OXIDE_FORM_COLS: List[str] = [
+    "NH4",
+    "NO3",
+    "P2O5",
+    "K2O",
+    "CaO",
+    "MgO",
+    "Na2O",
+    "SO4",
+    "Fe",
+    "Mn",
+    "Cu",
+    "Zn",
+    "B",
+    "Mo",
+    "Cl",
+    "CO3",
+    "SiO2",
+    "Ur-N",
+]
+
 
 def _mm(mm: Dict[str, float], key: str) -> float:
     if key not in mm:
@@ -75,6 +96,7 @@ class CalcResult:
     liters: float
     elements_mg_l: Dict[str, float]
     n_forms_mg_l: Dict[str, float]
+    oxides_mg_l: Dict[str, float]
     ions_mmol_l: Dict[str, float]
     ions_meq_l: Dict[str, float]
     ion_balance: Dict[str, float]
@@ -84,6 +106,7 @@ class CalcResult:
             "liters": self.liters,
             "elements_mg_per_l": self.elements_mg_l,
             "n_forms_mg_per_l": self.n_forms_mg_l,
+            "oxides_mg_per_l": self.oxides_mg_l,
             "ions_mmol_per_l": self.ions_mmol_l,
             "ions_meq_per_l": self.ions_meq_l,
             "ion_balance": self.ion_balance,
@@ -150,6 +173,29 @@ def compute_solution(
         "N_from_water_NH4": water_n_from_nh4,
         "N_from_water_NO3": water_n_from_no3,
     }
+
+    oxides = {key: 0.0 for key in OXIDE_FORM_COLS}
+    oxides["NH4"] = n_nh4 + water_n_from_nh4
+    oxides["NO3"] = n_no3 + water_n_from_no3
+    oxides["Ur-N"] = n_urea
+    for form in (
+        "P2O5",
+        "K2O",
+        "CaO",
+        "MgO",
+        "Na2O",
+        "SO4",
+        "Fe",
+        "Mn",
+        "Cu",
+        "Zn",
+        "B",
+        "Mo",
+        "Cl",
+        "CO3",
+        "SiO2",
+    ):
+        oxides[form] = float(forms_mg_l.get(form, 0.0)) + float(water_forms.get(form, 0.0))
 
     # Oxides from fertilizers
     for ox in ("P2O5", "K2O", "CaO", "MgO", "Na2O"):
@@ -237,6 +283,7 @@ def compute_solution(
         liters=liters,
         elements_mg_l=elements,
         n_forms_mg_l=n_forms,
+        oxides_mg_l=oxides,
         ions_mmol_l=ions_mmol,
         ions_meq_l=ions_meq,
         ion_balance=ion_balance,

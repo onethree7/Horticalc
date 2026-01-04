@@ -44,7 +44,6 @@ Die Tabellenansicht ist auf **kompakte, ausrichtbare Spalten** optimiert (Zebraâ
 git clone https://github.com/onethree7/Horticalc
 cd Horticalc
 
-Remove-Item -Recurse -Force .\.venv
 py -m venv .venv
 .\.venv\Scripts\python -m pip install -U pip setuptools wheel
 .\.venv\Scripts\python -m pip install -r .\requirements.txt
@@ -57,7 +56,6 @@ py -m venv .venv
 git clone https://github.com/onethree7/Horticalc
 cd Horticalc
 
-rm -rf .venv
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -U pip setuptools wheel

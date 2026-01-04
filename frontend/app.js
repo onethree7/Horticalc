@@ -26,29 +26,24 @@ const nutrientIntegerFormatter = new Intl.NumberFormat("de-DE", {
   minimumFractionDigits: 0,
   maximumFractionDigits: 0,
 });
-const nutrientTraceFormatter = new Intl.NumberFormat("de-DE", {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 4,
-});
 const oxideColumnOrder = [
   "NH4",
   "NO3",
+  "Ur-N",
   "P2O5",
   "K2O",
   "CaO",
   "MgO",
-  "Na2O",
   "SO4",
+  "Cl",
   "Fe",
   "Mn",
   "Cu",
   "Zn",
   "B",
   "Mo",
-  "Cl",
-  "CO3",
   "SiO2",
-  "Ur-N",
+  "Na2O",
 ];
 const nutrientColumnOrder = [
   "N_total",
@@ -64,9 +59,21 @@ const nutrientColumnOrder = [
   "Zn",
   "B",
   "Mo",
+  "Si",
 ];
-const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg"]);
+const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
 const nutrientTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "Si"]);
+const oxideIntegerKeys = new Set([
+  "NH4",
+  "NO3",
+  "Ur-N",
+  "P2O5",
+  "K2O",
+  "CaO",
+  "MgO",
+  "SO4",
+]);
+const oxideTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "SiO2"]);
 
 function apiBase() {
   return apiBaseInput.value.replace(/\/$/, "");
@@ -183,15 +190,20 @@ function renderHorizontalTable(
   const remaining = entries
     .map(([key]) => key)
     .filter((key) => !ordered.includes(key));
-  const columns = [...ordered, ...remaining];
+  const trailingKeys = ["CO3"];
+  const trailing = remaining.filter((key) => trailingKeys.includes(key));
+  const remainingOrdered = remaining.filter((key) => !trailingKeys.includes(key));
+  const columns = [...ordered, ...remainingOrdered, ...trailing];
 
   if (!columns.length) {
     return;
   }
 
   const colgroup = document.createElement("colgroup");
-  columns.forEach(() => {
+  columns.forEach((key) => {
     const col = document.createElement("col");
+    const columnClass = `col-${normalizeColumnKey(key)}`;
+    col.classList.add(columnClass);
     colgroup.appendChild(col);
   });
   table.appendChild(colgroup);
@@ -201,6 +213,8 @@ function renderHorizontalTable(
   columns.forEach((key) => {
     const th = document.createElement("th");
     th.textContent = key;
+    th.dataset.key = key;
+    th.classList.add(`col-${normalizeColumnKey(key)}`);
     headRow.appendChild(th);
   });
   thead.appendChild(headRow);
@@ -216,10 +230,36 @@ function renderHorizontalTable(
   columns.forEach((key) => {
     const td = document.createElement("td");
     td.textContent = formatCellValue(key, Number(dataMap.get(key)));
+    td.dataset.key = key;
+    td.classList.add(`col-${normalizeColumnKey(key)}`);
     valueRow.appendChild(td);
   });
   tbody.appendChild(valueRow);
   table.appendChild(tbody);
+}
+
+function normalizeColumnKey(key) {
+  return key.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+function formatTraceValue(value) {
+  if (!Number.isFinite(value)) {
+    return "-";
+  }
+
+  const absValue = Math.abs(value);
+  let maxDecimals = 2;
+  if (absValue < 0.01) {
+    maxDecimals = 4;
+  } else if (absValue < 1) {
+    maxDecimals = 3;
+  }
+
+  const formatter = new Intl.NumberFormat("de-DE", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: maxDecimals,
+  });
+  return formatter.format(value);
 }
 
 function formatNutrientValue(key, value) {
@@ -232,7 +272,23 @@ function formatNutrientValue(key, value) {
   }
 
   if (nutrientTraceKeys.has(key)) {
-    return nutrientTraceFormatter.format(value);
+    return formatTraceValue(value);
+  }
+
+  return nutrientFormatter.format(value);
+}
+
+function formatOxideValue(key, value) {
+  if (!Number.isFinite(value)) {
+    return "-";
+  }
+
+  if (oxideIntegerKeys.has(key)) {
+    return nutrientIntegerFormatter.format(value);
+  }
+
+  if (oxideTraceKeys.has(key)) {
+    return formatTraceValue(value);
   }
 
   return nutrientFormatter.format(value);
@@ -286,7 +342,7 @@ function renderCalculation(data) {
   renderHorizontalTable(ppmTable, elementEntries, nutrientColumnOrder, nutrientFormatter, formatNutrientValue);
 
   const oxideEntries = Object.entries(data.oxides_mg_per_l || {});
-  renderHorizontalTable(oxideTable, oxideEntries, oxideColumnOrder, nutrientFormatter);
+  renderHorizontalTable(oxideTable, oxideEntries, oxideColumnOrder, nutrientFormatter, formatOxideValue);
 
   const ionMeqEntries = Object.entries(data.ions_meq_per_l || {});
   renderKeyValueTable(ionMeqTableBody, ionMeqEntries);

@@ -131,7 +131,7 @@ main {
 }
 
 .nutrient-grid {
-  table-layout: auto;
+  table-layout: fixed;
 }
 
 .summary .nutrient-grid {
@@ -145,6 +145,42 @@ main {
 
 .nutrient-grid tbody td {
   font-weight: 700;
+}
+
+.nutrient-grid col {
+  width: 4.5rem;
+}
+
+.nutrient-grid col.col-n-total,
+.nutrient-grid col.col-nh4,
+.nutrient-grid col.col-no3,
+.nutrient-grid col.col-ur-n {
+  width: 5.5rem;
+}
+
+.nutrient-grid col.col-p,
+.nutrient-grid col.col-p2o5 {
+  width: 4.2rem;
+}
+
+.nutrient-grid col.col-k,
+.nutrient-grid col.col-k2o,
+.nutrient-grid col.col-ca,
+.nutrient-grid col.col-cao,
+.nutrient-grid col.col-mg,
+.nutrient-grid col.col-mgo,
+.nutrient-grid col.col-s,
+.nutrient-grid col.col-so4,
+.nutrient-grid col.col-si,
+.nutrient-grid col.col-sio2 {
+  width: 4.6rem;
+}
+
+.section-divider {
+  height: 1px;
+  background: #2b3543;
+  margin: 1.5rem 0;
+  border: 0;
 }
 
 .grid--data th:first-child,

@@ -25,16 +25,10 @@
         </div>
         <div class="table-wrap">
           <table class="grid" id="fertilizerSelectTable">
-            <colgroup>
-              <col class="col-index" />
-              <col class="col-name" />
-              <col class="col-form" />
-              <col class="col-weight" />
-            </colgroup>
             <thead>
               <tr>
                 <th>#</th>
-                <th>Dünger (Suche)</th>
+                <th>Dünger (Dropdown)</th>
                 <th>Form</th>
                 <th>Gewicht</th>
               </tr>
@@ -51,11 +45,6 @@
         <p class="hint">Mengen eingeben und Berechnung starten.</p>
         <div class="table-wrap">
           <table class="grid" id="calculatorTable">
-            <colgroup>
-              <col class="col-index" />
-              <col class="col-name" />
-              <col class="col-amount" />
-            </colgroup>
             <thead>
               <tr>
                 <th>#</th>
@@ -74,7 +63,7 @@
         <div class="summary">
           <h3>Zentraler Wert: Nährstoffm. Dünger + Wasser (ppm, mg/l)</h3>
           <div class="table-wrap">
-            <table class="grid grid-dense" id="ppmTable">
+            <table class="grid" id="ppmTable">
               <thead>
                 <tr id="ppmHeaderRow"></tr>
               </thead>
@@ -92,10 +81,7 @@
         <div class="table-wrap">
           <table class="grid" id="nFormTable">
             <thead>
-              <tr>
-                <th>N-Formen</th>
-                <th>Werte (mg/l)</th>
-              </tr>
+              <tr id="nFormHeaderRow"></tr>
             </thead>
             <tbody>
               <tr id="nFormValueRow"></tr>
@@ -103,7 +89,7 @@
           </table>
         </div>
         <div class="table-wrap">
-          <table class="grid grid-dense" id="ionMmolTable">
+          <table class="grid" id="ionMmolTable">
             <thead>
               <tr id="ionMmolHeaderRow"></tr>
             </thead>
@@ -113,7 +99,7 @@
           </table>
         </div>
         <div class="table-wrap">
-          <table class="grid grid-dense" id="ionMeqTable">
+          <table class="grid" id="ionMeqTable">
             <thead>
               <tr id="ionMeqHeaderRow"></tr>
             </thead>
@@ -123,7 +109,7 @@
           </table>
         </div>
         <div class="table-wrap">
-          <table class="grid grid-dense" id="ionBalanceTable">
+          <table class="grid" id="ionBalanceTable">
             <thead>
               <tr id="ionBalanceHeaderRow"></tr>
             </thead>
@@ -140,8 +126,6 @@
         <div class="placeholder">EC-Block (Placeholder)</div>
       </section>
     </main>
-
-    <datalist id="fertilizerOptions"></datalist>
 
     <script src="app.js"></script>
   </body>

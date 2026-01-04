@@ -196,6 +196,9 @@ main {
 
 .inline-actions {
   margin: 0 0 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .inline-actions button {
@@ -204,6 +207,10 @@ main {
   padding: 0;
   font-size: 1.2rem;
   line-height: 1;
+}
+
+.inline-hint {
+  color: #b4bdc8;
 }
 
 .summary {

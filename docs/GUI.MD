@@ -11,8 +11,8 @@ Dieses Dokument fasst die aktuelle, theoretische GUI semantisch zusammen. Die Be
 - Pro Zeile ein auswählbarer Düngername (Dropdown).
 - Begleitspalten: `Nr.`, `Dünger Name`, `Form`, `Gewicht`.
 - Nährstoffspalten in Prozentangaben/Anteilen pro Dünger:
-  - `NH4`, `NO3`, `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O`, `SO4`
-  - Spurenelemente/Ionen: `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`, `Cl`, `CO3`, `SiO2`, `Ur-N`, `HCO3-V`
+  - `N_total`, `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O`, `SO4`
+  - Spurenelemente/Ionen: `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`, `Cl`, `CO3`, `SiO2`, `HCO3-V`
 - Beispielwerte zeigen, dass es sich um Dünger-Analysewerte handelt (z. B. NPK/oxidische Formen).
 
 **Ergänzende Anforderung (aus Text):**
@@ -26,7 +26,7 @@ Dieses Dokument fasst die aktuelle, theoretische GUI semantisch zusammen. Die Be
 **Layout & Inhalte (Screenshot-basiert):**
 - Kopfzeile mit **Düngername** und **Menge eingeben** (pro ausgewähltem Dünger).
 - Pro Dünger wird eine Zeile mit Mengen (Zahlenfeld) geführt.
-- Nährstoffspalten spiegeln die Auswahl aus dem oberen Block (NH4, NO3, P2O5, K2O, CaO, …, Ur‑N, HCO3‑V).
+- Nährstoffspalten spiegeln die Auswahl aus dem oberen Block (N_total, P2O5, K2O, CaO, …, HCO3‑V).
 - Linke Seitenleiste mit **EC‑Parametern**:
   - EC‑Feinjustierung (Dünger), EC‑Dünger (bei 18°/25°), EC‑Gesamt (bei 18°/25°).
   - Kalk-Parameter: „Proportionale Kalkrechnung der Oxide“, „Kalkrechnung“, „Kalkbalance“, „Stickstoffmodifikator“.
@@ -50,9 +50,9 @@ Es gibt mehrere **Summenzeilen** im Bereich der Nährstoffmengen:
 
 **Layout & Inhalte (Screenshot-basiert):**
 - Tabellenblock **„Einzelne Ionen“** mit Spalten:
-  - `N aus NH4`, `N aus NO3`, `P`, `K`, `Ca`, `Mg`, `Na`, `S`
+  - `N_total`, `P`, `K`, `Ca`, `Mg`, `Na`, `S`
   - Spurenelemente: `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`, `Cl`, `C`, `Si`
-  - `N aus Ur‑N`, `HCO3‑V (mg/l)`
+  - `HCO3‑V (mg/l)`
 - Zeilenstruktur analog zum zentralen Block:
   - `Nährstoffm. Dünger+Wasser in g`
   - `Nährstoffm. Dünger+Wasser in mg`
@@ -60,7 +60,7 @@ Es gibt mehrere **Summenzeilen** im Bereich der Nährstoffmengen:
 
 **Nährstoffverhältnisse (rechter Block im Screenshot):**
 - Tabellenkopf „Nährstoffverhältnisse“ mit Spalten `Von Zu`, `IST`, `Min`, `Max`.
-- Beispiele (aus Screenshot): `CaO zu K2O`, `MgO zu CaO`, `Na2O zu MgO`, `SO4 zu P2O5`, `P2O5 zu NO3`, `NH4 zu K2O`, `NH4 zu NO3`, `Fe zu MgO`, `CO3 zu SiO2`, `CO3 zu NH4`.
+- Beispiele (aus Screenshot): `CaO zu K2O`, `MgO zu CaO`, `Na2O zu MgO`, `SO4 zu P2O5`, `P2O5 zu K2O`, `Fe zu MgO`, `CO3 zu SiO2`.
 
 **Zusätzliche Berechnungen (Screenshot):**
 - **Ionenbilanzfehler** mit Anionen/Kationen (meq/L) und Summenbereich.

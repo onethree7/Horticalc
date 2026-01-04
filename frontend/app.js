@@ -29,9 +29,6 @@ const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
 const nutrientTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "Si"]);
 const oxideIntegerKeys = new Set([
   "N_total",
-  "NH4",
-  "NO3",
-  "Ur-N",
   "P2O5",
   "K2O",
   "CaO",
@@ -159,16 +156,9 @@ function renderKeyValueTable(tableBody, entries) {
   });
 }
 
-function renderSummaryTable(table, oxides, elements, nFormsRaw, nFormsElement) {
+function renderSummaryTable(table, oxides, elements) {
   table.innerHTML = "";
-  const { value: nTotalValue, tooltip: nTotalTooltip } = buildOxideNTotalDetails(nFormsRaw);
-  const { value: nTotalElementValue, tooltip: nTotalElementTooltip } = buildElementNTotalDetails(
-    nFormsElement,
-  );
   const oxideMap = new Map(Object.entries(oxides));
-  if (Number.isFinite(nTotalValue)) {
-    oxideMap.set("N_total", nTotalValue);
-  }
   const elementMap = new Map(Object.entries(elements));
 
   const colgroup = document.createElement("colgroup");
@@ -202,17 +192,11 @@ function renderSummaryTable(table, oxides, elements, nFormsRaw, nFormsElement) {
       label: "Oxide",
       valueMap: oxideMap,
       formatter: formatOxideValue,
-      title: nTotalTooltip,
-      titleKey: "N_total",
-      titleValue: nTotalValue,
     },
     {
       label: "Ionen",
       valueMap: elementMap,
       formatter: formatNutrientValue,
-      title: nTotalElementTooltip,
-      titleKey: "N_total",
-      titleValue: nTotalElementValue,
     },
   ];
 
@@ -231,9 +215,6 @@ function renderSummaryTable(table, oxides, elements, nFormsRaw, nFormsElement) {
       const formatted = row.formatter(key, Number(rawValue));
       td.textContent = formatted;
       td.classList.add(`col-${normalizeColumnKey(column.oxide)}`);
-      if (row.title && row.titleKey === key && Number.isFinite(row.titleValue)) {
-        td.title = row.title;
-      }
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -298,57 +279,6 @@ function formatOxideValue(key, value) {
   return nutrientFormatter.format(value);
 }
 
-function buildOxideNTotalDetails(nFormsRaw) {
-  if (!nFormsRaw) {
-    return { value: Number.NaN, tooltip: "" };
-  }
-
-  const parts = [
-    ["NH4", Number(nFormsRaw["NH4"])],
-    ["NO3", Number(nFormsRaw["NO3"])],
-    ["Ur-N", Number(nFormsRaw["Ur-N"])],
-  ].filter(([, value]) => Number.isFinite(value));
-
-  const sum = parts.reduce((total, [, value]) => total + value, 0);
-  const value = parts.length ? sum : Number.NaN;
-  const tooltip = parts.length
-    ? `Summe aus:\n${parts
-        .map(([label, partValue]) => `${label}=${formatOxideValue(label, partValue)} mg/l`)
-        .join("\n")}`
-    : "";
-
-  return { value, tooltip };
-}
-
-function buildElementNTotalDetails(nFormsElement) {
-  if (!nFormsElement) {
-    return { value: Number.NaN, tooltip: "" };
-  }
-
-  const nh4Value = Number(nFormsElement.N_from_NH4);
-  const no3Value = Number(nFormsElement.N_from_NO3);
-  const ureaValue = Number(nFormsElement.N_from_UREA);
-
-  const parts = [
-    ["NH4", nh4Value],
-    ["NO3", no3Value],
-    ["Ur-N", ureaValue],
-  ].filter(([, value]) => Number.isFinite(value));
-
-  const sum = parts.reduce((total, [, value]) => total + value, 0);
-  const value = parts.length ? sum : Number.NaN;
-  const tooltip = parts.length
-    ? parts
-        .map(
-          ([label, partValue]) =>
-            `N aus ${label} = ${nutrientFormatter.format(partValue)} mg/l`,
-        )
-        .join("\n")
-    : "";
-
-  return { value, tooltip };
-}
-
 function buildPayload() {
   const fertilizers = selectedFertilizers
     .map((fert, index) => ({ name: fert.name, grams: fertilizerAmounts[index] }))
@@ -395,9 +325,7 @@ async function calculate() {
 function renderCalculation(data) {
   const oxides = data.oxides_mg_per_l || {};
   const elements = data.elements_mg_per_l || {};
-  const nFormsRaw = data.n_forms_raw_mg_per_l || {};
-  const nFormsElement = data.n_forms_element_mg_per_l || {};
-  renderSummaryTable(summaryTable, oxides, elements, nFormsRaw, nFormsElement);
+  renderSummaryTable(summaryTable, oxides, elements);
 
   const ionMeqEntries = Object.entries(data.ions_meq_per_l || {});
   renderKeyValueTable(ionMeqTableBody, ionMeqEntries);

@@ -57,13 +57,20 @@ def _sum_keys(keys: list[str], elements: Mapping[str, float], oxides: Mapping[st
     return total
 
 
-def format_npks(result: CalcResult | Mapping[str, object]) -> dict[str, str | dict[str, float]]:
+def format_npks(result: CalcResult | Mapping[str, object]) -> dict[str, str | dict[str, float | int]]:
     elements, oxides = _get_sources(result)
 
     n_nh4 = float(elements.get("N_NH4", 0.0) or 0.0)
     n_no3 = float(elements.get("N_NO3", 0.0) or 0.0)
     n_urea = float(elements.get("N_UREA", 0.0) or 0.0)
     n_total = n_nh4 + n_no3 + n_urea
+    n_form_pct = {"nh4": 0, "no3": 0, "urea": 0}
+    if n_total > 0.0:
+        n_form_pct = {
+            "nh4": round0(n_nh4 / n_total * 100.0),
+            "no3": round0(n_no3 / n_total * 100.0),
+            "urea": round0(n_urea / n_total * 100.0),
+        }
 
     p2o5 = float(oxides.get("P2O5", 0.0) or 0.0)
     k2o = float(oxides.get("K2O", 0.0) or 0.0)
@@ -101,6 +108,7 @@ def format_npks(result: CalcResult | Mapping[str, object]) -> dict[str, str | di
         "npk_all_pct": npk_all_pct,
         "npk_p_norm": npk_p_norm,
         "npk_npk_pct": npk_npk_pct,
+        "n_form_pct": n_form_pct,
         "npk_values": {
             "n_total": n_total,
             "p2o5": p2o5,

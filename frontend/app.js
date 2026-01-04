@@ -159,9 +159,12 @@ function renderKeyValueTable(tableBody, entries) {
   });
 }
 
-function renderSummaryTable(table, oxides, elements) {
+function renderSummaryTable(table, oxides, elements, nForms) {
   table.innerHTML = "";
   const { value: nTotalValue, tooltip: nTotalTooltip } = buildOxideNTotalDetails(oxides);
+  const { value: nTotalElementValue, tooltip: nTotalElementTooltip } = buildElementNTotalDetails(
+    nForms,
+  );
   const oxideMap = new Map(Object.entries(oxides));
   if (Number.isFinite(nTotalValue)) {
     oxideMap.set("N_total", nTotalValue);
@@ -201,11 +204,15 @@ function renderSummaryTable(table, oxides, elements) {
       formatter: formatOxideValue,
       title: nTotalTooltip,
       titleKey: "N_total",
+      titleValue: nTotalValue,
     },
     {
       label: "Ionen",
       valueMap: elementMap,
       formatter: formatNutrientValue,
+      title: nTotalElementTooltip,
+      titleKey: "N_total",
+      titleValue: nTotalElementValue,
     },
   ];
 
@@ -224,7 +231,7 @@ function renderSummaryTable(table, oxides, elements) {
       const formatted = row.formatter(key, Number(rawValue));
       td.textContent = formatted;
       td.classList.add(`col-${normalizeColumnKey(column.oxide)}`);
-      if (row.title && row.titleKey === column.oxide && Number.isFinite(nTotalValue)) {
+      if (row.title && row.titleKey === key && Number.isFinite(row.titleValue)) {
         td.title = row.title;
       }
       tr.appendChild(td);
@@ -309,6 +316,37 @@ function buildOxideNTotalDetails(oxides) {
   return { value, tooltip };
 }
 
+function buildElementNTotalDetails(nForms) {
+  if (!nForms) {
+    return { value: Number.NaN, tooltip: "" };
+  }
+
+  const nh4Value =
+    Number(nForms.N_from_fert_NH4) + Number(nForms.N_from_water_NH4 || 0);
+  const no3Value =
+    Number(nForms.N_from_fert_NO3) + Number(nForms.N_from_water_NO3 || 0);
+  const ureaValue = Number(nForms.N_from_fert_urea);
+
+  const parts = [
+    ["NH4", nh4Value],
+    ["NO3", no3Value],
+    ["Ur-N", ureaValue],
+  ].filter(([, value]) => Number.isFinite(value));
+
+  const sum = parts.reduce((total, [, value]) => total + value, 0);
+  const value = parts.length ? sum : Number.NaN;
+  const tooltip = parts.length
+    ? parts
+        .map(
+          ([label, partValue]) =>
+            `N aus ${label} = ${nutrientFormatter.format(partValue)} mg/l`,
+        )
+        .join("\n")
+    : "";
+
+  return { value, tooltip };
+}
+
 function buildPayload() {
   const fertilizers = selectedFertilizers
     .map((fert, index) => ({ name: fert.name, grams: fertilizerAmounts[index] }))
@@ -355,7 +393,8 @@ async function calculate() {
 function renderCalculation(data) {
   const oxides = data.oxides_mg_per_l || {};
   const elements = data.elements_mg_per_l || {};
-  renderSummaryTable(summaryTable, oxides, elements);
+  const nForms = data.n_forms_mg_per_l || {};
+  renderSummaryTable(summaryTable, oxides, elements, nForms);
 
   const ionMeqEntries = Object.entries(data.ions_meq_per_l || {});
   renderKeyValueTable(ionMeqTableBody, ionMeqEntries);

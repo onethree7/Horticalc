@@ -41,10 +41,5 @@ Aus dem Excel wurden die folgenden Artefakte in Textform übernommen:
   - `H2PO4` (−1) Default
   - `HPO4` (−2)
 
-## Nächste Schritte
-1. **Vergleich gegen Excel**: aktuell manuell über `solutions/golden_output.json` + Excel-Screenshot.
-2. **Mehr Rezepte** als Regressionstests.
-3. **GUI** aufsetzen (separates Paket, Core bleibt headless).
-
 ## Zuletzt bearbeitetes Feature
 - `docs/feature_frontend_table_layout.md`

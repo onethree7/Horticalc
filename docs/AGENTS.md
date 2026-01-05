@@ -1,45 +1,26 @@
 # AGENTS.md
 
-Dieses Dokument ist für „Agenten“ (Codex, ChatGPT, Menschen) gedacht, die am Code arbeiten.
+Dieses Dokument richtet sich an Agenten/Contributor und beschreibt den aktuellen Stand,
+Konventionen sowie die nächste Entwicklungslinie.
 
-## Kernanforderung
-Excel soll **nicht** das Backend sein. Die Logik muss aus **CSV/YAML** gespeist werden.
+## Kernanforderungen
+- **Excel ist kein Backend.** Die Logik wird aus **CSV/YAML** gespeist.
+- Alle Berechnungen laufen im **Python‑Backend** (CLI/Backend zuerst, GUI danach).
 
-## Was in dieser ZIP bereits umgesetzt ist
+## Aktueller Stand (kurz)
+- Datenquellen in Textform: `data/fertilizers.csv`, `data/molar_masses.yml`,
+  `data/water_profiles/*.yml`
+- Core‑Logik: Umrechnung Oxide → Elemente, N‑Formen getrennt, Ionenbilanz
+- CLI: `horticalc recipes/<file>.yml --pretty`
 
-### 1) Backend-Export (bereits im Repo enthalten)
-Aus dem Excel wurden die folgenden Artefakte in Textform übernommen:
-
-- `data/fertilizers.csv` – entspricht „DüngerTab“
-- `data/molar_masses.yml` – entspricht „MolareMasse“ (+ kleine Ergänzungen: C, Cl, CO3, SiO2)
-- `data/water_profiles/default.yml` – entspricht „Wasserwerte“ (bereits mit deinem Verdünnungsfaktor angewandt)
-- `recipes/golden.yml` – Golden Recipe Test
-- `recipes/green_go_12_12_36.yml` – zusätzlicher Regressionstest
-- `solutions/golden_output.json` – Ergebnis der Golden Recipe Berechnung (als Basis für manuelle Checks)
-- `solutions/green_go_12_12_36_output.json` – Ergebnis des zweiten Regressionstests
-
-### 2) Core-Rechenlogik
-`src/horticalc/core.py` implementiert:
-
-- Stöchiometrische Umrechnung Oxide → Elemente über Molmassen
-- N-Formen: NH4-N, NO3-N, Urea-N separat
-- Wasser: NH4/NO3 als Moleküle → N
-- Ionenbilanz (meq/L) für Hauptionen
-
-### 3) CLI
-`horticalc recipes/golden.yml --pretty` druckt ein kompaktes JSON auf stdout.
-
-## Konventionen & Entscheidungen
-
-### Stickstoff
-- In `fertilizers.csv` sind `NH4`, `NO3`, `Ur-N` **N-Anteile als Element N**.
-- Für die Ionenbilanz werden daraus (bei Bedarf) NH4 bzw. NO3 als Moleküle berechnet.
-- `urea_as_nh4` ist eine Option (Hydrolyse), default **false**.
-
-### Phosphat-Ladung
-- In der Ionenbilanz ist `phosphate_species` wählbar:
-  - `H2PO4` (−1) Default
-  - `HPO4` (−2)
+## Geplante Features / Notizen
+- **HCO3‑Wirkung je Stickstofftyp**: Im Excel gab es Formeln für die numerische Wirkung
+  pro N‑Form (NH4/NO3/Urea). Teilweise sind die Werte **direkt bekannt** und sollen
+  ohne Formel übernommen werden. Das soll als **eigene Sparte** im Output erscheinen.
+- **GUI modular aufbauen**:
+  - Settings
+  - Wasserwerte‑Menü
+  - Dünger‑Tab
 
 ## Zuletzt bearbeitetes Feature
-- `docs/feature_frontend_table_layout.md`
+- `docs/feature_hco3_ion_balance.md`

@@ -35,6 +35,10 @@ horticalc recipes/golden.yml --pretty --out solutions/golden_output.json
 Die GUI ist aktuell ein **statisches Frontend** unter `frontend/` und nutzt die **FastAPI**‑API unter `api/`.
 Die Tabellenansicht ist auf **kompakte, ausrichtbare Spalten** optimiert (Zebra‑Streifen, feste Spaltenbreiten, N‑Formen gruppiert).
 
+### Planung (Roadmap)
+- GUI modularisieren: **Settings**, **Wasserwerte‑Menü**, **Dünger‑Tab**
+- HCO3‑Wirkung je Stickstofftyp als eigene Sparte (siehe `docs/feature_hco3_ion_balance.md`)
+
 ### Voraussetzungen
 - Python 3.10+
 

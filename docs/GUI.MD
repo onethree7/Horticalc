@@ -41,8 +41,6 @@ Es gibt mehrere **Summenzeilen** im Bereich der Nährstoffmengen:
 - Der **Hauptwert** ist **„Nährstoffmenge Dünger + Wasser aka ppm (mg/l)“**.
 - Alle anderen Mengen sind unterstützend, müssen aber mitberechnet werden.
 
-**Hinweis für spätere Iteration:**
-- **EC‑Berechnung ist noch nicht final** (der Block ist sichtbar, aber die endgültige EC‑Logik kommt später).
 
 ## 3) Unterer Block: Einzelne Ionen & Nährstoffverhältnisse
 
@@ -76,50 +74,3 @@ Es gibt mehrere **Summenzeilen** im Bereich der Nährstoffmengen:
   - **ppm (mg/l)** als zentralen Zielwert.
 - Im unteren Block werden die **einzelnen Ionen** in g/mg/mg/l aufgeschlüsselt und müssen **konsistent** zum zentralen ppm‑Wert sein.
 - **EC‑Berechnung** ist als UI‑Element vorgesehen, wird aber erst später vollständig umgesetzt.
-
----
-
-**Hinweis zur Weiterarbeit:** Dieses Dokument dient als Leitfaden für die GUI‑Umsetzung. Der Screenshot gilt als Referenz für die semantische Struktur; zusätzliche Anforderungen (z. B. 150+ Dünger mit Dropdown-Scroll) ergänzen die Darstellung.
-
----
-
-# Architektur‑Skizze (einmal UI, Web + Desktop)
-
-Ziel: **Eine einzige UI** für Web + Windows + Linux (Desktop‑Wrapper).
-
-## Module & Verantwortungen
-
-### Core (bestehend, headless)
-- Pfad: `src/horticalc/`
-- Liest CSV/YAML (`data/`) und liefert Berechnungsergebnisse als JSON.
-
-### API‑Schicht (neu)
-- Stellt Core‑Berechnungen als REST‑API bereit.
-- Beispiel (siehe `api/app.py`):
-  - `GET /fertilizers` → Liste der Dünger (Dropdown, 150+ Einträge)
-  - `GET /water-profiles` → verfügbare Wasserprofile
-  - `POST /calculate` → Berechnung (ppm, g, mg, Ionen, Verhältnisse)
-
-### Frontend (ein einziges UI)
-- Web‑UI (React/Vue/Svelte + DataGrid).
-- Komponenten:
-  1. **FertilizerSelectorGrid** (10 Zeilen, Dropdown, Filter/Scroll)
-  2. **CalculatorGrid** (Mengen + Summen g/mg/ppm)
-  3. **IonBreakdownGrid** (Ionen g/mg/mg/l)
-  4. **RatiosPanel** (IST/Min/Max)
-  5. **Sidebar** (EC‑Felder später aktivieren)
-
-### Desktop‑Wrapper
-- **Tauri** oder **Electron** lädt dasselbe Frontend und spricht lokal mit der API.
-
-## Datenfluss (vereinfacht)
-
-```
-Frontend (Auswahl + Mengen)
-      ↓
-POST /calculate (API)
-      ↓
-Core (CSV/YAML → Berechnung)
-      ↓
-Frontend rendert Tabellen & ppm
-```

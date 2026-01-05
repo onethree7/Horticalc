@@ -193,9 +193,3 @@ Details, Formeln, Einheiten, Parameter und Quellen stehen in [`docs/EC.md`](docs
 ```
 
 ---
-
-## Nächste Schritte (Roadmap)
-
-1. **CSV/YAML Schema finalisieren** (welche Spalten sind „Wahrheit“ – Oxide vs. Ionen vs. Elemente).
-2. **Ein paar Standard‑Rezepte** als Regressionstests (`solutions/*.json`).
-3. **GUI**: erst lokal (z.B. Tauri/React oder Qt), später Web.

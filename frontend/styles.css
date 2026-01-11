@@ -76,6 +76,13 @@ main {
   margin-top: 0;
 }
 
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .hint {
   color: #b4bdc8;
   margin-bottom: 1rem;
@@ -263,6 +270,64 @@ main {
   border-radius: 6px;
   color: #c6d0dc;
   font-size: 0.95rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.ec-values {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 160px;
+}
+
+.ec-line {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+  font-variant-numeric: tabular-nums;
+}
+
+.ec-label {
+  font-weight: 600;
+  color: #e8edf2;
+}
+
+.npk-summary {
+  border: 1px solid #2b3543;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  background: #121826;
+  min-width: 200px;
+}
+
+.npk-title {
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: #e8edf2;
+}
+
+.npk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.npk-table th,
+.npk-table td {
+  padding: 0.2rem 0.35rem;
+  text-align: left;
+}
+
+.npk-table td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.water-content.is-collapsed {
+  display: none;
 }
 
 .water-controls {

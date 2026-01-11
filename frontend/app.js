@@ -13,7 +13,13 @@ const saveWaterProfileButton = document.querySelector("#saveWaterProfile");
 const resetWaterProfileButton = document.querySelector("#resetWaterProfile");
 const osmosisPercentInput = document.querySelector("#osmosisPercent");
 const waterUnitToggle = document.querySelector("#waterUnitToggle");
-const ecValue = document.querySelector("#ecValue");
+const waterToggleButton = document.querySelector("#toggleWaterValues");
+const waterContent = document.querySelector("#waterContent");
+const ecValue18 = document.querySelector("#ecValue18");
+const ecValue25 = document.querySelector("#ecValue25");
+const npkAllPct = document.querySelector("#npkAllPct");
+const npkPNorm = document.querySelector("#npkPNorm");
+const npkNpkPct = document.querySelector("#npkNpkPct");
 
 const summaryTable = document.querySelector("#summaryTable");
 const ionMeqTableBody = document.querySelector("#ionMeqTable tbody");
@@ -255,6 +261,11 @@ function unitLabelForKey(key) {
   return waterUnit === "mol_l" ? "mol/L" : "mg/L";
 }
 
+function updateWaterToggle(isCollapsed) {
+  waterContent.classList.toggle("is-collapsed", isCollapsed);
+  waterToggleButton.setAttribute("aria-expanded", String(!isCollapsed));
+  waterToggleButton.textContent = isCollapsed ? "Wasserwerte anzeigen" : "Wasserwerte ausblenden";
+}
 
 function renderKeyValueTable(tableBody, entries) {
   tableBody.innerHTML = "";
@@ -647,10 +658,17 @@ function renderCalculation(data) {
   const ec18 = Number(ecValues["18.0"]);
   const ec25 = Number(ecValues["25.0"]);
   if (Number.isFinite(ec18) && Number.isFinite(ec25)) {
-    ecValue.textContent = `${formatNumber(ec18)} / ${formatNumber(ec25)} mS/cm`;
+    ecValue18.textContent = `${formatNumber(ec18)} mS/cm`;
+    ecValue25.textContent = `${formatNumber(ec25)} mS/cm`;
   } else {
-    ecValue.textContent = "-";
+    ecValue18.textContent = "-";
+    ecValue25.textContent = "-";
   }
+
+  const npk = data.npk_metrics || {};
+  npkAllPct.textContent = npk.npk_all_pct || "-";
+  npkPNorm.textContent = npk.npk_p_norm || "-";
+  npkNpkPct.textContent = npk.npk_npk_pct || "-";
 }
 
 function applyRecipe(recipe) {
@@ -857,5 +875,12 @@ waterUnitToggle.addEventListener("change", (event) => {
     renderCalculation(lastCalculation);
   }
 });
+
+waterToggleButton.addEventListener("click", () => {
+  const isCollapsed = !waterContent.classList.contains("is-collapsed");
+  updateWaterToggle(isCollapsed);
+});
+
+updateWaterToggle(true);
 
 init();

@@ -255,14 +255,70 @@ main {
   margin-top: 1.5rem;
 }
 
-.ec-summary {
-  margin: 0.75rem 0 1rem 0;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #2b3543;
-  background: #0f141d;
-  border-radius: 6px;
-  color: #c6d0dc;
-  font-size: 0.95rem;
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.toggle-button {
+  background: rgba(20, 22, 24, 0.85);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  transition: border 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.toggle-button:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.water-content.is-collapsed {
+  display: none;
+}
+
+.summary-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 12px 0 20px;
+}
+
+.summary-metric-card {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(12, 14, 16, 0.6);
+  color: rgba(255, 255, 255, 0.86);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.metric-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+
+.metric-label {
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.75rem;
+}
+
+.metric-value {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .water-controls {

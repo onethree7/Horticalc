@@ -332,6 +332,7 @@ class CalcResult:
     ions_mmol_l: Dict[str, float]
     ions_meq_l: Dict[str, float]
     ion_balance: Dict[str, float]
+    ec_water: Dict[str, object]
     sluijsmann: Dict[str, float | dict]
 
     def to_dict(self) -> dict:
@@ -346,6 +347,7 @@ class CalcResult:
             "ions_meq_per_l": self.ions_meq_l,
             "ion_balance": self.ion_balance,
             "ec": compute_ec(self.ions_mmol_l),
+            "ec_water": self.ec_water,
             "npk_metrics": format_npks(self),
             "sluijsmann": self.sluijsmann,
         }
@@ -357,6 +359,8 @@ def compute_solution(
     molar_masses: Dict[str, float],
     water_mg_l: Dict[str, float] | None = None,
 ) -> CalcResult:
+    from .ec import compute_ec
+
     mm = molar_masses
     water_mg_l = water_mg_l or {}
     water_forms = normalize_water_profile(mm, water_mg_l)
@@ -400,6 +404,26 @@ def compute_solution(
         phosphate_species,
     )
 
+    # 4b) Water-only EC (baseline without fertilizers)
+    water_only_forms = {k: 0.0 for k in COMP_COLS}
+    water_elements, water_nh4_mg_l_raw, water_no3_mg_l_raw = _compute_nitrogen(
+        mm,
+        water_only_forms,
+        water_forms,
+        urea_as_nh4,
+    )
+    _compute_oxides_and_elements(mm, water_only_forms, water_forms, water_elements)
+    water_ions_mmol, _, _ = _compute_ions(
+        mm,
+        water_only_forms,
+        water_forms,
+        water_elements,
+        water_nh4_mg_l_raw,
+        water_no3_mg_l_raw,
+        phosphate_species,
+    )
+    ec_water = compute_ec(water_ions_mmol)
+
     sluijsmann = compute_sluijsmann(
         liters=liters,
         oxides_mg_l=oxides,
@@ -414,6 +438,7 @@ def compute_solution(
         ions_mmol_l=ions_mmol,
         ions_meq_l=ions_meq,
         ion_balance=ion_balance,
+        ec_water=ec_water,
         sluijsmann=sluijsmann,
     )
 

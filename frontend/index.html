@@ -17,49 +17,54 @@
     </header>
 
     <main>
-      <section class="block">
-        <h2>Wasserwerte</h2>
-        <p class="hint">Profile lokal speichern/laden und Osmose-Anteil berücksichtigen.</p>
-        <div class="water-controls">
-          <div class="water-control-group">
-            <label for="waterProfileSelect">Profil auswählen</label>
-            <div class="water-control-row">
-              <select id="waterProfileSelect"></select>
-              <button id="loadWaterProfile" type="button">Laden</button>
-              <button id="resetWaterProfile" type="button">Reset Default</button>
-            </div>
-          </div>
-          <div class="water-control-group">
-            <label for="waterProfileName">Profilname zum Speichern</label>
-            <div class="water-control-row">
-              <input id="waterProfileName" type="text" placeholder="z.B. stadenburdenhard" />
-              <button id="saveWaterProfile" type="button">Speichern</button>
-            </div>
-          </div>
-          <div class="water-control-group water-settings">
-            <div>
-              <label for="osmosisPercent">Osmoseanteil (%)</label>
-              <input id="osmosisPercent" type="number" min="0" max="100" step="1" value="0" />
-            </div>
-            <label class="toggle">
-              <input id="waterUnitToggle" type="checkbox" />
-              <span>mol/L Eingabe & Anzeige</span>
-            </label>
-          </div>
+      <section class="block" id="waterSection">
+        <div class="section-header">
+          <h2>Wasserwerte</h2>
+          <button class="toggle-button" id="toggleWaterValues" type="button">Wasserwerte anzeigen</button>
         </div>
-        <div class="table-wrap">
-          <table class="grid grid--form" id="waterValuesTable">
-            <thead>
-              <tr>
-                <th>Parameter</th>
-                <th>Wert</th>
-                <th>Einheit</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- rows inserted by JS -->
-            </tbody>
-          </table>
+        <div class="water-content is-collapsed" id="waterContent">
+          <p class="hint">Profile lokal speichern/laden und Osmose-Anteil berücksichtigen.</p>
+          <div class="water-controls">
+            <div class="water-control-group">
+              <label for="waterProfileSelect">Profil auswählen</label>
+              <div class="water-control-row">
+                <select id="waterProfileSelect"></select>
+                <button id="loadWaterProfile" type="button">Laden</button>
+                <button id="resetWaterProfile" type="button">Reset Default</button>
+              </div>
+            </div>
+            <div class="water-control-group">
+              <label for="waterProfileName">Profilname zum Speichern</label>
+              <div class="water-control-row">
+                <input id="waterProfileName" type="text" placeholder="z.B. stadenburdenhard" />
+                <button id="saveWaterProfile" type="button">Speichern</button>
+              </div>
+            </div>
+            <div class="water-control-group water-settings">
+              <div>
+                <label for="osmosisPercent">Osmoseanteil (%)</label>
+                <input id="osmosisPercent" type="number" min="0" max="100" step="1" value="0" />
+              </div>
+              <label class="toggle">
+                <input id="waterUnitToggle" type="checkbox" />
+                <span>mol/L Eingabe & Anzeige</span>
+              </label>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="grid grid--form" id="waterValuesTable">
+              <thead>
+                <tr>
+                  <th>Parameter</th>
+                  <th>Wert</th>
+                  <th>Einheit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- rows inserted by JS -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -120,8 +125,34 @@
         </div>
         <div class="summary">
           <h3>Gelöste Ionen: Dünger + Wasser (ppm, mg/l)</h3>
-          <div class="ec-summary" id="ecSummary">
-            EC 18&nbsp;°C / 25&nbsp;°C: <span id="ecValue">-</span>
+          <div class="summary-metrics">
+            <div class="summary-metric-card">
+              <div class="metric-label">NPK Gesamt (%)</div>
+              <div class="metric-value" id="npkAllPct">-</div>
+            </div>
+            <div class="summary-metric-card">
+              <div class="metric-label">NPK P-Norm</div>
+              <div class="metric-value" id="npkPNorm">-</div>
+            </div>
+            <div class="summary-metric-card">
+              <div class="metric-label">NPK Verhältnis (%)</div>
+              <div class="metric-value" id="npkNpkPct">-</div>
+            </div>
+            <div class="summary-metric-card">
+              <div class="metric-label">EC Werte</div>
+              <div class="metric-row">
+                <span class="metric-label">Wasserwerte: EC18/25</span>
+                <span class="metric-value">
+                  <span id="ecWater18Value">-</span>/<span id="ecWater25Value">-</span>
+                </span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">Wasser + Dünger: EC18/25</span>
+                <span class="metric-value">
+                  <span id="ec18Value">-</span>/<span id="ec25Value">-</span>
+                </span>
+              </div>
+            </div>
           </div>
           <div class="table-card">
             <h3>Oxidformen & Ionen (ppm, mg/l)</h3>

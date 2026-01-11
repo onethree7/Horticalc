@@ -13,7 +13,15 @@ const saveWaterProfileButton = document.querySelector("#saveWaterProfile");
 const resetWaterProfileButton = document.querySelector("#resetWaterProfile");
 const osmosisPercentInput = document.querySelector("#osmosisPercent");
 const waterUnitToggle = document.querySelector("#waterUnitToggle");
-const ecValue = document.querySelector("#ecValue");
+const toggleWaterValuesButton = document.querySelector("#toggleWaterValues");
+const waterContent = document.querySelector("#waterContent");
+const npkAllPctValue = document.querySelector("#npkAllPct");
+const npkPNormValue = document.querySelector("#npkPNorm");
+const npkNpkPctValue = document.querySelector("#npkNpkPct");
+const ec18Value = document.querySelector("#ec18Value");
+const ec25Value = document.querySelector("#ec25Value");
+const ecWater18Value = document.querySelector("#ecWater18Value");
+const ecWater25Value = document.querySelector("#ecWater25Value");
 
 const summaryTable = document.querySelector("#summaryTable");
 const ionMeqTableBody = document.querySelector("#ionMeqTable tbody");
@@ -631,6 +639,7 @@ function renderCalculation(data) {
   lastCalculation = data;
   const oxides = data.oxides_mg_per_l || {};
   const elements = data.elements_mg_per_l || {};
+  const npkMetrics = data.npk_metrics || {};
   const normalizedWater = normalizeWaterValues(waterValues, Number(osmosisPercentInput.value) || 0);
   const waterElements = computeWaterElements(normalizedWater);
   const waterDisplay = waterElementsForDisplay(waterElements);
@@ -642,15 +651,23 @@ function renderCalculation(data) {
   const ionBalanceEntries = Object.entries(data.ion_balance || {});
   renderKeyValueTable(ionBalanceTableBody, ionBalanceEntries);
 
+  npkAllPctValue.textContent = npkMetrics.npk_all_pct || "-";
+  npkPNormValue.textContent = npkMetrics.npk_p_norm || "-";
+  npkNpkPctValue.textContent = npkMetrics.npk_npk_pct || "-";
+
   const ec = data.ec || {};
   const ecValues = ec.ec_mS_per_cm || {};
   const ec18 = Number(ecValues["18.0"]);
   const ec25 = Number(ecValues["25.0"]);
-  if (Number.isFinite(ec18) && Number.isFinite(ec25)) {
-    ecValue.textContent = `${formatNumber(ec18)} / ${formatNumber(ec25)} mS/cm`;
-  } else {
-    ecValue.textContent = "-";
-  }
+  ec18Value.textContent = Number.isFinite(ec18) ? formatNumber(ec18) : "-";
+  ec25Value.textContent = Number.isFinite(ec25) ? formatNumber(ec25) : "-";
+
+  const waterEc = data.ec_water || {};
+  const waterEcValues = waterEc.ec_mS_per_cm || {};
+  const water18 = Number(waterEcValues["18.0"]);
+  const water25 = Number(waterEcValues["25.0"]);
+  ecWater18Value.textContent = Number.isFinite(water18) ? formatNumber(water18) : "-";
+  ecWater25Value.textContent = Number.isFinite(water25) ? formatNumber(water25) : "-";
 }
 
 function applyRecipe(recipe) {
@@ -856,6 +873,11 @@ waterUnitToggle.addEventListener("change", (event) => {
   if (lastCalculation) {
     renderCalculation(lastCalculation);
   }
+});
+
+toggleWaterValuesButton.addEventListener("click", () => {
+  const isCollapsed = waterContent.classList.toggle("is-collapsed");
+  toggleWaterValuesButton.textContent = isCollapsed ? "Wasserwerte anzeigen" : "Wasserwerte ausblenden";
 });
 
 init();

@@ -12,6 +12,7 @@
   --text-xs: 0.72rem;
   --text-sm: 0.78rem;
   --text-md: 0.9rem;
+  --content-max-width: 1200px;
   background-color: #10141b;
   color: #e8edf2;
 }
@@ -60,7 +61,7 @@ body {
   gap: var(--space-3);
   flex-wrap: wrap;
   margin: 0 auto;
-  max-width: 100%;
+  max-width: var(--content-max-width);
 }
 
 .page-header h1 {
@@ -103,7 +104,7 @@ main {
   flex-direction: column;
   gap: var(--space-4);
   margin: 0 auto;
-  max-width: 100%;
+  max-width: var(--content-max-width);
 }
 
 .block {

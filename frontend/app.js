@@ -13,7 +13,11 @@ const saveWaterProfileButton = document.querySelector("#saveWaterProfile");
 const resetWaterProfileButton = document.querySelector("#resetWaterProfile");
 const osmosisPercentInput = document.querySelector("#osmosisPercent");
 const waterUnitToggle = document.querySelector("#waterUnitToggle");
-const ecValue = document.querySelector("#ecValue");
+const ec18Value = document.querySelector("#ec18Value");
+const ec25Value = document.querySelector("#ec25Value");
+const npkAllPct = document.querySelector("#npkAllPct");
+const npkPNorm = document.querySelector("#npkPNorm");
+const npkNpkPct = document.querySelector("#npkNpkPct");
 
 const summaryTable = document.querySelector("#summaryTable");
 const ionMeqTableBody = document.querySelector("#ionMeqTable tbody");
@@ -647,10 +651,17 @@ function renderCalculation(data) {
   const ec18 = Number(ecValues["18.0"]);
   const ec25 = Number(ecValues["25.0"]);
   if (Number.isFinite(ec18) && Number.isFinite(ec25)) {
-    ecValue.textContent = `${formatNumber(ec18)} / ${formatNumber(ec25)} mS/cm`;
+    ec18Value.textContent = `${formatNumber(ec18)} mS/cm`;
+    ec25Value.textContent = `${formatNumber(ec25)} mS/cm`;
   } else {
-    ecValue.textContent = "-";
+    ec18Value.textContent = "-";
+    ec25Value.textContent = "-";
   }
+
+  const npkMetrics = data.npk_metrics || {};
+  npkAllPct.textContent = npkMetrics.npk_all_pct || "-";
+  npkPNorm.textContent = npkMetrics.npk_p_norm || "-";
+  npkNpkPct.textContent = npkMetrics.npk_npk_pct || "-";
 }
 
 function applyRecipe(recipe) {

@@ -255,14 +255,42 @@ main {
   margin-top: 1.5rem;
 }
 
-.ec-summary {
-  margin: 0.75rem 0 1rem 0;
-  padding: 0.5rem 0.75rem;
+.summary-metrics {
+  margin-top: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.summary-metric-card {
+  flex: 1 1 240px;
   border: 1px solid #2b3543;
   background: #0f141d;
-  border-radius: 6px;
-  color: #c6d0dc;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+}
+
+.summary-metric-card h4 {
+  margin: 0 0 0.4rem 0;
   font-size: 0.95rem;
+  color: #c6d0dc;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.2rem 0;
+  font-size: 0.9rem;
+}
+
+.metric-label {
+  color: #b4bdc8;
+}
+
+.metric-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .water-controls {

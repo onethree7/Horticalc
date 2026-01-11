@@ -18,6 +18,52 @@
 
     <main>
       <section class="block">
+        <h2>Wasserwerte</h2>
+        <p class="hint">Profile lokal speichern/laden und Osmose-Anteil berücksichtigen.</p>
+        <div class="water-controls">
+          <div class="water-control-group">
+            <label for="waterProfileSelect">Profil auswählen</label>
+            <div class="water-control-row">
+              <select id="waterProfileSelect"></select>
+              <button id="loadWaterProfile" type="button">Laden</button>
+              <button id="resetWaterProfile" type="button">Reset Default</button>
+            </div>
+          </div>
+          <div class="water-control-group">
+            <label for="waterProfileName">Profilname zum Speichern</label>
+            <div class="water-control-row">
+              <input id="waterProfileName" type="text" placeholder="z.B. stadenburdenhard" />
+              <button id="saveWaterProfile" type="button">Speichern</button>
+            </div>
+          </div>
+          <div class="water-control-group water-settings">
+            <div>
+              <label for="osmosisPercent">Osmoseanteil (%)</label>
+              <input id="osmosisPercent" type="number" min="0" max="100" step="1" value="0" />
+            </div>
+            <label class="toggle">
+              <input id="waterUnitToggle" type="checkbox" />
+              <span>mol/L Eingabe & Anzeige</span>
+            </label>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="grid grid--form" id="waterValuesTable">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Wert</th>
+                <th>Einheit</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- rows inserted by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="block">
         <h2>Vorauswahl der Düngerkomponenten</h2>
         <div class="actions inline-actions">
           <button id="addFertilizerRow" type="button">+</button>
@@ -74,6 +120,9 @@
         </div>
         <div class="summary">
           <h3>Gelöste Ionen: Dünger + Wasser (ppm, mg/l)</h3>
+          <div class="ec-summary" id="ecSummary">
+            EC 18&nbsp;°C / 25&nbsp;°C: <span id="ecValue">-</span>
+          </div>
           <div class="table-card">
             <h3>Oxidformen & Ionen (ppm, mg/l)</h3>
             <div class="table-wrap">

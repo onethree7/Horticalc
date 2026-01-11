@@ -101,6 +101,80 @@ def _normalize_mg_l(values: Dict[str, float]) -> Dict[str, float]:
     return {str(k): float(v) for k, v in values.items()}
 
 
+def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) -> Dict[str, float]:
+    raw = _normalize_mg_l(water_mg_l)
+    normalized: Dict[str, float] = {}
+
+    def add(key: str, value: float) -> None:
+        if value == 0.0:
+            return
+        normalized[key] = normalized.get(key, 0.0) + value
+
+    def oxide_from_element(element_mg_l: float, oxide_key: str, element_key: str, multiplier: float = 1.0) -> float:
+        if element_mg_l == 0.0:
+            return 0.0
+        return element_mg_l * _mm(mm, oxide_key) / (multiplier * _mm(mm, element_key))
+
+    def p2o5_from_p(mg_l_p: float) -> float:
+        return oxide_from_element(mg_l_p, "P2O5", "P", multiplier=2.0)
+
+    def p2o5_from_po4(mg_l_po4: float) -> float:
+        if mg_l_po4 == 0.0:
+            return 0.0
+        mg_l_p = mg_l_po4 * _mm(mm, "P") / _mm(mm, "PO4")
+        return p2o5_from_p(mg_l_p)
+
+    def so4_from_s(mg_l_s: float) -> float:
+        return oxide_from_element(mg_l_s, "SO4", "S")
+
+    def k2o_from_k(mg_l_k: float) -> float:
+        return oxide_from_element(mg_l_k, "K2O", "K", multiplier=2.0)
+
+    def na2o_from_na(mg_l_na: float) -> float:
+        return oxide_from_element(mg_l_na, "Na2O", "Na", multiplier=2.0)
+
+    def cao_from_ca(mg_l_ca: float) -> float:
+        return oxide_from_element(mg_l_ca, "CaO", "Ca")
+
+    def mgo_from_mg(mg_l_mg: float) -> float:
+        return oxide_from_element(mg_l_mg, "MgO", "Mg")
+
+    def hco3_from_caco3(mg_l_caco3: float) -> float:
+        if mg_l_caco3 == 0.0:
+            return 0.0
+        equiv_weight_caco3 = _mm(mm, "CaCO3") / 2.0
+        return mg_l_caco3 * _mm(mm, "HCO3") / equiv_weight_caco3
+
+    def hco3_from_kh(dkh: float) -> float:
+        if dkh == 0.0:
+            return 0.0
+        mg_l_caco3 = dkh * 17.848
+        return hco3_from_caco3(mg_l_caco3)
+
+    for key in ("NH4", "NO3", "P2O5", "K2O", "CaO", "MgO", "Na2O", "SO4", "Cl", "CO3", "SiO2", "HCO3"):
+        add(key, raw.get(key, 0.0))
+
+    for key in ("Fe", "Mn", "Cu", "Zn", "B", "Mo"):
+        add(key, raw.get(key, 0.0))
+
+    add("NH4", raw.get("NH3", 0.0))
+    add("NO3", raw.get("NO2", 0.0))
+
+    add("P2O5", p2o5_from_po4(raw.get("PO4", 0.0)))
+    add("P2O5", p2o5_from_p(raw.get("P", 0.0)))
+
+    add("SO4", so4_from_s(raw.get("S", 0.0)))
+    add("K2O", k2o_from_k(raw.get("K", 0.0)))
+    add("Na2O", na2o_from_na(raw.get("Na", 0.0)))
+    add("CaO", cao_from_ca(raw.get("Ca", 0.0)))
+    add("MgO", mgo_from_mg(raw.get("Mg", 0.0)))
+
+    add("HCO3", hco3_from_caco3(raw.get("CaCO3", 0.0)))
+    add("HCO3", hco3_from_kh(raw.get("KH", 0.0)))
+
+    return normalized
+
+
 def _compute_nitrogen(
     mm: Dict[str, float],
     forms_mg_l: Dict[str, float],
@@ -285,7 +359,7 @@ def compute_solution(
 ) -> CalcResult:
     mm = molar_masses
     water_mg_l = water_mg_l or {}
-    water_forms = _normalize_mg_l(water_mg_l)
+    water_forms = normalize_water_profile(mm, water_mg_l)
 
     liters = float(recipe.get("liters") or 10.0)
     urea_as_nh4 = bool(recipe.get("urea_as_nh4", False))

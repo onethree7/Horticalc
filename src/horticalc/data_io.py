@@ -69,6 +69,27 @@ def load_water_profile(path: Path) -> Dict[str, float]:
     return {str(k): float(v) for k, v in mp.items()}
 
 
+def load_water_profile_data(path: Path) -> dict:
+    with path.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    mp = data.get("mg_per_l") or {}
+    return {
+        "name": data.get("name") or path.stem,
+        "source": data.get("source") or "",
+        "mg_per_l": {str(k): float(v) for k, v in mp.items()},
+    }
+
+
+def save_water_profile(path: Path, name: str, source: str, mg_per_l: Dict[str, float]) -> None:
+    payload = {
+        "name": name,
+        "source": source,
+        "mg_per_l": {str(k): float(v) for k, v in mg_per_l.items()},
+    }
+    with path.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(payload, f, sort_keys=True, allow_unicode=True)
+
+
 def load_recipe(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}

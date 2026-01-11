@@ -16,14 +16,14 @@
       </div>
     </header>
 
-    <main>
+    <main class="dense">
       <section class="block" id="waterSection">
         <div class="section-header">
           <h2>Wasserwerte</h2>
           <button class="toggle-button" id="toggleWaterValues" type="button">Wasserwerte anzeigen</button>
         </div>
         <div class="water-content is-collapsed" id="waterContent">
-          <p class="hint">Profile lokal speichern/laden und Osmose-Anteil berücksichtigen.</p>
+          <p class="hint mb-2">Profile lokal speichern/laden und Osmose-Anteil berücksichtigen.</p>
           <div class="water-controls">
             <div class="water-control-group">
               <label for="waterProfileSelect">Profil auswählen</label>
@@ -70,7 +70,7 @@
 
       <section class="block">
         <h2>Vorauswahl der Düngerkomponenten</h2>
-        <div class="actions inline-actions">
+        <div class="actions inline-actions mb-2">
           <button id="addFertilizerRow" type="button">+</button>
           <button id="removeFertilizerRow" type="button">-</button>
           <span class="inline-hint">Wähle Dünger aus der Datenbank, das Plus fügt weitere Zeilen hinzu.</span>
@@ -100,7 +100,7 @@
 
       <section class="block">
         <h2>Düngercalculator</h2>
-        <p class="hint">Mengen eingeben und Berechnung starten.</p>
+        <p class="hint mb-2">Mengen eingeben und Berechnung starten.</p>
         <div class="table-wrap">
           <table class="grid grid--form" id="calculatorTable">
             <colgroup>
@@ -120,10 +120,10 @@
             </tbody>
           </table>
         </div>
-        <div class="actions">
+        <div class="actions mt-2">
           <button id="calculateBtn">Berechnen</button>
         </div>
-        <div class="summary">
+        <div class="summary mt-3">
           <h3>Gelöste Ionen: Dünger + Wasser (ppm, mg/l)</h3>
           <div class="summary-metrics">
             <div class="summary-metric-card">
@@ -165,7 +165,7 @@
 
       <section class="block">
         <h2>Ionenbilanz</h2>
-        <p class="hint">Bilanzwerte basieren auf den Ionen in meq/L.</p>
+        <p class="hint mb-2">Bilanzwerte basieren auf den Ionen in meq/L.</p>
         <div class="data-grid">
           <div class="table-card">
             <h3>Ionen (meq/L)</h3>

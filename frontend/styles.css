@@ -3,22 +3,34 @@
   font-family: "Inter", "Segoe UI", system-ui, sans-serif;
   background-color: #10141b;
   color: #e8edf2;
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --radius-1: 4px;
+  --radius-2: 6px;
+  --text-xs: 0.72rem;
+  --text-sm: 0.8rem;
+  --text-md: 0.9rem;
+  --text-lg: 1rem;
 }
 
 body {
   margin: 0;
   padding: 0;
   background: #0d1016;
+  font-size: var(--text-md);
+  line-height: 1.25;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 2rem;
+  padding: var(--space-4);
   border-bottom: 1px solid #2a313c;
   background: #131923;
-  gap: 1rem;
+  gap: var(--space-3);
   flex-wrap: wrap;
   margin: 0 auto;
   max-width: 100%;
@@ -26,29 +38,29 @@ body {
 
 .page-header h1 {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: 1.1rem;
 }
 
 .api-config {
   display: flex;
-  gap: 0.75rem;
+  gap: var(--space-3);
   align-items: center;
 }
 
 .api-config input {
-  padding: 0.35rem 0.6rem;
+  padding: var(--space-2) var(--space-3);
   background: #0f141d;
   border: 1px solid #2b3543;
   color: inherit;
-  border-radius: 4px;
+  border-radius: var(--radius-1);
 }
 
 button {
   background: #2e63ff;
   color: #fff;
   border: none;
-  padding: 0.45rem 0.9rem;
-  border-radius: 6px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-2);
   cursor: pointer;
 }
 
@@ -57,19 +69,23 @@ button:hover {
 }
 
 main {
-  padding: 2rem;
+  padding: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: var(--space-4);
   margin: 0 auto;
   max-width: 100%;
+}
+
+.dense {
+  font-size: var(--text-sm);
 }
 
 .block {
   background: #131923;
   border: 1px solid #2b3543;
-  border-radius: 10px;
-  padding: 1.5rem;
+  border-radius: var(--radius-2);
+  padding: var(--space-4);
 }
 
 .block h2 {
@@ -78,7 +94,6 @@ main {
 
 .hint {
   color: #b4bdc8;
-  margin-bottom: 1rem;
 }
 
 .table-wrap {
@@ -88,14 +103,14 @@ main {
 .grid {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
   table-layout: fixed;
 }
 
 .grid th,
 .grid td {
   border: 1px solid #2b3543;
-  padding: 0.45rem 0.6rem;
+  padding: var(--space-2) var(--space-3);
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
@@ -217,8 +232,8 @@ main {
   background: #0f141d;
   border: 1px solid #2b3543;
   color: inherit;
-  padding: 0.25rem 0.4rem;
-  border-radius: 4px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-1);
 }
 
 .grid--form input[type="number"] {
@@ -228,15 +243,10 @@ main {
   text-align: right;
 }
 
-.actions {
-  margin-top: 1rem;
-}
-
 .inline-actions {
-  margin: 0 0 0.75rem 0;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .inline-actions button {
@@ -251,15 +261,11 @@ main {
   color: #b4bdc8;
 }
 
-.summary {
-  margin-top: 1.5rem;
-}
-
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .toggle-button {
@@ -267,8 +273,8 @@ main {
   color: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 999px;
-  padding: 6px 16px;
-  font-size: 0.85rem;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
   letter-spacing: 0.02em;
   text-transform: uppercase;
   transition: border 0.2s ease, color 0.2s ease, background 0.2s ease;
@@ -286,34 +292,34 @@ main {
 .summary-metrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin: 12px 0 20px;
+  gap: var(--space-3);
+  margin: var(--space-3) 0 var(--space-4);
 }
 
 .summary-metric-card {
-  padding: 14px 16px;
-  border-radius: 12px;
+  padding: var(--space-3);
+  border-radius: var(--radius-2);
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(12, 14, 16, 0.6);
   color: rgba(255, 255, 255, 0.86);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-2);
 }
 
 .metric-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 0.85rem;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
 }
 
 .metric-label {
   color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
 }
 
 .metric-value {
@@ -323,19 +329,19 @@ main {
 
 .water-controls {
   display: grid;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
 }
 
 .water-control-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .water-control-row {
   display: flex;
-  gap: 0.75rem;
+  gap: var(--space-3);
   flex-wrap: wrap;
   align-items: center;
 }
@@ -343,18 +349,18 @@ main {
 .water-control-row select,
 .water-control-row input {
   min-width: 220px;
-  padding: 0.35rem 0.6rem;
+  padding: var(--space-2) var(--space-3);
   background: #0f141d;
   border: 1px solid #2b3543;
   color: inherit;
-  border-radius: 4px;
+  border-radius: var(--radius-1);
 }
 
 .water-settings {
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1.5rem;
+  gap: var(--space-4);
 }
 
 .water-settings input[type="number"] {
@@ -364,7 +370,7 @@ main {
 .toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   cursor: pointer;
   color: #b4bdc8;
 }
@@ -382,18 +388,42 @@ main {
 .data-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1.25rem;
+  gap: var(--space-4);
 }
 
 .table-card {
   background: #0f141d;
   border: 1px solid #2b3543;
-  border-radius: 8px;
-  padding: 0.75rem;
+  border-radius: var(--radius-2);
+  padding: var(--space-3);
 }
 
 .table-card h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1rem;
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--text-md);
   color: #c6d0dc;
+}
+
+.gap-1 {
+  gap: var(--space-1);
+}
+
+.gap-2 {
+  gap: var(--space-2);
+}
+
+.mb-1 {
+  margin-bottom: var(--space-1);
+}
+
+.mb-2 {
+  margin-bottom: var(--space-2);
+}
+
+.mt-2 {
+  margin-top: var(--space-2);
+}
+
+.mt-3 {
+  margin-top: var(--space-3);
 }

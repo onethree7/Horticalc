@@ -58,6 +58,8 @@ class CalculationResponse(BaseModel):
     ions_meq_per_l: Dict[str, float]
     ion_balance: Dict[str, float]
     ec: Dict[str, Any]
+    ec_water: Dict[str, Any]
+    npk_metrics: Dict[str, Any]
 
 
 class WaterProfilePayload(BaseModel):

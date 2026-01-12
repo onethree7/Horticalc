@@ -207,7 +207,7 @@ function renderWaterTable() {
     input.step = waterUnit === "mol_l" && field.key !== "KH" ? "0.0001" : "0.01";
     const rawValue = waterValues[field.key] || 0;
     const displayValue = waterUnit === "mol_l" ? mgToMol(field.key, rawValue) : rawValue;
-    input.value = Number.isFinite(displayValue) ? displayValue : 0;
+    input.value = formatWaterDisplayValue(displayValue);
     input.addEventListener("input", (event) => {
       const parsed = Number(event.target.value) || 0;
       waterValues[field.key] = waterUnit === "mol_l" ? molToMg(field.key, parsed) : parsed;
@@ -220,6 +220,34 @@ function renderWaterTable() {
     row.append(labelCell, valueCell, unitCell);
     waterTableBody.appendChild(row);
   });
+}
+
+function formatWaterDisplayValue(value) {
+  if (!Number.isFinite(value)) {
+    return "0";
+  }
+
+  const absValue = Math.abs(value);
+  if (absValue >= 0.1 || absValue === 0) {
+    return value.toFixed(1);
+  }
+
+  let decimals = 2;
+  if (absValue < 0.01) {
+    decimals = 3;
+  }
+  if (absValue < 0.001) {
+    decimals = 4;
+  }
+  if (absValue < 0.0001) {
+    decimals = 5;
+  }
+  if (absValue < 0.00001) {
+    decimals = 6;
+  }
+
+  const formatted = value.toFixed(decimals);
+  return formatted.replace(/(\.\d*?[1-9])0+$/, "$1").replace(/\.0+$/, "");
 }
 
 function formatNumber(value, formatter = numberFormatter) {

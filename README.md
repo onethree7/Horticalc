@@ -36,7 +36,6 @@ Die Tabellenansicht ist auf **kompakte, ausrichtbare Spalten** optimiert (Zebra�
 
 ### Planung (Roadmap)
 - GUI modularisieren: **Settings**, **Wasserwerte‑Menü**, **Dünger‑Tab**
-- HCO3‑Wirkung je Stickstofftyp als eigene Sparte (siehe `docs/feature_hco3_ion_balance.md`)
 
 ### Voraussetzungen
 - Python 3.10+
@@ -109,8 +108,9 @@ Export aus deinem Sheet **„MolareMasse“** + kleine Ergänzungen, damit die U
 Wasserprofile als mg/L.
 
 In dieser ZIP:
-- `default.yml` stammt aus deinem Sheet **„Wasserwerte“** (bereits mit deinem Verdünnungsfaktor angewendet).
+- `default.yml` stammt aus deinem Sheet **„Wasserwerte“**.
 - `HCO3` wird als mg/L (Bicarbonat) mitgeführt.
+- Optional kann `osmosis_percent` (0–100) gesetzt werden; der Core verdünnt die Wasserwerte entsprechend.
 
 ### 4) `recipes/*.yml`
 Ein Rezept definiert:
@@ -195,7 +195,7 @@ Details, Formeln, Einheiten, Parameter und Quellen stehen in [`docs/EC.md`](docs
 └── docs/
     ├── AGENTS.md
     ├── EC.md
-    ├── feature_hco3_ion_balance.md
+    ├── feature_osmosis_mix.md
     ├── GUI.MD
     └── golden_example_output.txt
 ```

@@ -16,13 +16,10 @@ Konventionen sowie die nächste Entwicklungslinie.
 - CLI: `horticalc recipes/<file>.yml --pretty`
 
 ## Geplante Features / Notizen
-- **HCO3‑Wirkung je Stickstofftyp**: Im Excel gab es Formeln für die numerische Wirkung
-  pro N‑Form (NH4/NO3/Urea). Teilweise sind die Werte **direkt bekannt** und sollen
-  ohne Formel übernommen werden. Das soll als **eigene Sparte** im Output erscheinen.
 - **GUI modular aufbauen**:
   - Settings
   - Wasserwerte‑Menü
   - Dünger‑Tab
 
 ## Zuletzt bearbeitetes Feature
-- `docs/feature_hco3_ion_balance.md`
+- `docs/feature_osmosis_mix.md`

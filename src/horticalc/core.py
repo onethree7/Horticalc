@@ -4,7 +4,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from .data_io import Fertilizer, load_fertilizers, load_molar_masses, load_recipe, load_water_profile, repo_root
+from .data_io import (
+    Fertilizer,
+    load_fertilizers,
+    load_molar_masses,
+    load_recipe,
+    load_water_profile_data,
+    repo_root,
+)
 from .sluijsmann import compute_sluijsmann
 
 
@@ -177,6 +184,13 @@ def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) 
     return normalized
 
 
+def apply_osmosis_mix(water_mg_l: Dict[str, float], osmosis_percent: float) -> Dict[str, float]:
+    factor = 1.0 - max(0.0, min(osmosis_percent, 100.0)) / 100.0
+    if factor == 1.0:
+        return dict(water_mg_l)
+    return {k: float(v) * factor for k, v in water_mg_l.items()}
+
+
 def _compute_nitrogen(
     mm: Dict[str, float],
     forms_mg_l: Dict[str, float],
@@ -346,6 +360,7 @@ class CalcResult:
     water_ion_balance: Dict[str, float]
     ec_water: Dict[str, object]
     sluijsmann: Dict[str, float | dict]
+    osmosis_percent: float
 
     def to_dict(self) -> dict:
         from .metrics import format_npks
@@ -367,6 +382,7 @@ class CalcResult:
             "ec_water": self.ec_water,
             "npk_metrics": format_npks(self),
             "sluijsmann": self.sluijsmann,
+            "osmosis_percent": self.osmosis_percent,
         }
 
 
@@ -375,11 +391,12 @@ def compute_solution(
     fertilizers: Dict[str, Fertilizer],
     molar_masses: Dict[str, float],
     water_mg_l: Dict[str, float] | None = None,
+    osmosis_percent: float = 0.0,
 ) -> CalcResult:
     from .ec import compute_ec
 
     mm = molar_masses
-    water_mg_l = water_mg_l or {}
+    water_mg_l = apply_osmosis_mix(water_mg_l or {}, osmosis_percent)
     water_forms = normalize_water_profile(mm, water_mg_l)
 
     liters = float(recipe.get("liters") or 10.0)
@@ -462,6 +479,7 @@ def compute_solution(
         water_ion_balance=water_ion_balance,
         ec_water=ec_water,
         sluijsmann=sluijsmann,
+        osmosis_percent=float(osmosis_percent),
     )
 
 
@@ -472,7 +490,9 @@ def run_recipe(recipe_path: Path) -> dict:
 
     wp_name = str(recipe.get("water_profile") or "default")
     wp_path = repo_root() / "data" / "water_profiles" / f"{wp_name}.yml"
-    water = load_water_profile(wp_path)
+    water_profile = load_water_profile_data(wp_path)
+    osmosis_percent = float(recipe.get("osmosis_percent", water_profile.get("osmosis_percent", 0.0)))
+    water = water_profile.get("mg_per_l") or {}
 
-    res = compute_solution(recipe, ferts, mm, water)
+    res = compute_solution(recipe, ferts, mm, water, osmosis_percent=osmosis_percent)
     return res.to_dict()

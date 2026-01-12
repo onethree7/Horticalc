@@ -14,7 +14,6 @@ from horticalc.data_io import (
     load_fertilizers,
     load_molar_masses,
     load_recipe,
-    load_water_profile,
     load_water_profile_data,
     repo_root,
     save_water_profile,
@@ -65,6 +64,7 @@ class CalculationResponse(BaseModel):
     ec: Dict[str, Any]
     ec_water: Dict[str, Any]
     npk_metrics: Dict[str, Any]
+    osmosis_percent: float
 
 
 class WaterProfilePayload(BaseModel):
@@ -238,6 +238,7 @@ def default_recipe() -> dict:
 @app.post("/calculate", response_model=CalculationResponse)
 def calculate(payload: RecipeRequest) -> CalculationResponse:
     water_mg_l: Dict[str, float] = {}
+    osmosis_percent = 0.0
     if payload.water_profile_name:
         profile_path = WATER_PROFILES_DIR / payload.water_profile_name
         if not profile_path.exists():
@@ -245,9 +246,6 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
         profile = load_water_profile_data(profile_path)
         water_mg_l = sanitize_water_profile(profile.get("mg_per_l") or {})
         osmosis_percent = float(profile.get("osmosis_percent") or 0)
-        if osmosis_percent:
-            factor = 1 - max(min(osmosis_percent, 100.0), 0.0) / 100.0
-            water_mg_l = {key: value * factor for key, value in water_mg_l.items()}
     elif payload.water_mg_l:
         water_mg_l = sanitize_water_profile(payload.water_mg_l)
 
@@ -259,7 +257,13 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
     }
 
     try:
-        result = compute_solution(recipe, FERTILIZERS, MOLAR_MASSES, water_mg_l=water_mg_l)
+        result = compute_solution(
+            recipe,
+            FERTILIZERS,
+            MOLAR_MASSES,
+            water_mg_l=water_mg_l,
+            osmosis_percent=osmosis_percent,
+        )
     except KeyError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ValueError as exc:

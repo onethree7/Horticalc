@@ -93,8 +93,6 @@ const summaryColumnOrder = [
   { oxide: "CaO", element: "Ca", label: "CaO/Ca" },
   { oxide: "MgO", element: "Mg", label: "MgO/Mg" },
   { oxide: "SO4", element: "S", label: "SO4/S" },
-  { oxide: "Cl", element: "Cl", label: "Cl" },
-  { oxide: "HCO3", element: "HCO3", label: "HCO3" },
   { oxide: "Fe", element: "Fe", label: "Fe" },
   { oxide: "Mn", element: "Mn", label: "Mn" },
   { oxide: "Cu", element: "Cu", label: "Cu" },
@@ -103,6 +101,8 @@ const summaryColumnOrder = [
   { oxide: "Mo", element: "Mo", label: "Mo" },
   { oxide: "SiO2", element: "Si", label: "SiO2/Si" },
   { oxide: "Na2O", element: "Na", label: "Na2O/Na" },
+  { oxide: "Cl", element: "Cl", label: "Cl" },
+  { oxide: "HCO3", element: "HCO3", label: "HCO3" },
 ];
 
 function apiBase() {

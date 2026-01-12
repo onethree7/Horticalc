@@ -207,7 +207,7 @@ function renderWaterTable() {
     input.step = waterUnit === "mol_l" && field.key !== "KH" ? "0.0001" : "0.01";
     const rawValue = waterValues[field.key] || 0;
     const displayValue = waterUnit === "mol_l" ? mgToMol(field.key, rawValue) : rawValue;
-    input.value = Number.isFinite(displayValue) ? displayValue : 0;
+    input.value = formatWaterInputValue(displayValue);
     input.addEventListener("input", (event) => {
       const parsed = Number(event.target.value) || 0;
       waterValues[field.key] = waterUnit === "mol_l" ? molToMg(field.key, parsed) : parsed;
@@ -220,6 +220,22 @@ function renderWaterTable() {
     row.append(labelCell, valueCell, unitCell);
     waterTableBody.appendChild(row);
   });
+}
+
+function formatWaterInputValue(value) {
+  if (!Number.isFinite(value)) {
+    return "0";
+  }
+  if (value === 0) {
+    return "0";
+  }
+
+  const absValue = Math.abs(value);
+  if (absValue < 0.1) {
+    return value.toFixed(3).replace(/\.?0+$/, "");
+  }
+
+  return value.toFixed(1);
 }
 
 function formatNumber(value, formatter = numberFormatter) {

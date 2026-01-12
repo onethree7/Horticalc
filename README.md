@@ -1,12 +1,11 @@
 # Horticalc (molar‑correct) – Projekt
 
-Ziel: Meinen Excel‑Düngerrechner **1:1 inhaltlich** nachbauen, aber mit **professioneller, simpler Struktur**:
+Ziel: Düngerrechner
 
-- **kein Excel‑Backend**
 - alle Stammdaten in **lesbaren Textdateien** (CSV/YAML)
 - Core‑Logik als **kleines Python‑Backend** (CLI zuerst, GUI später)
 
-Rechnungen passieren im Backend mit Python, Ionen und Oxide und Anionen + Kationen bilanzierung.
+Rechnungen passieren im Backend mit Python, Ionen und Oxide und Anionen + Kationen bilanzierung. EC und sluijsman und weitere module können hinzugefügt und integriert werden.
 
 ---
 

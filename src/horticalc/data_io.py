@@ -77,14 +77,22 @@ def load_water_profile_data(path: Path) -> dict:
         "name": data.get("name") or path.stem,
         "source": data.get("source") or "",
         "mg_per_l": {str(k): float(v) for k, v in mp.items()},
+        "osmosis_percent": float(data.get("osmosis_percent") or 0),
     }
 
 
-def save_water_profile(path: Path, name: str, source: str, mg_per_l: Dict[str, float]) -> None:
+def save_water_profile(
+    path: Path,
+    name: str,
+    source: str,
+    mg_per_l: Dict[str, float],
+    osmosis_percent: float = 0,
+) -> None:
     payload = {
         "name": name,
         "source": source,
         "mg_per_l": {str(k): float(v) for k, v in mg_per_l.items()},
+        "osmosis_percent": float(osmosis_percent),
     }
     with path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(payload, f, sort_keys=True, allow_unicode=True)

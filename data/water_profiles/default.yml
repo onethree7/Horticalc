@@ -1,6 +1,6 @@
 name: default
 source: Excel Wasserwerte (inkl. Osmosefaktor)
-osmosis_percent: 0
+osmosis_percent: 66
 mg_per_l:
   NH4: 0.02
   NH3: 0

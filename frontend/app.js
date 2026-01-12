@@ -81,6 +81,7 @@ const nutrientIntegerFormatter = new Intl.NumberFormat("de-DE", {
 });
 const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
 const nutrientTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "Si"]);
+const waterMajorKeys = new Set(["N_total", "P", "K", "Ca", "Mg"]);
 const oxideIntegerKeys = new Set([
   "N_total",
   "P2O5",
@@ -373,6 +374,7 @@ function renderSummaryTable(table, oxides, elements, waterElements = null) {
   const oxideMap = new Map(Object.entries(oxides));
   const elementMap = new Map(Object.entries(elements));
   const waterMap = waterElements ? new Map(Object.entries(waterElements)) : null;
+  const waterTraceDecimals = waterMap ? getWaterTraceDecimals(waterMap) : 3;
 
   const colgroup = document.createElement("colgroup");
   const labelCol = document.createElement("col");
@@ -405,7 +407,10 @@ function renderSummaryTable(table, oxides, elements, waterElements = null) {
     rows.push({
       label: "Wasserwerte",
       valueMap: waterMap,
-      formatter: waterUnit === "mol_l" ? formatTraceValue : formatNutrientValue,
+      formatter:
+        waterUnit === "mol_l"
+          ? formatTraceValue
+          : (key, value) => formatWaterValue(key, value, waterTraceDecimals),
     });
   }
   rows.push(
@@ -482,6 +487,58 @@ function formatNutrientValue(key, value) {
   }
 
   return nutrientFormatter.format(value);
+}
+
+function getWaterTraceDecimals(waterMap) {
+  let minValue = null;
+  waterMap.forEach((value, key) => {
+    if (waterMajorKeys.has(key)) {
+      return;
+    }
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || numeric === 0) {
+      return;
+    }
+    const absValue = Math.abs(numeric);
+    minValue = minValue === null ? absValue : Math.min(minValue, absValue);
+  });
+
+  if (minValue === null) {
+    return 3;
+  }
+  return minValue < 0.001 ? 4 : 3;
+}
+
+function getRequiredDecimals(value, baseDecimals) {
+  if (!Number.isFinite(value) || value === 0) {
+    return baseDecimals;
+  }
+  let decimals = baseDecimals;
+  const absValue = Math.abs(value);
+  while (decimals < 6 && Number(absValue.toFixed(decimals)) === 0) {
+    decimals += 1;
+  }
+  return decimals;
+}
+
+function formatWaterValue(key, value, baseDecimals) {
+  if (!Number.isFinite(value)) {
+    return "-";
+  }
+  if (waterMajorKeys.has(key)) {
+    const formatter = new Intl.NumberFormat("de-DE", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    });
+    return formatter.format(value);
+  }
+
+  const decimals = getRequiredDecimals(value, baseDecimals);
+  const formatter = new Intl.NumberFormat("de-DE", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+  return formatter.format(value);
 }
 
 function formatOxideValue(key, value) {

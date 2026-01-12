@@ -170,6 +170,7 @@ function renderCalculatorTable() {
 
     const nameCell = document.createElement("td");
     nameCell.textContent = selectedFertilizers[i].name || "-";
+    nameCell.colSpan = 2;
 
     const amountCell = document.createElement("td");
     const input = document.createElement("input");

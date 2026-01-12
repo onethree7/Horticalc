@@ -76,7 +76,7 @@
           <span class="inline-hint">Wähle Dünger aus der Datenbank, das Plus fügt weitere Zeilen hinzu.</span>
         </div>
         <div class="table-wrap">
-          <table class="grid grid--form" id="fertilizerSelectTable">
+          <table class="grid grid--form grid--fertilizer" id="fertilizerSelectTable">
             <colgroup>
               <col class="col-index" />
               <col class="col-name" />
@@ -102,16 +102,17 @@
         <h2>Düngercalculator</h2>
         <p class="hint">Mengen eingeben und Berechnung starten.</p>
         <div class="table-wrap">
-          <table class="grid grid--form" id="calculatorTable">
+          <table class="grid grid--form grid--fertilizer" id="calculatorTable">
             <colgroup>
               <col class="col-index" />
               <col class="col-name" />
+              <col class="col-form" />
               <col class="col-amount" />
             </colgroup>
             <thead>
               <tr>
                 <th>#</th>
-                <th>Düngername</th>
+                <th colspan="2">Düngername</th>
                 <th>Menge (g)</th>
               </tr>
             </thead>

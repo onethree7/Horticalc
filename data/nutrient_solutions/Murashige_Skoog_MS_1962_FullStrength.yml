@@ -1,0 +1,20 @@
+name: Murashige Skoog MS 1962 (Full Strength)
+source: User provided dataset
+water_elements_mg_per_l:
+  N_total: 840.687
+  N_NH4: 288.732
+  N_NO3: 551.955
+  N_UREA: 0.0
+  P: 38.6929
+  K: 783.799
+  Ca: 119.967
+  Mg: 36.488
+  Na: 4.64991
+  S: 55.5125
+  Si: 0.0
+  Cl: 212.253
+  Fe: 5.58422
+  Mn: 5.49328
+  Cu: 0.006363
+  B: 1.08397
+  HCO3: 0.0

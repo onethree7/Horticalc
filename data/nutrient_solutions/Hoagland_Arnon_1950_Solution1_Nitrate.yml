@@ -1,0 +1,20 @@
+name: Hoagland Arnon 1950 Solution 1 (Nitrate)
+source: User provided dataset
+water_elements_mg_per_l:
+  N_total: 210.101
+  N_NH4: 0.0
+  N_NO3: 210.101
+  N_UREA: 0.0
+  P: 30.974
+  K: 234.59
+  Ca: 200.39
+  Mg: 48.61
+  Na: 0.0
+  S: 64.13
+  Si: 0.0
+  Cl: 0.0
+  Fe: 0.0
+  Mn: 0.5
+  Cu: 0.02
+  B: 0.5
+  HCO3: 0.0

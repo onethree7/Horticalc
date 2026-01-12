@@ -1,0 +1,20 @@
+name: Bugbee Utah Hydroponic Cannabis 2022
+source: User provided dataset
+water_elements_mg_per_l:
+  N_total: 151.272
+  N_NH4: 0.0
+  N_NO3: 151.272
+  N_UREA: 0.0
+  P: 30.974
+  K: 242.409
+  Ca: 120.234
+  Mg: 19.444
+  Na: 0.0
+  S: 25.652
+  Si: 16.851
+  Cl: 1.240855
+  Fe: 0.390915
+  Mn: 0.164814
+  Cu: 0.254184
+  B: 0.4324
+  HCO3: 0.0

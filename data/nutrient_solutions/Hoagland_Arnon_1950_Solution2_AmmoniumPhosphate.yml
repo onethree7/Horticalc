@@ -1,0 +1,20 @@
+name: Hoagland Arnon 1950 Solution 2 (Ammonium Phosphate)
+source: User provided dataset
+water_elements_mg_per_l:
+  N_total: 210.101
+  N_NH4: 14.007
+  N_NO3: 196.094
+  N_UREA: 0.0
+  P: 30.974
+  K: 234.59
+  Ca: 160.312
+  Mg: 48.61
+  Na: 0.0
+  S: 64.13
+  Si: 0.0
+  Cl: 0.0
+  Fe: 0.0
+  Mn: 0.5
+  Cu: 0.02
+  B: 0.5
+  HCO3: 0.0

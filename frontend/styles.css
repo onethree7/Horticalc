@@ -236,7 +236,7 @@ main {
 }
 
 .grid--form .col-index {
-  width: 3.25rem;
+  width: 2ch;
 }
 
 .grid--form .col-name {
@@ -253,6 +253,13 @@ main {
 
 .grid--form .col-amount {
   width: 7rem;
+}
+
+.grid--form th:first-child,
+.grid--form td:first-child {
+  text-align: center;
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
 }
 
 .grid select,
@@ -444,6 +451,28 @@ main {
   margin: 0 0 var(--space-2) 0;
   font-size: 0.9rem;
   color: #c6d0dc;
+}
+
+.table-card-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.table-card-title h3 {
+  margin: 0;
+}
+
+.table-badge {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 0 var(--space-2);
 }
 
 .compact label,

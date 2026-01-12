@@ -47,6 +47,7 @@ class RecipeRequest(BaseModel):
     phosphate_species: str = Field(default="H2PO4")
     water_profile_name: Optional[str] = None
     water_mg_l: Optional[Dict[str, float]] = None
+    osmosis_percent: float | None = 0
 
 
 class CalculationResponse(BaseModel):
@@ -248,6 +249,8 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
         osmosis_percent = float(profile.get("osmosis_percent") or 0)
     elif payload.water_mg_l:
         water_mg_l = sanitize_water_profile(payload.water_mg_l)
+        if payload.osmosis_percent is not None:
+            osmosis_percent = float(payload.osmosis_percent)
 
     recipe = {
         "liters": payload.liters,

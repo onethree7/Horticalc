@@ -601,6 +601,10 @@ function hco3FromKhValue(dKh) {
 
 function normalizeWaterValues(rawValues, osmosisPercent) {
   const factor = 1 - clamp(osmosisPercent, 0, 100) / 100;
+  return normalizeWaterValuesWithFactor(rawValues, factor);
+}
+
+function normalizeWaterValuesWithFactor(rawValues, factor) {
   const normalized = {};
   const hco3Direct = rawValues.HCO3 || 0;
   const useDerivedHco3 = hco3Direct === 0;
@@ -654,6 +658,10 @@ function normalizeWaterValues(rawValues, osmosisPercent) {
   add("SiO2", rawValues.SiO2 || 0);
 
   return normalized;
+}
+
+function buildWaterPayloadFromValues(rawValues) {
+  return normalizeWaterValuesWithFactor(rawValues, 1);
 }
 
 function computeWaterElements(normalizedWater) {
@@ -736,8 +744,7 @@ function buildPayload() {
     .map((fert, index) => ({ name: fert.name, grams: fertilizerAmounts[index] }))
     .filter((entry) => entry.name && entry.grams > 0);
 
-  const normalizedWater = normalizeWaterValues(waterValues, Number(osmosisPercentInput.value) || 0);
-  const waterPayload = { ...normalizedWater };
+  const waterPayload = { ...buildWaterPayloadFromValues(waterValues) };
   delete waterPayload.KH;
   delete waterPayload.CaCO3;
   delete waterPayload.CO3;
@@ -746,6 +753,7 @@ function buildPayload() {
     liters: 10.0,
     fertilizers,
     water_mg_l: waterPayload,
+    osmosis_percent: Number(osmosisPercentInput.value) || 0,
   };
 }
 
@@ -787,8 +795,7 @@ async function saveWaterProfile() {
     alert("Bitte einen Profilnamen angeben.");
     return;
   }
-  const normalizedWater = normalizeWaterValues(waterValues, Number(osmosisPercentInput.value) || 0);
-  const waterPayload = { ...normalizedWater };
+  const waterPayload = { ...buildWaterPayloadFromValues(waterValues) };
   delete waterPayload.KH;
   delete waterPayload.CaCO3;
   delete waterPayload.CO3;

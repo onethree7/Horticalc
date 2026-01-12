@@ -35,7 +35,9 @@ For each salt in the recipe (per liter):
   - **Weak‑acid / weak‑base species:**  
     - N: NH₄⁺ (weak acid), NO₃⁻ (neutral for acid–base)  
     - P: H₂PO₄⁻ / HPO₄²⁻ (buffer pair)  
-    - C: HCO₃⁻ / CO₃²⁻ / CO₂(aq) (buffer pair)  (Leibar-Porcel et al., 2020; Zhang et al., 2024; Rijck & Schrevens, 1997)Compute:
+    - C: HCO₃⁻ / CO₃²⁻ / CO₂(aq) (buffer pair)  (Leibar-Porcel et al., 2020; Zhang et al., 2024; Rijck & Schrevens, 1997)
+
+Compute:
 
 ```text
 Alk_tot ≈ [strong cations charge] – [strong anions charge]
@@ -56,7 +58,8 @@ This gives you an **alkalinity / charge excess**, which constrains possible pH s
 Typical hydroponic salts:
 
 - **KHCO₃, NaHCO₃:**  
-  DIC contribution: `C_DIC_fert += [HCO3−]_added`  (Zhang et al., 2024)- **carbonate‑containing or lime‑treated salts (rare in hydroponics)**:  
+  DIC contribution: `C_DIC_fert += [HCO3−]_added`  (Zhang et al., 2024)
+- **carbonate‑containing or lime‑treated salts (rare in hydroponics)**:  
   DIC from CO₃²⁻: `C_DIC_fert += [CO3²−]_added`
 
 So:
@@ -120,7 +123,8 @@ Where `[OH⁻] = Kw / [H⁺]`.
 4. Solve for pH such that LHS – RHS = 0 (e.g., Newton–Raphson or bisection). This gives you a **self‑consistent pH** determined by the nutrient composition and DIC  (Langenfeld et al., 2022; Tellbüscher et al., 2024; Rijck & Schrevens, 1997).
 
 This step captures:  
-- Strong impact of NH₄⁺ vs NO₃⁻ ratio on pH  (Langenfeld et al., 2022; Rijck & Schrevens, 1997)- Buffering by HCO₃⁻ and phosphate  (Leibar-Porcel et al., 2020; Zhang et al., 2024; Rijck & Schrevens, 1997).
+- Strong impact of NH₄⁺ vs NO₃⁻ ratio on pH  (Langenfeld et al., 2022; Rijck & Schrevens, 1997)
+- Buffering by HCO₃⁻ and phosphate  (Leibar-Porcel et al., 2020; Zhang et al., 2024; Rijck & Schrevens, 1997).
 
 ---
 
@@ -175,7 +179,9 @@ Your CODEX can have **rules/templates** per fertilizer:
 - MgSO₄ (Bittersalz) → `+Mg²⁺`, `+SO₄²⁻`  
 - KH₂PO₄ → `+K⁺`, `+H₂PO₄⁻` (adds to phosphate buffer)  
 - NH₄H₂PO₄ → `+NH₄⁺` (acid), `+H₂PO₄⁻`  
-- KHCO₃ → `+K⁺`, `+HCO₃⁻` (direct DIC + alkalinity)  (Leibar-Porcel et al., 2020; Zhang et al., 2024)CODEx then:
+- KHCO₃ → `+K⁺`, `+HCO₃⁻` (direct DIC + alkalinity)  (Leibar-Porcel et al., 2020; Zhang et al., 2024)
+
+CODEx then:
 
 1. Parses grams/L → mmol/L of each ion.  
 2. Fills the variables used in Steps 2–4.  

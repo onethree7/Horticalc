@@ -338,6 +338,11 @@ class CalcResult:
     ions_mmol_l: Dict[str, float]
     ions_meq_l: Dict[str, float]
     ion_balance: Dict[str, float]
+    water_elements_mg_l: Dict[str, float]
+    water_oxides_mg_l: Dict[str, float]
+    water_ions_mmol_l: Dict[str, float]
+    water_ions_meq_l: Dict[str, float]
+    water_ion_balance: Dict[str, float]
     ec_water: Dict[str, object]
     sluijsmann: Dict[str, float | dict]
 
@@ -352,6 +357,11 @@ class CalcResult:
             "ions_mmol_per_l": self.ions_mmol_l,
             "ions_meq_per_l": self.ions_meq_l,
             "ion_balance": self.ion_balance,
+            "water_elements_mg_per_l": self.water_elements_mg_l,
+            "water_oxides_mg_per_l": self.water_oxides_mg_l,
+            "water_ions_mmol_per_l": self.water_ions_mmol_l,
+            "water_ions_meq_per_l": self.water_ions_meq_l,
+            "water_ion_balance": self.water_ion_balance,
             "ec": compute_ec(self.ions_mmol_l),
             "ec_water": self.ec_water,
             "npk_metrics": format_npks(self),
@@ -418,8 +428,8 @@ def compute_solution(
         water_forms,
         urea_as_nh4,
     )
-    _compute_oxides_and_elements(mm, water_only_forms, water_forms, water_elements)
-    water_ions_mmol, _, _ = _compute_ions(
+    water_oxides = _compute_oxides_and_elements(mm, water_only_forms, water_forms, water_elements)
+    water_ions_mmol, water_ions_meq, water_ion_balance = _compute_ions(
         mm,
         water_only_forms,
         water_forms,
@@ -444,6 +454,11 @@ def compute_solution(
         ions_mmol_l=ions_mmol,
         ions_meq_l=ions_meq,
         ion_balance=ion_balance,
+        water_elements_mg_l=water_elements,
+        water_oxides_mg_l=water_oxides,
+        water_ions_mmol_l=water_ions_mmol,
+        water_ions_meq_l=water_ions_meq,
+        water_ion_balance=water_ion_balance,
         ec_water=ec_water,
         sluijsmann=sluijsmann,
     )

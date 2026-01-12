@@ -449,19 +449,19 @@ function renderSummaryTable(table, oxides, elements, waterElements = null) {
   const rows = [];
   if (waterMap) {
     rows.push({
-      label: "Wasserwerte",
+      label: "Wasserwerte (nur Wasser)",
       valueMap: waterMap,
       formatter: waterUnit === "mol_l" ? formatTraceValue : formatNutrientValue,
     });
   }
   rows.push(
     {
-      label: "Oxide",
+      label: "Oxide (Wasser + Dünger)",
       valueMap: oxideMap,
       formatter: formatOxideValue,
     },
     {
-      label: "Ionen",
+      label: "Ionen (Wasser + Dünger)",
       valueMap: elementMap,
       formatter: formatNutrientValue,
     }
@@ -782,8 +782,7 @@ function renderCalculation(data) {
   const oxides = data.oxides_mg_per_l || {};
   const elements = data.elements_mg_per_l || {};
   const npkMetrics = data.npk_metrics || {};
-  const normalizedWater = normalizeWaterValues(waterValues, Number(osmosisPercentInput.value) || 0);
-  const waterElements = computeWaterElements(normalizedWater);
+  const waterElements = data.water_elements_mg_per_l || {};
   const waterDisplay = waterElementsForDisplay(waterElements);
   renderSummaryTable(summaryTable, oxides, elements, waterDisplay);
 

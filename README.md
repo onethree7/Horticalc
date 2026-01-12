@@ -1,15 +1,17 @@
-# Horticalc (molar‑correct) – Projekt
+# Horticalc (molar‑correct)
 
-Ziel: Düngerrechner
+Horticalc ist ein molar‑korrekter Düngerrechner mit Python‑Backend. Die Kernlogik läuft in einer schlanken CLI, eine Web‑GUI ist optional angebunden. Alle Stammdaten liegen versionierbar in lesbaren Textformaten (CSV/YAML), sodass Berechnungen nachvollziehbar und reproduzierbar bleiben.
 
-- alle Stammdaten in **lesbaren Textdateien** (CSV/YAML)
-- Core‑Logik als **kleines Python‑Backend** (CLI zuerst, GUI später)
-
-Rechnungen passieren im Backend mit Python, Ionen und Oxide und Anionen + Kationen bilanzierung. EC und sluijsman und weitere module können hinzugefügt und integriert werden.
+**Schwerpunkte**
+- Molar‑stimmige Umrechnungen (Oxide → Elemente)
+- Getrennte N‑Formen (NH4, NO3, Urea)
+- Ionenbilanz (Anionen/Kationen) inkl. wählbarer Phosphat‑Spezies
+- EC‑Berechnung aus Ionenzusammensetzung
+- Erweiterbar um weitere Module (z. B. zusätzliche EC‑Modelle)
 
 ---
 
-## Quickstart
+## Quickstart (CLI)
 
 Voraussetzung: Python 3.10+.
 
@@ -31,8 +33,7 @@ horticalc recipes/golden.yml --pretty --out solutions/golden_output.json
 
 ## GUI + API (Web UI)
 
-Die GUI ist aktuell ein **statisches Frontend** unter `frontend/` und nutzt die **FastAPI**‑API unter `api/`.
-Die Tabellenansicht ist auf **kompakte, ausrichtbare Spalten** optimiert (Zebra‑Streifen, feste Spaltenbreiten, N‑Formen gruppiert).
+Die GUI ist ein **statisches Frontend** unter `frontend/` und spricht die **FastAPI** unter `api/`. Die Tabellenansicht ist auf kompakte, ausrichtbare Spalten optimiert (Zebra‑Streifen, feste Spaltenbreiten, gruppierte N‑Formen).
 
 ### Planung (Roadmap)
 - GUI modularisieren: **Settings**, **Wasserwerte‑Menü**, **Dünger‑Tab**
@@ -89,10 +90,10 @@ http://127.0.0.1:5173/
 
 ---
 
-## Datenmodell (statt Excel)
+## Datenmodell
 
 ### 1) `data/fertilizers.csv`
-Export aus deinem Sheet **„DüngerTab“**.
+Enthält die Düngeranalysen in Massenanteilen.
 
 Wichtig:
 - Die Analysenwerte sind **Massenanteile** (z.B. `0,14` = 14%).
@@ -102,14 +103,13 @@ Wichtig:
 - `Gewicht` ist ein Faktor für Flüssigdünger (z.B. Dichte/Be): **effektive Gramm = Gramm * Gewicht**.
 
 ### 2) `data/molar_masses.yml`
-Export aus deinem Sheet **„MolareMasse“** + kleine Ergänzungen, damit die Umrechnungen funktionieren.
+Molare Massen für alle verwendeten Formen (Elemente, Oxide, Ionen). Kleine Ergänzungen stellen sicher, dass alle Umrechnungen abgedeckt sind.
 
 ### 3) `data/water_profiles/*.yml`
-Wasserprofile als mg/L.
+Wasserprofile in mg/L.
 
-In dieser ZIP:
-- `default.yml` stammt aus deinem Sheet **„Wasserwerte“**.
-- `HCO3` wird als mg/L (Bicarbonat) mitgeführt.
+Hinweise:
+- `HCO3` wird als mg/L (Bicarbonat) geführt.
 - Optional kann `osmosis_percent` (0–100) gesetzt werden; der Core verdünnt die Wasserwerte entsprechend.
 
 ### 4) `recipes/*.yml`

@@ -472,6 +472,74 @@ main {
   padding: 0 var(--space-2);
 }
 
+.compact-card {
+  padding: var(--space-2) var(--space-3);
+}
+
+.compact-table-wrap {
+  overflow-x: auto;
+}
+
+.compact-table-wrap--balance {
+  overflow-x: visible;
+}
+
+.compact-label {
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.compact-ion-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.compact-ion-label-col {
+  width: 5rem;
+}
+
+.compact-ion-value-col {
+  width: calc((100% - 5rem) / var(--ion-cols, 1));
+}
+
+.compact-ion-table th,
+.compact-ion-table td {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid #2b3543;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+}
+
+.compact-ion-table th {
+  text-align: left;
+  background: #1a2230;
+}
+
+.compact-ion-cell {
+  font-variant-numeric: tabular-nums;
+}
+
+.compact-balance-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.compact-item {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.compact-balance-table td {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid #2b3543;
+  text-align: center;
+}
+
 .compact label,
 .compact .hint,
 .compact .inline-hint {

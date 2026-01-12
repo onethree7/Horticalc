@@ -152,7 +152,7 @@ def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) 
         mg_l_caco3 = dkh * 17.848
         return hco3_from_caco3(mg_l_caco3)
 
-    for key in ("NH4", "NO3", "P2O5", "K2O", "CaO", "MgO", "Na2O", "SO4", "Cl", "CO3", "SiO2", "HCO3"):
+    for key in ("NH4", "NO3", "P2O5", "K2O", "CaO", "MgO", "Na2O", "SO4", "Cl", "SiO2", "HCO3"):
         add(key, raw.get(key, 0.0))
 
     for key in ("Fe", "Mn", "Cu", "Zn", "B", "Mo"):
@@ -170,8 +170,9 @@ def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) 
     add("CaO", cao_from_ca(raw.get("Ca", 0.0)))
     add("MgO", mgo_from_mg(raw.get("Mg", 0.0)))
 
-    add("HCO3", hco3_from_caco3(raw.get("CaCO3", 0.0)))
-    add("HCO3", hco3_from_kh(raw.get("KH", 0.0)))
+    if raw.get("HCO3", 0.0) == 0.0:
+        add("HCO3", hco3_from_caco3(raw.get("CaCO3", 0.0)))
+        add("HCO3", hco3_from_kh(raw.get("KH", 0.0)))
 
     return normalized
 

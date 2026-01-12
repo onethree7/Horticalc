@@ -89,15 +89,12 @@ ALLOWED_WATER_KEYS = {
     "Na",
     "Cl",
     "HCO3",
-    "CO3",
     "Fe",
     "Mn",
     "Cu",
     "Zn",
     "B",
     "Mo",
-    "CaCO3",
-    "KH",
     "SiO2",
     "P2O5",
     "K2O",
@@ -105,6 +102,32 @@ ALLOWED_WATER_KEYS = {
     "MgO",
     "Na2O",
 }
+
+
+def hco3_from_caco3(value: float) -> float:
+    if value == 0.0:
+        return 0.0
+    equiv_weight_caco3 = MOLAR_MASSES["CaCO3"] / 2.0
+    return value * MOLAR_MASSES["HCO3"] / equiv_weight_caco3
+
+
+def hco3_from_kh(value: float) -> float:
+    if value == 0.0:
+        return 0.0
+    mg_l_caco3 = value * 17.848
+    return hco3_from_caco3(mg_l_caco3)
+
+
+def sanitize_water_profile(mg_per_l: Dict[str, float]) -> Dict[str, float]:
+    sanitized = dict(mg_per_l)
+    hco3 = sanitized.get("HCO3", 0.0)
+    if hco3 == 0.0:
+        hco3 = hco3_from_caco3(sanitized.get("CaCO3", 0.0)) + hco3_from_kh(sanitized.get("KH", 0.0))
+        if hco3:
+            sanitized["HCO3"] = hco3
+    for key in ("KH", "CaCO3", "CO3"):
+        sanitized.pop(key, None)
+    return sanitized
 
 
 @app.get("/health")
@@ -174,6 +197,8 @@ async def save_profile(request: Request) -> dict:
         except (TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=f"Invalid value for {key}") from exc
 
+    mg_per_l = sanitize_water_profile(mg_per_l)
+
     osmosis_percent = profile.osmosis_percent if profile.osmosis_percent is not None else 0
     try:
         osmosis_percent = float(osmosis_percent)
@@ -218,13 +243,13 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
         if not profile_path.exists():
             raise HTTPException(status_code=404, detail="Water profile not found")
         profile = load_water_profile_data(profile_path)
-        water_mg_l = profile.get("mg_per_l") or {}
+        water_mg_l = sanitize_water_profile(profile.get("mg_per_l") or {})
         osmosis_percent = float(profile.get("osmosis_percent") or 0)
         if osmosis_percent:
             factor = 1 - max(min(osmosis_percent, 100.0), 0.0) / 100.0
             water_mg_l = {key: value * factor for key, value in water_mg_l.items()}
     elif payload.water_mg_l:
-        water_mg_l = payload.water_mg_l
+        water_mg_l = sanitize_water_profile(payload.water_mg_l)
 
     recipe = {
         "liters": payload.liters,

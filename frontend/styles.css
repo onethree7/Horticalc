@@ -401,6 +401,12 @@ main {
   font-size: var(--text-sm);
 }
 
+.water-control-row input.is-locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #0b1018;
+}
+
 .water-settings {
   flex-direction: row;
   flex-wrap: wrap;

@@ -91,6 +91,7 @@ const oxideIntegerKeys = new Set([
   "SO4",
 ]);
 const oxideTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "SiO2"]);
+const hco3LockKeys = new Set(["KH", "CaCO3", "CO3"]);
 const summaryColumnOrder = [
   { oxide: "N_total", element: "N_total", label: "N_total" },
   { oxide: "P2O5", element: "P", label: "P2O5/P" },
@@ -197,6 +198,7 @@ function renderCalculatorTable() {
 
 function renderWaterTable() {
   waterTableBody.innerHTML = "";
+  const hco3Locked = (waterValues.HCO3 || 0) > 0;
   waterFieldDefinitions.forEach((field) => {
     const row = document.createElement("tr");
 
@@ -211,9 +213,23 @@ function renderWaterTable() {
     const rawValue = waterValues[field.key] || 0;
     const displayValue = waterUnit === "mol_l" ? mgToMol(field.key, rawValue) : rawValue;
     input.value = formatWaterDisplayValue(displayValue);
+    if (hco3Locked && hco3LockKeys.has(field.key)) {
+      input.disabled = true;
+      input.classList.add("is-locked");
+    }
     input.addEventListener("input", (event) => {
       const parsed = Number(event.target.value) || 0;
       waterValues[field.key] = waterUnit === "mol_l" ? molToMg(field.key, parsed) : parsed;
+      if (field.key === "HCO3") {
+        renderWaterTable();
+      } else if (hco3LockKeys.has(field.key) && waterValues.HCO3 === 0) {
+        const derivedHco3 =
+          hco3FromCaco3Value(waterValues.CaCO3 || 0) + hco3FromKhValue(waterValues.KH || 0);
+        if (derivedHco3 > 0) {
+          waterValues.HCO3 = derivedHco3;
+          renderWaterTable();
+        }
+      }
       scheduleRecalculate();
     });
     valueCell.appendChild(input);
@@ -550,9 +566,27 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+function hco3FromCaco3Value(mgCaCO3) {
+  if (!mgCaCO3) {
+    return 0;
+  }
+  const mm = (key) => getMolarMass(key) || 1;
+  const equiv = mm("CaCO3") / 2;
+  return (mgCaCO3 * mm("HCO3")) / equiv;
+}
+
+function hco3FromKhValue(dKh) {
+  if (!dKh) {
+    return 0;
+  }
+  return hco3FromCaco3Value(dKh * 17.848);
+}
+
 function normalizeWaterValues(rawValues, osmosisPercent) {
   const factor = 1 - clamp(osmosisPercent, 0, 100) / 100;
   const normalized = {};
+  const hco3Direct = rawValues.HCO3 || 0;
+  const useDerivedHco3 = hco3Direct === 0;
 
   const add = (key, value) => {
     if (!Number.isFinite(value) || value === 0) {
@@ -576,17 +610,8 @@ function normalizeWaterValues(rawValues, osmosisPercent) {
   const caoFromCa = (mgCa) => (mgCa ? (mgCa * mm("CaO")) / mm("Ca") : 0);
   const mgoFromMg = (mgMg) => (mgMg ? (mgMg * mm("MgO")) / mm("Mg") : 0);
 
-  const hco3FromCaco3 = (mgCaCO3) => {
-    if (!mgCaCO3) return 0;
-    const equiv = mm("CaCO3") / 2;
-    return (mgCaCO3 * mm("HCO3")) / equiv;
-  };
-
-  const hco3FromKh = (dKh) => {
-    if (!dKh) return 0;
-    const mgCaCO3 = dKh * 17.848;
-    return hco3FromCaco3(mgCaCO3);
-  };
+  const hco3FromCaco3 = hco3FromCaco3Value;
+  const hco3FromKh = hco3FromKhValue;
 
   add("NH4", (rawValues.NH4 || 0) + (rawValues.NH3 || 0));
   add("NO3", (rawValues.NO3 || 0) + (rawValues.NO2 || 0));
@@ -604,8 +629,11 @@ function normalizeWaterValues(rawValues, osmosisPercent) {
   add("Zn", rawValues.Zn || 0);
   add("B", rawValues.B || 0);
   add("Mo", rawValues.Mo || 0);
-  add("HCO3", (rawValues.HCO3 || 0) + hco3FromCaco3(rawValues.CaCO3 || 0) + hco3FromKh(rawValues.KH || 0));
-  add("CO3", rawValues.CO3 || 0);
+  if (useDerivedHco3) {
+    add("HCO3", hco3FromCaco3(rawValues.CaCO3 || 0) + hco3FromKh(rawValues.KH || 0));
+  } else {
+    add("HCO3", hco3Direct);
+  }
   add("SiO2", rawValues.SiO2 || 0);
 
   return normalized;
@@ -691,10 +719,16 @@ function buildPayload() {
     .map((fert, index) => ({ name: fert.name, grams: fertilizerAmounts[index] }))
     .filter((entry) => entry.name && entry.grams > 0);
 
+  const normalizedWater = normalizeWaterValues(waterValues, Number(osmosisPercentInput.value) || 0);
+  const waterPayload = { ...normalizedWater };
+  delete waterPayload.KH;
+  delete waterPayload.CaCO3;
+  delete waterPayload.CO3;
+
   return {
     liters: 10.0,
     fertilizers,
-    water_mg_l: normalizeWaterValues(waterValues, Number(osmosisPercentInput.value) || 0),
+    water_mg_l: waterPayload,
   };
 }
 
@@ -736,10 +770,15 @@ async function saveWaterProfile() {
     alert("Bitte einen Profilnamen angeben.");
     return;
   }
+  const normalizedWater = normalizeWaterValues(waterValues, Number(osmosisPercentInput.value) || 0);
+  const waterPayload = { ...normalizedWater };
+  delete waterPayload.KH;
+  delete waterPayload.CaCO3;
+  delete waterPayload.CO3;
   const payload = {
     name,
     source: "Horticalc UI",
-    mg_per_l: { ...waterValues },
+    mg_per_l: waterPayload,
     osmosis_percent: Number(osmosisPercentInput.value) || 0,
   };
   const response = await fetch(`${apiBase()}/water-profiles`, {
@@ -839,6 +878,8 @@ function applyRecipe(recipe) {
 function applyWaterProfile(profile) {
   const mg = profile.mg_per_l || {};
   const mm = (key) => getMolarMass(key) || 1;
+  const hco3Direct = mg.HCO3 || 0;
+  const derivedHco3 = hco3Direct ? 0 : hco3FromCaco3Value(mg.CaCO3 || 0) + hco3FromKhValue(mg.KH || 0);
 
   waterFieldDefinitions.forEach((field) => {
     waterValues[field.key] = 0;
@@ -865,16 +906,16 @@ function applyWaterProfile(profile) {
   waterValues.Na = mg.Na || (mg.Na2O ? (mg.Na2O * 2 * mm("Na")) / mm("Na2O") : 0);
 
   waterValues.Cl = mg.Cl || 0;
-  waterValues.HCO3 = mg.HCO3 || 0;
-  waterValues.CO3 = mg.CO3 || 0;
+  waterValues.HCO3 = hco3Direct || derivedHco3;
+  waterValues.CO3 = 0;
   waterValues.Fe = mg.Fe || 0;
   waterValues.Mn = mg.Mn || 0;
   waterValues.Cu = mg.Cu || 0;
   waterValues.Zn = mg.Zn || 0;
   waterValues.B = mg.B || 0;
   waterValues.Mo = mg.Mo || 0;
-  waterValues.CaCO3 = mg.CaCO3 || 0;
-  waterValues.KH = mg.KH || 0;
+  waterValues.CaCO3 = 0;
+  waterValues.KH = 0;
   waterValues.SiO2 = mg.SiO2 || 0;
 
   waterProfileNameInput.value = profile.name || "";

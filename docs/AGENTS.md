@@ -10,7 +10,9 @@ Konventionen sowie die nächste Entwicklungslinie.
 ## Aktueller Stand (kurz)
 - Datenquellen in Textform: `data/fertilizers.csv`, `data/molar_masses.yml`,
   `data/water_profiles/*.yml`
-- Core‑Logik: Umrechnung Oxide → Elemente, N‑Formen getrennt, Ionenbilanz
+- Core‑Logik: Umrechnung Oxide → Elemente, getrennte N‑Formen, Ionenbilanz, EC‑Berechnung
+- API/GUI: FastAPI liefert Dünger, Wasserprofile, Berechnungen; GUI bietet Wasserprofile,
+  NPK‑Metriken, EC‑Metriken und Ionenbilanz
 - CLI: `horticalc recipes/<file>.yml --pretty`
 
 ## Geplante Features / Notizen

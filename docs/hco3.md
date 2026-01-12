@@ -2,6 +2,18 @@
 
 Below is a compact, implementation‑oriented framework you can feed into a CODEX/solver. It is based on carbonate chemistry plus the nutrient–pH relations described for hydroponic solutions  (Leibar-Porcel et al., 2020; Langenfeld et al., 2022; Tellbüscher et al., 2024; Rijck & Schrevens, 1997).
 
+### Unit mapping for solver inputs (recipe + water profile)
+
+**Recipe inputs → mmol/L ions (pH/DIC solver).** The recipe/fertilizer layer is expressed as **mg/L oxide or element forms** (see `data/fertilizers.csv`). In `src/horticalc/core.py`, oxide forms are first converted to elemental mg/L in `_oxide_to_element` (e.g., `P2O5 → P`, `K2O → K`, `CaO → Ca`), then element or ionic species are converted to mmol/L by dividing by the molar mass. For N forms, `_n_element_to_molecule` and `_n_molecule_to_element` govern the NH4/NO3 mg/L ⇄ N‑element conversions before the mmol/L step. This means the pH/DIC solver should expect **mmol/L ions** (K⁺, Ca²⁺, Mg²⁺, NH₄⁺, NO₃⁻, SO₄²⁻, H₂PO₄⁻/HPO₄²⁻, HCO₃⁻/CO₃²⁻) derived from those oxide/element mg/L entries in the recipe.
+
+**Water profile inputs → DIC/alkalinity.** `normalize_water_profile` in `src/horticalc/core.py` accepts water profiles in **mg/L** and normalizes them into the same oxide/ion keys used above. For alkalinity, it explicitly maps:
+
+- `HCO3` (mg/L) → kept as **mg/L HCO₃⁻** (direct DIC input).
+- `CaCO3` (mg/L) → **mg/L HCO₃⁻** via `hco3_from_caco3`, using CaCO₃ equivalent weight (`CaCO3 / 2`) before converting to HCO₃⁻.
+- `KH` (°dKH) → **mg/L CaCO₃** via `17.848 * dKH`, then to **mg/L HCO₃⁻** via `hco3_from_caco3`.
+
+Once normalized, convert water‑profile `HCO3` mg/L to **mmol/L HCO₃⁻** (divide by molar mass) and treat this as the **water DIC/alkalinity input** to the pH/DIC solver.
+
 ### 1. Define what your “HCO₃⁻ vector” represents
 
 Use a state vector per solution (or time step):

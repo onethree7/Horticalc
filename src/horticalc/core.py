@@ -113,6 +113,8 @@ def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) 
     raw = _normalize_mg_l(water_mg_l)
     normalized: Dict[str, float] = {}
 
+    water_profile_keys = [key for key in COMP_COLS if key != "Ur-N"]
+
     def add(key: str, value: float) -> None:
         if value == 0.0:
             return
@@ -132,20 +134,13 @@ def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) 
         mg_l_p = mg_l_po4 * _mm(mm, "P") / _mm(mm, "PO4")
         return p2o5_from_p(mg_l_p)
 
-    def so4_from_s(mg_l_s: float) -> float:
-        return oxide_from_element(mg_l_s, "SO4", "S")
-
-    def k2o_from_k(mg_l_k: float) -> float:
-        return oxide_from_element(mg_l_k, "K2O", "K", multiplier=2.0)
-
-    def na2o_from_na(mg_l_na: float) -> float:
-        return oxide_from_element(mg_l_na, "Na2O", "Na", multiplier=2.0)
-
-    def cao_from_ca(mg_l_ca: float) -> float:
-        return oxide_from_element(mg_l_ca, "CaO", "Ca")
-
-    def mgo_from_mg(mg_l_mg: float) -> float:
-        return oxide_from_element(mg_l_mg, "MgO", "Mg")
+    element_to_oxide = {
+        "S": ("SO4", "S", 1.0),
+        "K": ("K2O", "K", 2.0),
+        "Na": ("Na2O", "Na", 2.0),
+        "Ca": ("CaO", "Ca", 1.0),
+        "Mg": ("MgO", "Mg", 1.0),
+    }
 
     def hco3_from_caco3(mg_l_caco3: float) -> float:
         if mg_l_caco3 == 0.0:
@@ -159,10 +154,7 @@ def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) 
         mg_l_caco3 = dkh * 17.848
         return hco3_from_caco3(mg_l_caco3)
 
-    for key in ("NH4", "NO3", "P2O5", "K2O", "CaO", "MgO", "Na2O", "SO4", "Cl", "SiO2", "HCO3"):
-        add(key, raw.get(key, 0.0))
-
-    for key in ("Fe", "Mn", "Cu", "Zn", "B", "Mo"):
+    for key in water_profile_keys:
         add(key, raw.get(key, 0.0))
 
     add("NH4", raw.get("NH3", 0.0))
@@ -171,11 +163,8 @@ def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) 
     add("P2O5", p2o5_from_po4(raw.get("PO4", 0.0)))
     add("P2O5", p2o5_from_p(raw.get("P", 0.0)))
 
-    add("SO4", so4_from_s(raw.get("S", 0.0)))
-    add("K2O", k2o_from_k(raw.get("K", 0.0)))
-    add("Na2O", na2o_from_na(raw.get("Na", 0.0)))
-    add("CaO", cao_from_ca(raw.get("Ca", 0.0)))
-    add("MgO", mgo_from_mg(raw.get("Mg", 0.0)))
+    for element, (oxide_key, element_key, multiplier) in element_to_oxide.items():
+        add(oxide_key, oxide_from_element(raw.get(element, 0.0), oxide_key, element_key, multiplier))
 
     if raw.get("HCO3", 0.0) == 0.0:
         add("HCO3", hco3_from_caco3(raw.get("CaCO3", 0.0)))
@@ -236,24 +225,7 @@ def _compute_oxides_and_elements(
     oxides = {key: 0.0 for key in OXIDE_FORM_COLS}
     oxides["N_total"] = elements.get("N_total", 0.0)
 
-    for form in (
-        "P2O5",
-        "K2O",
-        "CaO",
-        "MgO",
-        "Na2O",
-        "SO4",
-        "Fe",
-        "Mn",
-        "Cu",
-        "Zn",
-        "B",
-        "Mo",
-        "Cl",
-        "CO3",
-        "HCO3",
-        "SiO2",
-    ):
+    for form in OXIDE_FORM_COLS:
         oxides[form] = forms_mg_l.get(form, 0.0) + water_forms.get(form, 0.0)
 
     # Oxides from fertilizers
@@ -345,6 +317,40 @@ def _compute_ions(
     return ions_mmol, ions_meq, ion_balance
 
 
+def _compute_solution_state(
+    mm: Dict[str, float],
+    forms_mg_l: Dict[str, float],
+    water_forms: Dict[str, float],
+    urea_as_nh4: bool,
+    phosphate_species: str,
+) -> tuple[
+    Dict[str, float],
+    Dict[str, float],
+    Dict[str, float],
+    Dict[str, float],
+    Dict[str, float],
+    float,
+    float,
+]:
+    elements, nh4_mg_l_raw, no3_mg_l_raw = _compute_nitrogen(
+        mm,
+        forms_mg_l,
+        water_forms,
+        urea_as_nh4,
+    )
+    oxides = _compute_oxides_and_elements(mm, forms_mg_l, water_forms, elements)
+    ions_mmol, ions_meq, ion_balance = _compute_ions(
+        mm,
+        forms_mg_l,
+        water_forms,
+        elements,
+        nh4_mg_l_raw,
+        no3_mg_l_raw,
+        phosphate_species,
+    )
+    return elements, oxides, ions_mmol, ions_meq, ion_balance, nh4_mg_l_raw, no3_mg_l_raw
+
+
 @dataclass
 class CalcResult:
     liters: float
@@ -423,38 +429,25 @@ def compute_solution(
     # 2) Add water baseline (water profile is in mg/L of its own forms)
     # Water NH4/NO3 are interpreted as molecules (NH4, NO3), NOT "N as ...".
 
-    # 3) Compute element totals (mg/L)
-    elements, nh4_mg_l_raw, no3_mg_l_raw = _compute_nitrogen(mm, forms_mg_l, water_forms, urea_as_nh4)
-    oxides = _compute_oxides_and_elements(mm, forms_mg_l, water_forms, elements)
-
-    # 4) Ion balance (meq/L) – use molecule forms
-    ions_mmol, ions_meq, ion_balance = _compute_ions(
+    # 3) Compute element totals (mg/L) + ion balance (meq/L)
+    elements, oxides, ions_mmol, ions_meq, ion_balance, _, _ = _compute_solution_state(
         mm,
         forms_mg_l,
         water_forms,
-        elements,
-        nh4_mg_l_raw,
-        no3_mg_l_raw,
+        urea_as_nh4,
         phosphate_species,
     )
 
     # 4b) Water-only EC (baseline without fertilizers)
     water_only_forms = {k: 0.0 for k in COMP_COLS}
-    water_elements, water_nh4_mg_l_raw, water_no3_mg_l_raw = _compute_nitrogen(
-        mm,
-        water_only_forms,
-        water_forms,
-        urea_as_nh4,
-    )
-    water_oxides = _compute_oxides_and_elements(mm, water_only_forms, water_forms, water_elements)
-    water_ions_mmol, water_ions_meq, water_ion_balance = _compute_ions(
-        mm,
-        water_only_forms,
-        water_forms,
-        water_elements,
-        water_nh4_mg_l_raw,
-        water_no3_mg_l_raw,
-        phosphate_species,
+    water_elements, water_oxides, water_ions_mmol, water_ions_meq, water_ion_balance, _, _ = (
+        _compute_solution_state(
+            mm,
+            water_only_forms,
+            water_forms,
+            urea_as_nh4,
+            phosphate_species,
+        )
     )
     ec_water = compute_ec(water_ions_mmol)
 

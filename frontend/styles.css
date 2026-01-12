@@ -235,23 +235,20 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
-.grid--form .col-index {
+.grid--fertilizer .col-index {
   width: 2ch;
 }
 
-.grid--form .col-name {
+.grid--fertilizer .col-name {
   width: 18rem;
 }
 
-.grid--form .col-form {
+.grid--fertilizer .col-form {
   width: 8rem;
 }
 
-.grid--form .col-weight {
-  width: 7rem;
-}
-
-.grid--form .col-amount {
+.grid--fertilizer .col-weight,
+.grid--fertilizer .col-amount {
   width: 7rem;
 }
 

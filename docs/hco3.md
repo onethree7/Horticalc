@@ -14,6 +14,13 @@ Below is a compact, implementation‑oriented framework you can feed into a CODE
 
 Once normalized, convert water‑profile `HCO3` mg/L to **mmol/L HCO₃⁻** (divide by molar mass) and treat this as the **water DIC/alkalinity input** to the pH/DIC solver.
 
+### Assumptions (current)
+
+- **Temperature reference:** 25 °C for equilibrium constants.
+- **Kw value:** use `Kw = 1e-14` at 25 °C (or `Kw = [H⁺][OH⁻]` with temperature‑specific constants if you implement it).
+- **Simplifications:** fixed phosphate pKa (e.g., pKa2 ≈ 7.2) and no ionic‑strength corrections.
+- **Note:** these constants should be centralized in the backend when implemented.
+
 ### 1. Define what your “HCO₃⁻ vector” represents
 
 Use a state vector per solution (or time step):

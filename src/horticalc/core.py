@@ -14,7 +14,7 @@ COMP_COLS: List[str] = [
     # oxides
     "P2O5", "K2O", "CaO", "MgO", "Na2O",
     # anions / other
-    "SO4", "Cl", "CO3", "SiO2",
+    "SO4", "Cl", "CO3", "HCO3", "SiO2",
     # trace elements
     "Fe", "Mn", "Cu", "Zn", "B", "Mo",
 ]
@@ -34,6 +34,7 @@ OXIDE_FORM_COLS: List[str] = [
     "Mo",
     "Cl",
     "CO3",
+    "HCO3",
     "SiO2",
 ]
 
@@ -235,6 +236,7 @@ def _compute_oxides_and_elements(
         "Mo",
         "Cl",
         "CO3",
+        "HCO3",
         "SiO2",
     ):
         oxides[form] = forms_mg_l.get(form, 0.0) + water_forms.get(form, 0.0)
@@ -252,6 +254,10 @@ def _compute_oxides_and_elements(
         if mg_l:
             el, val = _form_to_element(mg_l, mm, form)
             elements[el] = elements.get(el, 0.0) + val
+
+    hco3_mg_l = forms_mg_l.get("HCO3", 0.0) + water_forms.get("HCO3", 0.0)
+    if hco3_mg_l:
+        elements["HCO3"] = elements.get("HCO3", 0.0) + hco3_mg_l
 
     return oxides
 
@@ -301,7 +307,7 @@ def _compute_ions(
     if cl_mg_l:
         add_ion("Cl-", cl_mg_l, "Cl", charge=-1)
 
-    hco3_mg_l = water_forms.get("HCO3", 0.0)
+    hco3_mg_l = forms_mg_l.get("HCO3", 0.0) + water_forms.get("HCO3", 0.0)
     if hco3_mg_l:
         add_ion("HCO3-", hco3_mg_l, "HCO3", charge=-1)
     co3_mg_l = forms_mg_l.get("CO3", 0.0) + water_forms.get("CO3", 0.0)

@@ -34,6 +34,7 @@ let molarMasses = {};
 let waterProfiles = [];
 let waterUnit = "mg_l";
 let lastCalculation = null;
+let recalculateTimer = null;
 
 const waterFieldDefinitions = [
   { key: "NH4", label: "Ammonium in NH4" },
@@ -149,6 +150,7 @@ function renderSelectionTable() {
       };
       renderSelectionTable();
       renderCalculatorTable();
+      scheduleRecalculate();
     });
     select.value = selectedFertilizers[i].name;
     selectCell.appendChild(select);
@@ -184,6 +186,7 @@ function renderCalculatorTable() {
     input.value = fertilizerAmounts[i];
     input.addEventListener("input", (event) => {
       fertilizerAmounts[i] = Number(event.target.value) || 0;
+      scheduleRecalculate();
     });
     amountCell.appendChild(input);
 
@@ -211,6 +214,7 @@ function renderWaterTable() {
     input.addEventListener("input", (event) => {
       const parsed = Number(event.target.value) || 0;
       waterValues[field.key] = waterUnit === "mol_l" ? molToMg(field.key, parsed) : parsed;
+      scheduleRecalculate();
     });
     valueCell.appendChild(input);
 
@@ -295,6 +299,20 @@ function unitLabelForKey(key) {
     return "°dKH";
   }
   return waterUnit === "mol_l" ? "mol/L" : "mg/L";
+}
+
+function scheduleRecalculate() {
+  if (recalculateTimer) {
+    clearTimeout(recalculateTimer);
+  }
+  recalculateTimer = setTimeout(async () => {
+    try {
+      const data = await calculate();
+      renderCalculation(data);
+    } catch (error) {
+      alert(error.message);
+    }
+  }, 250);
 }
 
 
@@ -985,17 +1003,13 @@ saveWaterProfileButton.addEventListener("click", async () => {
 });
 
 osmosisPercentInput.addEventListener("input", () => {
-  if (lastCalculation) {
-    renderCalculation(lastCalculation);
-  }
+  scheduleRecalculate();
 });
 
 waterUnitToggle.addEventListener("change", (event) => {
   waterUnit = event.target.checked ? "mol_l" : "mg_l";
   renderWaterTable();
-  if (lastCalculation) {
-    renderCalculation(lastCalculation);
-  }
+  scheduleRecalculate();
 });
 
 toggleWaterValuesButton.addEventListener("click", () => {

@@ -1,0 +1,20 @@
+name: Yoshida Rice Solution 1976 (Common Variant)
+source: User provided dataset
+water_elements_mg_per_l:
+  N_total: 40.0592
+  N_NH4: 20.0296
+  N_NO3: 20.0296
+  N_UREA: 0.0
+  P: 9.9116
+  K: 103.22
+  Ca: 40.078
+  Mg: 39.86
+  Na: 7.357
+  S: 94.9124
+  Si: 0.0
+  Cl: 71.473
+  Fe: 5.585
+  Mn: 0.438955
+  Cu: 0.009532
+  B: 0.015026
+  HCO3: 0.0

@@ -1,0 +1,20 @@
+name: Knop 1861 Standard
+source: User provided dataset
+water_elements_mg_per_l:
+  N_total: 205.359
+  N_NH4: 0.0
+  N_NO3: 205.359
+  N_UREA: 0.0
+  P: 56.9013
+  K: 168.506
+  Ca: 244.25
+  Mg: 24.6531
+  Na: 0.0
+  S: 32.5242
+  Si: 0.0
+  Cl: 0.0
+  Fe: 0.0
+  Mn: 0.0
+  Cu: 0.0
+  B: 0.0
+  HCO3: 0.0

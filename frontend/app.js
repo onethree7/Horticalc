@@ -24,8 +24,8 @@ const ecWater18Value = document.querySelector("#ecWater18Value");
 const ecWater25Value = document.querySelector("#ecWater25Value");
 
 const summaryTable = document.querySelector("#summaryTable");
-const ionMeqTableBody = document.querySelector("#ionMeqTable tbody");
-const ionBalanceTableBody = document.querySelector("#ionBalanceTable tbody");
+const ionMeqCard = document.querySelector("#ionMeqCard");
+const ionBalanceCard = document.querySelector("#ionBalanceCard");
 
 let fertilizerOptions = [];
 const selectedFertilizers = [{ name: "", form: "", weight: "" }];
@@ -266,17 +266,69 @@ function unitLabelForKey(key) {
 }
 
 
-function renderKeyValueTable(tableBody, entries) {
-  tableBody.innerHTML = "";
+function renderCompactLine(container, label, entries, options = {}) {
+  const { valueFormatter = formatNumber } = options;
+  const line = document.createElement("div");
+  line.classList.add("compact-line");
+
+  const labelEl = document.createElement("span");
+  labelEl.classList.add("compact-label");
+  labelEl.textContent = label;
+  line.appendChild(labelEl);
+
+  const values = document.createElement("div");
+  values.classList.add("compact-values");
   entries.forEach(([key, value]) => {
-    const row = document.createElement("tr");
-    const keyCell = document.createElement("td");
-    keyCell.textContent = key;
-    const valueCell = document.createElement("td");
-    valueCell.textContent = formatNumber(Number(value));
-    row.append(keyCell, valueCell);
-    tableBody.appendChild(row);
+    const chip = document.createElement("span");
+    chip.classList.add("compact-chip");
+    chip.textContent = `${key} ${valueFormatter(value)}`;
+    values.appendChild(chip);
   });
+  line.appendChild(values);
+  container.appendChild(line);
+}
+
+function renderIonMeqCompact(container, entries) {
+  container.innerHTML = "";
+  const cations = [];
+  const anions = [];
+  entries.forEach(([key, value]) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return;
+    }
+    if (numeric >= 0) {
+      cations.push([key, numeric]);
+    } else {
+      anions.push([key, Math.abs(numeric)]);
+    }
+  });
+  if (cations.length) {
+    renderCompactLine(container, "CATIONS:", cations);
+  }
+  if (anions.length) {
+    renderCompactLine(container, "ANIONS:", anions);
+  }
+}
+
+function renderIonBalanceCompact(container, ionBalance) {
+  container.innerHTML = "";
+  const entries = [];
+  if (ionBalance) {
+    if (Number.isFinite(ionBalance.cations_meq_per_l)) {
+      entries.push(["Σ+", ionBalance.cations_meq_per_l]);
+    }
+    if (Number.isFinite(ionBalance.anions_meq_per_l)) {
+      entries.push(["Σ−", ionBalance.anions_meq_per_l]);
+    }
+    if (Number.isFinite(ionBalance.error_percent_abs)) {
+      entries.push(["Δ", ionBalance.error_percent_abs]);
+    }
+  }
+  if (!entries.length) {
+    return;
+  }
+  renderCompactLine(container, "BILANZ:", entries);
 }
 
 function renderSummaryTable(table, oxides, elements, waterElements = null) {
@@ -652,10 +704,8 @@ function renderCalculation(data) {
   renderSummaryTable(summaryTable, oxides, elements, waterDisplay);
 
   const ionMeqEntries = Object.entries(data.ions_meq_per_l || {});
-  renderKeyValueTable(ionMeqTableBody, ionMeqEntries);
-
-  const ionBalanceEntries = Object.entries(data.ion_balance || {});
-  renderKeyValueTable(ionBalanceTableBody, ionBalanceEntries);
+  renderIonMeqCompact(ionMeqCard, ionMeqEntries);
+  renderIonBalanceCompact(ionBalanceCard, data.ion_balance);
 
   npkAllPctValue.textContent = npkMetrics.npk_all_pct || "-";
   npkPNormValue.textContent = npkMetrics.npk_p_norm || "-";

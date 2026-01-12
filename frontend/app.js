@@ -722,6 +722,7 @@ async function saveWaterProfile() {
     name,
     source: "Horticalc UI",
     mg_per_l: { ...waterValues },
+    osmosis_percent: Number(osmosisPercentInput.value) || 0,
   };
   const response = await fetch(`${apiBase()}/water-profiles`, {
     method: "POST",
@@ -860,6 +861,7 @@ function applyWaterProfile(profile) {
   waterValues.SiO2 = mg.SiO2 || 0;
 
   waterProfileNameInput.value = profile.name || "";
+  osmosisPercentInput.value = profile.osmosis_percent ?? 0;
   renderWaterTable();
 }
 

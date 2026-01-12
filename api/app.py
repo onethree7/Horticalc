@@ -66,6 +66,7 @@ class WaterProfilePayload(BaseModel):
     name: str
     source: Optional[str] = ""
     mg_per_l: Dict[str, float] = Field(default_factory=dict)
+    osmosis_percent: float | None = 0
 
 
 ALLOWED_WATER_KEYS = {
@@ -168,13 +169,27 @@ async def save_profile(request: Request) -> dict:
         except (TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=f"Invalid value for {key}") from exc
 
+    osmosis_percent = profile.osmosis_percent if profile.osmosis_percent is not None else 0
+    try:
+        osmosis_percent = float(osmosis_percent)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid osmosis_percent value") from exc
+    if not 0 <= osmosis_percent <= 100:
+        raise HTTPException(status_code=400, detail="osmosis_percent must be between 0 and 100")
+
     safe_name = "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in name).strip("_")
     if not safe_name:
         raise HTTPException(status_code=400, detail="Profile name results in empty filename")
 
     profile_path = WATER_PROFILES_DIR / f"{safe_name}.yml"
     WATER_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
-    save_water_profile(profile_path, name=name, source=profile.source or "", mg_per_l=mg_per_l)
+    save_water_profile(
+        profile_path,
+        name=name,
+        source=profile.source or "",
+        mg_per_l=mg_per_l,
+        osmosis_percent=osmosis_percent,
+    )
     return {"status": "ok", "filename": profile_path.name}
 
 

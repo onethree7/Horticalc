@@ -1,76 +1,68 @@
-# GUI – Arbeitsbeschreibung (auf Basis der referenzierten Screenshot-Ansicht)
+# GUI – Aktueller Stand der Web‑UI
 
-Dieses Dokument fasst die aktuelle, theoretische GUI semantisch zusammen. Die Beschreibung orientiert sich **primär am Screenshot** und ergänzt die Anforderungen aus dem Text nur dort, wo sie das Bild sinnvoll ergänzen (z. B. Datenbankgröße, Dropdown-Behavior, spätere EC-Funktion).
+Dieses Dokument beschreibt die **aktuelle** GUI, wie sie im Ordner `frontend/` umgesetzt ist.
+Der Fokus liegt auf den vorhandenen Bereichen, Datenflüssen und UI‑Elementen.
 
-## 1) Kopfbereich: Vorauswahl der Düngerkomponenten
+## 1) Kopfbereich: API‑Verbindung
 
-**Zweck:** Auswahl der bis zu 10 verwendeten Dünger aus der Datenbank.
+**Zweck:** Verbindung zur FastAPI konfigurieren und Daten neu laden.
 
-**Layout & Inhalte (Screenshot-basiert):**
-- Tabellenkopf „Vorauswahl der Düngerkomponenten“.
-- Pro Zeile ein auswählbarer Düngername (Dropdown).
-- Begleitspalten: `Nr.`, `Dünger Name`, `Form`, `Gewicht`.
-- Nährstoffspalten in Prozentangaben/Anteilen pro Dünger:
-  - `N_total`, `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O`, `SO4`
-  - Spurenelemente/Ionen: `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`, `Cl`, `CO3`, `SiO2`, `HCO3-V`
-- Beispielwerte zeigen, dass es sich um Dünger-Analysewerte handelt (z. B. NPK/oxidische Formen).
+**Inhalte:**
+- Eingabefeld **API Base URL** (`http://localhost:8000` als Default).
+- Button **„Dünger laden“** (lädt Dünger und Wasserprofile neu).
 
-**Ergänzende Anforderung (aus Text):**
-- Dropdown muss eine **lange Dünger-Datenbank (150+ Einträge)** unterstützen (scrollbar, optional Sidebar/Filter).
-- Es sind **maximal 10 Dünger** auswählbar (entspricht der 10‑Zeilen-Struktur).
+## 2) Wasserwerte (Profile + Eingabe)
 
-## 2) Zentraler Block: Düngercalculator / Nährstoffmengen
+**Zweck:** Wasserprofil laden/speichern und manuelle Werte pflegen.
 
-**Zweck:** Eingabe der Dünger-Mengen und Berechnung der Nährstoffmengen in verschiedenen Einheiten.
+**Inhalte & Funktionen:**
+- Einklappbarer Bereich („Wasserwerte anzeigen“).
+- **Profile auswählen**, **Laden**, **Reset Default**.
+- **Profilname speichern** (Profil als YAML über API speichern).
+- **Osmoseanteil (%)** zur Verdünnung.
+- **Einheiten‑Toggle** (mg/L ↔ mol/L Darstellung/Eingabe).
+- Tabelle **Parameter/Wert/Einheit** für alle Wasser‑Parameter (NH4, NO3, PO4, K, Ca,
+  Mg, Na, SO4, Spurenelemente, Cl, HCO3/CO3, CaCO3, KH, SiO2).
 
-**Layout & Inhalte (Screenshot-basiert):**
-- Kopfzeile mit **Düngername** und **Menge eingeben** (pro ausgewähltem Dünger).
-- Pro Dünger wird eine Zeile mit Mengen (Zahlenfeld) geführt.
-- Nährstoffspalten spiegeln die Auswahl aus dem oberen Block (N_total, P2O5, K2O, CaO, …, HCO3‑V).
-- Linke Seitenleiste mit **EC‑Parametern**:
-  - EC‑Feinjustierung (Dünger), EC‑Dünger (bei 18°/25°), EC‑Gesamt (bei 18°/25°).
-  - Kalk-Parameter: „Proportionale Kalkrechnung der Oxide“, „Kalkrechnung“, „Kalkbalance“, „Stickstoffmodifikator“.
+## 3) Vorauswahl der Düngerkomponenten
 
-**Berechnungsausgaben (Screenshot + Ergänzung):**
-Es gibt mehrere **Summenzeilen** im Bereich der Nährstoffmengen:
-- **Nährstoffmenge Dünger**: in `g` und in `mg`
-- **Nährstoffmenge Dünger + Wasser**: in `g` und in `mg`
-- **Nährstoffmenge Dünger + Wasser (aka ppm)**: in `mg/l`
+**Zweck:** Auswahl der Dünger aus der Datenbank.
 
-**Zentrales Element:**
-- Der **Hauptwert** ist **„Nährstoffmenge Dünger + Wasser aka ppm (mg/l)“**.
-- Alle anderen Mengen sind unterstützend, müssen aber mitberechnet werden.
+**Inhalte:**
+- Tabelle mit Spalten **#**, **Dünger (Dropdown)**, **Form**, **Gewicht**.
+- Buttons **+ / -** zum Hinzufügen/Entfernen von Zeilen.
+- Dropdowns greifen auf die geladene Dünger‑Datenbank zu.
 
+## 4) Düngercalculator
 
-## 3) Unterer Block: Einzelne Ionen & Nährstoffverhältnisse
+**Zweck:** Eingabe der Gramm‑Mengen pro ausgewähltem Dünger und Start der Berechnung.
 
-**Zweck:** Ionenspezifische Auswertung (mg/l) und Verhältnisberechnungen.
+**Inhalte:**
+- Tabelle mit **Düngername** (aus Auswahl) und **Menge (g)**.
+- Button **„Berechnen“** ruft `/calculate` auf.
 
-**Layout & Inhalte (Screenshot-basiert):**
-- Tabellenblock **„Einzelne Ionen“** mit Spalten:
-  - `N_total`, `P`, `K`, `Ca`, `Mg`, `Na`, `S`
-  - Spurenelemente: `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`, `Cl`, `C`, `Si`
-  - `HCO3‑V (mg/l)`
-- Zeilenstruktur analog zum zentralen Block:
-  - `Nährstoffm. Dünger+Wasser in g`
-  - `Nährstoffm. Dünger+Wasser in mg`
-  - **`Nährstoffm. Dünger+Wasser aka ppm in mg/l`** (hier soll man wieder zum Hauptwert kommen)
+**Ergebnis‑Karten:**
+- **NPK Gesamt (%)**
+- **NPK P‑Norm**
+- **NPK Verhältnis (%)**
+- **EC‑Werte** für Wasser sowie Wasser + Dünger (EC18/EC25)
 
-**Nährstoffverhältnisse (rechter Block im Screenshot):**
-- Tabellenkopf „Nährstoffverhältnisse“ mit Spalten `Von Zu`, `IST`, `Min`, `Max`.
-- Beispiele (aus Screenshot): `CaO zu K2O`, `MgO zu CaO`, `Na2O zu MgO`, `SO4 zu P2O5`, `P2O5 zu K2O`, `Fe zu MgO`, `CO3 zu SiO2`.
+**Zusammenfassung:**
+- Tabelle **„Oxidformen & Ionen (ppm, mg/l)“** mit Spaltenpaaren
+  (Oxid‑Deklaration + Element), inkl. Spurenelemente sowie Na2O/Na, Cl, HCO3.
 
-**Zusätzliche Berechnungen (Screenshot):**
-- **Ionenbilanzfehler** mit Anionen/Kationen (meq/L) und Summenbereich.
-- **NPK‑Verhältnisse der Oxidformen** (z. B. „Gesamt NPK all %“, „Phosphor NPK%“, „N zu P zu K %“).
+## 5) Ionenbilanz
 
-## 4) Interaktions- und Datenlogik (kompakt)
+**Zweck:** Sichtbarkeit der Ladungsbilanz.
 
-- Nutzer wählt **bis zu 10 Dünger** im Kopfbereich aus.
-- Pro ausgewähltem Dünger wird im Calculator eine **Menge** eingegeben.
-- Das System berechnet:
-  - Nährstoffmengen aus Dünger,
-  - Nährstoffmengen aus Dünger + Wasser,
-  - **ppm (mg/l)** als zentralen Zielwert.
-- Im unteren Block werden die **einzelnen Ionen** in g/mg/mg/l aufgeschlüsselt und müssen **konsistent** zum zentralen ppm‑Wert sein.
-- **EC‑Berechnung** ist als UI‑Element vorgesehen, wird aber erst später vollständig umgesetzt.
+**Inhalte:**
+- Tabelle **Ionen (meq/L)** mit Einzelwerten.
+- Tabelle **Bilanz** mit Summen/Fehlern.
+
+## Datenfluss (kurz)
+
+1. Dünger & Wasserprofile werden von der API geladen.
+2. Nutzer wählt Dünger, trägt Mengen ein und pflegt Wasserwerte.
+3. GUI sendet `fertilizers`, `liters`, `water_profile_name` oder `water_mg_l`
+   an `/calculate`.
+4. Ergebnis‑JSON befüllt NPK‑Karten, EC‑Werte, Zusammenfassung und Ionenbilanz.

@@ -113,6 +113,8 @@ Die Berechnung wird als neuer Knoten `ec` im Ergebnis‑JSON ausgegeben:
 }
 ```
 
+Für die reinen Wasserwerte wird zusätzlich `ec_water` (gleiche Struktur) ausgegeben.
+
 ## Quellen
 - McCleskey RB, Nordstrom DK, Ryan JN, Ball JW. **A new method of calculating electrical
   conductivity with applications to natural waters.** Geochimica et Cosmochimica Acta 77

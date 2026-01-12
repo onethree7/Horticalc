@@ -176,10 +176,11 @@ Details, Formeln, Einheiten, Parameter und Quellen stehen in [`docs/EC.md`](docs
 │   └── water_profiles/
 │       └── default.yml
 ├── recipes/
-│   └── golden.yml
+│   ├── default.yml
+│   ├── golden.yml
 │   └── green_go_12_12_36.yml
 ├── solutions/
-│   └── golden_output.json
+│   ├── golden_output.json
 │   └── green_go_12_12_36_output.json
 ├── api/
 │   └── app.py
@@ -193,7 +194,11 @@ Details, Formeln, Einheiten, Parameter und Quellen stehen in [`docs/EC.md`](docs
 │   ├── core.py
 │   └── data_io.py
 └── docs/
-    └── AGENTS.md
+    ├── AGENTS.md
+    ├── EC.md
+    ├── feature_hco3_ion_balance.md
+    ├── GUI.MD
+    └── golden_example_output.txt
 ```
 
 ---

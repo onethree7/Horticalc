@@ -124,7 +124,6 @@
           <button id="calculateBtn">Berechnen</button>
         </div>
         <div class="summary">
-          <h3>Gelöste Ionen: Dünger + Wasser (ppm, mg/l)</h3>
           <div class="summary-metrics">
             <div class="summary-metric-card">
               <div class="metric-label">NPK Gesamt (%)</div>
@@ -165,16 +164,18 @@
 
       <section class="block">
         <h2>Ionenbilanz</h2>
-        <p class="hint">Bilanzwerte basieren auf den Ionen in meq/L.</p>
         <div class="data-grid">
           <div class="table-card">
-            <h3>Ionen (meq/L)</h3>
+            <div class="table-card-title">
+              <h3>Ionen</h3>
+              <span class="table-badge">meq/L</span>
+            </div>
             <div class="table-wrap">
               <table class="grid grid--data" id="ionMeqTable">
                 <thead>
                   <tr>
                     <th>Ion</th>
-                    <th>meq/L</th>
+                    <th>Wert</th>
                   </tr>
                 </thead>
                 <tbody>

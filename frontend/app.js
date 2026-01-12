@@ -94,6 +94,7 @@ const summaryColumnOrder = [
   { oxide: "MgO", element: "Mg", label: "MgO/Mg" },
   { oxide: "SO4", element: "S", label: "SO4/S" },
   { oxide: "Cl", element: "Cl", label: "Cl" },
+  { oxide: "HCO3", element: "HCO3", label: "HCO3" },
   { oxide: "Fe", element: "Fe", label: "Fe" },
   { oxide: "Mn", element: "Mn", label: "Mn" },
   { oxide: "Cu", element: "Cu", label: "Cu" },
@@ -519,6 +520,10 @@ function computeWaterElements(normalizedWater) {
       elements[key] = normalizedWater[key];
     }
   });
+
+  if (normalizedWater.HCO3) {
+    elements.HCO3 = normalizedWater.HCO3;
+  }
 
   const sio2 = normalizedWater.SiO2 || 0;
   if (sio2) {

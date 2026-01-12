@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 import yaml
 
-from horticalc.core import compute_solution, normalize_water_profile
+from horticalc.core import compute_solution
 from horticalc.data_io import (
     load_fertilizers,
     load_molar_masses,
@@ -57,6 +57,11 @@ class CalculationResponse(BaseModel):
     ions_mmol_per_l: Dict[str, float]
     ions_meq_per_l: Dict[str, float]
     ion_balance: Dict[str, float]
+    water_elements_mg_per_l: Dict[str, float]
+    water_oxides_mg_per_l: Dict[str, float]
+    water_ions_mmol_per_l: Dict[str, float]
+    water_ions_meq_per_l: Dict[str, float]
+    water_ion_balance: Dict[str, float]
     ec: Dict[str, Any]
     ec_water: Dict[str, Any]
     npk_metrics: Dict[str, Any]
@@ -212,10 +217,14 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
         profile_path = WATER_PROFILES_DIR / payload.water_profile_name
         if not profile_path.exists():
             raise HTTPException(status_code=404, detail="Water profile not found")
-        water_mg_l = load_water_profile(profile_path)
+        profile = load_water_profile_data(profile_path)
+        water_mg_l = profile.get("mg_per_l") or {}
+        osmosis_percent = float(profile.get("osmosis_percent") or 0)
+        if osmosis_percent:
+            factor = 1 - max(min(osmosis_percent, 100.0), 0.0) / 100.0
+            water_mg_l = {key: value * factor for key, value in water_mg_l.items()}
     elif payload.water_mg_l:
         water_mg_l = payload.water_mg_l
-    water_mg_l = normalize_water_profile(MOLAR_MASSES, water_mg_l)
 
     recipe = {
         "liters": payload.liters,

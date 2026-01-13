@@ -18,6 +18,7 @@ from horticalc.data_io import (
     repo_root,
     save_water_profile,
 )
+from horticalc.solver import solve_recipe_data
 
 
 app = FastAPI(title="Horticalc API", version="0.1.0")
@@ -66,6 +67,31 @@ class CalculationResponse(BaseModel):
     ec_water: Dict[str, Any]
     npk_metrics: Dict[str, Any]
     osmosis_percent: float
+
+
+class SolveRequest(BaseModel):
+    targets: Dict[str, float] = Field(default_factory=dict)
+    liters: float = Field(default=10.0, gt=0)
+    water_profile: Optional[Dict[str, Any]] = None
+    fertilizers_allowed: List[str] = Field(default_factory=list)
+    fixed_grams: Dict[str, float] = Field(default_factory=dict)
+    urea_as_nh4: bool = False
+    phosphate_species: str = Field(default="H2PO4")
+
+
+class SolveFertilizerEntry(BaseModel):
+    name: str
+    grams: float
+
+
+class SolveResponse(BaseModel):
+    liters: float
+    fertilizers: List[SolveFertilizerEntry]
+    objective_elements: List[str]
+    targets_mg_per_l: Dict[str, float]
+    achieved_elements_mg_per_l: Dict[str, float]
+    errors_mg_per_l: Dict[str, float]
+    errors_percent: Dict[str, float]
 
 
 class WaterProfilePayload(BaseModel):
@@ -273,6 +299,38 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return CalculationResponse(**result.to_dict())
+
+
+@app.post("/solve", response_model=SolveResponse)
+def solve(payload: SolveRequest) -> SolveResponse:
+    water_profile_data: Dict[str, Any] | None = None
+    if payload.water_profile:
+        water_profile_data = dict(payload.water_profile)
+        mg_per_l = water_profile_data.get("mg_per_l") or {}
+        water_profile_data["mg_per_l"] = sanitize_water_profile(mg_per_l)
+        if "osmosis_percent" not in water_profile_data:
+            water_profile_data["osmosis_percent"] = 0.0
+
+    recipe = {
+        "liters": payload.liters,
+        "targets": payload.targets,
+        "fertilizers_allowed": payload.fertilizers_allowed,
+        "fixed_grams": payload.fixed_grams,
+        "urea_as_nh4": payload.urea_as_nh4,
+        "phosphate_species": payload.phosphate_species,
+    }
+
+    try:
+        result = solve_recipe_data(
+            recipe,
+            ferts=FERTILIZERS,
+            mm=MOLAR_MASSES,
+            water_profile_data=water_profile_data,
+        )
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return SolveResponse(**result.to_dict())
 
 
 if __name__ == "__main__":

@@ -161,19 +161,35 @@ def _load_solver_recipe(path: Path) -> dict:
     return data
 
 
-def solve_recipe(recipe_path: Path) -> SolveResult:
-    recipe = _load_solver_recipe(recipe_path)
-    ferts = load_fertilizers()
-    mm = load_molar_masses()
+def _resolve_water_profile(recipe: dict, water_profile_data: dict | None) -> dict:
+    if water_profile_data is not None:
+        return water_profile_data
+    water_profile_value = recipe.get("water_profile")
+    if isinstance(water_profile_value, dict):
+        return water_profile_value
+    if not water_profile_value:
+        water_profile_value = "default"
+    wp_path = repo_root() / "data" / "water_profiles" / f"{water_profile_value}.yml"
+    return load_water_profile_data(wp_path)
+
+
+def solve_recipe_data(
+    recipe: dict,
+    *,
+    ferts: Dict[str, Fertilizer] | None = None,
+    mm: Dict[str, float] | None = None,
+    water_profile_data: dict | None = None,
+) -> SolveResult:
+    fertilizers = ferts or load_fertilizers()
+    molar_masses = mm or load_molar_masses()
 
     liters = float(recipe.get("liters") or 10.0)
-    wp_name = str(recipe.get("water_profile") or "default")
-    wp_path = repo_root() / "data" / "water_profiles" / f"{wp_name}.yml"
-    water_profile = load_water_profile_data(wp_path)
+    water_profile = _resolve_water_profile(recipe, water_profile_data)
     osmosis_percent = float(recipe.get("osmosis_percent", water_profile.get("osmosis_percent", 0.0)))
     water_mg_l = apply_osmosis_mix(water_profile.get("mg_per_l") or {}, osmosis_percent)
     target_raw = _normalize_targets(
-        recipe.get("targets_mg_per_l")
+        recipe.get("targets")
+        or recipe.get("targets_mg_per_l")
         or recipe.get("water_elements_mg_per_l")
         or {}
     )
@@ -187,9 +203,9 @@ def solve_recipe(recipe_path: Path) -> SolveResult:
 
     allowed = []
     for name in allowed_names:
-        if name not in ferts:
+        if name not in fertilizers:
             raise KeyError(f"Unbekannter Dünger in fertilizers_allowed: '{name}'")
-        allowed.append(ferts[name])
+        allowed.append(fertilizers[name])
 
     fixed_grams = {str(k): float(v) for k, v in (recipe.get("fixed_grams") or {}).items()}
     fixed_weights = np.array([fixed_grams.get(fert.name, 0.0) for fert in allowed], dtype=float)
@@ -201,11 +217,17 @@ def solve_recipe(recipe_path: Path) -> SolveResult:
         "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
         "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
     }
-    water_only = compute_solution(water_only_recipe, ferts, mm, water_mg_l, osmosis_percent=osmosis_percent)
+    water_only = compute_solution(
+        water_only_recipe,
+        fertilizers,
+        molar_masses,
+        water_mg_l,
+        osmosis_percent=osmosis_percent,
+    )
     water_elements = water_only.elements_mg_l
 
     b = np.array([target_raw.get(key, 0.0) - water_elements.get(key, 0.0) for key in objective_keys], dtype=float)
-    A = _build_matrix(allowed, mm, objective_keys, liters)
+    A = _build_matrix(allowed, molar_masses, objective_keys, liters)
     solve_weights = _solve_weights(A, b, fixed_weights, variable_mask)
 
     fertilizers_out = []
@@ -224,7 +246,7 @@ def solve_recipe(recipe_path: Path) -> SolveResult:
         "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
         "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
     }
-    achieved = compute_solution(full_recipe, ferts, mm, water_mg_l, osmosis_percent=osmosis_percent)
+    achieved = compute_solution(full_recipe, fertilizers, molar_masses, water_mg_l, osmosis_percent=osmosis_percent)
     achieved_elements = achieved.elements_mg_l
 
     errors_mg_l = {}
@@ -244,3 +266,8 @@ def solve_recipe(recipe_path: Path) -> SolveResult:
         errors_mg_l=errors_mg_l,
         errors_percent=errors_percent,
     )
+
+
+def solve_recipe(recipe_path: Path) -> SolveResult:
+    recipe = _load_solver_recipe(recipe_path)
+    return solve_recipe_data(recipe)

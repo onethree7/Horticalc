@@ -17,6 +17,20 @@
     </header>
 
     <main class="gap-3">
+      <section class="block" id="modeSection">
+        <h2>Modus</h2>
+        <div class="mode-toggle">
+          <label>
+            <input type="radio" name="modeToggle" value="calculator" checked />
+            Rezept
+          </label>
+          <label>
+            <input type="radio" name="modeToggle" value="solver" />
+            Solver Recipe
+          </label>
+        </div>
+      </section>
+
       <section class="block" id="waterSection">
         <div class="section-header">
           <h2>Wasserwerte</h2>
@@ -69,78 +83,166 @@
         </div>
       </section>
 
-      <section class="block">
-        <h2>Vorauswahl der Düngerkomponenten</h2>
-        <div class="actions inline-actions">
-          <button id="addFertilizerRow" type="button">+</button>
-          <button id="removeFertilizerRow" type="button">-</button>
-          <span class="inline-hint">Wähle Dünger aus der Datenbank, das Plus fügt weitere Zeilen hinzu.</span>
-        </div>
-        <div class="table-wrap" id="fertilizerSelectTableWrap"></div>
-      </section>
+      <div class="mode-panel" id="calculatorMode">
+        <section class="block">
+          <h2>Vorauswahl der Düngerkomponenten</h2>
+          <div class="actions inline-actions">
+            <button id="addFertilizerRow" type="button">+</button>
+            <button id="removeFertilizerRow" type="button">-</button>
+            <span class="inline-hint">Wähle Dünger aus der Datenbank, das Plus fügt weitere Zeilen hinzu.</span>
+          </div>
+          <div class="table-wrap" id="fertilizerSelectTableWrap"></div>
+        </section>
 
-      <section class="block">
-        <h2>Düngercalculator</h2>
-        <p class="hint">Mengen eingeben und Berechnung starten.</p>
-        <div class="table-wrap" id="calculatorTableWrap"></div>
-        <div class="actions">
-          <button id="calculateBtn">Berechnen</button>
-        </div>
-        <div class="summary">
-          <div class="summary-metrics">
-            <div class="summary-metric-card">
-              <div class="metric-label">NPK Gesamt (%)</div>
-              <div class="metric-value" id="npkAllPct">-</div>
-            </div>
-            <div class="summary-metric-card">
-              <div class="metric-label">NPK P-Norm</div>
-              <div class="metric-value" id="npkPNorm">-</div>
-            </div>
-            <div class="summary-metric-card">
-              <div class="metric-label">NPK Verhältnis (%)</div>
-              <div class="metric-value" id="npkNpkPct">-</div>
-            </div>
-            <div class="summary-metric-card">
-              <div class="metric-label">EC Werte</div>
-              <div class="metric-row">
-                <span class="metric-label">Wasserwerte: EC18/25</span>
-                <span class="metric-value">
-                  <span id="ecWater18Value">-</span>/<span id="ecWater25Value">-</span>
-                </span>
+        <section class="block">
+          <h2>Düngercalculator</h2>
+          <p class="hint">Mengen eingeben und Berechnung starten.</p>
+          <div class="table-wrap" id="calculatorTableWrap"></div>
+          <div class="actions">
+            <button id="calculateBtn">Berechnen</button>
+          </div>
+          <div class="summary">
+            <div class="summary-metrics">
+              <div class="summary-metric-card">
+                <div class="metric-label">NPK Gesamt (%)</div>
+                <div class="metric-value" id="npkAllPct">-</div>
               </div>
-              <div class="metric-row">
-                <span class="metric-label">Wasser + Dünger: EC18/25</span>
-                <span class="metric-value">
-                  <span id="ec18Value">-</span>/<span id="ec25Value">-</span>
-                </span>
+              <div class="summary-metric-card">
+                <div class="metric-label">NPK P-Norm</div>
+                <div class="metric-value" id="npkPNorm">-</div>
+              </div>
+              <div class="summary-metric-card">
+                <div class="metric-label">NPK Verhältnis (%)</div>
+                <div class="metric-value" id="npkNpkPct">-</div>
+              </div>
+              <div class="summary-metric-card">
+                <div class="metric-label">EC Werte</div>
+                <div class="metric-row">
+                  <span class="metric-label">Wasserwerte: EC18/25</span>
+                  <span class="metric-value">
+                    <span id="ecWater18Value">-</span>/<span id="ecWater25Value">-</span>
+                  </span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Wasser + Dünger: EC18/25</span>
+                  <span class="metric-value">
+                    <span id="ec18Value">-</span>/<span id="ec25Value">-</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="table-card">
+              <h3>Oxidformen & Ionen (ppm, mg/l)</h3>
+              <div class="table-wrap">
+                <table class="grid grid--matrix nutrient-grid nutrient-grid--summary" id="summaryTable"></table>
               </div>
             </div>
           </div>
-          <div class="table-card">
-            <h3>Oxidformen & Ionen (ppm, mg/l)</h3>
+        </section>
+
+        <section class="block">
+          <h2>Ionenbilanz</h2>
+            <div class="data-grid">
+              <div class="table-card compact-card">
+                <div class="table-card-title">
+                  <h3>Ionen</h3>
+                  <span class="table-badge">meq/L</span>
+                </div>
+                <div class="compact-table-wrap" id="ionMeqList"></div>
+              </div>
+              <div class="table-card compact-card">
+                <h3>Bilanz</h3>
+                <div class="compact-table-wrap compact-table-wrap--balance" id="ionBalanceList"></div>
+              </div>
+            </div>
+        </section>
+      </div>
+
+      <div class="mode-panel is-hidden" id="solverMode">
+        <section class="block">
+          <h2>Solver Recipe</h2>
+          <p class="hint">Zielwerte, erlaubte Dünger und fixe Grammangaben definieren.</p>
+          <div class="solver-settings">
+            <label>
+              Liter
+              <input id="solverLiters" type="number" min="0.1" step="0.1" value="10" />
+            </label>
+            <label class="toggle">
+              <input id="solverUreaToggle" type="checkbox" />
+              <span>Harnstoff als NH4 behandeln</span>
+            </label>
+            <label>
+              Phosphat-Spezies
+              <select id="solverPhosphate">
+                <option value="H2PO4">H2PO4</option>
+                <option value="HPO4">HPO4</option>
+              </select>
+            </label>
+          </div>
+          <div class="solver-columns">
+            <div class="solver-column">
+              <h3>Zielwerte (mg/L)</h3>
+              <div class="table-wrap">
+                <table class="grid grid--form" id="solverTargetsTable">
+                  <thead>
+                    <tr>
+                      <th>Element</th>
+                      <th>Ziel</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="solver-column">
+              <h3>Erlaubte Dünger</h3>
+              <select id="solverAllowedFertilizers" multiple></select>
+              <h3>Fixe Gramm</h3>
+              <div class="table-wrap">
+                <table class="grid grid--form" id="solverFixedTable">
+                  <thead>
+                    <tr>
+                      <th>Dünger</th>
+                      <th>Fix (g)</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="actions">
+            <button id="solveBtn" type="button">Solve</button>
+          </div>
+          <div class="solver-results">
             <div class="table-wrap">
-              <table class="grid grid--matrix nutrient-grid nutrient-grid--summary" id="summaryTable"></table>
+              <table class="grid grid--form" id="solverFertilizersTable">
+                <thead>
+                  <tr>
+                    <th>Dünger</th>
+                    <th>Gramm</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="table-wrap">
+              <table class="grid grid--form" id="solverTargetsResultsTable">
+                <thead>
+                  <tr>
+                    <th>Element</th>
+                    <th>Ziel</th>
+                    <th>Erreicht</th>
+                    <th>Delta</th>
+                    <th>Delta %</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section class="block">
-        <h2>Ionenbilanz</h2>
-          <div class="data-grid">
-            <div class="table-card compact-card">
-              <div class="table-card-title">
-                <h3>Ionen</h3>
-                <span class="table-badge">meq/L</span>
-              </div>
-              <div class="compact-table-wrap" id="ionMeqList"></div>
-            </div>
-            <div class="table-card compact-card">
-              <h3>Bilanz</h3>
-              <div class="compact-table-wrap compact-table-wrap--balance" id="ionBalanceList"></div>
-            </div>
-          </div>
-      </section>
+        </section>
+      </div>
 
     </main>
 

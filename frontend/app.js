@@ -26,6 +26,18 @@ const ecWater25Value = document.querySelector("#ecWater25Value");
 const summaryTable = document.querySelector("#summaryTable");
 const ionMeqList = document.querySelector("#ionMeqList");
 const ionBalanceList = document.querySelector("#ionBalanceList");
+const modeToggleInputs = document.querySelectorAll('input[name="modeToggle"]');
+const calculatorMode = document.querySelector("#calculatorMode");
+const solverMode = document.querySelector("#solverMode");
+const solverTargetsTable = document.querySelector("#solverTargetsTable tbody");
+const solverAllowedFertilizersSelect = document.querySelector("#solverAllowedFertilizers");
+const solverFixedTable = document.querySelector("#solverFixedTable tbody");
+const solverFertilizersTable = document.querySelector("#solverFertilizersTable tbody");
+const solverTargetsResultsTable = document.querySelector("#solverTargetsResultsTable tbody");
+const solveButton = document.querySelector("#solveBtn");
+const solverLitersInput = document.querySelector("#solverLiters");
+const solverUreaToggle = document.querySelector("#solverUreaToggle");
+const solverPhosphateSelect = document.querySelector("#solverPhosphate");
 
 let fertilizerOptions = [];
 const selectedFertilizers = [{ name: "", form: "", weight: "" }];
@@ -37,6 +49,35 @@ let lastCalculation = null;
 let recalculateTimer = null;
 let fertilizerSelectTable;
 let calculatorTable;
+
+const solverTargetDefinitions = [
+  { key: "N_total", label: "N_total" },
+  { key: "N_NH4", label: "N_NH4" },
+  { key: "N_NO3", label: "N_NO3" },
+  { key: "N_UREA", label: "N_UREA" },
+  { key: "P", label: "P" },
+  { key: "K", label: "K" },
+  { key: "Ca", label: "Ca" },
+  { key: "Mg", label: "Mg" },
+  { key: "S", label: "S" },
+  { key: "SO4", label: "SO4" },
+  { key: "Fe", label: "Fe" },
+  { key: "Mn", label: "Mn" },
+  { key: "Cu", label: "Cu" },
+  { key: "Zn", label: "Zn" },
+  { key: "B", label: "B" },
+  { key: "Mo", label: "Mo" },
+  { key: "Si", label: "Si" },
+  { key: "Cl", label: "Cl" },
+  { key: "Na", label: "Na" },
+  { key: "HCO3", label: "HCO3" },
+];
+
+const solverTargetValues = Object.fromEntries(
+  solverTargetDefinitions.map((field) => [field.key, 0])
+);
+const solverAllowedFertilizers = [];
+const solverFixedGrams = {};
 
 const waterFieldDefinitions = [
   { key: "NH4", label: "Ammonium in NH4" },
@@ -201,6 +242,128 @@ function renderTableRows(tableBody, rowCount, buildRow) {
   for (let i = 0; i < rowCount; i += 1) {
     tableBody.appendChild(buildRow(i));
   }
+}
+
+function setMode(mode) {
+  const isSolver = mode === "solver";
+  calculatorMode.classList.toggle("is-hidden", isSolver);
+  solverMode.classList.toggle("is-hidden", !isSolver);
+}
+
+function renderSolverTargetsTable() {
+  solverTargetsTable.innerHTML = "";
+  solverTargetDefinitions.forEach((field) => {
+    const row = document.createElement("tr");
+
+    const labelCell = document.createElement("td");
+    labelCell.textContent = field.label;
+
+    const valueCell = document.createElement("td");
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "0";
+    input.step = "0.1";
+    input.value = solverTargetValues[field.key] || 0;
+    input.addEventListener("input", (event) => {
+      solverTargetValues[field.key] = Number(event.target.value) || 0;
+    });
+    valueCell.appendChild(input);
+
+    row.append(labelCell, valueCell);
+    solverTargetsTable.appendChild(row);
+  });
+}
+
+function renderSolverAllowedOptions() {
+  solverAllowedFertilizersSelect.innerHTML = "";
+  fertilizerOptions.forEach((fert) => {
+    const option = document.createElement("option");
+    option.value = fert.name;
+    option.textContent = fert.name;
+    if (solverAllowedFertilizers.includes(fert.name)) {
+      option.selected = true;
+    }
+    solverAllowedFertilizersSelect.appendChild(option);
+  });
+}
+
+function renderSolverFixedTable() {
+  solverFixedTable.innerHTML = "";
+  solverAllowedFertilizers.forEach((name) => {
+    const row = document.createElement("tr");
+
+    const nameCell = document.createElement("td");
+    nameCell.textContent = name;
+
+    const valueCell = document.createElement("td");
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "0";
+    input.step = "0.01";
+    input.value = solverFixedGrams[name] || 0;
+    input.addEventListener("input", (event) => {
+      solverFixedGrams[name] = Number(event.target.value) || 0;
+    });
+    valueCell.appendChild(input);
+
+    row.append(nameCell, valueCell);
+    solverFixedTable.appendChild(row);
+  });
+}
+
+function renderSolverResults(data) {
+  solverFertilizersTable.innerHTML = "";
+  solverTargetsResultsTable.innerHTML = "";
+
+  const fertilizers = Array.isArray(data?.fertilizers) ? data.fertilizers : [];
+  if (!fertilizers.length) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 2;
+    cell.textContent = "Keine Dünger berechnet";
+    row.appendChild(cell);
+    solverFertilizersTable.appendChild(row);
+  } else {
+    fertilizers.forEach((fert) => {
+      const row = document.createElement("tr");
+      const nameCell = document.createElement("td");
+      nameCell.textContent = fert.name;
+      const gramsCell = document.createElement("td");
+      gramsCell.textContent = formatNumber(Number(fert.grams), nutrientFormatter);
+      row.append(nameCell, gramsCell);
+      solverFertilizersTable.appendChild(row);
+    });
+  }
+
+  const targets = data?.targets_mg_per_l || {};
+  const achieved = data?.achieved_elements_mg_per_l || {};
+  const errors = data?.errors_mg_per_l || {};
+  const errorsPercent = data?.errors_percent || {};
+  const keys = data?.objective_elements?.length
+    ? data.objective_elements
+    : Object.keys(targets);
+
+  keys.forEach((key) => {
+    const row = document.createElement("tr");
+    const keyCell = document.createElement("td");
+    keyCell.textContent = key;
+
+    const targetCell = document.createElement("td");
+    targetCell.textContent = formatNumber(Number(targets[key]), nutrientFormatter);
+
+    const achievedCell = document.createElement("td");
+    achievedCell.textContent = formatNumber(Number(achieved[key]), nutrientFormatter);
+
+    const deltaCell = document.createElement("td");
+    deltaCell.textContent = formatNumber(Number(errors[key]), nutrientFormatter);
+
+    const percentCell = document.createElement("td");
+    const percent = Number(errorsPercent[key]);
+    percentCell.textContent = Number.isFinite(percent) ? `${percent.toFixed(1)}%` : "-";
+
+    row.append(keyCell, targetCell, achievedCell, deltaCell, percentCell);
+    solverTargetsResultsTable.appendChild(row);
+  });
 }
 
 function renderSelectionTable() {
@@ -893,6 +1056,36 @@ function buildPayload() {
   };
 }
 
+function buildSolvePayload() {
+  const targets = {};
+  Object.entries(solverTargetValues).forEach(([key, value]) => {
+    if (Number(value) > 0) {
+      targets[key] = Number(value);
+    }
+  });
+
+  const fixedGrams = {};
+  Object.entries(solverFixedGrams).forEach(([key, value]) => {
+    if (Number(value) > 0) {
+      fixedGrams[key] = Number(value);
+    }
+  });
+
+  const waterPayload = buildWaterPayloadForApi(waterValues);
+  return {
+    liters: Number(solverLitersInput.value) || 10,
+    targets,
+    water_profile: {
+      mg_per_l: waterPayload,
+      osmosis_percent: Number(osmosisPercentInput.value) || 0,
+    },
+    fertilizers_allowed: solverAllowedFertilizers,
+    fixed_grams: fixedGrams,
+    urea_as_nh4: solverUreaToggle.checked,
+    phosphate_species: solverPhosphateSelect.value,
+  };
+}
+
 async function fetchJson(url, errorMessage) {
   const response = await fetch(url);
   if (!response.ok) {
@@ -964,6 +1157,22 @@ async function calculate() {
   return response.json();
 }
 
+async function solveRecipe() {
+  const payload = buildSolvePayload();
+  const response = await fetch(`${apiBase()}/solve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.detail || "Solver fehlgeschlagen");
+  }
+
+  return response.json();
+}
+
 function renderEcPair(ecValues, el18, el25) {
   const ec18 = Number(ecValues["18.0"]);
   const ec25 = Number(ecValues["25.0"]);
@@ -1020,6 +1229,19 @@ function applyRecipe(recipe) {
 
   renderSelectionTable();
   renderCalculatorTable();
+}
+
+function seedSolverAllowedFertilizers() {
+  if (solverAllowedFertilizers.length) {
+    return;
+  }
+  selectedFertilizers.forEach((fert) => {
+    if (fert.name && !solverAllowedFertilizers.includes(fert.name)) {
+      solverAllowedFertilizers.push(fert.name);
+    }
+  });
+  renderSolverAllowedOptions();
+  renderSolverFixedTable();
 }
 
 function applyWaterProfile(profile) {
@@ -1113,6 +1335,7 @@ async function init() {
     reportError(error, "Fehler beim Laden der Dünger-Liste");
     fertilizerOptions = [];
   }
+  renderSolverAllowedOptions();
 
   try {
     molarMasses = await fetchMolarMasses();
@@ -1140,12 +1363,15 @@ async function init() {
   try {
     const recipe = await fetchDefaultRecipe();
     applyRecipe(recipe);
+    seedSolverAllowedFertilizers();
     const data = await calculate();
     renderCalculation(data);
   } catch (error) {
     renderSelectionTable();
     renderCalculatorTable();
     renderSummaryTable(summaryTable, {}, {}, {});
+    renderSolverAllowedOptions();
+    renderSolverFixedTable();
   }
 }
 
@@ -1158,6 +1384,33 @@ calculateButton.addEventListener("click", async () => {
     renderCalculation(data);
   } catch (error) {
     reportError(error, "Berechnung fehlgeschlagen");
+  }
+});
+
+modeToggleInputs.forEach((input) => {
+  input.addEventListener("change", (event) => {
+    setMode(event.target.value);
+  });
+});
+
+solverAllowedFertilizersSelect.addEventListener("change", () => {
+  solverAllowedFertilizers.length = 0;
+  const selected = Array.from(solverAllowedFertilizersSelect.selectedOptions).map((opt) => opt.value);
+  solverAllowedFertilizers.push(...selected);
+  Object.keys(solverFixedGrams).forEach((key) => {
+    if (!solverAllowedFertilizers.includes(key)) {
+      delete solverFixedGrams[key];
+    }
+  });
+  renderSolverFixedTable();
+});
+
+solveButton.addEventListener("click", async () => {
+  try {
+    const data = await solveRecipe();
+    renderSolverResults(data);
+  } catch (error) {
+    reportError(error, "Solver fehlgeschlagen");
   }
 });
 
@@ -1210,4 +1463,6 @@ toggleWaterValuesButton.addEventListener("click", () => {
 });
 
 initializeFertilizerTables();
+renderSolverTargetsTable();
+setMode("calculator");
 init();

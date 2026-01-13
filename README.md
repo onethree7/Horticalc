@@ -106,7 +106,7 @@ Wichtig:
 - `Gewicht` ist ein Faktor für Flüssigdünger (z.B. Dichte/Be): **effektive Gramm = Gramm * Gewicht**.
 
 ### 2) `data/molar_masses.yml`
-Molare Massen für alle verwendeten Formen (Elemente, Oxide, Ionen). Kleine Ergänzungen stellen sicher, dass alle Umrechnungen abgedeckt sind.
+Molare Massen für alle verwendeten Formen (Elemente, Oxide, Ionen).
 
 ### 3) `data/water_profiles/*.yml`
 Wasserprofile in mg/L.

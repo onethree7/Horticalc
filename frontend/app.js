@@ -681,8 +681,16 @@ function p2o5FromPo4(mgPO4) {
   return p2o5FromP(mgP);
 }
 
+function pFromP2o5(mgP2O5) {
+  return mgP2O5 ? (mgP2O5 * 2 * getMolarMassOrOne("P")) / getMolarMassOrOne("P2O5") : 0;
+}
+
 function so4FromS(mgS) {
   return mgS ? (mgS * getMolarMassOrOne("SO4")) / getMolarMassOrOne("S") : 0;
+}
+
+function sFromSo4(mgSo4) {
+  return mgSo4 ? (mgSo4 * getMolarMassOrOne("S")) / getMolarMassOrOne("SO4") : 0;
 }
 
 function k2oFromK(mgK) {
@@ -719,6 +727,18 @@ function mgFromMgo(mgMgO) {
 
 function naFromNa2o(mgNa2O) {
   return mgNa2O ? (mgNa2O * 2 * getMolarMassOrOne("Na")) / getMolarMassOrOne("Na2O") : 0;
+}
+
+function nFromNh4(mgNh4) {
+  return mgNh4 ? (mgNh4 * getMolarMassOrOne("N")) / getMolarMassOrOne("NH4") : 0;
+}
+
+function nFromNo3(mgNo3) {
+  return mgNo3 ? (mgNo3 * getMolarMassOrOne("N")) / getMolarMassOrOne("NO3") : 0;
+}
+
+function siFromSio2(mgSio2) {
+  return mgSio2 ? (mgSio2 * getMolarMassOrOne("Si")) / getMolarMassOrOne("SiO2") : 0;
 }
 
 function normalizeWaterValues(rawValues, osmosisPercent) {
@@ -784,38 +804,36 @@ function computeWaterElements(normalizedWater) {
 
   const nh4 = normalizedWater.NH4 || 0;
   const no3 = normalizedWater.NO3 || 0;
-  const nFromNh4 = nh4 ? (nh4 * getMolarMassOrOne("N")) / getMolarMassOrOne("NH4") : 0;
-  const nFromNo3 = no3 ? (no3 * getMolarMassOrOne("N")) / getMolarMassOrOne("NO3") : 0;
-  elements.N_total = nFromNh4 + nFromNo3;
+  elements.N_total = nFromNh4(nh4) + nFromNo3(no3);
 
   const p2o5 = normalizedWater.P2O5 || 0;
   if (p2o5) {
-    elements.P = (p2o5 * 2 * getMolarMassOrOne("P")) / getMolarMassOrOne("P2O5");
+    elements.P = pFromP2o5(p2o5);
   }
 
   const k2o = normalizedWater.K2O || 0;
   if (k2o) {
-    elements.K = (k2o * 2 * getMolarMassOrOne("K")) / getMolarMassOrOne("K2O");
+    elements.K = kFromK2o(k2o);
   }
 
   const cao = normalizedWater.CaO || 0;
   if (cao) {
-    elements.Ca = (cao * getMolarMassOrOne("Ca")) / getMolarMassOrOne("CaO");
+    elements.Ca = caFromCao(cao);
   }
 
   const mgo = normalizedWater.MgO || 0;
   if (mgo) {
-    elements.Mg = (mgo * getMolarMassOrOne("Mg")) / getMolarMassOrOne("MgO");
+    elements.Mg = mgFromMgo(mgo);
   }
 
   const na2o = normalizedWater.Na2O || 0;
   if (na2o) {
-    elements.Na = (na2o * 2 * getMolarMassOrOne("Na")) / getMolarMassOrOne("Na2O");
+    elements.Na = naFromNa2o(na2o);
   }
 
   const so4 = normalizedWater.SO4 || 0;
   if (so4) {
-    elements.S = (so4 * getMolarMassOrOne("S")) / getMolarMassOrOne("SO4");
+    elements.S = sFromSo4(so4);
   }
 
   ["Cl", "Fe", "Mn", "Cu", "Zn", "B", "Mo"].forEach((key) => {
@@ -830,7 +848,7 @@ function computeWaterElements(normalizedWater) {
 
   const sio2 = normalizedWater.SiO2 || 0;
   if (sio2) {
-    elements.Si = (sio2 * getMolarMassOrOne("Si")) / getMolarMassOrOne("SiO2");
+    elements.Si = siFromSio2(sio2);
   }
 
   return elements;

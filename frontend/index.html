@@ -83,6 +83,32 @@
         </div>
       </section>
 
+      <section class="block" id="profileSection">
+        <h2 id="profileSectionTitle">Recipe</h2>
+        <p class="hint" id="profileSectionHint">Profile lokal speichern/laden.</p>
+        <div class="water-controls">
+          <div class="water-control-group">
+            <label for="profileSelect">Profil auswählen</label>
+            <div class="water-control-row">
+              <select id="profileSelect"></select>
+              <button id="loadProfile" type="button">Laden</button>
+              <button id="resetProfile" type="button">Reset Default</button>
+            </div>
+          </div>
+          <div class="water-control-group">
+            <label for="profileName">Profilname zum Speichern</label>
+            <div class="water-control-row">
+              <input id="profileName" type="text" placeholder="z.B. default" />
+              <button id="saveProfile" type="button">Speichern</button>
+            </div>
+          </div>
+        </div>
+        <div class="actions is-hidden" id="solverProfileActions">
+          <button id="saveSolverAsRecipe" type="button">Als Recipe speichern</button>
+          <button id="applySolverToCalculator" type="button">Im Düngerrechner übernehmen</button>
+        </div>
+      </section>
+
       <div class="mode-panel" id="calculatorMode">
         <section class="block">
           <h2>Vorauswahl der Düngerkomponenten</h2>

@@ -22,6 +22,16 @@ const ec18Value = document.querySelector("#ec18Value");
 const ec25Value = document.querySelector("#ec25Value");
 const ecWater18Value = document.querySelector("#ecWater18Value");
 const ecWater25Value = document.querySelector("#ecWater25Value");
+const profileSectionTitle = document.querySelector("#profileSectionTitle");
+const profileSectionHint = document.querySelector("#profileSectionHint");
+const profileSelect = document.querySelector("#profileSelect");
+const loadProfileButton = document.querySelector("#loadProfile");
+const resetProfileButton = document.querySelector("#resetProfile");
+const profileNameInput = document.querySelector("#profileName");
+const saveProfileButton = document.querySelector("#saveProfile");
+const solverProfileActions = document.querySelector("#solverProfileActions");
+const saveSolverAsRecipeButton = document.querySelector("#saveSolverAsRecipe");
+const applySolverToCalculatorButton = document.querySelector("#applySolverToCalculator");
 
 const summaryTable = document.querySelector("#summaryTable");
 const ionMeqList = document.querySelector("#ionMeqList");
@@ -44,11 +54,15 @@ const selectedFertilizers = [{ name: "", form: "", weight: "" }];
 const fertilizerAmounts = [0];
 let molarMasses = {};
 let waterProfiles = [];
+let recipeProfiles = [];
+let nutrientSolutions = [];
 let waterUnit = "mg_l";
 let lastCalculation = null;
+let lastSolveResult = null;
 let recalculateTimer = null;
 let fertilizerSelectTable;
 let calculatorTable;
+let currentProfileMode = "calculator";
 
 const solverTargetDefinitions = [
   { key: "N_total", label: "N_total" },
@@ -248,6 +262,43 @@ function setMode(mode) {
   const isSolver = mode === "solver";
   calculatorMode.classList.toggle("is-hidden", isSolver);
   solverMode.classList.toggle("is-hidden", !isSolver);
+  setProfileMode(mode);
+}
+
+const profileConfigs = {
+  calculator: {
+    title: "Recipe",
+    hint: "Recipe lokal speichern/laden.",
+  },
+  solver: {
+    title: "Nutrient Solution",
+    hint: "Nutrient Solution lokal speichern/laden.",
+  },
+};
+
+function setProfileMode(mode) {
+  currentProfileMode = mode === "solver" ? "solver" : "calculator";
+  const config = profileConfigs[currentProfileMode];
+  profileSectionTitle.textContent = config.title;
+  profileSectionHint.textContent = config.hint;
+  solverProfileActions.classList.toggle("is-hidden", currentProfileMode !== "solver");
+  renderProfileOptions();
+}
+
+function renderProfileOptions() {
+  profileSelect.innerHTML = "";
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = "-- auswählen --";
+  profileSelect.appendChild(empty);
+
+  const profiles = currentProfileMode === "solver" ? nutrientSolutions : recipeProfiles;
+  profiles.forEach((profile) => {
+    const option = document.createElement("option");
+    option.value = profile.filename;
+    option.textContent = profile.name || profile.filename;
+    profileSelect.appendChild(option);
+  });
 }
 
 function renderSolverTargetsTable() {
@@ -312,6 +363,8 @@ function renderSolverFixedTable() {
 }
 
 function renderSolverResults(data) {
+  lastSolveResult = data || null;
+  updateSolverResultActions();
   solverFertilizersTable.innerHTML = "";
   solverTargetsResultsTable.innerHTML = "";
 
@@ -1141,6 +1194,49 @@ function fetchDefaultRecipe() {
   return fetchJson(`${apiBase()}/recipes/default`, "Fehler beim Laden des Default-Rezepts");
 }
 
+function fetchRecipes() {
+  return fetchJson(`${apiBase()}/recipes`, "Fehler beim Laden der Recipes");
+}
+
+function fetchRecipeData(filename) {
+  return fetchJson(`${apiBase()}/recipes/${encodeURIComponent(filename)}`, "Fehler beim Laden des Recipes");
+}
+
+async function saveRecipeData(payload) {
+  const response = await fetch(`${apiBase()}/recipes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || "Recipe speichern fehlgeschlagen");
+  }
+}
+
+function fetchNutrientSolutions() {
+  return fetchJson(`${apiBase()}/nutrient-solutions`, "Fehler beim Laden der Nutrient Solutions");
+}
+
+function fetchNutrientSolutionData(filename) {
+  return fetchJson(
+    `${apiBase()}/nutrient-solutions/${encodeURIComponent(filename)}`,
+    "Fehler beim Laden der Nutrient Solution"
+  );
+}
+
+async function saveNutrientSolutionData(payload) {
+  const response = await fetch(`${apiBase()}/nutrient-solutions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || "Nutrient Solution speichern fehlgeschlagen");
+  }
+}
+
 async function calculate() {
   const payload = buildPayload();
   const response = await fetch(`${apiBase()}/calculate`, {
@@ -1229,6 +1325,28 @@ function applyRecipe(recipe) {
 
   renderSelectionTable();
   renderCalculatorTable();
+}
+
+function applyNutrientSolution(solution) {
+  const targets = solution?.targets_mg_per_l || solution?.targets || {};
+  solverTargetDefinitions.forEach((field) => {
+    solverTargetValues[field.key] = Number(targets[field.key]) || 0;
+  });
+  renderSolverTargetsTable();
+}
+
+function resetSolverTargets() {
+  solverTargetDefinitions.forEach((field) => {
+    solverTargetValues[field.key] = 0;
+  });
+  renderSolverTargetsTable();
+  renderSolverResults(null);
+}
+
+function updateSolverResultActions() {
+  const hasResult = !!(lastSolveResult && lastSolveResult.fertilizers && lastSolveResult.fertilizers.length);
+  saveSolverAsRecipeButton.disabled = !hasResult;
+  applySolverToCalculatorButton.disabled = !hasResult;
 }
 
 function seedSolverAllowedFertilizers() {
@@ -1328,6 +1446,43 @@ function renderWaterProfileOptions() {
   });
 }
 
+function buildRecipePayload(name, fertilizers, liters, ureaAsNh4, phosphateSpecies) {
+  const payload = {
+    name,
+    liters,
+    fertilizers,
+    urea_as_nh4: ureaAsNh4,
+    phosphate_species: phosphateSpecies,
+  };
+  const waterProfileSelection = waterProfileSelect.value;
+  if (waterProfileSelection) {
+    payload.water_profile = waterProfileSelection.replace(/\.yml$/, "");
+  }
+  const osmosisPercent = Number(osmosisPercentInput.value);
+  if (Number.isFinite(osmosisPercent)) {
+    payload.osmosis_percent = osmosisPercent;
+  }
+  return payload;
+}
+
+function buildRecipePayloadFromSelection(name) {
+  const fertilizers = selectedFertilizers
+    .map((fert, index) => ({ name: fert.name, grams: fertilizerAmounts[index] }))
+    .filter((entry) => entry.name && entry.grams > 0);
+  return buildRecipePayload(name, fertilizers, 10.0, false, "H2PO4");
+}
+
+function buildRecipePayloadFromSolver(name) {
+  const fertilizers = Array.isArray(lastSolveResult?.fertilizers) ? lastSolveResult.fertilizers : [];
+  return buildRecipePayload(
+    name,
+    fertilizers,
+    Number(solverLitersInput.value) || 10,
+    solverUreaToggle.checked,
+    solverPhosphateSelect.value
+  );
+}
+
 async function init() {
   try {
     fertilizerOptions = await fetchFertilizers();
@@ -1352,6 +1507,22 @@ async function init() {
   }
 
   renderWaterProfileOptions();
+
+  try {
+    recipeProfiles = await fetchRecipes();
+  } catch (error) {
+    reportError(error, "Fehler beim Laden der Recipes");
+    recipeProfiles = [];
+  }
+
+  try {
+    nutrientSolutions = await fetchNutrientSolutions();
+  } catch (error) {
+    reportError(error, "Fehler beim Laden der Nutrient Solutions");
+    nutrientSolutions = [];
+  }
+
+  renderProfileOptions();
 
   try {
     const defaultProfile = await fetchWaterProfileData("default");
@@ -1414,6 +1585,134 @@ solveButton.addEventListener("click", async () => {
   }
 });
 
+loadProfileButton.addEventListener("click", async () => {
+  const selection = profileSelect.value;
+  if (!selection) {
+    reportError(null, "Bitte ein Profil auswählen.");
+    return;
+  }
+  try {
+    if (currentProfileMode === "solver") {
+      const solution = await fetchNutrientSolutionData(selection);
+      applyNutrientSolution(solution);
+      profileNameInput.value = solution.name || "";
+    } else {
+      const recipe = await fetchRecipeData(selection);
+      applyRecipe(recipe);
+      seedSolverAllowedFertilizers();
+      if (recipe.water_profile) {
+        const filename = recipe.water_profile.endsWith(".yml")
+          ? recipe.water_profile
+          : `${recipe.water_profile}.yml`;
+        waterProfileSelect.value = filename;
+        const profile = await fetchWaterProfileData(recipe.water_profile);
+        applyWaterProfile(profile);
+      }
+      if (recipe.osmosis_percent !== undefined && recipe.osmosis_percent !== null) {
+        osmosisPercentInput.value = recipe.osmosis_percent;
+      }
+      profileNameInput.value = recipe.name || "";
+      scheduleRecalculate();
+    }
+  } catch (error) {
+    reportError(error, "Fehler beim Laden des Profils");
+  }
+});
+
+resetProfileButton.addEventListener("click", async () => {
+  try {
+    if (currentProfileMode === "solver") {
+      resetSolverTargets();
+    } else {
+      const recipe = await fetchDefaultRecipe();
+      applyRecipe(recipe);
+      seedSolverAllowedFertilizers();
+      if (recipe.water_profile) {
+        const filename = recipe.water_profile.endsWith(".yml")
+          ? recipe.water_profile
+          : `${recipe.water_profile}.yml`;
+        waterProfileSelect.value = filename;
+        const profile = await fetchWaterProfileData(recipe.water_profile);
+        applyWaterProfile(profile);
+      }
+      if (recipe.osmosis_percent !== undefined && recipe.osmosis_percent !== null) {
+        osmosisPercentInput.value = recipe.osmosis_percent;
+      }
+      profileNameInput.value = recipe.name || "";
+      scheduleRecalculate();
+    }
+  } catch (error) {
+    reportError(error, "Reset fehlgeschlagen");
+  }
+});
+
+saveProfileButton.addEventListener("click", async () => {
+  const name = profileNameInput.value.trim();
+  if (!name) {
+    reportError(null, "Bitte einen Profilnamen angeben.");
+    return;
+  }
+  try {
+    if (currentProfileMode === "solver") {
+      const targets = {};
+      solverTargetDefinitions.forEach((field) => {
+        targets[field.key] = Number(solverTargetValues[field.key]) || 0;
+      });
+      await saveNutrientSolutionData({
+        name,
+        source: "Horticalc UI",
+        targets_mg_per_l: targets,
+      });
+      nutrientSolutions = await fetchNutrientSolutions();
+    } else {
+      const payload = buildRecipePayloadFromSelection(name);
+      await saveRecipeData(payload);
+      recipeProfiles = await fetchRecipes();
+    }
+    renderProfileOptions();
+  } catch (error) {
+    reportError(error, "Speichern fehlgeschlagen");
+  }
+});
+
+saveSolverAsRecipeButton.addEventListener("click", async () => {
+  const name = profileNameInput.value.trim();
+  if (!name) {
+    reportError(null, "Bitte einen Profilnamen angeben.");
+    return;
+  }
+  if (!lastSolveResult) {
+    reportError(null, "Bitte zuerst eine Solver Recipe berechnen.");
+    return;
+  }
+  try {
+    const payload = buildRecipePayloadFromSolver(name);
+    await saveRecipeData(payload);
+    recipeProfiles = await fetchRecipes();
+    renderProfileOptions();
+  } catch (error) {
+    reportError(error, "Recipe speichern fehlgeschlagen");
+  }
+});
+
+applySolverToCalculatorButton.addEventListener("click", async () => {
+  if (!lastSolveResult) {
+    reportError(null, "Bitte zuerst eine Solver Recipe berechnen.");
+    return;
+  }
+  const recipe = {
+    fertilizers: lastSolveResult.fertilizers || [],
+  };
+  applyRecipe(recipe);
+  seedSolverAllowedFertilizers();
+  const calculatorInput = Array.from(modeToggleInputs).find((input) => input.value === "calculator");
+  if (calculatorInput) {
+    calculatorInput.checked = true;
+  }
+  setMode("calculator");
+  scheduleRecalculate();
+});
+
 loadWaterProfileButton.addEventListener("click", async () => {
   const selection = waterProfileSelect.value;
   if (!selection) {
@@ -1465,4 +1764,5 @@ toggleWaterValuesButton.addEventListener("click", () => {
 initializeFertilizerTables();
 renderSolverTargetsTable();
 setMode("calculator");
+updateSolverResultActions();
 init();

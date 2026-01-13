@@ -538,6 +538,10 @@ main {
   display: none;
 }
 
+.is-hidden {
+  display: none;
+}
+
 .solver-settings {
   display: flex;
   gap: var(--space-4);

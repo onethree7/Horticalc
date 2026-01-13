@@ -80,6 +80,18 @@ def _normalize_targets(targets: Dict[str, float]) -> Dict[str, float]:
     return cleaned
 
 
+def _normalize_weights(weights: Dict[str, float]) -> Dict[str, float]:
+    cleaned: Dict[str, float] = {}
+    for key, value in (weights or {}).items():
+        if key is None:
+            continue
+        weight = float(value)
+        if weight < 0:
+            raise ValueError(f"Invalid target weight for '{key}': {weight} (must be >= 0)")
+        cleaned[str(key)] = weight
+    return cleaned
+
+
 def _objective_keys(targets: Dict[str, float]) -> List[str]:
     keys = []
     for key, val in targets.items():
@@ -193,6 +205,12 @@ def solve_recipe_data(
         or recipe.get("water_elements_mg_per_l")
         or {}
     )
+    target_weights = _normalize_weights(
+        recipe.get("target_weights")
+        or recipe.get("targets_weight")
+        or recipe.get("targets_weights")
+        or {}
+    )
     objective_keys = _objective_keys(target_raw)
     if not objective_keys:
         raise ValueError("No solvable targets defined (S/SO4 are ignored).")
@@ -228,7 +246,14 @@ def solve_recipe_data(
 
     b = np.array([target_raw.get(key, 0.0) - water_elements.get(key, 0.0) for key in objective_keys], dtype=float)
     A = _build_matrix(allowed, molar_masses, objective_keys, liters)
-    solve_weights = _solve_weights(A, b, fixed_weights, variable_mask)
+    weights = np.array([target_weights.get(key, 1.0) for key in objective_keys], dtype=float)
+    if np.all(weights <= 0):
+        raise ValueError("At least one target weight must be > 0")
+    weights = np.maximum(weights, 0.0)
+    weight_sqrt = np.sqrt(weights)
+    A_weighted = A * weight_sqrt[:, None]
+    b_weighted = b * weight_sqrt
+    solve_weights = _solve_weights(A_weighted, b_weighted, fixed_weights, variable_mask)
 
     fertilizers_out = []
     var_idx = 0

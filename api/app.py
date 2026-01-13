@@ -76,6 +76,7 @@ class CalculationResponse(BaseModel):
 
 class SolveRequest(BaseModel):
     targets: Dict[str, float] = Field(default_factory=dict)
+    target_weights: Dict[str, float] = Field(default_factory=dict)
     liters: float = Field(default=10.0, gt=0)
     water_profile: Optional[Dict[str, Any]] = None
     fertilizers_allowed: List[str] = Field(default_factory=list)
@@ -110,6 +111,7 @@ class NutrientSolutionPayload(BaseModel):
     name: str
     source: Optional[str] = ""
     targets_mg_per_l: Dict[str, float] = Field(default_factory=dict)
+    target_weights: Dict[str, float] = Field(default_factory=dict)
 
 
 class RecipePayload(BaseModel):
@@ -342,6 +344,18 @@ async def save_nutrient_solution_profile(request: Request) -> dict:
             targets_mg_per_l[key] = float(value)
         except (TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=f"Invalid value for {key}") from exc
+    target_weights: Dict[str, float] = {}
+    for key, value in solution.target_weights.items():
+        if key not in ALLOWED_TARGET_KEYS:
+            raise HTTPException(status_code=400, detail=f"Invalid target weight key: {key}")
+        try:
+            weight = float(value)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=f"Invalid target weight for {key}") from exc
+        if weight < 0:
+            raise HTTPException(status_code=400, detail=f"Invalid target weight for {key}")
+        if weight != 1.0:
+            target_weights[key] = weight
 
     safe_name = "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in name).strip("_")
     if not safe_name:
@@ -354,6 +368,7 @@ async def save_nutrient_solution_profile(request: Request) -> dict:
         name=name,
         source=solution.source or "",
         targets_mg_per_l=targets_mg_per_l,
+        target_weights=target_weights,
     )
     return {"status": "ok", "filename": solution_path.name}
 
@@ -480,10 +495,23 @@ def solve(payload: SolveRequest) -> SolveResponse:
         water_profile_data["mg_per_l"] = sanitize_water_profile(mg_per_l)
         if "osmosis_percent" not in water_profile_data:
             water_profile_data["osmosis_percent"] = 0.0
+    target_weights: Dict[str, float] = {}
+    for key, value in payload.target_weights.items():
+        if key not in ALLOWED_TARGET_KEYS:
+            raise HTTPException(status_code=400, detail=f"Invalid target weight key: {key}")
+        try:
+            weight = float(value)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=f"Invalid target weight for {key}") from exc
+        if weight < 0:
+            raise HTTPException(status_code=400, detail=f"Invalid target weight for {key}")
+        if weight != 1.0:
+            target_weights[key] = weight
 
     recipe = {
         "liters": payload.liters,
         "targets": payload.targets,
+        "target_weights": target_weights,
         "fertilizers_allowed": payload.fertilizers_allowed,
         "fixed_grams": payload.fixed_grams,
         "urea_as_nh4": payload.urea_as_nh4,

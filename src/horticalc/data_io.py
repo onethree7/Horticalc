@@ -108,10 +108,12 @@ def load_nutrient_solution_data(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
     targets = data.get("targets_mg_per_l") or {}
+    target_weights = data.get("target_weights") or {}
     return {
         "name": data.get("name") or path.stem,
         "source": data.get("source") or "",
         "targets_mg_per_l": {str(k): float(v) for k, v in targets.items()},
+        "target_weights": {str(k): float(v) for k, v in target_weights.items()},
     }
 
 
@@ -120,12 +122,15 @@ def save_nutrient_solution(
     name: str,
     source: str,
     targets_mg_per_l: Dict[str, float],
+    target_weights: Dict[str, float] | None = None,
 ) -> None:
     payload = {
         "name": name,
         "source": source,
         "targets_mg_per_l": {str(k): float(v) for k, v in targets_mg_per_l.items()},
     }
+    if target_weights:
+        payload["target_weights"] = {str(k): float(v) for k, v in target_weights.items()}
     with path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(payload, f, sort_keys=True, allow_unicode=True)
 

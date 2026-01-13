@@ -90,6 +90,9 @@ const solverTargetDefinitions = [
 const solverTargetValues = Object.fromEntries(
   solverTargetDefinitions.map((field) => [field.key, 0])
 );
+const solverTargetWeightOffsets = Object.fromEntries(
+  solverTargetDefinitions.map((field) => [field.key, 0])
+);
 const solverAllowedFertilizers = [];
 const solverFixedGrams = {};
 
@@ -149,6 +152,15 @@ const oxideIntegerKeys = new Set([
 ]);
 const oxideTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "SiO2"]);
 const carbonateHelperKeys = new Set(["CO3", "CaCO3", "KH"]);
+const solverWeightOptions = [
+  { offset: -3, weight: 0.25, label: "-3" },
+  { offset: -2, weight: 0.5, label: "-2" },
+  { offset: -1, weight: 0.75, label: "-1" },
+  { offset: 0, weight: 1, label: "0" },
+  { offset: 1, weight: 1.25, label: "+1" },
+  { offset: 2, weight: 1.5, label: "+2" },
+  { offset: 3, weight: 2, label: "+3" },
+];
 const summaryColumnOrder = [
   { oxide: "N_total", element: "N_total", label: "N_total" },
   { oxide: "P2O5", element: "P", label: "P2O5/P" },
@@ -320,7 +332,21 @@ function renderSolverTargetsTable() {
     });
     valueCell.appendChild(input);
 
-    row.append(labelCell, valueCell);
+    const weightCell = document.createElement("td");
+    const select = document.createElement("select");
+    solverWeightOptions.forEach((optionData) => {
+      const option = document.createElement("option");
+      option.value = optionData.offset;
+      option.textContent = optionData.label;
+      select.appendChild(option);
+    });
+    select.value = solverTargetWeightOffsets[field.key] ?? 0;
+    select.addEventListener("change", (event) => {
+      solverTargetWeightOffsets[field.key] = Number(event.target.value) || 0;
+    });
+    weightCell.appendChild(select);
+
+    row.append(labelCell, valueCell, weightCell);
     solverTargetsTable.appendChild(row);
   });
 }
@@ -1116,6 +1142,14 @@ function buildSolvePayload() {
       targets[key] = Number(value);
     }
   });
+  const targetWeights = {};
+  Object.entries(solverTargetWeightOffsets).forEach(([key, value]) => {
+    const option = solverWeightOptions.find((entry) => entry.offset === Number(value));
+    const weight = option ? option.weight : 1;
+    if (weight !== 1) {
+      targetWeights[key] = weight;
+    }
+  });
 
   const fixedGrams = {};
   Object.entries(solverFixedGrams).forEach(([key, value]) => {
@@ -1128,6 +1162,7 @@ function buildSolvePayload() {
   return {
     liters: Number(solverLitersInput.value) || 10,
     targets,
+    target_weights: targetWeights,
     water_profile: {
       mg_per_l: waterPayload,
       osmosis_percent: Number(osmosisPercentInput.value) || 0,
@@ -1329,8 +1364,23 @@ function applyRecipe(recipe) {
 
 function applyNutrientSolution(solution) {
   const targets = solution?.targets_mg_per_l || solution?.targets || {};
+  const targetWeights = solution?.target_weights || {};
   solverTargetDefinitions.forEach((field) => {
     solverTargetValues[field.key] = Number(targets[field.key]) || 0;
+    const weight = Number(targetWeights[field.key]);
+    if (Number.isFinite(weight)) {
+      const match = solverWeightOptions.reduce((closest, entry) => {
+        if (!closest) {
+          return entry;
+        }
+        const currentDelta = Math.abs(entry.weight - weight);
+        const bestDelta = Math.abs(closest.weight - weight);
+        return currentDelta < bestDelta ? entry : closest;
+      }, null);
+      solverTargetWeightOffsets[field.key] = match ? match.offset : 0;
+    } else {
+      solverTargetWeightOffsets[field.key] = 0;
+    }
   });
   renderSolverTargetsTable();
 }
@@ -1338,6 +1388,7 @@ function applyNutrientSolution(solution) {
 function resetSolverTargets() {
   solverTargetDefinitions.forEach((field) => {
     solverTargetValues[field.key] = 0;
+    solverTargetWeightOffsets[field.key] = 0;
   });
   renderSolverTargetsTable();
   renderSolverResults(null);
@@ -1655,13 +1706,21 @@ saveProfileButton.addEventListener("click", async () => {
   try {
     if (currentProfileMode === "solver") {
       const targets = {};
+      const targetWeights = {};
       solverTargetDefinitions.forEach((field) => {
         targets[field.key] = Number(solverTargetValues[field.key]) || 0;
+        const offset = solverTargetWeightOffsets[field.key] ?? 0;
+        const option = solverWeightOptions.find((entry) => entry.offset === Number(offset));
+        const weight = option ? option.weight : 1;
+        if (weight !== 1) {
+          targetWeights[field.key] = weight;
+        }
       });
       await saveNutrientSolutionData({
         name,
         source: "Horticalc UI",
         targets_mg_per_l: targets,
+        target_weights: targetWeights,
       });
       nutrientSolutions = await fetchNutrientSolutions();
     } else {

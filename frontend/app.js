@@ -1002,43 +1002,47 @@ function applyWaterProfile(profile) {
   const mg = profile.mg_per_l || {};
   const hco3Direct = mg.HCO3 || 0;
   const derivedHco3 = hco3Direct ? 0 : hco3FromCaco3Value(mg.CaCO3 || 0) + hco3FromKhValue(mg.KH || 0);
+  const standardMgKeyMap = {
+    NH4: "NH4",
+    NH3: "NH3",
+    NO3: "NO3",
+    NO2: "NO2",
+    P: "P",
+    SO4: "SO4",
+    S: "S",
+    Cl: "Cl",
+    Fe: "Fe",
+    Mn: "Mn",
+    Cu: "Cu",
+    Zn: "Zn",
+    B: "B",
+    Mo: "Mo",
+    SiO2: "SiO2",
+  };
 
   waterFieldDefinitions.forEach((field) => {
     waterValues[field.key] = 0;
   });
 
-  waterValues.NH4 = mg.NH4 || 0;
-  waterValues.NH3 = mg.NH3 || 0;
-  waterValues.NO3 = mg.NO3 || 0;
-  waterValues.NO2 = mg.NO2 || 0;
+  Object.entries(standardMgKeyMap).forEach(([fieldKey, mgKey]) => {
+    waterValues[fieldKey] = mg[mgKey] || 0;
+  });
 
   if (mg.PO4) {
     waterValues.PO4 = mg.PO4;
   } else if (mg.P2O5) {
     waterValues.PO4 = po4FromP2o5(mg.P2O5);
   }
-  waterValues.P = mg.P || 0;
-
-  waterValues.SO4 = mg.SO4 || 0;
-  waterValues.S = mg.S || 0;
 
   waterValues.K = mg.K || kFromK2o(mg.K2O || 0);
   waterValues.Ca = mg.Ca || caFromCao(mg.CaO || 0);
   waterValues.Mg = mg.Mg || mgFromMgo(mg.MgO || 0);
   waterValues.Na = mg.Na || naFromNa2o(mg.Na2O || 0);
 
-  waterValues.Cl = mg.Cl || 0;
   waterValues.HCO3 = hco3Direct || derivedHco3;
   waterValues.CO3 = 0;
-  waterValues.Fe = mg.Fe || 0;
-  waterValues.Mn = mg.Mn || 0;
-  waterValues.Cu = mg.Cu || 0;
-  waterValues.Zn = mg.Zn || 0;
-  waterValues.B = mg.B || 0;
-  waterValues.Mo = mg.Mo || 0;
   waterValues.CaCO3 = 0;
   waterValues.KH = 0;
-  waterValues.SiO2 = mg.SiO2 || 0;
 
   waterProfileNameInput.value = profile.name || "";
   osmosisPercentInput.value = profile.osmosis_percent ?? 0;

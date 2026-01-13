@@ -17,11 +17,11 @@ def main(argv: list[str] | None = None) -> None:
     if args_list and args_list[0] == "solve":
         parser = argparse.ArgumentParser(
             prog="horticalc solve",
-            description="Horticalc Solver – Zielwerte zu Rezept",
+            description="Horticalc Solver – Solver Recipe to Nutrient Solution",
         )
         parser.add_argument(
             "recipe",
-            help="Pfad zu einem Solver-Rezept (YAML), z.B. recipes/solve_golden.yml",
+            help="Path to a Solver Recipe (YAML), e.g. recipes/solve_golden.yml",
         )
         parser.add_argument(
             "--out",
@@ -39,11 +39,11 @@ def main(argv: list[str] | None = None) -> None:
     else:
         parser = argparse.ArgumentParser(
             prog="horticalc",
-            description="Horticalc (molar‑correct) – CSV/YAML Backend",
+            description="Horticalc Nutrient Solution – Recipe to Solution Output",
         )
         parser.add_argument(
             "recipe",
-            help="Pfad zu einem Rezept (YAML), z.B. recipes/golden.yml",
+            help="Path to a Recipe (YAML), e.g. recipes/golden.yml",
         )
         parser.add_argument(
             "--out",

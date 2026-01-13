@@ -27,6 +27,9 @@ horticalc recipes/golden.yml --pretty
 
 # Ergebnis in Datei
 horticalc recipes/golden.yml --pretty --out solutions/golden_output.json
+
+# Solver: Zielwerte -> Rezept (S/SO4 werden ignoriert)
+horticalc solve recipes/solve_golden.yml --pretty
 ```
 
 ---
@@ -122,6 +125,17 @@ Ein Rezept definiert:
 
 Zusätzlich zum Golden-Recipe gibt es einen zweiten Regressionstest:
 - `recipes/green_go_12_12_36.yml`
+
+### 5) `recipes/solve_*.yml` (Solver)
+Ein Solver‑Rezept definiert:
+- `liters`
+- `water_profile`
+- `targets_mg_per_l` (Zielwerte als mg/L **Elemente**)
+- `fertilizers_allowed` (Liste der nutzbaren Dünger)
+- optional: `fixed_grams` (Dünger → feste Gramm)
+- optional: `phosphate_species` und `urea_as_nh4`
+
+Hinweis: **S/SO4 werden in der Optimierung ignoriert**, aber im Ergebnis weiterhin ausgegeben.
 
 ---
 

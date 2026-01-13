@@ -523,3 +523,10 @@ def run_recipe(recipe_path: Path) -> dict:
 
     res = compute_solution(recipe, ferts, mm, water, osmosis_percent=osmosis_percent)
     return res.to_dict()
+
+
+def solve_recipe(recipe_path: Path) -> dict:
+    from .solver import solve_recipe as run_solver
+
+    result = run_solver(recipe_path)
+    return result.to_dict()

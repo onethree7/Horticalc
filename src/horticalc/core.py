@@ -381,12 +381,14 @@ class CalcResult:
     ec_water: Dict[str, object]
     sluijsmann: Dict[str, float | dict]
     osmosis_percent: float
+    speciation: Dict[str, object] | None = None
+    ec_validation: Dict[str, object] | None = None
 
     def to_dict(self) -> dict:
         from .metrics import format_npks
         from .ec import compute_ec
 
-        return {
+        payload = {
             "liters": self.liters,
             "elements_mg_per_l": self.elements_mg_l,
             "oxides_mg_per_l": self.oxides_mg_l,
@@ -410,6 +412,22 @@ class CalcResult:
             "sluijsmann": self.sluijsmann,
             "osmosis_percent": self.osmosis_percent,
         }
+        if self.speciation is not None:
+            payload["speciation"] = self.speciation
+        if self.ec_validation is not None:
+            payload["ec_validation"] = self.ec_validation
+        return payload
+
+
+def _parse_feature_config(config: object | None) -> tuple[bool, dict]:
+    if config is None:
+        return False, {}
+    if isinstance(config, bool):
+        return config, {}
+    if isinstance(config, dict):
+        enabled = bool(config.get("enabled", True))
+        return enabled, config
+    return False, {}
 
 
 def compute_solution(
@@ -479,6 +497,39 @@ def compute_solution(
     )
     ec_fertilizer = compute_ec(fert_ions_mmol)
 
+    speciation = None
+    speciation_enabled, speciation_config = _parse_feature_config(recipe.get("speciation"))
+    if speciation_enabled:
+        from .speciation import SpeciationConfig, compute_speciation
+
+        speciation = compute_speciation(
+            molar_masses=mm,
+            elements_mg_l=elements,
+            config=SpeciationConfig(
+                backend=str(speciation_config.get("backend", "pyequion2")),
+                activity_model=str(speciation_config.get("activity_model", "PITZER")),
+                temperature_c=float(speciation_config.get("temperature_c", 25.0)),
+                include_gas_phases=bool(speciation_config.get("include_gas_phases", False)),
+            ),
+        )
+
+    ec_validation = None
+    ec_validation_enabled, ec_validation_config = _parse_feature_config(recipe.get("ec_validation"))
+    if ec_validation_enabled:
+        from .ec_validation import compute_ec_validation
+
+        ec_validation = compute_ec_validation(
+            ions_mmol_per_l=ions_mmol,
+            temperature_c=float(ec_validation_config.get("temperature_c", 25.0)),
+            backend=str(ec_validation_config.get("backend", "pyEQL")),
+        )
+        if ec_validation.get("status") == "ok":
+            ec_primary = compute_ec(ions_mmol)
+            primary_ec = ec_primary.get("ec_mS_per_cm", {}).get("25.0")
+            if primary_ec is not None:
+                ec_validation["primary_ec_mS_per_cm"] = primary_ec
+                ec_validation["delta_mS_per_cm"] = ec_validation["ec_mS_per_cm"] - primary_ec
+
     sluijsmann = compute_sluijsmann(
         liters=liters,
         oxides_mg_l=oxides,
@@ -507,6 +558,8 @@ def compute_solution(
         ec_water=ec_water,
         sluijsmann=sluijsmann,
         osmosis_percent=float(osmosis_percent),
+        speciation=speciation,
+        ec_validation=ec_validation,
     )
 
 

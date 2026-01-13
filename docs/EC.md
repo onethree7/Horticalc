@@ -99,6 +99,23 @@ Lösungen konsistente Näherung.
 5. EC18/EC25, Beiträge, Transportzahlen ausgeben.
 6. Optional ATC‑Normierung auf 25 °C.
 
+---
+
+## Optionale Validierung (pyEQL)
+Für Plausibilitätschecks kann ein zweites EC‑Modell genutzt werden. Aktiviert wird es
+über das Rezept:
+
+```yaml
+ec_validation:
+  enabled: true
+  backend: pyEQL
+  temperature_c: 25.0
+```
+
+Der Output erscheint dann als `ec_validation`‑Block mit `ec_mS_per_cm` und Delta zur
+primären McCleskey‑EC. Die pyEQL‑Abhängigkeit ist **optional** und wird nicht automatisch
+installiert.
+
 ## Output
 Die Berechnung wird als neuer Knoten `ec` im Ergebnis‑JSON ausgegeben:
 

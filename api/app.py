@@ -40,6 +40,20 @@ class FertilizerEntry(BaseModel):
     grams: float = Field(ge=0)
 
 
+class SpeciationPayload(BaseModel):
+    enabled: bool = True
+    backend: str = "pyequion2"
+    activity_model: str = "PITZER"
+    temperature_c: float = 25.0
+    include_gas_phases: bool = False
+
+
+class ECValidationPayload(BaseModel):
+    enabled: bool = True
+    backend: str = "pyEQL"
+    temperature_c: float = 25.0
+
+
 class RecipeRequest(BaseModel):
     liters: float = Field(default=10.0, gt=0)
     fertilizers: List[FertilizerEntry] = Field(default_factory=list)
@@ -48,6 +62,8 @@ class RecipeRequest(BaseModel):
     water_profile_name: Optional[str] = None
     water_mg_l: Optional[Dict[str, float]] = None
     osmosis_percent: float | None = 0
+    speciation: Optional[SpeciationPayload] = None
+    ec_validation: Optional[ECValidationPayload] = None
 
 
 class CalculationResponse(BaseModel):
@@ -66,6 +82,8 @@ class CalculationResponse(BaseModel):
     ec_water: Dict[str, Any]
     npk_metrics: Dict[str, Any]
     osmosis_percent: float
+    speciation: Optional[Dict[str, Any]] = None
+    ec_validation: Optional[Dict[str, Any]] = None
 
 
 class WaterProfilePayload(BaseModel):
@@ -258,6 +276,10 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
         "urea_as_nh4": payload.urea_as_nh4,
         "phosphate_species": payload.phosphate_species,
     }
+    if payload.speciation is not None:
+        recipe["speciation"] = payload.speciation.model_dump()
+    if payload.ec_validation is not None:
+        recipe["ec_validation"] = payload.ec_validation.model_dump()
 
     try:
         result = compute_solution(

@@ -5,6 +5,7 @@ description = "Horticalc (molar-correct) – CSV/YAML Backend statt Excel"
 requires-python = ">=3.10"
 dependencies = [
   "PyYAML>=6.0",
+  "numpy>=1.26.0",
 ]
 
 [project.scripts]

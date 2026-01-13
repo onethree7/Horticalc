@@ -4,33 +4,60 @@ import argparse
 import json
 from pathlib import Path
 
-from .core import run_recipe
+from .core import run_recipe, solve_recipe
 
 
 def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(
-        prog="horticalc",
-        description="Horticalc (molar‑correct) – CSV/YAML Backend",
-    )
-    parser.add_argument(
-        "recipe",
-        help="Pfad zu einem Rezept (YAML), z.B. recipes/golden.yml",
-    )
-    parser.add_argument(
-        "--out",
-        help="Optional: JSON Ergebnis in Datei schreiben",
-        default=None,
-    )
-    parser.add_argument(
-        "--pretty",
-        help="JSON hübsch formatieren",
-        action="store_true",
-    )
+    args_list = list(argv) if argv is not None else None
+    if args_list is None:
+        import sys
 
-    args = parser.parse_args(argv)
+        args_list = sys.argv[1:]
 
-    recipe_path = Path(args.recipe).expanduser().resolve()
-    result = run_recipe(recipe_path)
+    if args_list and args_list[0] == "solve":
+        parser = argparse.ArgumentParser(
+            prog="horticalc solve",
+            description="Horticalc Solver – Zielwerte zu Rezept",
+        )
+        parser.add_argument(
+            "recipe",
+            help="Pfad zu einem Solver-Rezept (YAML), z.B. recipes/solve_golden.yml",
+        )
+        parser.add_argument(
+            "--out",
+            help="Optional: JSON Ergebnis in Datei schreiben",
+            default=None,
+        )
+        parser.add_argument(
+            "--pretty",
+            help="JSON hübsch formatieren",
+            action="store_true",
+        )
+        args = parser.parse_args(args_list[1:])
+        recipe_path = Path(args.recipe).expanduser().resolve()
+        result = solve_recipe(recipe_path)
+    else:
+        parser = argparse.ArgumentParser(
+            prog="horticalc",
+            description="Horticalc (molar‑correct) – CSV/YAML Backend",
+        )
+        parser.add_argument(
+            "recipe",
+            help="Pfad zu einem Rezept (YAML), z.B. recipes/golden.yml",
+        )
+        parser.add_argument(
+            "--out",
+            help="Optional: JSON Ergebnis in Datei schreiben",
+            default=None,
+        )
+        parser.add_argument(
+            "--pretty",
+            help="JSON hübsch formatieren",
+            action="store_true",
+        )
+        args = parser.parse_args(args_list)
+        recipe_path = Path(args.recipe).expanduser().resolve()
+        result = run_recipe(recipe_path)
 
     if args.pretty:
         text = json.dumps(result, indent=2, ensure_ascii=False)

@@ -1,0 +1,24 @@
+name: solve_golden_test
+liters: 10.0
+water_profile: default
+phosphate_species: H2PO4
+urea_as_nh4: false
+fertilizers_allowed:
+  - Yara Tera CALCINIT
+  - K+S EPSO Top Bittersalz 16-39
+  - Agrolution Special 313 14-7-14+14CaO+TE
+  - Compo Hakaphos Basis3 3-15-36(+4)
+  - S3 Kaliwasser 28 Be
+targets_mg_per_l:
+  N_total: 157.15577438132232
+  P: 27.494506740310477
+  K: 113.83346048593717
+  Ca: 162.87635811693602
+  Mg: 63.5571693578534
+  Fe: 1.4420000000000002
+  Mn: 1.4406666666666668
+  Cu: 0.09066666666666667
+  Zn: 0.09066666666666667
+  B: 0.09533333333333334
+  Mo: 0.09000000000000001
+  S: 999.0

@@ -1,6 +1,6 @@
 name: Bugbee Utah Hydroponic Cannabis 2022
 source: User provided dataset
-water_elements_mg_per_l:
+targets_mg_per_l:
   N_total: 151.272
   N_NH4: 0.0
   N_NO3: 151.272

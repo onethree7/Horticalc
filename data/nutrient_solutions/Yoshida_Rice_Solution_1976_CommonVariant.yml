@@ -1,6 +1,6 @@
 name: Yoshida Rice Solution 1976 (Common Variant)
 source: User provided dataset
-water_elements_mg_per_l:
+targets_mg_per_l:
   N_total: 40.0592
   N_NH4: 20.0296
   N_NO3: 20.0296

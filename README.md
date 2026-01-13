@@ -115,7 +115,11 @@ Hinweise:
 - `HCO3` wird als mg/L (Bicarbonat) geführt.
 - Optional kann `osmosis_percent` (0–100) gesetzt werden; der Core verdünnt die Wasserwerte entsprechend.
 
-### 4) `recipes/*.yml`
+### 4) `data/nutrient_solutions/*.yml`
+Referenz‑Zielwerte (Elemente in mg/L), kein Dünger‑Rezept:
+- `targets_mg_per_l` (Zielwerte als mg/L **Elemente**)
+
+### 5) `recipes/*.yml`
 Ein Rezept definiert:
 - `liters`
 - `water_profile`
@@ -126,7 +130,7 @@ Ein Rezept definiert:
 Zusätzlich zum Golden-Recipe gibt es einen zweiten Regressionstest:
 - `recipes/green_go_12_12_36.yml`
 
-### 5) `recipes/solve_*.yml` (Solver)
+### 6) `recipes/solve_*.yml` (Solver)
 Ein Solver‑Rezept definiert:
 - `liters`
 - `water_profile`

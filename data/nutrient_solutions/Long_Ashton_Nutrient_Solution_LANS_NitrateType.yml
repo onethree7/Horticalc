@@ -1,6 +1,6 @@
 name: Long Ashton Nutrient Solution (LANS) Nitrate Type
 source: User provided dataset
-water_elements_mg_per_l:
+targets_mg_per_l:
   N_total: 168.0
   N_NH4: 0.0
   N_NO3: 168.0

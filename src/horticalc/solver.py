@@ -172,7 +172,11 @@ def solve_recipe(recipe_path: Path) -> SolveResult:
     water_profile = load_water_profile_data(wp_path)
     osmosis_percent = float(recipe.get("osmosis_percent", water_profile.get("osmosis_percent", 0.0)))
     water_mg_l = apply_osmosis_mix(water_profile.get("mg_per_l") or {}, osmosis_percent)
-    target_raw = _normalize_targets(recipe.get("targets_mg_per_l") or {})
+    target_raw = _normalize_targets(
+        recipe.get("targets_mg_per_l")
+        or recipe.get("water_elements_mg_per_l")
+        or {}
+    )
     objective_keys = _objective_keys(target_raw)
     if not objective_keys:
         raise ValueError("No solvable targets defined (S/SO4 are ignored).")

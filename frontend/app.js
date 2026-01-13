@@ -939,6 +939,13 @@ async function calculate() {
   return response.json();
 }
 
+function renderEcPair(ecValues, el18, el25) {
+  const ec18 = Number(ecValues["18.0"]);
+  const ec25 = Number(ecValues["25.0"]);
+  el18.textContent = Number.isFinite(ec18) ? formatNumber(ec18) : "-";
+  el25.textContent = Number.isFinite(ec25) ? formatNumber(ec25) : "-";
+}
+
 function renderCalculation(data) {
   lastCalculation = data;
   const oxides = data.oxides_mg_per_l || {};
@@ -959,18 +966,10 @@ function renderCalculation(data) {
   npkNpkPctValue.textContent = npkMetrics.npk_npk_pct || "-";
 
   const ec = data.ec || {};
-  const ecValues = ec.ec_mS_per_cm || {};
-  const ec18 = Number(ecValues["18.0"]);
-  const ec25 = Number(ecValues["25.0"]);
-  ec18Value.textContent = Number.isFinite(ec18) ? formatNumber(ec18) : "-";
-  ec25Value.textContent = Number.isFinite(ec25) ? formatNumber(ec25) : "-";
+  renderEcPair(ec.ec_mS_per_cm || {}, ec18Value, ec25Value);
 
   const waterEc = data.ec_water || {};
-  const waterEcValues = waterEc.ec_mS_per_cm || {};
-  const water18 = Number(waterEcValues["18.0"]);
-  const water25 = Number(waterEcValues["25.0"]);
-  ecWater18Value.textContent = Number.isFinite(water18) ? formatNumber(water18) : "-";
-  ecWater25Value.textContent = Number.isFinite(water25) ? formatNumber(water25) : "-";
+  renderEcPair(waterEc.ec_mS_per_cm || {}, ecWater18Value, ecWater25Value);
 }
 
 function applyRecipe(recipe) {

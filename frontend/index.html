@@ -76,52 +76,13 @@
           <button id="removeFertilizerRow" type="button">-</button>
           <span class="inline-hint">Wähle Dünger aus der Datenbank, das Plus fügt weitere Zeilen hinzu.</span>
         </div>
-        <div class="table-wrap">
-          <table class="grid grid--form grid--fertilizer" id="fertilizerSelectTable">
-            <colgroup>
-              <col class="col-index" />
-              <col class="col-name" />
-              <col class="col-form" />
-              <col class="col-weight" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Dünger (Dropdown)</th>
-                <th>Form</th>
-                <th>Gewicht</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- rows inserted by JS -->
-            </tbody>
-          </table>
-        </div>
+        <div class="table-wrap" id="fertilizerSelectTableWrap"></div>
       </section>
 
       <section class="block">
         <h2>Düngercalculator</h2>
         <p class="hint">Mengen eingeben und Berechnung starten.</p>
-        <div class="table-wrap">
-          <table class="grid grid--form grid--fertilizer" id="calculatorTable">
-            <colgroup>
-              <col class="col-index" />
-              <col class="col-name" />
-              <col class="col-form" />
-              <col class="col-amount" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th colspan="2">Düngername</th>
-                <th>Menge (g)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- rows inserted by JS -->
-            </tbody>
-          </table>
-        </div>
+        <div class="table-wrap" id="calculatorTableWrap"></div>
         <div class="actions">
           <button id="calculateBtn">Berechnen</button>
         </div>

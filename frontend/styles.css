@@ -13,6 +13,8 @@
   --text-sm: 0.78rem;
   --text-md: 0.9rem;
   --content-max-width: 1200px;
+  --col-width-wide: 5.5rem;
+  --col-width-standard: 4.6rem;
   background-color: #10141b;
   color: #e8edf2;
 }
@@ -195,9 +197,8 @@ main {
   width: 7.5rem;
 }
 
-.nutrient-grid col.col-n-total,
 .nutrient-grid col.col-n-total {
-  width: 5.5rem;
+  width: var(--col-width-wide);
 }
 
 .nutrient-grid col.col-p2o5 {
@@ -209,7 +210,7 @@ main {
 .nutrient-grid col.col-mgo,
 .nutrient-grid col.col-so4,
 .nutrient-grid col.col-sio2 {
-  width: 4.6rem;
+  width: var(--col-width-standard);
 }
 
 .nutrient-grid--summary th.row-label,

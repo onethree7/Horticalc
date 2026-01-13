@@ -1,6 +1,6 @@
 name: Knop 1861 Standard
 source: User provided dataset
-water_elements_mg_per_l:
+targets_mg_per_l:
   N_total: 205.359
   N_NH4: 0.0
   N_NO3: 205.359

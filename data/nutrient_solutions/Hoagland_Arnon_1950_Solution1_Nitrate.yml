@@ -1,6 +1,6 @@
 name: Hoagland Arnon 1950 Solution 1 (Nitrate)
 source: User provided dataset
-water_elements_mg_per_l:
+targets_mg_per_l:
   N_total: 210.101
   N_NH4: 0.0
   N_NO3: 210.101

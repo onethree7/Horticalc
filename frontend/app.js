@@ -1,5 +1,5 @@
-const fertilizerSelectTable = document.querySelector("#fertilizerSelectTable tbody");
-const calculatorTable = document.querySelector("#calculatorTable tbody");
+const fertilizerSelectTableWrap = document.querySelector("#fertilizerSelectTableWrap");
+const calculatorTableWrap = document.querySelector("#calculatorTableWrap");
 const reloadButton = document.querySelector("#reloadData");
 const calculateButton = document.querySelector("#calculateBtn");
 const apiBaseInput = document.querySelector("#apiBase");
@@ -35,6 +35,8 @@ let waterProfiles = [];
 let waterUnit = "mg_l";
 let lastCalculation = null;
 let recalculateTimer = null;
+let fertilizerSelectTable;
+let calculatorTable;
 
 const waterFieldDefinitions = [
   { key: "NH4", label: "Ammonium in NH4" },
@@ -133,9 +135,76 @@ function createSelect(options, onChange) {
   return select;
 }
 
+function createTable({ id, className, colgroupClasses, headerCells }) {
+  const table = document.createElement("table");
+  table.id = id;
+  table.className = className;
+
+  const colgroup = document.createElement("colgroup");
+  colgroupClasses.forEach((colClass) => {
+    const col = document.createElement("col");
+    col.className = colClass;
+    colgroup.appendChild(col);
+  });
+  table.appendChild(colgroup);
+
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  headerCells.forEach((cell) => {
+    const th = document.createElement("th");
+    th.textContent = cell.label;
+    if (cell.colSpan) {
+      th.colSpan = cell.colSpan;
+    }
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  table.appendChild(tbody);
+
+  return { table, tbody };
+}
+
+function initializeFertilizerTables() {
+  const selectTable = createTable({
+    id: "fertilizerSelectTable",
+    className: "grid grid--form grid--fertilizer",
+    colgroupClasses: ["col-index", "col-name", "col-form", "col-weight"],
+    headerCells: [
+      { label: "#" },
+      { label: "Dünger (Dropdown)" },
+      { label: "Form" },
+      { label: "Gewicht" },
+    ],
+  });
+  fertilizerSelectTableWrap.appendChild(selectTable.table);
+  fertilizerSelectTable = selectTable.tbody;
+
+  const calculator = createTable({
+    id: "calculatorTable",
+    className: "grid grid--form grid--fertilizer",
+    colgroupClasses: ["col-index", "col-name", "col-form", "col-amount"],
+    headerCells: [
+      { label: "#" },
+      { label: "Düngername", colSpan: 2 },
+      { label: "Menge (g)" },
+    ],
+  });
+  calculatorTableWrap.appendChild(calculator.table);
+  calculatorTable = calculator.tbody;
+}
+
+function renderTableRows(tableBody, rowCount, buildRow) {
+  tableBody.innerHTML = "";
+  for (let i = 0; i < rowCount; i += 1) {
+    tableBody.appendChild(buildRow(i));
+  }
+}
+
 function renderSelectionTable() {
-  fertilizerSelectTable.innerHTML = "";
-  for (let i = 0; i < selectedFertilizers.length; i += 1) {
+  renderTableRows(fertilizerSelectTable, selectedFertilizers.length, (i) => {
     const row = document.createElement("tr");
 
     const indexCell = document.createElement("td");
@@ -163,13 +232,12 @@ function renderSelectionTable() {
     weightCell.textContent = selectedFertilizers[i].weight || "-";
 
     row.append(indexCell, selectCell, formCell, weightCell);
-    fertilizerSelectTable.appendChild(row);
-  }
+    return row;
+  });
 }
 
 function renderCalculatorTable() {
-  calculatorTable.innerHTML = "";
-  for (let i = 0; i < selectedFertilizers.length; i += 1) {
+  renderTableRows(calculatorTable, selectedFertilizers.length, (i) => {
     const row = document.createElement("tr");
 
     const indexCell = document.createElement("td");
@@ -192,8 +260,8 @@ function renderCalculatorTable() {
     amountCell.appendChild(input);
 
     row.append(indexCell, nameCell, amountCell);
-    calculatorTable.appendChild(row);
-  }
+    return row;
+  });
 }
 
 function renderWaterTable() {
@@ -289,6 +357,10 @@ function formatNumber(value, formatter = numberFormatter) {
 function getMolarMass(key) {
   const value = molarMasses[key];
   return Number.isFinite(value) ? value : null;
+}
+
+function getMolarMassOrOne(key) {
+  return getMolarMass(key) || 1;
 }
 
 function mgToMol(key, value) {
@@ -579,17 +651,15 @@ function hco3FromCaco3Value(mgCaCO3) {
   if (!mgCaCO3) {
     return 0;
   }
-  const mm = (key) => getMolarMass(key) || 1;
-  const equiv = mm("CaCO3") / 2;
-  return (mgCaCO3 * mm("HCO3")) / equiv;
+  const equiv = getMolarMassOrOne("CaCO3") / 2;
+  return (mgCaCO3 * getMolarMassOrOne("HCO3")) / equiv;
 }
 
 function hco3FromCo3Value(mgCo3) {
   if (!mgCo3) {
     return 0;
   }
-  const mm = (key) => getMolarMass(key) || 1;
-  return (mgCo3 * mm("HCO3")) / mm("CO3");
+  return (mgCo3 * getMolarMassOrOne("HCO3")) / getMolarMassOrOne("CO3");
 }
 
 function hco3FromKhValue(dKh) {
@@ -597,6 +667,58 @@ function hco3FromKhValue(dKh) {
     return 0;
   }
   return hco3FromCaco3Value(dKh * 17.848);
+}
+
+function p2o5FromP(mgP) {
+  return mgP ? (mgP * getMolarMassOrOne("P2O5")) / (2 * getMolarMassOrOne("P")) : 0;
+}
+
+function p2o5FromPo4(mgPO4) {
+  if (!mgPO4) {
+    return 0;
+  }
+  const mgP = (mgPO4 * getMolarMassOrOne("P")) / getMolarMassOrOne("PO4");
+  return p2o5FromP(mgP);
+}
+
+function so4FromS(mgS) {
+  return mgS ? (mgS * getMolarMassOrOne("SO4")) / getMolarMassOrOne("S") : 0;
+}
+
+function k2oFromK(mgK) {
+  return mgK ? (mgK * getMolarMassOrOne("K2O")) / (2 * getMolarMassOrOne("K")) : 0;
+}
+
+function na2oFromNa(mgNa) {
+  return mgNa ? (mgNa * getMolarMassOrOne("Na2O")) / (2 * getMolarMassOrOne("Na")) : 0;
+}
+
+function caoFromCa(mgCa) {
+  return mgCa ? (mgCa * getMolarMassOrOne("CaO")) / getMolarMassOrOne("Ca") : 0;
+}
+
+function mgoFromMg(mgMg) {
+  return mgMg ? (mgMg * getMolarMassOrOne("MgO")) / getMolarMassOrOne("Mg") : 0;
+}
+
+function po4FromP2o5(mgP2o5) {
+  return mgP2o5 ? (mgP2o5 * 2 * getMolarMassOrOne("PO4")) / getMolarMassOrOne("P2O5") : 0;
+}
+
+function kFromK2o(mgK2O) {
+  return mgK2O ? (mgK2O * 2 * getMolarMassOrOne("K")) / getMolarMassOrOne("K2O") : 0;
+}
+
+function caFromCao(mgCaO) {
+  return mgCaO ? (mgCaO * getMolarMassOrOne("Ca")) / getMolarMassOrOne("CaO") : 0;
+}
+
+function mgFromMgo(mgMgO) {
+  return mgMgO ? (mgMgO * getMolarMassOrOne("Mg")) / getMolarMassOrOne("MgO") : 0;
+}
+
+function naFromNa2o(mgNa2O) {
+  return mgNa2O ? (mgNa2O * 2 * getMolarMassOrOne("Na")) / getMolarMassOrOne("Na2O") : 0;
 }
 
 function normalizeWaterValues(rawValues, osmosisPercent) {
@@ -616,27 +738,12 @@ function normalizeWaterValuesWithFactor(rawValues, factor) {
     normalized[key] = (normalized[key] || 0) + value * factor;
   };
 
-  const mm = (key) => getMolarMass(key) || 1;
-
-  const p2o5FromP = (mgP) => (mgP ? (mgP * mm("P2O5")) / (2 * mm("P")) : 0);
-  const p2o5FromPO4 = (mgPO4) => {
-    if (!mgPO4) return 0;
-    const mgP = (mgPO4 * mm("P")) / mm("PO4");
-    return p2o5FromP(mgP);
-  };
-
-  const so4FromS = (mgS) => (mgS ? (mgS * mm("SO4")) / mm("S") : 0);
-  const k2oFromK = (mgK) => (mgK ? (mgK * mm("K2O")) / (2 * mm("K")) : 0);
-  const na2oFromNa = (mgNa) => (mgNa ? (mgNa * mm("Na2O")) / (2 * mm("Na")) : 0);
-  const caoFromCa = (mgCa) => (mgCa ? (mgCa * mm("CaO")) / mm("Ca") : 0);
-  const mgoFromMg = (mgMg) => (mgMg ? (mgMg * mm("MgO")) / mm("Mg") : 0);
-
   const hco3FromCaco3 = hco3FromCaco3Value;
   const hco3FromKh = hco3FromKhValue;
 
   add("NH4", (rawValues.NH4 || 0) + (rawValues.NH3 || 0));
   add("NO3", (rawValues.NO3 || 0) + (rawValues.NO2 || 0));
-  add("P2O5", p2o5FromPO4(rawValues.PO4 || 0));
+  add("P2O5", p2o5FromPo4(rawValues.PO4 || 0));
   add("P2O5", p2o5FromP(rawValues.P || 0));
   add("SO4", (rawValues.SO4 || 0) + so4FromS(rawValues.S || 0));
   add("K2O", k2oFromK(rawValues.K || 0));
@@ -664,44 +771,51 @@ function buildWaterPayloadFromValues(rawValues) {
   return normalizeWaterValuesWithFactor(rawValues, 1);
 }
 
+function buildWaterPayloadForApi(rawValues) {
+  const waterPayload = { ...buildWaterPayloadFromValues(rawValues) };
+  delete waterPayload.KH;
+  delete waterPayload.CaCO3;
+  delete waterPayload.CO3;
+  return waterPayload;
+}
+
 function computeWaterElements(normalizedWater) {
-  const mm = (key) => getMolarMass(key) || 1;
   const elements = {};
 
   const nh4 = normalizedWater.NH4 || 0;
   const no3 = normalizedWater.NO3 || 0;
-  const nFromNh4 = nh4 ? (nh4 * mm("N")) / mm("NH4") : 0;
-  const nFromNo3 = no3 ? (no3 * mm("N")) / mm("NO3") : 0;
+  const nFromNh4 = nh4 ? (nh4 * getMolarMassOrOne("N")) / getMolarMassOrOne("NH4") : 0;
+  const nFromNo3 = no3 ? (no3 * getMolarMassOrOne("N")) / getMolarMassOrOne("NO3") : 0;
   elements.N_total = nFromNh4 + nFromNo3;
 
   const p2o5 = normalizedWater.P2O5 || 0;
   if (p2o5) {
-    elements.P = (p2o5 * 2 * mm("P")) / mm("P2O5");
+    elements.P = (p2o5 * 2 * getMolarMassOrOne("P")) / getMolarMassOrOne("P2O5");
   }
 
   const k2o = normalizedWater.K2O || 0;
   if (k2o) {
-    elements.K = (k2o * 2 * mm("K")) / mm("K2O");
+    elements.K = (k2o * 2 * getMolarMassOrOne("K")) / getMolarMassOrOne("K2O");
   }
 
   const cao = normalizedWater.CaO || 0;
   if (cao) {
-    elements.Ca = (cao * mm("Ca")) / mm("CaO");
+    elements.Ca = (cao * getMolarMassOrOne("Ca")) / getMolarMassOrOne("CaO");
   }
 
   const mgo = normalizedWater.MgO || 0;
   if (mgo) {
-    elements.Mg = (mgo * mm("Mg")) / mm("MgO");
+    elements.Mg = (mgo * getMolarMassOrOne("Mg")) / getMolarMassOrOne("MgO");
   }
 
   const na2o = normalizedWater.Na2O || 0;
   if (na2o) {
-    elements.Na = (na2o * 2 * mm("Na")) / mm("Na2O");
+    elements.Na = (na2o * 2 * getMolarMassOrOne("Na")) / getMolarMassOrOne("Na2O");
   }
 
   const so4 = normalizedWater.SO4 || 0;
   if (so4) {
-    elements.S = (so4 * mm("S")) / mm("SO4");
+    elements.S = (so4 * getMolarMassOrOne("S")) / getMolarMassOrOne("SO4");
   }
 
   ["Cl", "Fe", "Mn", "Cu", "Zn", "B", "Mo"].forEach((key) => {
@@ -716,7 +830,7 @@ function computeWaterElements(normalizedWater) {
 
   const sio2 = normalizedWater.SiO2 || 0;
   if (sio2) {
-    elements.Si = (sio2 * mm("Si")) / mm("SiO2");
+    elements.Si = (sio2 * getMolarMassOrOne("Si")) / getMolarMassOrOne("SiO2");
   }
 
   return elements;
@@ -744,10 +858,7 @@ function buildPayload() {
     .map((fert, index) => ({ name: fert.name, grams: fertilizerAmounts[index] }))
     .filter((entry) => entry.name && entry.grams > 0);
 
-  const waterPayload = { ...buildWaterPayloadFromValues(waterValues) };
-  delete waterPayload.KH;
-  delete waterPayload.CaCO3;
-  delete waterPayload.CO3;
+  const waterPayload = buildWaterPayloadForApi(waterValues);
 
   return {
     liters: 10.0,
@@ -757,36 +868,31 @@ function buildPayload() {
   };
 }
 
-async function fetchFertilizers() {
-  const response = await fetch(`${apiBase()}/fertilizers`);
+async function fetchJson(url, errorMessage) {
+  const response = await fetch(url);
   if (!response.ok) {
-    throw new Error("Fehler beim Laden der Dünger-Liste");
+    throw new Error(errorMessage);
   }
   return response.json();
 }
 
-async function fetchMolarMasses() {
-  const response = await fetch(`${apiBase()}/molar-masses`);
-  if (!response.ok) {
-    throw new Error("Fehler beim Laden der Molmassen");
-  }
-  return response.json();
+function fetchFertilizers() {
+  return fetchJson(`${apiBase()}/fertilizers`, "Fehler beim Laden der Dünger-Liste");
 }
 
-async function fetchWaterProfiles() {
-  const response = await fetch(`${apiBase()}/water-profiles`);
-  if (!response.ok) {
-    throw new Error("Fehler beim Laden der Wasserprofile");
-  }
-  return response.json();
+function fetchMolarMasses() {
+  return fetchJson(`${apiBase()}/molar-masses`, "Fehler beim Laden der Molmassen");
 }
 
-async function fetchWaterProfileData(filename) {
-  const response = await fetch(`${apiBase()}/water-profiles/${encodeURIComponent(filename)}`);
-  if (!response.ok) {
-    throw new Error("Fehler beim Laden des Wasserprofils");
-  }
-  return response.json();
+function fetchWaterProfiles() {
+  return fetchJson(`${apiBase()}/water-profiles`, "Fehler beim Laden der Wasserprofile");
+}
+
+function fetchWaterProfileData(filename) {
+  return fetchJson(
+    `${apiBase()}/water-profiles/${encodeURIComponent(filename)}`,
+    "Fehler beim Laden des Wasserprofils"
+  );
 }
 
 async function saveWaterProfile() {
@@ -795,10 +901,7 @@ async function saveWaterProfile() {
     alert("Bitte einen Profilnamen angeben.");
     return;
   }
-  const waterPayload = { ...buildWaterPayloadFromValues(waterValues) };
-  delete waterPayload.KH;
-  delete waterPayload.CaCO3;
-  delete waterPayload.CO3;
+  const waterPayload = buildWaterPayloadForApi(waterValues);
   const payload = {
     name,
     source: "Horticalc UI",
@@ -816,12 +919,8 @@ async function saveWaterProfile() {
   }
 }
 
-async function fetchDefaultRecipe() {
-  const response = await fetch(`${apiBase()}/recipes/default`);
-  if (!response.ok) {
-    throw new Error("Fehler beim Laden des Default-Rezepts");
-  }
-  return response.json();
+function fetchDefaultRecipe() {
+  return fetchJson(`${apiBase()}/recipes/default`, "Fehler beim Laden des Default-Rezepts");
 }
 
 async function calculate() {
@@ -901,7 +1000,6 @@ function applyRecipe(recipe) {
 
 function applyWaterProfile(profile) {
   const mg = profile.mg_per_l || {};
-  const mm = (key) => getMolarMass(key) || 1;
   const hco3Direct = mg.HCO3 || 0;
   const derivedHco3 = hco3Direct ? 0 : hco3FromCaco3Value(mg.CaCO3 || 0) + hco3FromKhValue(mg.KH || 0);
 
@@ -917,17 +1015,17 @@ function applyWaterProfile(profile) {
   if (mg.PO4) {
     waterValues.PO4 = mg.PO4;
   } else if (mg.P2O5) {
-    waterValues.PO4 = (mg.P2O5 * 2 * mm("PO4")) / mm("P2O5");
+    waterValues.PO4 = po4FromP2o5(mg.P2O5);
   }
   waterValues.P = mg.P || 0;
 
   waterValues.SO4 = mg.SO4 || 0;
   waterValues.S = mg.S || 0;
 
-  waterValues.K = mg.K || (mg.K2O ? (mg.K2O * 2 * mm("K")) / mm("K2O") : 0);
-  waterValues.Ca = mg.Ca || (mg.CaO ? (mg.CaO * mm("Ca")) / mm("CaO") : 0);
-  waterValues.Mg = mg.Mg || (mg.MgO ? (mg.MgO * mm("Mg")) / mm("MgO") : 0);
-  waterValues.Na = mg.Na || (mg.Na2O ? (mg.Na2O * 2 * mm("Na")) / mm("Na2O") : 0);
+  waterValues.K = mg.K || kFromK2o(mg.K2O || 0);
+  waterValues.Ca = mg.Ca || caFromCao(mg.CaO || 0);
+  waterValues.Mg = mg.Mg || mgFromMgo(mg.MgO || 0);
+  waterValues.Na = mg.Na || naFromNa2o(mg.Na2O || 0);
 
   waterValues.Cl = mg.Cl || 0;
   waterValues.HCO3 = hco3Direct || derivedHco3;
@@ -1083,4 +1181,5 @@ toggleWaterValuesButton.addEventListener("click", () => {
   toggleWaterValuesButton.textContent = isCollapsed ? "Wasserwerte anzeigen" : "Wasserwerte ausblenden";
 });
 
+initializeFertilizerTables();
 init();

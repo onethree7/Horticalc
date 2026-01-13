@@ -287,16 +287,7 @@ function renderWaterTable() {
     input.addEventListener("input", (event) => {
       const parsed = Number(event.target.value) || 0;
       waterValues[field.key] = waterUnit === "mol_l" ? molToMg(field.key, parsed) : parsed;
-      if (field.key === "CO3") {
-        waterValues.HCO3 = hco3FromCo3Value(waterValues.CO3 || 0);
-        updateWaterInputValue("HCO3");
-      } else if (field.key === "CaCO3") {
-        waterValues.HCO3 = hco3FromCaco3Value(waterValues.CaCO3 || 0);
-        updateWaterInputValue("HCO3");
-      } else if (field.key === "KH") {
-        waterValues.HCO3 = hco3FromKhValue(waterValues.KH || 0);
-        updateWaterInputValue("HCO3");
-      }
+      updateHco3FromHelper(field.key);
       scheduleRecalculate();
     });
     valueCell.appendChild(input);
@@ -354,6 +345,11 @@ function formatNumber(value, formatter = numberFormatter) {
   return "-";
 }
 
+function reportError(error, fallbackMessage = "Unbekannter Fehler") {
+  const message = error?.message || fallbackMessage;
+  alert(message);
+}
+
 function getMolarMass(key) {
   const value = molarMasses[key];
   return Number.isFinite(value) ? value : null;
@@ -407,7 +403,7 @@ function scheduleRecalculate() {
       const data = await calculate();
       renderCalculation(data);
     } catch (error) {
-      alert(error.message);
+      reportError(error, "Berechnung fehlgeschlagen");
     }
   }, 250);
 }
@@ -669,6 +665,21 @@ function hco3FromKhValue(dKh) {
   return hco3FromCaco3Value(dKh * 17.848);
 }
 
+const carbonateHco3Converters = {
+  CO3: hco3FromCo3Value,
+  CaCO3: hco3FromCaco3Value,
+  KH: hco3FromKhValue,
+};
+
+function updateHco3FromHelper(key) {
+  const converter = carbonateHco3Converters[key];
+  if (!converter) {
+    return;
+  }
+  waterValues.HCO3 = converter(waterValues[key] || 0);
+  updateWaterInputValue("HCO3");
+}
+
 function p2o5FromP(mgP) {
   return mgP ? (mgP * getMolarMassOrOne("P2O5")) / (2 * getMolarMassOrOne("P")) : 0;
 }
@@ -792,11 +803,7 @@ function buildWaterPayloadFromValues(rawValues) {
 }
 
 function buildWaterPayloadForApi(rawValues) {
-  const waterPayload = { ...buildWaterPayloadFromValues(rawValues) };
-  delete waterPayload.KH;
-  delete waterPayload.CaCO3;
-  delete waterPayload.CO3;
-  return waterPayload;
+  return buildWaterPayloadFromValues(rawValues);
 }
 
 function computeWaterElements(normalizedWater) {
@@ -916,7 +923,7 @@ function fetchWaterProfileData(filename) {
 async function saveWaterProfile() {
   const name = waterProfileNameInput.value.trim();
   if (!name) {
-    alert("Bitte einen Profilnamen angeben.");
+    reportError(null, "Bitte einen Profilnamen angeben.");
     return;
   }
   const waterPayload = buildWaterPayloadForApi(waterValues);
@@ -1103,21 +1110,21 @@ async function init() {
   try {
     fertilizerOptions = await fetchFertilizers();
   } catch (error) {
-    alert(error.message);
+    reportError(error, "Fehler beim Laden der Dünger-Liste");
     fertilizerOptions = [];
   }
 
   try {
     molarMasses = await fetchMolarMasses();
   } catch (error) {
-    alert(error.message);
+    reportError(error, "Fehler beim Laden der Molmassen");
     molarMasses = {};
   }
 
   try {
     waterProfiles = await fetchWaterProfiles();
   } catch (error) {
-    alert(error.message);
+    reportError(error, "Fehler beim Laden der Wasserprofile");
     waterProfiles = [];
   }
 
@@ -1150,21 +1157,21 @@ calculateButton.addEventListener("click", async () => {
     const data = await calculate();
     renderCalculation(data);
   } catch (error) {
-    alert(error.message);
+    reportError(error, "Berechnung fehlgeschlagen");
   }
 });
 
 loadWaterProfileButton.addEventListener("click", async () => {
   const selection = waterProfileSelect.value;
   if (!selection) {
-    alert("Bitte ein Wasserprofil auswählen.");
+    reportError(null, "Bitte ein Wasserprofil auswählen.");
     return;
   }
   try {
     const profile = await fetchWaterProfileData(selection);
     applyWaterProfile(profile);
   } catch (error) {
-    alert(error.message);
+    reportError(error, "Fehler beim Laden des Wasserprofils");
   }
 });
 
@@ -1173,7 +1180,7 @@ resetWaterProfileButton.addEventListener("click", async () => {
     const profile = await fetchWaterProfileData("default");
     applyWaterProfile(profile);
   } catch (error) {
-    alert(error.message);
+    reportError(error, "Fehler beim Laden des Wasserprofils");
   }
 });
 
@@ -1183,7 +1190,7 @@ saveWaterProfileButton.addEventListener("click", async () => {
     waterProfiles = await fetchWaterProfiles();
     renderWaterProfileOptions();
   } catch (error) {
-    alert(error.message);
+    reportError(error, "Speichern fehlgeschlagen");
   }
 });
 

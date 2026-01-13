@@ -48,6 +48,10 @@ class RecipeRequest(BaseModel):
     water_profile_name: Optional[str] = None
     water_mg_l: Optional[Dict[str, float]] = None
     osmosis_percent: float | None = 0
+    speciation: Optional[Dict[str, Any]] = None
+    speciation_enabled: bool = False
+    ec_validation: Optional[Dict[str, Any]] = None
+    ec_validation_enabled: bool = False
 
 
 class CalculationResponse(BaseModel):
@@ -66,6 +70,8 @@ class CalculationResponse(BaseModel):
     ec_water: Dict[str, Any]
     npk_metrics: Dict[str, Any]
     osmosis_percent: float
+    speciation: Optional[Dict[str, Any]] = None
+    ec_validation: Optional[Dict[str, Any]] = None
 
 
 class WaterProfilePayload(BaseModel):
@@ -236,7 +242,7 @@ def default_recipe() -> dict:
     return load_recipe(DEFAULT_RECIPE_PATH)
 
 
-@app.post("/calculate", response_model=CalculationResponse)
+@app.post("/calculate", response_model=CalculationResponse, response_model_exclude_none=True)
 def calculate(payload: RecipeRequest) -> CalculationResponse:
     water_mg_l: Dict[str, float] = {}
     osmosis_percent = 0.0
@@ -257,6 +263,10 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
         "fertilizers": [entry.dict() for entry in payload.fertilizers],
         "urea_as_nh4": payload.urea_as_nh4,
         "phosphate_species": payload.phosphate_species,
+        "speciation": payload.speciation,
+        "speciation_enabled": payload.speciation_enabled,
+        "ec_validation": payload.ec_validation,
+        "ec_validation_enabled": payload.ec_validation_enabled,
     }
 
     try:

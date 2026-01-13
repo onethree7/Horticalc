@@ -367,6 +367,7 @@ class CalcResult:
     ions_mmol_l: Dict[str, float]
     ions_meq_l: Dict[str, float]
     ion_balance: Dict[str, float]
+    ec: Dict[str, object]
     fertilizer_elements_mg_l: Dict[str, float]
     fertilizer_oxides_mg_l: Dict[str, float]
     fertilizer_ions_mmol_l: Dict[str, float]
@@ -381,12 +382,13 @@ class CalcResult:
     ec_water: Dict[str, object]
     sluijsmann: Dict[str, float | dict]
     osmosis_percent: float
+    speciation: Dict[str, object] | None = None
+    ec_validation: Dict[str, object] | None = None
 
     def to_dict(self) -> dict:
         from .metrics import format_npks
-        from .ec import compute_ec
 
-        return {
+        payload = {
             "liters": self.liters,
             "elements_mg_per_l": self.elements_mg_l,
             "oxides_mg_per_l": self.oxides_mg_l,
@@ -404,12 +406,17 @@ class CalcResult:
             "water_ions_mmol_per_l": self.water_ions_mmol_l,
             "water_ions_meq_per_l": self.water_ions_meq_l,
             "water_ion_balance": self.water_ion_balance,
-            "ec": compute_ec(self.ions_mmol_l),
+            "ec": self.ec,
             "ec_water": self.ec_water,
             "npk_metrics": format_npks(self),
             "sluijsmann": self.sluijsmann,
             "osmosis_percent": self.osmosis_percent,
         }
+        if self.speciation is not None:
+            payload["speciation"] = self.speciation
+        if self.ec_validation is not None:
+            payload["ec_validation"] = self.ec_validation
+        return payload
 
 
 def compute_solution(
@@ -457,6 +464,7 @@ def compute_solution(
         urea_as_nh4,
         phosphate_species,
     )
+    ec = compute_ec(ions_mmol)
 
     # 4b) Water-only EC (baseline without fertilizers)
     water_only_forms = {k: 0.0 for k in COMP_COLS}
@@ -486,6 +494,24 @@ def compute_solution(
         config=recipe.get("sluijsmann"),
     )
 
+    speciation_config = dict(recipe.get("speciation") or {})
+    if "speciation_enabled" in recipe:
+        speciation_config["enabled"] = bool(recipe.get("speciation_enabled"))
+    speciation_result = None
+    if speciation_config.get("enabled"):
+        from .speciation import compute_speciation
+
+        speciation_result = compute_speciation(ions_mmol, elements, mm, speciation_config)
+
+    ec_validation_config = dict(recipe.get("ec_validation") or {})
+    if "ec_validation_enabled" in recipe:
+        ec_validation_config["enabled"] = bool(recipe.get("ec_validation_enabled"))
+    ec_validation_result = None
+    if ec_validation_config.get("enabled"):
+        from .ec_validation import validate_ec
+
+        ec_validation_result = validate_ec(ions_mmol, ec, ec_validation_config)
+
     return CalcResult(
         liters=liters,
         elements_mg_l=elements,
@@ -493,6 +519,7 @@ def compute_solution(
         ions_mmol_l=ions_mmol,
         ions_meq_l=ions_meq,
         ion_balance=ion_balance,
+        ec=ec,
         fertilizer_elements_mg_l=fert_elements,
         fertilizer_oxides_mg_l=fert_oxides,
         fertilizer_ions_mmol_l=fert_ions_mmol,
@@ -507,6 +534,8 @@ def compute_solution(
         ec_water=ec_water,
         sluijsmann=sluijsmann,
         osmosis_percent=float(osmosis_percent),
+        speciation=speciation_result,
+        ec_validation=ec_validation_result,
     )
 
 

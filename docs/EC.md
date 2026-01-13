@@ -115,6 +115,36 @@ Die Berechnung wird als neuer Knoten `ec` im Ergebnis‑JSON ausgegeben:
 
 Für die reinen Wasserwerte wird zusätzlich `ec_water` (gleiche Struktur) ausgegeben.
 
+## Optional: EC-Validierung mit pyEQL
+Für einen Abgleich mit einer externen Bibliothek kann die optionale
+EC‑Validierung über pyEQL aktiviert werden. Das beeinflusst **nicht** das primäre
+McCleskey‑Ergebnis, sondern liefert lediglich Vergleichswerte.
+
+Beispiel (Recipe/API):
+```
+ec_validation:
+  enabled: true
+  engine: pyeql
+  engine_variant: native
+  temperature_c: 25
+  ph: 7.0
+```
+
+Output:
+```
+"ec_validation": {
+  "enabled": true,
+  "status": "ok",
+  "engine": "pyeql",
+  "engine_variant": "native",
+  "temperature_c": 25.0,
+  "pyeql_ec_mS_per_cm": ...,
+  "primary_ec_mS_per_cm": ...,
+  "delta_mS_per_cm": ...,
+  "warnings": [...]
+}
+```
+
 ## Quellen
 - McCleskey RB, Nordstrom DK, Ryan JN, Ball JW. **A new method of calculating electrical
   conductivity with applications to natural waters.** Geochimica et Cosmochimica Acta 77

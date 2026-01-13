@@ -84,6 +84,27 @@
       </section>
 
       <div class="mode-panel" id="calculatorMode">
+        <section class="block" id="recipeSection">
+          <h2>Rezepte</h2>
+          <p class="hint">Profile lokal speichern/laden.</p>
+          <div class="water-controls">
+            <div class="water-control-group">
+              <label for="recipeProfileSelect">Profil auswählen</label>
+              <div class="water-control-row">
+                <select id="recipeProfileSelect"></select>
+                <button id="loadRecipeProfile" type="button">Laden</button>
+                <button id="resetRecipeProfile" type="button">Reset Default</button>
+              </div>
+            </div>
+            <div class="water-control-group">
+              <label for="recipeProfileName">Profilname zum Speichern</label>
+              <div class="water-control-row">
+                <input id="recipeProfileName" type="text" placeholder="z.B. standard_mix" />
+                <button id="saveRecipeProfile" type="button">Speichern</button>
+              </div>
+            </div>
+          </div>
+        </section>
         <section class="block">
           <h2>Vorauswahl der Düngerkomponenten</h2>
           <div class="actions inline-actions">
@@ -162,6 +183,23 @@
         <section class="block">
           <h2>Solver Recipe</h2>
           <p class="hint">Zielwerte, erlaubte Dünger und fixe Grammangaben definieren.</p>
+          <div class="water-controls">
+            <div class="water-control-group">
+              <label for="nutrientSolutionSelect">Profil auswählen</label>
+              <div class="water-control-row">
+                <select id="nutrientSolutionSelect"></select>
+                <button id="loadNutrientSolution" type="button">Laden</button>
+                <button id="resetNutrientSolution" type="button">Reset Default</button>
+              </div>
+            </div>
+            <div class="water-control-group">
+              <label for="nutrientSolutionName">Profilname zum Speichern</label>
+              <div class="water-control-row">
+                <input id="nutrientSolutionName" type="text" placeholder="z.B. hoagland_custom" />
+                <button id="saveNutrientSolution" type="button">Speichern</button>
+              </div>
+            </div>
+          </div>
           <div class="solver-settings">
             <label>
               Liter
@@ -213,6 +251,7 @@
           </div>
           <div class="actions">
             <button id="solveBtn" type="button">Solve</button>
+            <button id="applySolverRecipe" type="button">Im Düngerrechner übernehmen</button>
           </div>
           <div class="solver-results">
             <div class="table-wrap">
@@ -239,6 +278,15 @@
                 </thead>
                 <tbody></tbody>
               </table>
+            </div>
+          </div>
+          <div class="water-controls">
+            <div class="water-control-group">
+              <label for="solverRecipeName">Profilname zum Speichern</label>
+              <div class="water-control-row">
+                <input id="solverRecipeName" type="text" placeholder="z.B. solver_output" />
+                <button id="saveSolverRecipe" type="button">Als Recipe speichern</button>
+              </div>
             </div>
           </div>
         </section>

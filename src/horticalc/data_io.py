@@ -102,3 +102,34 @@ def load_recipe(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
     return data
+
+
+def load_nutrient_solution_data(path: Path) -> dict:
+    with path.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    targets = data.get("targets_mg_per_l") or {}
+    return {
+        "name": data.get("name") or path.stem,
+        "source": data.get("source") or "",
+        "targets_mg_per_l": {str(k): float(v) for k, v in targets.items()},
+    }
+
+
+def save_nutrient_solution(
+    path: Path,
+    name: str,
+    source: str,
+    targets_mg_per_l: Dict[str, float],
+) -> None:
+    payload = {
+        "name": name,
+        "source": source,
+        "targets_mg_per_l": {str(k): float(v) for k, v in targets_mg_per_l.items()},
+    }
+    with path.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(payload, f, sort_keys=True, allow_unicode=True)
+
+
+def save_recipe(path: Path, payload: dict) -> None:
+    with path.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(payload, f, sort_keys=True, allow_unicode=True)

@@ -10,8 +10,11 @@ def test_solver_golden_solution_close() -> None:
     recipe_path = Path(__file__).resolve().parents[1] / "recipes" / "solve_golden.yml"
     result = solve_recipe(recipe_path)
 
-    assert "S" not in {key.upper() for key in result.objective_elements}
-    assert "SO4" not in {key.upper() for key in result.objective_elements}
+    objective_upper = {key.upper() for key in result.objective_elements}
+    assert "S" not in objective_upper
+    assert "SO4" not in objective_upper
+    assert "NA" not in objective_upper
+    assert "CL" not in objective_upper
 
     targets = result.targets_mg_l
     achieved = result.achieved_elements_mg_l

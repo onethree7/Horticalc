@@ -187,35 +187,56 @@ Details, Formeln, Einheiten, Parameter und Quellen stehen in [`docs/EC.md`](docs
 
 ```
 .
+├── api/
+│   └── app.py
 ├── data/
 │   ├── fertilizers.csv
 │   ├── molar_masses.yml
+│   ├── nutrient_solutions/
+│   │   ├── Bugbee_Utah_Hydroponic_Cannabis_2022.yml
+│   │   ├── Hoagland_Arnon_1950_Solution1_Nitrate.yml
+│   │   ├── Hoagland_Arnon_1950_Solution2_AmmoniumPhosphate.yml
+│   │   ├── Knop_1861_Standard.yml
+│   │   ├── Long_Ashton_Nutrient_Solution_LANS_NitrateType.yml
+│   │   ├── Murashige_Skoog_MS_1962_FullStrength.yml
+│   │   └── Yoshida_Rice_Solution_1976_CommonVariant.yml
 │   └── water_profiles/
 │       └── default.yml
-├── recipes/
-│   ├── default.yml
-│   ├── golden.yml
-│   └── green_go_12_12_36.yml
-├── solutions/
-│   ├── golden_output.json
-│   └── green_go_12_12_36_output.json
-├── api/
-│   └── app.py
+├── docs/
+│   ├── AGENTS.md
+│   ├── EC.md
+│   ├── feature_osmosis_mix.md
+│   ├── golden_example_output.txt
+│   ├── GUI.MD
+│   └── terminology_style_guide.md
 ├── frontend/
 │   ├── index.html
 │   ├── styles.css
 │   └── app.js
+├── recipes/
+│   ├── default.yml
+│   ├── golden.yml
+│   ├── green_go_12_12_36.yml
+│   └── solve_golden.yml
+├── solutions/
+│   ├── golden_output.json
+│   └── green_go_12_12_36_output.json
 ├── src/horticalc/
 │   ├── __init__.py
 │   ├── __main__.py
 │   ├── core.py
-│   └── data_io.py
-└── docs/
-    ├── AGENTS.md
-    ├── EC.md
-    ├── feature_osmosis_mix.md
-    ├── GUI.MD
-    └── golden_example_output.txt
+│   ├── data_io.py
+│   ├── ec.py
+│   ├── metrics.py
+│   ├── sluijsmann.py
+│   └── solver.py
+├── tests/
+│   ├── test_ec.py
+│   ├── test_sluijsmann.py
+│   └── test_solver_golden.py
+├── pyproject.toml
+├── requirements.txt
+└── start_dev.bat
 ```
 
 ---

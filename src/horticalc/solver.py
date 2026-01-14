@@ -18,7 +18,7 @@ from .core import (
 from .data_io import Fertilizer, load_fertilizers, load_molar_masses, load_water_profile_data, repo_root
 
 
-IGNORED_TARGETS = {"S", "SO4"}
+IGNORED_TARGETS = {"S", "SO4", "NA", "CL"}
 
 
 @dataclass
@@ -195,7 +195,7 @@ def solve_recipe_data(
     )
     objective_keys = _objective_keys(target_raw)
     if not objective_keys:
-        raise ValueError("No solvable targets defined (S/SO4 are ignored).")
+        raise ValueError("No solvable targets defined (S/SO4/Na/Cl are ignored).")
 
     allowed_names = [str(name) for name in recipe.get("fertilizers_allowed", [])]
     if not allowed_names:

@@ -155,6 +155,24 @@ def _solve_weights(
     return _nnls(A_var, b)
 
 
+def _build_fertilizer_output(
+    allowed: List[Fertilizer],
+    solve_weights: np.ndarray,
+    fixed_grams: Dict[str, float],
+    variable_mask: np.ndarray,
+) -> List[Dict[str, float]]:
+    fertilizers_out: List[Dict[str, float]] = []
+    var_idx = 0
+    for idx, fert in enumerate(allowed):
+        solved = float(solve_weights[var_idx]) if (solve_weights.size and variable_mask[idx]) else 0.0
+        if variable_mask[idx]:
+            var_idx += 1
+        total = solved + fixed_grams.get(fert.name, 0.0)
+        if total > 0:
+            fertilizers_out.append({"name": fert.name, "grams": total})
+    return fertilizers_out
+
+
 def _load_solver_recipe(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
@@ -207,7 +225,8 @@ def solve_recipe_data(
             raise KeyError(f"Unbekannter Dünger in fertilizers_allowed: '{name}'")
         allowed.append(fertilizers[name])
 
-    fixed_grams = {str(k): float(v) for k, v in (recipe.get("fixed_grams") or {}).items()}
+    fixed_grams_raw = {str(k): float(v) for k, v in (recipe.get("fixed_grams") or {}).items()}
+    fixed_grams = {name: grams for name, grams in fixed_grams_raw.items() if grams > 0.0}
     fixed_weights = np.array([fixed_grams.get(fert.name, 0.0) for fert in allowed], dtype=float)
     variable_mask = np.array([fert.name not in fixed_grams for fert in allowed], dtype=bool)
 
@@ -228,26 +247,55 @@ def solve_recipe_data(
 
     b = np.array([target_raw.get(key, 0.0) - water_elements.get(key, 0.0) for key in objective_keys], dtype=float)
     A = _build_matrix(allowed, molar_masses, objective_keys, liters)
-    solve_weights = _solve_weights(A, b, fixed_weights, variable_mask)
+    overshoot_cfg = recipe.get("overshoot") or {}
+    overshoot_enabled = bool(overshoot_cfg.get("enabled", True))
+    max_iters = int(overshoot_cfg.get("max_iters", 4))
+    weight_step = float(overshoot_cfg.get("weight_step", 1.0))
+    max_weight = float(overshoot_cfg.get("max_weight", 6.0))
+    base_weight_map = {str(k): float(v) for k, v in (overshoot_cfg.get("weights") or {}).items()}
+    base_weights = np.array([base_weight_map.get(key, 1.0) for key in objective_keys], dtype=float)
 
-    fertilizers_out = []
-    var_idx = 0
-    for idx, fert in enumerate(allowed):
-        solved = float(solve_weights[var_idx]) if (solve_weights.size and variable_mask[idx]) else 0.0
-        if variable_mask[idx]:
-            var_idx += 1
-        total = solved + fixed_grams.get(fert.name, 0.0)
-        if total > 0:
-            fertilizers_out.append({"name": fert.name, "grams": total})
+    solve_weights = np.array([])
+    fertilizers_out: List[Dict[str, float]] = []
+    achieved_elements: Dict[str, float] = {}
 
-    full_recipe = {
-        "liters": liters,
-        "fertilizers": fertilizers_out,
-        "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
-        "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
-    }
-    achieved = compute_solution(full_recipe, fertilizers, molar_masses, water_mg_l, osmosis_percent=osmosis_percent)
-    achieved_elements = achieved.elements_mg_l
+    for iteration in range(max(1, max_iters if overshoot_enabled else 1)):
+        A_weighted = A * base_weights[:, None]
+        b_weighted = b * base_weights
+        solve_weights = _solve_weights(A_weighted, b_weighted, fixed_weights, variable_mask)
+        fertilizers_out = _build_fertilizer_output(allowed, solve_weights, fixed_grams, variable_mask)
+        full_recipe = {
+            "liters": liters,
+            "fertilizers": fertilizers_out,
+            "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
+            "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
+        }
+        achieved = compute_solution(
+            full_recipe,
+            fertilizers,
+            molar_masses,
+            water_mg_l,
+            osmosis_percent=osmosis_percent,
+        )
+        achieved_elements = achieved.elements_mg_l
+
+        if not overshoot_enabled:
+            break
+
+        overshoot_found = False
+        updated_weights = base_weights.copy()
+        for idx, key in enumerate(objective_keys):
+            target = target_raw.get(key, 0.0)
+            if target <= 0:
+                continue
+            achieved_val = achieved_elements.get(key, 0.0)
+            if achieved_val > target:
+                ratio = (achieved_val - target) / target
+                updated_weights[idx] = min(max_weight, base_weights[idx] * (1.0 + weight_step * ratio))
+                overshoot_found = True
+        base_weights = updated_weights
+        if not overshoot_found:
+            break
 
     errors_mg_l = {}
     errors_percent = {}

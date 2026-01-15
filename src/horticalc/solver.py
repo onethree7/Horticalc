@@ -95,6 +95,7 @@ def _objective_keys(targets: Dict[str, float]) -> List[str]:
 
 def _fertilizer_element_contrib_per_g(fert: Fertilizer, mm: Dict[str, float]) -> Dict[str, float]:
     elements: Dict[str, float] = {}
+    wf = float(fert.weight_factor or 1.0)
 
     def add(key: str, value: float) -> None:
         if value == 0:
@@ -102,7 +103,7 @@ def _fertilizer_element_contrib_per_g(fert: Fertilizer, mm: Dict[str, float]) ->
         elements[key] = elements.get(key, 0.0) + value
 
     for form, frac in fert.comp.items():
-        mg_per_g = float(frac) * 1000.0
+        mg_per_g = float(frac) * 1000.0 * wf
         if form in ("NH4", "NO3", "Ur-N"):
             add("N_total", mg_per_g)
             if form == "NH4":
@@ -124,6 +125,50 @@ def _fertilizer_element_contrib_per_g(fert: Fertilizer, mm: Dict[str, float]) ->
     return elements
 
 
+def _build_row_scales(
+    objective_keys: List[str],
+    targets_raw: Dict[str, float],
+    b: np.ndarray,
+    *,
+    eps_mg_per_l: float = 1.0,
+) -> np.ndarray:
+    scales = np.zeros(len(objective_keys))
+    for idx, key in enumerate(objective_keys):
+        target_i = abs(float(targets_raw.get(key, 0.0)))
+        b_i = abs(float(b[idx]))
+        scales[idx] = max(target_i, b_i, eps_mg_per_l)
+    return scales
+
+
+def _nnls_weighted_irls(
+    A: np.ndarray,
+    b: np.ndarray,
+    *,
+    scales: np.ndarray,
+    overshoot_penalty: float,
+    max_outer_iter: int,
+    tol: float,
+    rtol: float,
+) -> np.ndarray:
+    if A.size == 0:
+        return np.array([])
+    base_w = 1.0 / np.maximum(scales, tol)
+    A_weighted = A * base_w[:, None]
+    b_weighted = b * base_w
+    x = _nnls(A_weighted, b_weighted, tol=tol)
+    for _ in range(max_outer_iter - 1):
+        r = A @ x - b
+        w = base_w * (1.0 + overshoot_penalty * (r > 0))
+        A_weighted = A * w[:, None]
+        b_weighted = b * w
+        x_new = _nnls(A_weighted, b_weighted, tol=tol)
+        if np.max(np.abs(x_new - x)) <= rtol * max(1.0, np.max(np.abs(x))):
+            x = x_new
+            break
+        x = x_new
+    return x
+
+
 def _build_matrix(
     fertilizers: List[Fertilizer],
     mm: Dict[str, float],
@@ -143,6 +188,13 @@ def _solve_weights(
     b: np.ndarray,
     fixed: np.ndarray,
     variable_mask: np.ndarray,
+    *,
+    relative_weighting: bool = False,
+    objective_keys: List[str] | None = None,
+    targets_raw: Dict[str, float] | None = None,
+    overshoot_penalty: float = 1.0,
+    irls_max_outer_iter: int = 4,
+    scale_eps_mg_per_l: float = 1.0,
 ) -> np.ndarray:
     if A.size == 0:
         return np.array([])
@@ -152,7 +204,79 @@ def _solve_weights(
     A_var = A[:, variable_mask]
     if A_var.size == 0:
         return np.zeros(int(variable_mask.sum()))
-    return _nnls(A_var, b)
+    if not relative_weighting:
+        return _nnls(A_var, b)
+    if objective_keys is None or targets_raw is None:
+        raise ValueError("objective_keys and targets_raw are required when relative_weighting is enabled")
+    scales = _build_row_scales(objective_keys, targets_raw, b, eps_mg_per_l=scale_eps_mg_per_l)
+    return _nnls_weighted_irls(
+        A_var,
+        b,
+        scales=scales,
+        overshoot_penalty=overshoot_penalty,
+        max_outer_iter=irls_max_outer_iter,
+        tol=1e-10,
+        rtol=1e-6,
+    )
+
+
+def _max_abs_percent_error(
+    objective_keys: List[str],
+    targets_raw: Dict[str, float],
+    achieved_elements: Dict[str, float],
+) -> float:
+    max_error = 0.0
+    for key in objective_keys:
+        target = float(targets_raw.get(key, 0.0))
+        if target == 0:
+            continue
+        achieved_val = float(achieved_elements.get(key, 0.0))
+        max_error = max(max_error, abs((achieved_val - target) / target * 100.0))
+    return max_error
+
+
+def _singleton_supplier_pass(
+    *,
+    A: np.ndarray,
+    x_full: np.ndarray,
+    variable_mask_full: np.ndarray,
+    objective_keys: List[str],
+    targets_raw: Dict[str, float],
+    achieved_elements: Dict[str, float],
+    liters: float,
+    share_threshold: float,
+    max_regress_pp: float,
+    recompute_achieved_fn: callable,
+) -> np.ndarray:
+    adjusted = x_full.copy()
+    for row, key in enumerate(objective_keys):
+        contrib_row = A[row, :] * adjusted
+        sum_row = float(np.sum(contrib_row))
+        if sum_row <= 0:
+            continue
+        j_star = int(np.argmax(contrib_row))
+        share = contrib_row[j_star] / sum_row
+        if share < share_threshold:
+            continue
+        if not variable_mask_full[j_star]:
+            continue
+        if A[row, j_star] <= 0:
+            continue
+        overshoot_mg_l = float(achieved_elements.get(key, 0.0) - targets_raw.get(key, 0.0))
+        if overshoot_mg_l <= 0:
+            continue
+        delta_g = overshoot_mg_l / A[row, j_star]
+        if delta_g <= 0:
+            continue
+        proposed = adjusted.copy()
+        proposed[j_star] = max(0.0, adjusted[j_star] - delta_g)
+        achieved_new = recompute_achieved_fn(proposed)
+        old_max = _max_abs_percent_error(objective_keys, targets_raw, achieved_elements)
+        new_max = _max_abs_percent_error(objective_keys, targets_raw, achieved_new)
+        if achieved_new.get(key, 0.0) <= achieved_elements.get(key, 0.0) and new_max <= old_max + max_regress_pp:
+            adjusted = proposed
+            achieved_elements = achieved_new
+    return adjusted
 
 
 def _load_solver_recipe(path: Path) -> dict:
@@ -193,6 +317,14 @@ def solve_recipe_data(
         or recipe.get("water_elements_mg_per_l")
         or {}
     )
+    solver_config = recipe.get("solver_config") or {}
+    relative_weighting = bool(solver_config.get("relative_weighting", True))
+    overshoot_penalty = float(solver_config.get("overshoot_penalty", 1.0))
+    irls_max_outer_iter = int(solver_config.get("irls_max_outer_iter", 4))
+    scale_eps_mg_per_l = float(solver_config.get("scale_eps_mg_per_l", 1.0))
+    singleton_supplier_enabled = bool(solver_config.get("singleton_supplier_enabled", True))
+    singleton_share_threshold = float(solver_config.get("singleton_share_threshold", 0.85))
+    singleton_max_regress_pp = float(solver_config.get("singleton_max_regress_pp", 0.25))
     objective_keys = _objective_keys(target_raw)
     if not objective_keys:
         raise ValueError("No solvable targets defined (S/SO4/Na/Cl are ignored).")
@@ -228,26 +360,115 @@ def solve_recipe_data(
 
     b = np.array([target_raw.get(key, 0.0) - water_elements.get(key, 0.0) for key in objective_keys], dtype=float)
     A = _build_matrix(allowed, molar_masses, objective_keys, liters)
-    solve_weights = _solve_weights(A, b, fixed_weights, variable_mask)
+    solve_weights = _solve_weights(
+        A,
+        b,
+        fixed_weights,
+        variable_mask,
+        relative_weighting=relative_weighting,
+        objective_keys=objective_keys,
+        targets_raw=target_raw,
+        overshoot_penalty=overshoot_penalty,
+        irls_max_outer_iter=irls_max_outer_iter,
+        scale_eps_mg_per_l=scale_eps_mg_per_l,
+    )
 
-    fertilizers_out = []
-    var_idx = 0
-    for idx, fert in enumerate(allowed):
-        solved = float(solve_weights[var_idx]) if (solve_weights.size and variable_mask[idx]) else 0.0
-        if variable_mask[idx]:
-            var_idx += 1
-        total = solved + fixed_grams.get(fert.name, 0.0)
-        if total > 0:
-            fertilizers_out.append({"name": fert.name, "grams": total})
+    def build_full_weights(solved: np.ndarray) -> np.ndarray:
+        combined = fixed_weights.copy()
+        var_idx_inner = 0
+        for idx in range(len(allowed)):
+            if variable_mask[idx]:
+                if solved.size:
+                    combined[idx] += float(solved[var_idx_inner])
+                var_idx_inner += 1
+        return combined
 
-    full_recipe = {
-        "liters": liters,
-        "fertilizers": fertilizers_out,
-        "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
-        "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
-    }
-    achieved = compute_solution(full_recipe, fertilizers, molar_masses, water_mg_l, osmosis_percent=osmosis_percent)
-    achieved_elements = achieved.elements_mg_l
+    def build_solution_for_weights(weights: np.ndarray) -> tuple[list[dict[str, float]], dict[str, float], dict]:
+        ferts_out: list[dict[str, float]] = []
+        for idx, fert in enumerate(allowed):
+            grams = float(weights[idx])
+            if grams > 0:
+                ferts_out.append({"name": fert.name, "grams": grams})
+        recipe_payload = {
+            "liters": liters,
+            "fertilizers": ferts_out,
+            "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
+            "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
+        }
+        achieved_solution = compute_solution(
+            recipe_payload,
+            fertilizers,
+            molar_masses,
+            water_mg_l,
+            osmosis_percent=osmosis_percent,
+        )
+        return ferts_out, achieved_solution.elements_mg_l, recipe_payload
+
+    x_full = build_full_weights(solve_weights)
+    fertilizers_out, achieved_elements, full_recipe = build_solution_for_weights(x_full)
+    if relative_weighting:
+        solve_weights_unweighted = _solve_weights(A, b, fixed_weights, variable_mask)
+        x_full_unweighted = build_full_weights(solve_weights_unweighted)
+        ferts_unweighted, achieved_unweighted, recipe_unweighted = build_solution_for_weights(x_full_unweighted)
+        weighted_error = _max_abs_percent_error(objective_keys, target_raw, achieved_elements)
+        unweighted_error = _max_abs_percent_error(objective_keys, target_raw, achieved_unweighted)
+        if unweighted_error < weighted_error:
+            x_full = x_full_unweighted
+            fertilizers_out = ferts_unweighted
+            achieved_elements = achieved_unweighted
+            full_recipe = recipe_unweighted
+
+    if singleton_supplier_enabled:
+
+        def recompute_achieved_fn(new_x_full: np.ndarray) -> Dict[str, float]:
+            updated_fertilizers = []
+            for idx, fert in enumerate(allowed):
+                grams = float(new_x_full[idx])
+                if grams > 0:
+                    updated_fertilizers.append({"name": fert.name, "grams": grams})
+            updated_recipe = {
+                "liters": liters,
+                "fertilizers": updated_fertilizers,
+                "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
+                "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
+            }
+            updated_solution = compute_solution(
+                updated_recipe,
+                fertilizers,
+                molar_masses,
+                water_mg_l,
+                osmosis_percent=osmosis_percent,
+            )
+            return updated_solution.elements_mg_l
+
+        x_full_updated = _singleton_supplier_pass(
+            A=A,
+            x_full=x_full,
+            variable_mask_full=variable_mask,
+            objective_keys=objective_keys,
+            targets_raw=target_raw,
+            achieved_elements=achieved_elements,
+            liters=liters,
+            share_threshold=singleton_share_threshold,
+            max_regress_pp=singleton_max_regress_pp,
+            recompute_achieved_fn=recompute_achieved_fn,
+        )
+        if np.any(np.abs(x_full_updated - x_full) > 1e-12):
+            x_full = x_full_updated
+            fertilizers_out = []
+            for idx, fert in enumerate(allowed):
+                grams = float(x_full[idx])
+                if grams > 0:
+                    fertilizers_out.append({"name": fert.name, "grams": grams})
+            full_recipe["fertilizers"] = fertilizers_out
+            achieved = compute_solution(
+                full_recipe,
+                fertilizers,
+                molar_masses,
+                water_mg_l,
+                osmosis_percent=osmosis_percent,
+            )
+            achieved_elements = achieved.elements_mg_l
 
     errors_mg_l = {}
     errors_percent = {}

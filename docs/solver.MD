@@ -1,0 +1,186 @@
+# Horticalc Solver
+
+This document describes how `horticalc` computes fertilizer grams to match a target nutrient profile (mg/L) given a water profile and an allowed fertilizer set.
+
+## Problem statement
+
+Given:
+
+- `targets_mg_per_l`: desired element concentrations in mg/L
+- water profile (mg/L), optionally mixed with osmosis water
+- a set of allowed fertilizers, each with a composition and (optional) `weight_factor`
+- optional fixed fertilizer grams
+
+Find non-negative fertilizer grams that best match the targets, while keeping behavior deterministic and producing stable, realistic solutions.
+
+## Data model and units
+
+- Targets and achieved values are expressed as mg/L of *elements* (e.g., `K`, `Ca`, `P`, `Fe`).
+- Fertilizer composition is stored as fractions per product (e.g., N-forms, oxides, and other forms).
+- Conversions:
+  - oxide forms are converted to elemental mg using molar masses
+  - N forms contribute to `N_total` and the specific form key (`N_NO3`, `N_NH4`, `N_UREA`)
+- `weight_factor` scales a fertilizer’s effective contribution to match real dosing behavior (e.g., liquids with density / label basis differences). The solver uses the same scaling as the core “ground truth” compute path.
+
+## Ignored targets
+
+Some targets are excluded from the optimization objective (but still computed and reported in the output):
+
+- `S`, `SO4`, `Na`, `Cl`
+
+Rationale: these are frequently “forced” by the fertilizer set (especially sulfate) and are better treated as a reporting dimension or a later constraint layer rather than a hard fit objective.
+
+Additionally, if `N_total` is present together with any of `N_NO3`, `N_NH4`, or `N_UREA`, `N_total` is excluded from the fit to avoid double counting nitrogen.
+
+## Linear model (A-matrix)
+
+Let:
+
+- `x` be the vector of fertilizer grams (decision variables), constrained to `x >= 0`
+- `A` be the matrix of element contributions (mg/L per gram of fertilizer)
+- `b` be the target residual after subtracting water baseline (mg/L)
+
+For each objective element `i` and fertilizer `j`:
+
+- `A[i,j] = (mg_per_g_of_element_i_from_fert_j) / liters`
+
+Water baseline:
+
+- The recipe’s water profile is converted to elemental mg/L and optionally mixed with osmosis water.
+- The baseline is subtracted from targets:
+
+`b = targets - water_baseline`
+
+This means the solver decides only the additional nutrients required beyond the water.
+
+## Core optimization: NNLS
+
+The core solve is a non-negative least squares (NNLS) problem:
+
+Minimize:
+
+`|| A x - b ||_2`
+
+Subject to:
+
+`x >= 0`
+
+NNLS is convex and deterministic under a fixed implementation, and it naturally enforces “no negative fertilizer amounts”.
+
+If some fertilizer grams are fixed, their contribution is subtracted from `b` before solving, and only the remaining variables are optimized.
+
+## Relative weighting (small targets vs large targets)
+
+A pure least-squares objective is dominated by large-magnitude targets (e.g., `K`, `Ca`), which can systematically “sacrifice” small targets (e.g., trace elements).
+
+To address this, the solver can use **relative weighting**, which scales each objective row to represent relative (percent-like) error.
+
+Row scale per element:
+
+- `scale_i = max(|target_i|, |b_i|, eps_mg_per_l)`
+
+Base row weight:
+
+- `base_w_i = 1 / scale_i`
+
+This makes the solver care about proportional error, not absolute mg/L error, improving trace-element accuracy without requiring hard constraints.
+
+## IRLS wrapper + overshoot penalty
+
+Relative weighting is wrapped in a deterministic IRLS (iteratively re-weighted least squares) loop to discourage overshoot:
+
+- Start with the base weights.
+- Solve weighted NNLS.
+- Compute residual `r = A x - b`.
+- Increase the row weight when `r_i > 0` (overshoot), controlled by `overshoot_penalty`.
+- Repeat for a small fixed number of iterations.
+
+This reduces the tendency to exceed targets when a near-equal solution exists.
+
+## Macro preference / priority groups (optional)
+
+In nutrient solutions, the most important variables are typically macros:
+
+1. `N` (N forms / total)
+2. `K`
+3. `P`
+4. `Ca`
+5. `Mg`
+
+The solver can optionally apply a **macro preference** so that macro matching is “primary” while still keeping the advantages of relative weighting for traces.
+
+This is done in two places:
+
+1) **During optimization**  
+Macro rows receive multiplicative weight factors (e.g., N weighted higher than trace rows), so the optimizer focuses on macros first.
+
+2) **When selecting between candidate solutions**  
+If the solver computes both a weighted and an unweighted candidate, it uses a lexicographic score:
+
+- Compute `max_abs_percent_error` per priority group in order, plus a final “other” group.
+- Compare score tuples lexicographically and pick the better candidate.
+- This prevents tiny trace errors from dominating the solution choice when macros regress.
+
+The same scoring can be used for post-pass accept/rollback decisions (see below).
+
+## Singleton-supplier post-pass (optional)
+
+Even with a good fit, the solver can produce “avoidable” overshoots when a single fertilizer supplies almost all of an element.
+
+Example: a humic product used to supply nitrogen also carries large trace amounts, causing trace overshoot by orders of magnitude.
+
+The singleton-supplier pass addresses this deterministically:
+
+- For each objective element, compute each fertilizer’s share of that element’s achieved mg/L.
+- If one fertilizer supplies more than `share_threshold` (e.g., 0.85) and the element is overshot:
+  - reduce that fertilizer’s grams in closed form to remove the overshoot for that element
+  - recompute achieved values using the core “ground truth” compute path
+  - accept the change only if:
+    - the overshoot is reduced (or not worsened), and
+    - overall solution quality does not regress beyond configured limits
+      (optionally macro-first via priority scoring)
+
+This improves plausibility without hard constraints and preserves determinism.
+
+## Determinism and reproducibility
+
+The solver is designed to be deterministic:
+
+- fixed iteration counts for IRLS
+- deterministic ordering over objective keys and fertilizers
+- deterministic accept/rollback logic for post-passes
+- stable output schema and keys
+
+This enables reliable regression testing and golden-file comparisons.
+
+## Configuration (solver_config)
+
+Recipes may supply `solver_config` to tune behavior (names may vary depending on implementation):
+
+Typical toggles:
+
+- `relative_weighting`: enable relative scaling (default on)
+- `overshoot_penalty`: overshoot discouragement strength
+- `irls_max_outer_iter`: IRLS iterations (small fixed number)
+- `scale_eps_mg_per_l`: epsilon for row scaling stability
+- `singleton_supplier_enabled`: enable singleton post-pass
+- `singleton_share_threshold`: dominant-supplier threshold
+- `singleton_max_regress_pp`: rollback tolerance in percent points
+- macro priority (if implemented):
+  - `macro_priority_enabled`
+  - `priority_groups`, `priority_group_weights`
+  - `macro_regress_pp`
+
+## Verification
+
+Recommended checks:
+
+1) Run unit tests:
+- `python -m pytest -q`
+
+Success: all tests pass.
+
+2) Compare a known recipe before/after changes:
+- Ensure output keys are unchanged.
+- Ensure ignored targets (`S`, `SO4`, `Na`, `Cl`) remain excluded from the fit but present in reporting.
+- Validate macro fit and trace fit trade-offs are acceptable for your fertilizer set.

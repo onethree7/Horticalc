@@ -33,7 +33,12 @@ const solverProfileActions = document.querySelector("#solverProfileActions");
 const saveSolverAsRecipeButton = document.querySelector("#saveSolverAsRecipe");
 const applySolverToCalculatorButton = document.querySelector("#applySolverToCalculator");
 
-const summaryTable = document.querySelector("#summaryTable");
+const waterSummaryTable = document.querySelector("#waterSummaryTable");
+const oxideSummaryTable = document.querySelector("#oxideSummaryTable");
+const ionSummaryTable = document.querySelector("#ionSummaryTable");
+const waterSummaryBadge = document.querySelector("#waterSummaryBadge");
+const oxideSummaryBadge = document.querySelector("#oxideSummaryBadge");
+const ionSummaryBadge = document.querySelector("#ionSummaryBadge");
 const ionMeqList = document.querySelector("#ionMeqList");
 const ionBalanceList = document.querySelector("#ionBalanceList");
 const modeToggleInputs = document.querySelectorAll('input[name="modeToggle"]');
@@ -150,23 +155,31 @@ const oxideIntegerKeys = new Set([
 const oxideTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "SiO2"]);
 const carbonateHelperKeys = new Set(["CO3", "CaCO3", "KH"]);
 const summaryColumnOrder = [
-  { oxide: "N_total", element: "N_total", label: "N_total" },
-  { oxide: "P2O5", element: "P", label: "P2O5/P" },
-  { oxide: "K2O", element: "K", label: "K2O/K" },
-  { oxide: "CaO", element: "Ca", label: "CaO/Ca" },
-  { oxide: "MgO", element: "Mg", label: "MgO/Mg" },
-  { oxide: "SO4", element: "S", label: "SO4/S" },
-  { oxide: "Fe", element: "Fe", label: "Fe" },
-  { oxide: "Mn", element: "Mn", label: "Mn" },
-  { oxide: "Cu", element: "Cu", label: "Cu" },
-  { oxide: "Zn", element: "Zn", label: "Zn" },
-  { oxide: "B", element: "B", label: "B" },
-  { oxide: "Mo", element: "Mo", label: "Mo" },
-  { oxide: "SiO2", element: "Si", label: "SiO2/Si" },
-  { oxide: "Na2O", element: "Na", label: "Na2O/Na" },
-  { oxide: "Cl", element: "Cl", label: "Cl" },
-  { oxide: "HCO3", element: "HCO3", label: "HCO3" },
+  { oxide: "N_total", element: "N_total", oxideHeaderLabel: "N_total", ionHeaderLabel: "N_total" },
+  { oxide: "P2O5", element: "P", oxideHeaderLabel: "P2O5", ionHeaderLabel: "P" },
+  { oxide: "K2O", element: "K", oxideHeaderLabel: "K2O", ionHeaderLabel: "K" },
+  { oxide: "CaO", element: "Ca", oxideHeaderLabel: "CaO", ionHeaderLabel: "Ca" },
+  { oxide: "MgO", element: "Mg", oxideHeaderLabel: "MgO", ionHeaderLabel: "Mg" },
+  { oxide: "SO4", element: "S", oxideHeaderLabel: "SO4", ionHeaderLabel: "S" },
+  { oxide: "Fe", element: "Fe", oxideHeaderLabel: "Fe", ionHeaderLabel: "Fe" },
+  { oxide: "Mn", element: "Mn", oxideHeaderLabel: "Mn", ionHeaderLabel: "Mn" },
+  { oxide: "Cu", element: "Cu", oxideHeaderLabel: "Cu", ionHeaderLabel: "Cu" },
+  { oxide: "Zn", element: "Zn", oxideHeaderLabel: "Zn", ionHeaderLabel: "Zn" },
+  { oxide: "B", element: "B", oxideHeaderLabel: "B", ionHeaderLabel: "B" },
+  { oxide: "Mo", element: "Mo", oxideHeaderLabel: "Mo", ionHeaderLabel: "Mo" },
+  { oxide: "SiO2", element: "Si", oxideHeaderLabel: "SiO2", ionHeaderLabel: "Si" },
+  { oxide: "Na2O", element: "Na", oxideHeaderLabel: "Na2O", ionHeaderLabel: "Na" },
+  { oxide: "Cl", element: "Cl", oxideHeaderLabel: "Cl", ionHeaderLabel: "Cl" },
+  { oxide: "HCO3", element: "HCO3", oxideHeaderLabel: "HCO3", ionHeaderLabel: "HCO3" },
 ];
+const summaryRowLabelWidth = "12rem";
+const summaryColumns = summaryColumnOrder.map((column) => ({
+  oxideKey: column.oxide,
+  elementKey: column.element,
+  oxideHeaderLabel: column.oxideHeaderLabel,
+  ionHeaderLabel: column.ionHeaderLabel,
+  columnClass: `col-${normalizeColumnKey(column.oxide)}`,
+}));
 
 function apiBase() {
   return apiBaseInput.value.replace(/\/$/, "");
@@ -723,81 +736,159 @@ function renderIonBalanceCompact(container, entries) {
   container.appendChild(table);
 }
 
-function renderSummaryTable(table, oxides, elements, waterElements = null) {
-  table.innerHTML = "";
-  const oxideMap = new Map(Object.entries(oxides));
-  const elementMap = new Map(Object.entries(elements));
-  const waterMap = waterElements ? new Map(Object.entries(waterElements)) : null;
-
+function buildSummaryColgroup() {
   const colgroup = document.createElement("colgroup");
   const labelCol = document.createElement("col");
   labelCol.classList.add("col-row-label");
+  labelCol.style.width = summaryRowLabelWidth;
   colgroup.appendChild(labelCol);
-  summaryColumnOrder.forEach((column) => {
+  summaryColumns.forEach((column) => {
     const col = document.createElement("col");
-    col.classList.add(`col-${normalizeColumnKey(column.oxide)}`);
+    col.classList.add(column.columnClass);
     colgroup.appendChild(col);
   });
-  table.appendChild(colgroup);
+  return colgroup;
+}
 
-  const thead = document.createElement("thead");
+function buildSummaryHeaderRow(headerLabelKey) {
   const headerRow = document.createElement("tr");
   const spacer = document.createElement("th");
   spacer.textContent = "";
   headerRow.appendChild(spacer);
-  summaryColumnOrder.forEach((column) => {
+  summaryColumns.forEach((column) => {
     const th = document.createElement("th");
-    th.textContent = column.label;
-    th.classList.add(`col-${normalizeColumnKey(column.oxide)}`);
+    th.textContent = column[headerLabelKey];
+    th.classList.add(column.columnClass);
     headerRow.appendChild(th);
   });
-  thead.appendChild(headerRow);
+  return headerRow;
+}
+
+function renderSummaryTable(table, rowLabel, valueMap, headerLabelKey, formatter) {
+  table.innerHTML = "";
+  const values = new Map(Object.entries(valueMap || {}));
+
+  table.appendChild(buildSummaryColgroup());
+  const thead = document.createElement("thead");
+  thead.appendChild(buildSummaryHeaderRow(headerLabelKey));
   table.appendChild(thead);
 
   const tbody = document.createElement("tbody");
-  const rows = [];
-  if (waterMap) {
-    rows.push({
-      label: "Wasserwerte (nur Wasser)",
-      valueMap: waterMap,
-      formatter: waterUnit === "mol_l" ? formatTraceValue : formatNutrientValue,
-    });
-  }
-  rows.push(
-    {
-      label: "Oxide (Wasser + Dünger)",
-      valueMap: oxideMap,
-      formatter: formatOxideValue,
-    },
-    {
-      label: "Ionen (Wasser + Dünger)",
-      valueMap: elementMap,
-      formatter: formatNutrientValue,
-    }
-  );
+  const tr = document.createElement("tr");
+  const labelCell = document.createElement("th");
+  labelCell.textContent = rowLabel;
+  labelCell.classList.add("row-label");
+  labelCell.scope = "row";
+  tr.appendChild(labelCell);
 
-  rows.forEach((row) => {
-    const tr = document.createElement("tr");
-    const labelCell = document.createElement("th");
-    labelCell.textContent = row.label;
-    labelCell.classList.add("row-label");
-    labelCell.scope = "row";
-    tr.appendChild(labelCell);
-
-    summaryColumnOrder.forEach((column) => {
-      const key = row.valueMap === oxideMap ? column.oxide : column.element;
-      const rawValue = row.valueMap.get(key);
-      const td = document.createElement("td");
-      const formatted = row.formatter(key, Number(rawValue));
-      td.textContent = formatted;
-      td.classList.add(`col-${normalizeColumnKey(column.oxide)}`);
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
+  summaryColumns.forEach((column) => {
+    const key = headerLabelKey === "oxideHeaderLabel" ? column.oxideKey : column.elementKey;
+    const rawValue = values.get(key);
+    const td = document.createElement("td");
+    td.textContent = formatter(key, Number(rawValue));
+    td.classList.add(column.columnClass);
+    tr.appendChild(td);
   });
 
+  tbody.appendChild(tr);
   table.appendChild(tbody);
 }
+
+function renderWaterSummaryTable(elements) {
+  const waterFormatter = (key, value) =>
+    waterUnit === "mol_l" ? formatTraceValue(value) : formatNutrientValue(key, value);
+  renderSummaryTable(
+    waterSummaryTable,
+    "Wasserprofil",
+    elements,
+    "ionHeaderLabel",
+    waterFormatter
+  );
+  if (waterSummaryBadge) {
+    waterSummaryBadge.textContent = waterUnit === "mol_l" ? "mol/L" : "mg/L";
+  }
+}
+
+function renderOxideSummaryTable(oxides) {
+  renderSummaryTable(
+    oxideSummaryTable,
+    "Gesamtansatz",
+    oxides,
+    "oxideHeaderLabel",
+    formatOxideValue
+  );
+  if (oxideSummaryBadge) {
+    oxideSummaryBadge.textContent = "mg/L";
+  }
+}
+
+function renderIonSummaryTable(elements) {
+  renderSummaryTable(
+    ionSummaryTable,
+    "Gesamtansatz",
+    elements,
+    "ionHeaderLabel",
+    formatNutrientValue
+  );
+  if (ionSummaryBadge) {
+    ionSummaryBadge.textContent = "mg/L";
+  }
+}
+
+function assertSummaryAlignment(tables) {
+  const tableList = tables.filter(Boolean);
+  if (tableList.length !== tables.length) {
+    console.error("Summary alignment check failed: missing tables.");
+    return false;
+  }
+  const signatures = tableList.map((table) =>
+    Array.from(table.querySelectorAll("colgroup col")).map((col) => col.className)
+  );
+  const [reference] = signatures;
+  const matches = signatures.every(
+    (signature) =>
+      signature.length === reference.length &&
+      signature.every((className, index) => className === reference[index])
+  );
+  if (!matches) {
+    console.error("Summary alignment check failed: column classes do not match.");
+    tableList.forEach((table) => table.closest(".table-card")?.classList.add("is-align-fail"));
+  }
+  return matches;
+}
+
+function elementHasClipping(element) {
+  if (!element) {
+    return true;
+  }
+  return element.scrollWidth > element.clientWidth && element.scrollHeight <= element.clientHeight;
+}
+
+function assertNoClipping(tables) {
+  const tableList = tables.filter(Boolean);
+  let ok = true;
+  tableList.forEach((table) => {
+    const card = table.closest(".table-card");
+    const rowLabels = Array.from(table.querySelectorAll("tbody .row-label"));
+    const title = card?.querySelector(".table-card-title h3");
+    const labelClipped = rowLabels.some((label) => elementHasClipping(label));
+    const titleClipped = elementHasClipping(title);
+    if (labelClipped || titleClipped) {
+      ok = false;
+      console.error("Summary clipping check failed:", {
+        tableId: table.id,
+        labelClipped,
+        titleClipped,
+      });
+      card?.classList.add("is-align-fail");
+    }
+  });
+  return ok;
+}
+
+window.__horticalcCheckSummaryAlignment = () =>
+  assertSummaryAlignment([waterSummaryTable, oxideSummaryTable, ionSummaryTable]) &&
+  assertNoClipping([waterSummaryTable, oxideSummaryTable, ionSummaryTable]);
 
 function normalizeColumnKey(key) {
   return key.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -1283,7 +1374,9 @@ function renderCalculation(data) {
   const npkMetrics = data.npk_metrics || {};
   const waterElements = data.water_elements_mg_per_l || {};
   const waterDisplay = waterElementsForDisplay(waterElements);
-  renderSummaryTable(summaryTable, oxides, elements, waterDisplay);
+  renderWaterSummaryTable(waterDisplay);
+  renderOxideSummaryTable(oxides);
+  renderIonSummaryTable(elements);
 
   const ionMeqEntries = Object.entries(data.ions_meq_per_l || {});
   renderIonCompactList(ionMeqList, ionMeqEntries);
@@ -1540,7 +1633,9 @@ async function init() {
   } catch (error) {
     renderSelectionTable();
     renderCalculatorTable();
-    renderSummaryTable(summaryTable, {}, {}, {});
+    renderWaterSummaryTable({});
+    renderOxideSummaryTable({});
+    renderIonSummaryTable({});
     renderSolverAllowedOptions();
     renderSolverFixedTable();
   }

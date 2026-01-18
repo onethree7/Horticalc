@@ -193,6 +193,9 @@ main {
 .nutrient-grid--summary td.row-label {
   text-align: left;
   font-weight: 600;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .nutrient-grid--summary thead th:first-child {
@@ -423,12 +426,15 @@ main {
   margin: 0 0 var(--space-2) 0;
   font-size: 0.9rem;
   color: #c6d0dc;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .table-card-title {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--space-3);
   margin-bottom: var(--space-2);
 }
@@ -445,6 +451,11 @@ main {
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 999px;
   padding: 0 var(--space-2);
+}
+
+.is-align-fail {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 1px rgba(255, 107, 107, 0.5);
 }
 
 .compact-card {

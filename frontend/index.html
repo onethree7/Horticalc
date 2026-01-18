@@ -8,7 +8,7 @@
   </head>
   <body class="compact">
     <header class="page-header">
-      <h1>Horticalc – Düngercalculator</h1>
+      <h1>Horticalc – Nährlösung-Rechner</h1>
       <div class="api-config">
         <label for="apiBase">API Base URL</label>
         <input id="apiBase" type="url" value="http://localhost:8000" />
@@ -111,7 +111,7 @@
 
       <div class="mode-panel" id="calculatorMode">
         <section class="block">
-          <h2>Vorauswahl der Düngerkomponenten</h2>
+          <h2>Düngemittel-Auswahl (Komponenten)</h2>
           <div class="actions inline-actions">
             <button id="addFertilizerRow" type="button">+</button>
             <button id="removeFertilizerRow" type="button">-</button>
@@ -121,7 +121,7 @@
         </section>
 
         <section class="block">
-          <h2>Düngercalculator</h2>
+          <h2>Nährlösung-Rechner</h2>
           <p class="hint">Mengen eingeben und Berechnung starten.</p>
           <div class="table-wrap" id="calculatorTableWrap"></div>
           <div class="actions">
@@ -157,10 +157,33 @@
                 </div>
               </div>
             </div>
-            <div class="table-card">
-              <h3>Oxidformen & Ionen (ppm, mg/l)</h3>
-              <div class="table-wrap">
-                <table class="grid grid--matrix nutrient-grid nutrient-grid--summary" id="summaryTable"></table>
+            <div class="summary-tables">
+              <div class="table-card">
+                <div class="table-card-title">
+                  <h3 title="Wasserprofil (nach Osmose)">Wasserprofil (nach Osmose)</h3>
+                  <span class="table-badge" id="waterSummaryBadge">mg/L</span>
+                </div>
+                <div class="table-wrap">
+                  <table class="grid grid--matrix nutrient-grid nutrient-grid--summary" id="waterSummaryTable"></table>
+                </div>
+              </div>
+              <div class="table-card">
+                <div class="table-card-title">
+                  <h3 title="Oxidbilanz (Gesamtansatz)">Oxidbilanz (Gesamtansatz)</h3>
+                  <span class="table-badge">mg/L</span>
+                </div>
+                <div class="table-wrap">
+                  <table class="grid grid--matrix nutrient-grid nutrient-grid--summary" id="oxideSummaryTable"></table>
+                </div>
+              </div>
+              <div class="table-card">
+                <div class="table-card-title">
+                  <h3 title="Ionenbilanz (Gesamtansatz)">Ionenbilanz (Gesamtansatz)</h3>
+                  <span class="table-badge">mg/L</span>
+                </div>
+                <div class="table-wrap">
+                  <table class="grid grid--matrix nutrient-grid nutrient-grid--summary" id="ionSummaryTable"></table>
+                </div>
               </div>
             </div>
           </div>

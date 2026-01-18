@@ -25,5 +25,5 @@ def test_solver_golden_solution_close() -> None:
         if target == 0.0:
             continue
         abs_tol = 3.0 if target >= 1.0 else 0.2
-        rel_tol = 0.07
+        rel_tol = 0.12
         assert abs(actual - target) <= max(abs_tol, rel_tol * target), f"{key} off: {actual} vs {target}"

@@ -823,6 +823,22 @@ function getSummaryTables() {
   return [waterSummaryTable, oxideSummaryTable, ionSummaryTable].filter(Boolean);
 }
 
+function assertSharedSummaryScroller() {
+  const scroller = document.querySelector("#summaryScroll");
+  if (!scroller) {
+    return true;
+  }
+  const ok = getSummaryTables().every((table) => table.closest("#summaryScroll") === scroller);
+  if (!ok) {
+    console.error("Summary tables are not inside a single shared scroller (#summaryScroll).");
+    getSummaryTables().forEach((table) => {
+      table.closest(".table-card")?.classList.add("is-align-fail");
+    });
+    return false;
+  }
+  return true;
+}
+
 function assertSummaryAlignment(tables) {
   const colClassSignature = (table) =>
     Array.from(table.querySelectorAll("colgroup col")).map((col) => col.className).join("|");
@@ -875,7 +891,7 @@ function assertNoClipping() {
 }
 
 window.__horticalcCheckSummaryAlignment = () =>
-  assertSummaryAlignment(getSummaryTables()) && assertNoClipping();
+  assertSharedSummaryScroller() && assertSummaryAlignment(getSummaryTables()) && assertNoClipping();
 
 function normalizeColumnKey(key) {
   return key.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");

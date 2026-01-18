@@ -273,9 +273,34 @@ main {
   margin-top: var(--space-4);
 }
 
+.summary-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--space-2);
+}
+
 .summary-tables {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
+  min-width: max-content;
+}
+
+.summary-scroll .table-card {
+  width: max-content;
+  max-width: none;
+}
+
+.summary-scroll table.grid.nutrient-grid--summary {
+  width: max-content;
+  display: inline-table;
+}
+
+.summary-scroll,
+.summary-scroll .summary-tables,
+.summary-scroll .table-card {
+  min-width: 0;
 }
 
 .section-header {
@@ -406,12 +431,6 @@ main {
 
 .toggle input {
   margin: 0;
-}
-
-.summary .table-wrap {
-  overflow-x: auto;
-  max-width: 100%;
-  -webkit-overflow-scrolling: touch;
 }
 
 .data-grid {

@@ -8,6 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 from horticalc.data_io import Fertilizer
 from horticalc.solver import (
     _fertilizer_element_contrib_per_g,
+    _score_by_priority_groups,
     _singleton_supplier_pass,
     _solve_weights,
 )
@@ -64,6 +65,8 @@ def test_singleton_supplier_pass_reduces_overshoot() -> None:
         liters=10.0,
         share_threshold=0.85,
         max_regress_pp=0.25,
+        macro_regress_pp=0.25,
+        priority_groups=[],
         recompute_achieved_fn=recompute_achieved_fn,
     )
 
@@ -90,7 +93,19 @@ def test_singleton_supplier_pass_rolls_back_on_regression() -> None:
         liters=10.0,
         share_threshold=0.85,
         max_regress_pp=0.0,
+        macro_regress_pp=0.0,
+        priority_groups=[],
         recompute_achieved_fn=recompute_achieved_fn,
     )
 
     assert np.allclose(updated, x_full)
+
+
+def test_score_by_priority_groups_defaults_to_max_percent_error() -> None:
+    objective_keys = ["K", "Fe"]
+    targets_raw = {"K": 100.0, "Fe": 0.1}
+    achieved = {"K": 90.0, "Fe": 0.2}
+
+    score = _score_by_priority_groups(objective_keys, targets_raw, achieved, priority_groups=[])
+
+    assert score == (100.0,)

@@ -145,6 +145,7 @@ def _nnls_weighted_irls(
     b: np.ndarray,
     *,
     scales: np.ndarray,
+    priority_factors: np.ndarray | None,
     overshoot_penalty: float,
     max_outer_iter: int,
     tol: float,
@@ -152,7 +153,9 @@ def _nnls_weighted_irls(
 ) -> np.ndarray:
     if A.size == 0:
         return np.array([])
-    base_w = 1.0 / np.maximum(scales, tol)
+    if priority_factors is None:
+        priority_factors = np.ones_like(scales)
+    base_w = priority_factors / np.maximum(scales, tol)
     A_weighted = A * base_w[:, None]
     b_weighted = b * base_w
     x = _nnls(A_weighted, b_weighted, tol=tol)
@@ -167,6 +170,23 @@ def _nnls_weighted_irls(
             break
         x = x_new
     return x
+
+
+def _row_priority_factors(
+    objective_keys: List[str],
+    *,
+    priority_groups: List[List[str]],
+    priority_group_weights: List[float],
+) -> np.ndarray:
+    weights = np.ones(len(objective_keys), dtype=float)
+    if not priority_groups:
+        return weights
+    for idx, key in enumerate(objective_keys):
+        for group_idx, group in enumerate(priority_groups):
+            if key in group:
+                weights[idx] = max(1.0, float(priority_group_weights[group_idx]))
+                break
+    return weights
 
 
 def _build_matrix(
@@ -192,6 +212,9 @@ def _solve_weights(
     relative_weighting: bool = False,
     objective_keys: List[str] | None = None,
     targets_raw: Dict[str, float] | None = None,
+    macro_priority_enabled: bool = True,
+    priority_groups: List[List[str]] | None = None,
+    priority_group_weights: List[float] | None = None,
     overshoot_penalty: float = 1.0,
     irls_max_outer_iter: int = 4,
     scale_eps_mg_per_l: float = 1.0,
@@ -209,10 +232,18 @@ def _solve_weights(
     if objective_keys is None or targets_raw is None:
         raise ValueError("objective_keys and targets_raw are required when relative_weighting is enabled")
     scales = _build_row_scales(objective_keys, targets_raw, b, eps_mg_per_l=scale_eps_mg_per_l)
+    priority_factors = None
+    if macro_priority_enabled:
+        priority_factors = _row_priority_factors(
+            objective_keys,
+            priority_groups=priority_groups or [],
+            priority_group_weights=priority_group_weights or [],
+        )
     return _nnls_weighted_irls(
         A_var,
         b,
         scales=scales,
+        priority_factors=priority_factors,
         overshoot_penalty=overshoot_penalty,
         max_outer_iter=irls_max_outer_iter,
         tol=1e-10,
@@ -235,6 +266,32 @@ def _max_abs_percent_error(
     return max_error
 
 
+def _score_by_priority_groups(
+    objective_keys: List[str],
+    targets_raw: Dict[str, float],
+    achieved_elements: Dict[str, float],
+    *,
+    priority_groups: List[List[str]],
+) -> tuple[float, ...]:
+    all_grouped_keys = {key for group in priority_groups for key in group}
+    other_keys = [key for key in objective_keys if key not in all_grouped_keys]
+    groups = list(priority_groups) + [other_keys]
+
+    scores: list[float] = []
+    for group in groups:
+        max_error = 0.0
+        for key in group:
+            if key not in objective_keys:
+                continue
+            target = float(targets_raw.get(key, 0.0))
+            if target == 0:
+                continue
+            achieved_val = float(achieved_elements.get(key, 0.0))
+            max_error = max(max_error, abs((achieved_val - target) / target * 100.0))
+        scores.append(max_error)
+    return tuple(scores)
+
+
 def _singleton_supplier_pass(
     *,
     A: np.ndarray,
@@ -246,6 +303,8 @@ def _singleton_supplier_pass(
     liters: float,
     share_threshold: float,
     max_regress_pp: float,
+    macro_regress_pp: float,
+    priority_groups: List[List[str]],
     recompute_achieved_fn: callable,
 ) -> np.ndarray:
     adjusted = x_full.copy()
@@ -271,9 +330,23 @@ def _singleton_supplier_pass(
         proposed = adjusted.copy()
         proposed[j_star] = max(0.0, adjusted[j_star] - delta_g)
         achieved_new = recompute_achieved_fn(proposed)
-        old_max = _max_abs_percent_error(objective_keys, targets_raw, achieved_elements)
-        new_max = _max_abs_percent_error(objective_keys, targets_raw, achieved_new)
-        if achieved_new.get(key, 0.0) <= achieved_elements.get(key, 0.0) and new_max <= old_max + max_regress_pp:
+        old_score = _score_by_priority_groups(
+            objective_keys,
+            targets_raw,
+            achieved_elements,
+            priority_groups=priority_groups,
+        )
+        new_score = _score_by_priority_groups(
+            objective_keys,
+            targets_raw,
+            achieved_new,
+            priority_groups=priority_groups,
+        )
+        if (
+            achieved_new.get(key, 0.0) <= achieved_elements.get(key, 0.0)
+            and new_score[0] <= old_score[0] + macro_regress_pp
+            and new_score[-1] <= old_score[-1] + max_regress_pp
+        ):
             adjusted = proposed
             achieved_elements = achieved_new
     return adjusted
@@ -325,6 +398,30 @@ def solve_recipe_data(
     singleton_supplier_enabled = bool(solver_config.get("singleton_supplier_enabled", True))
     singleton_share_threshold = float(solver_config.get("singleton_share_threshold", 0.85))
     singleton_max_regress_pp = float(solver_config.get("singleton_max_regress_pp", 0.25))
+    macro_priority_enabled = bool(solver_config.get("macro_priority_enabled", True))
+    macro_regress_pp = float(solver_config.get("macro_regress_pp", 0.25))
+    default_priority_groups = [
+        ["N_NO3", "N_NH4", "N_UREA", "N_total"],
+        ["K"],
+        ["P"],
+        ["Ca"],
+        ["Mg"],
+    ]
+    default_priority_group_weights = [3.0, 2.5, 2.0, 1.5, 1.5]
+    priority_groups_override = solver_config.get("priority_groups")
+    priority_group_weights_override = solver_config.get("priority_group_weights")
+    priority_groups = priority_groups_override or default_priority_groups
+    if priority_group_weights_override is None:
+        if priority_groups_override is None:
+            priority_group_weights = default_priority_group_weights
+        else:
+            priority_group_weights = [1.0] * len(priority_groups)
+    else:
+        priority_group_weights = priority_group_weights_override
+    if len(priority_groups) != len(priority_group_weights):
+        raise ValueError("priority_groups and priority_group_weights must have the same length")
+    if not macro_priority_enabled:
+        priority_groups = []
     objective_keys = _objective_keys(target_raw)
     if not objective_keys:
         raise ValueError("No solvable targets defined (S/SO4/Na/Cl are ignored).")
@@ -368,6 +465,9 @@ def solve_recipe_data(
         relative_weighting=relative_weighting,
         objective_keys=objective_keys,
         targets_raw=target_raw,
+        macro_priority_enabled=macro_priority_enabled,
+        priority_groups=priority_groups,
+        priority_group_weights=priority_group_weights,
         overshoot_penalty=overshoot_penalty,
         irls_max_outer_iter=irls_max_outer_iter,
         scale_eps_mg_per_l=scale_eps_mg_per_l,
@@ -410,9 +510,19 @@ def solve_recipe_data(
         solve_weights_unweighted = _solve_weights(A, b, fixed_weights, variable_mask)
         x_full_unweighted = build_full_weights(solve_weights_unweighted)
         ferts_unweighted, achieved_unweighted, recipe_unweighted = build_solution_for_weights(x_full_unweighted)
-        weighted_error = _max_abs_percent_error(objective_keys, target_raw, achieved_elements)
-        unweighted_error = _max_abs_percent_error(objective_keys, target_raw, achieved_unweighted)
-        if unweighted_error < weighted_error:
+        weighted_score = _score_by_priority_groups(
+            objective_keys,
+            target_raw,
+            achieved_elements,
+            priority_groups=priority_groups,
+        )
+        unweighted_score = _score_by_priority_groups(
+            objective_keys,
+            target_raw,
+            achieved_unweighted,
+            priority_groups=priority_groups,
+        )
+        if unweighted_score < weighted_score:
             x_full = x_full_unweighted
             fertilizers_out = ferts_unweighted
             achieved_elements = achieved_unweighted
@@ -451,6 +561,8 @@ def solve_recipe_data(
             liters=liters,
             share_threshold=singleton_share_threshold,
             max_regress_pp=singleton_max_regress_pp,
+            macro_regress_pp=macro_regress_pp,
+            priority_groups=priority_groups,
             recompute_achieved_fn=recompute_achieved_fn,
         )
         if np.any(np.abs(x_full_updated - x_full) > 1e-12):

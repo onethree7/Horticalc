@@ -32,6 +32,7 @@ const saveProfileButton = document.querySelector("#saveProfile");
 const solverProfileActions = document.querySelector("#solverProfileActions");
 const saveSolverAsRecipeButton = document.querySelector("#saveSolverAsRecipe");
 const applySolverToCalculatorButton = document.querySelector("#applySolverToCalculator");
+const applyScaleToCalcLiters = document.querySelector("#applyScaleToCalcLiters");
 
 const waterSummaryTable = document.querySelector("#waterSummaryTable");
 const oxideSummaryTable = document.querySelector("#oxideSummaryTable");
@@ -51,6 +52,8 @@ const solveButton = document.querySelector("#solveBtn");
 const solverLitersInput = document.querySelector("#solverLiters");
 const solverUreaToggle = document.querySelector("#solverUreaToggle");
 const solverPhosphateSelect = document.querySelector("#solverPhosphate");
+
+const CALC_LITERS = 10.0;
 
 let fertilizerOptions = [];
 const selectedFertilizers = [{ name: "", form: "", weight: "" }];
@@ -1229,7 +1232,7 @@ function buildPayload() {
   const waterPayload = buildWaterPayloadForApi(waterValues);
 
   return {
-    liters: 10.0,
+    liters: CALC_LITERS,
     fertilizers,
     water_mg_l: waterPayload,
     osmosis_percent: Number(osmosisPercentInput.value) || 0,
@@ -1253,7 +1256,7 @@ function buildSolvePayload() {
 
   const waterPayload = buildWaterPayloadForApi(waterValues);
   return {
-    liters: Number(solverLitersInput.value) || 10,
+    liters: Number(solverLitersInput.value) || CALC_LITERS,
     targets,
     water_profile: {
       mg_per_l: waterPayload,
@@ -1598,7 +1601,7 @@ function buildRecipePayloadFromSelection(name) {
   const fertilizers = selectedFertilizers
     .map((fert, index) => ({ name: fert.name, grams: fertilizerAmounts[index] }))
     .filter((entry) => entry.name && entry.grams > 0);
-  return buildRecipePayload(name, fertilizers, 10.0, false, "H2PO4");
+  return buildRecipePayload(name, fertilizers, CALC_LITERS, false, "H2PO4");
 }
 
 function buildRecipePayloadFromSolver(name) {
@@ -1606,7 +1609,7 @@ function buildRecipePayloadFromSolver(name) {
   return buildRecipePayload(
     name,
     fertilizers,
-    Number(solverLitersInput.value) || 10,
+    Number(solverLitersInput.value) || CALC_LITERS,
     solverUreaToggle.checked,
     solverPhosphateSelect.value
   );
@@ -1895,8 +1898,16 @@ applySolverToCalculatorButton.addEventListener("click", async () => {
     reportError(null, "Bitte zuerst eine Solver Recipe berechnen.");
     return;
   }
+  const solverLitersRaw = Number(solverLitersInput.value);
+  const solverLiters = solverLitersRaw > 0 ? solverLitersRaw : CALC_LITERS;
+  const shouldScale = applyScaleToCalcLiters ? applyScaleToCalcLiters.checked : true;
+  const factor = shouldScale ? CALC_LITERS / solverLiters : 1;
+  const fertilizers = (lastSolveResult.fertilizers || []).map((fert) => ({
+    name: fert.name,
+    grams: Number(fert.grams || 0) * factor,
+  }));
   const recipe = {
-    fertilizers: lastSolveResult.fertilizers || [],
+    fertilizers,
   };
   applyRecipe(recipe);
   seedSolverAllowedFertilizers();

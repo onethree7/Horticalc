@@ -12,7 +12,6 @@ from .core import (
     OXIDE_ELEMENT_FORMS,
     _form_to_element,
     _oxide_to_element,
-    apply_osmosis_mix,
     compute_solution,
 )
 from .data_io import Fertilizer, load_fertilizers, load_molar_masses, load_water_profile_data, repo_root
@@ -383,7 +382,8 @@ def solve_recipe_data(
     liters = float(recipe.get("liters") or 10.0)
     water_profile = _resolve_water_profile(recipe, water_profile_data)
     osmosis_percent = float(recipe.get("osmosis_percent", water_profile.get("osmosis_percent", 0.0)))
-    water_mg_l = apply_osmosis_mix(water_profile.get("mg_per_l") or {}, osmosis_percent)
+    # compute_solution() applies osmosis_mix; do not pre-mix here.
+    water_mg_l = water_profile.get("mg_per_l") or {}
     target_raw = _normalize_targets(
         recipe.get("targets")
         or recipe.get("targets_mg_per_l")

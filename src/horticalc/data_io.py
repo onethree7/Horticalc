@@ -53,6 +53,37 @@ def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
     return ferts
 
 
+def save_fertilizers(fertilizers: Dict[str, Fertilizer], csv_path: Path | None = None) -> None:
+    if csv_path is None:
+        csv_path = repo_root() / "data" / "fertilizers.csv"
+
+    header = None
+    if csv_path.exists():
+        with csv_path.open("r", encoding="utf-8", newline="") as f:
+            reader = csv.reader(f)
+            header = next(reader, None)
+    if not header:
+        comp_keys = set()
+        for fert in fertilizers.values():
+            comp_keys.update(fert.comp.keys())
+        header = ["NR", "Düngername", "Form", "Gewicht"] + sorted(comp_keys)
+
+    with csv_path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=header)
+        writer.writeheader()
+        for index, fert in enumerate(sorted(fertilizers.values(), key=lambda item: item.name.casefold()), start=1):
+            row = {key: "" for key in header}
+            row["NR"] = str(index)
+            row["Düngername"] = fert.name
+            row["Form"] = fert.form or "fest"
+            weight = fert.weight_factor if fert.weight_factor is not None else 1.0
+            row["Gewicht"] = format(weight, ".10g")
+            for key, value in fert.comp.items():
+                if key in row:
+                    row[key] = format(value, ".10g")
+            writer.writerow(row)
+
+
 def load_molar_masses(path: Path | None = None) -> Dict[str, float]:
     if path is None:
         path = repo_root() / "data" / "molar_masses.yml"

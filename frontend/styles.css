@@ -111,6 +111,13 @@ main {
   overflow-x: auto;
 }
 
+.table-wrap--editor {
+  overflow: auto;
+  max-height: min(70vh, 720px);
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
 .grid {
   width: 100%;
   border-collapse: collapse;
@@ -220,6 +227,10 @@ main {
   width: 7rem;
 }
 
+.grid--fertilizer .col-nutrient {
+  width: 6rem;
+}
+
 .grid--form th:first-child,
 .grid--form td:first-child {
   text-align: center;
@@ -267,6 +278,62 @@ main {
 .inline-hint {
   color: #b4bdc8;
   font-size: var(--text-sm);
+}
+
+#fertilizerEditorTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+#fertilizerEditorTable th:nth-child(1),
+#fertilizerEditorTable td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  z-index: 6;
+}
+
+#fertilizerEditorTable th:nth-child(2),
+#fertilizerEditorTable td:nth-child(2) {
+  position: sticky;
+  left: 2ch;
+  z-index: 6;
+}
+
+#fertilizerEditorTable th:nth-child(3),
+#fertilizerEditorTable td:nth-child(3) {
+  position: sticky;
+  left: calc(2ch + 18rem);
+  z-index: 6;
+}
+
+#fertilizerEditorTable th:nth-child(4),
+#fertilizerEditorTable td:nth-child(4) {
+  position: sticky;
+  left: calc(2ch + 18rem + 8rem);
+  z-index: 6;
+}
+
+#fertilizerEditorTable tbody tr:nth-child(odd) td:nth-child(-n + 4) {
+  background: #111722;
+}
+
+#fertilizerEditorTable tbody tr:nth-child(even) td:nth-child(-n + 4) {
+  background: #0e131c;
+}
+
+#fertilizerEditorTable thead th:nth-child(-n + 4) {
+  background: #1a2230;
+}
+
+#fertilizerEditorTable td:nth-child(4),
+#fertilizerEditorTable th:nth-child(4) {
+  box-shadow: 2px 0 0 #2b3543;
+}
+
+#fertilizerEditorTable tbody tr.is-selected {
+  outline: 2px solid rgba(255, 255, 255, 0.18);
+  outline-offset: -2px;
 }
 
 .summary {

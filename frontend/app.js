@@ -52,6 +52,12 @@ const solveButton = document.querySelector("#solveBtn");
 const solverLitersInput = document.querySelector("#solverLiters");
 const solverUreaToggle = document.querySelector("#solverUreaToggle");
 const solverPhosphateSelect = document.querySelector("#solverPhosphate");
+const fertilizerEditorMode = document.querySelector("#fertilizerEditorMode");
+const fertilizerEditorTableWrap = document.querySelector("#fertilizerEditorTableWrap");
+const fertEditorSearch = document.querySelector("#fertEditorSearch");
+const fertEditorAddRow = document.querySelector("#fertEditorAddRow");
+const fertEditorDeleteRow = document.querySelector("#fertEditorDeleteRow");
+const fertEditorSave = document.querySelector("#fertEditorSave");
 
 const CALC_LITERS = 10.0;
 
@@ -69,6 +75,10 @@ let recalculateTimer = null;
 let fertilizerSelectTable;
 let calculatorTable;
 let currentProfileMode = "calculator";
+let fertilizerEditorRows = [];
+let fertilizerEditorSelectedIndex = 0;
+let fertilizerEditorFilter = "";
+let fertilizerEditorCompKeys = [];
 
 const solverTargetDefinitions = [
   { key: "N_total", label: "N_total" },
@@ -212,6 +222,15 @@ function debounce(fn, ms) {
   };
 }
 
+function parseDecimalInput(raw) {
+  const s = String(raw ?? "").trim();
+  if (!s) {
+    return null;
+  }
+  const n = Number(s.replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
 function createSelect(options, onChange) {
   const select = document.createElement("select");
   const emptyOption = document.createElement("option");
@@ -298,11 +317,229 @@ function renderTableRows(tableBody, rowCount, buildRow) {
   }
 }
 
+const fertilizerCompKeyPriority = [
+  "NO3",
+  "NH4",
+  "Ur-N",
+  "P",
+  "K",
+  "Ca",
+  "Mg",
+  "S",
+  "SO4",
+  "Fe",
+  "Mn",
+  "Cu",
+  "Zn",
+  "B",
+  "Mo",
+  "Si",
+  "Na",
+  "Cl",
+  "HCO3",
+];
+
+function buildFertilizerEditorCompKeys(fertilizers) {
+  const keys = new Set();
+  fertilizers.forEach((fert) => {
+    Object.keys(fert.comp || {}).forEach((key) => keys.add(key));
+  });
+  const ordered = [];
+  fertilizerCompKeyPriority.forEach((key) => {
+    if (keys.has(key)) {
+      ordered.push(key);
+      keys.delete(key);
+    }
+  });
+  return ordered.concat(Array.from(keys).sort((a, b) => a.localeCompare(b)));
+}
+
+function cloneFertilizerEntry(fert) {
+  return {
+    name: fert.name || "",
+    form: fert.form || "",
+    weight_factor: Number.isFinite(fert.weight_factor) ? fert.weight_factor : 1.0,
+    comp: { ...(fert.comp || {}) },
+  };
+}
+
+function handleEditorInputKeydown(event) {
+  if (event.key !== "Enter") {
+    return;
+  }
+  event.preventDefault();
+  const current = event.target;
+  const row = current.closest("tr");
+  if (!row) {
+    return;
+  }
+  const inputs = Array.from(row.querySelectorAll("input"));
+  const index = inputs.indexOf(current);
+  if (index === -1) {
+    return;
+  }
+  if (index + 1 < inputs.length) {
+    inputs[index + 1].focus();
+    inputs[index + 1].select();
+    return;
+  }
+  const nextRow = row.nextElementSibling;
+  if (!nextRow) {
+    return;
+  }
+  const nextInputs = Array.from(nextRow.querySelectorAll("input"));
+  if (nextInputs[index]) {
+    nextInputs[index].focus();
+    nextInputs[index].select();
+  }
+}
+
+function focusEditorInput(rowIndex, field) {
+  const input = document.querySelector(
+    `#fertilizerEditorTable input[data-row-index="${rowIndex}"][data-field="${field}"]`
+  );
+  if (input) {
+    input.focus();
+    input.select();
+  }
+}
+
+function renderFertilizerEditor() {
+  if (!fertilizerEditorTableWrap) {
+    return;
+  }
+  fertilizerEditorTableWrap.innerHTML = "";
+  const table = createTable({
+    id: "fertilizerEditorTable",
+    className: "grid grid--form grid--fertilizer grid--fertilizer-editor",
+    colgroupClasses: [
+      "col-index",
+      "col-name",
+      "col-form",
+      "col-weight",
+      ...fertilizerEditorCompKeys.map(() => "col-nutrient"),
+    ],
+    headerCells: [
+      { label: "#" },
+      { label: "Düngername" },
+      { label: "Form" },
+      { label: "Gewicht" },
+      ...fertilizerEditorCompKeys.map((key) => ({ label: key })),
+    ],
+  });
+  fertilizerEditorTableWrap.appendChild(table.table);
+
+  const filterValue = fertilizerEditorFilter.trim().toLowerCase();
+  const visibleRows = fertilizerEditorRows
+    .map((row, index) => ({ row, index }))
+    .filter(({ row }) => !filterValue || row.name.toLowerCase().includes(filterValue));
+
+  table.tbody.innerHTML = "";
+  visibleRows.forEach(({ row, index }, visibleIndex) => {
+    const tr = document.createElement("tr");
+    if (index === fertilizerEditorSelectedIndex) {
+      tr.classList.add("is-selected");
+    }
+    tr.dataset.rowIndex = String(index);
+    tr.addEventListener("click", () => {
+      const active = table.tbody.querySelector("tr.is-selected");
+      if (active) {
+        active.classList.remove("is-selected");
+      }
+      tr.classList.add("is-selected");
+      fertilizerEditorSelectedIndex = index;
+    });
+
+    const indexCell = document.createElement("td");
+    indexCell.textContent = String(visibleIndex + 1);
+    tr.appendChild(indexCell);
+
+    const nameCell = document.createElement("td");
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.value = row.name;
+    nameInput.dataset.rowIndex = String(index);
+    nameInput.dataset.field = "name";
+    nameInput.addEventListener("input", (event) => {
+      row.name = event.target.value;
+    });
+    nameInput.addEventListener("keydown", handleEditorInputKeydown);
+    nameCell.appendChild(nameInput);
+    tr.appendChild(nameCell);
+
+    const formCell = document.createElement("td");
+    const formInput = document.createElement("input");
+    formInput.type = "text";
+    formInput.value = row.form;
+    formInput.dataset.rowIndex = String(index);
+    formInput.dataset.field = "form";
+    formInput.addEventListener("input", (event) => {
+      row.form = event.target.value;
+    });
+    formInput.addEventListener("keydown", handleEditorInputKeydown);
+    formCell.appendChild(formInput);
+    tr.appendChild(formCell);
+
+    const weightCell = document.createElement("td");
+    const weightInput = document.createElement("input");
+    weightInput.type = "text";
+    weightInput.value = Number.isFinite(row.weight_factor) ? String(row.weight_factor) : "";
+    weightInput.dataset.rowIndex = String(index);
+    weightInput.dataset.field = "weight_factor";
+    weightInput.addEventListener("input", (event) => {
+      const parsed = parseDecimalInput(event.target.value);
+      row.weight_factor = parsed;
+    });
+    weightInput.addEventListener("keydown", handleEditorInputKeydown);
+    weightCell.appendChild(weightInput);
+    tr.appendChild(weightCell);
+
+    fertilizerEditorCompKeys.forEach((key) => {
+      const cell = document.createElement("td");
+      const input = document.createElement("input");
+      input.type = "text";
+      const value = row.comp?.[key];
+      input.value = Number.isFinite(value) ? nutrientFormatter.format(value * 100) : "";
+      input.dataset.rowIndex = String(index);
+      input.dataset.field = `comp:${key}`;
+      input.addEventListener("input", (event) => {
+        const parsed = parseDecimalInput(event.target.value);
+        if (!row.comp) {
+          row.comp = {};
+        }
+        if (parsed === null) {
+          delete row.comp[key];
+          return;
+        }
+        row.comp[key] = parsed / 100;
+      });
+      input.addEventListener("keydown", handleEditorInputKeydown);
+      cell.appendChild(input);
+      tr.appendChild(cell);
+    });
+
+    table.tbody.appendChild(tr);
+  });
+}
+
+function setFertilizerEditorData(fertilizers) {
+  fertilizerEditorRows = (fertilizers || []).map(cloneFertilizerEntry);
+  fertilizerEditorCompKeys = buildFertilizerEditorCompKeys(fertilizerEditorRows);
+  if (fertilizerEditorSelectedIndex >= fertilizerEditorRows.length) {
+    fertilizerEditorSelectedIndex = Math.max(0, fertilizerEditorRows.length - 1);
+  }
+  renderFertilizerEditor();
+}
+
 function setMode(mode) {
   const isSolver = mode === "solver";
-  calculatorMode.classList.toggle("is-hidden", isSolver);
+  const isFertilizers = mode === "fertilizers";
+  calculatorMode.classList.toggle("is-hidden", isSolver || isFertilizers);
   solverMode.classList.toggle("is-hidden", !isSolver);
-  setProfileMode(mode);
+  fertilizerEditorMode.classList.toggle("is-hidden", !isFertilizers);
+  if (mode === "solver" || mode === "calculator") {
+    setProfileMode(mode);
+  }
 }
 
 const profileConfigs = {
@@ -1281,6 +1518,19 @@ function fetchFertilizers() {
   return fetchJson(`${apiBase()}/fertilizers`, "Fehler beim Laden der Dünger-Liste");
 }
 
+async function putFertilizers(payload) {
+  const response = await fetch(`${apiBase()}/fertilizers`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || "Speichern fehlgeschlagen");
+  }
+  return response.json();
+}
+
 function fetchMolarMasses() {
   return fetchJson(`${apiBase()}/molar-masses`, "Fehler beim Laden der Molmassen");
 }
@@ -1645,6 +1895,80 @@ function restoreSolverAllowedFromStorage() {
   return true;
 }
 
+function addFertilizerEditorRow() {
+  if (fertilizerEditorFilter) {
+    fertilizerEditorFilter = "";
+    if (fertEditorSearch) {
+      fertEditorSearch.value = "";
+    }
+  }
+  fertilizerEditorRows.push({
+    name: "",
+    form: "fest",
+    weight_factor: 1.0,
+    comp: {},
+  });
+  fertilizerEditorSelectedIndex = fertilizerEditorRows.length - 1;
+  renderFertilizerEditor();
+  focusEditorInput(fertilizerEditorSelectedIndex, "name");
+}
+
+function deleteFertilizerEditorRow() {
+  if (!fertilizerEditorRows.length) {
+    return;
+  }
+  const index = Math.min(fertilizerEditorSelectedIndex, fertilizerEditorRows.length - 1);
+  fertilizerEditorRows.splice(index, 1);
+  fertilizerEditorSelectedIndex = Math.min(index, fertilizerEditorRows.length - 1);
+  renderFertilizerEditor();
+}
+
+function buildFertilizerEditorPayload() {
+  return fertilizerEditorRows.map((row) => {
+    const name = row.name.trim();
+    const form = (row.form || "").trim() || "fest";
+    const weight = Number.isFinite(row.weight_factor) ? row.weight_factor : 1.0;
+    const comp = {};
+    Object.entries(row.comp || {}).forEach(([key, value]) => {
+      if (Number.isFinite(value) && value > 0) {
+        comp[key] = value;
+      }
+    });
+    return {
+      name,
+      form,
+      weight_factor: weight,
+      comp,
+    };
+  });
+}
+
+async function saveFertilizerEditor() {
+  const seen = new Set();
+  for (let i = 0; i < fertilizerEditorRows.length; i += 1) {
+    const row = fertilizerEditorRows[i];
+    const name = row.name.trim();
+    if (!name) {
+      reportError(null, "Bitte für jede Zeile einen Düngername angeben.");
+      focusEditorInput(i, "name");
+      return;
+    }
+    if (seen.has(name)) {
+      reportError(null, "Düngername darf nicht doppelt sein.");
+      focusEditorInput(i, "name");
+      return;
+    }
+    seen.add(name);
+  }
+  try {
+    await putFertilizers(buildFertilizerEditorPayload());
+    await init();
+    setFertilizerEditorData(fertilizerOptions);
+  } catch (error) {
+    reportError(error, "Speichern fehlgeschlagen");
+  }
+}
+
 async function init() {
   let hasStoredAllowed = false;
   try {
@@ -1653,6 +1977,7 @@ async function init() {
     reportError(error, "Fehler beim Laden der Dünger-Liste");
     fertilizerOptions = [];
   }
+  setFertilizerEditorData(fertilizerOptions);
   hasStoredAllowed = restoreSolverAllowedFromStorage();
   if (!hasStoredAllowed) {
     renderSolverAllowedOptions();
@@ -1759,6 +2084,24 @@ modeToggleInputs.forEach((input) => {
   input.addEventListener("change", (event) => {
     setMode(event.target.value);
   });
+});
+
+fertEditorSearch.addEventListener("input", (event) => {
+  fertilizerEditorFilter = event.target.value || "";
+  renderFertilizerEditor();
+});
+
+fertEditorAddRow.addEventListener("click", addFertilizerEditorRow);
+fertEditorDeleteRow.addEventListener("click", deleteFertilizerEditorRow);
+fertEditorSave.addEventListener("click", saveFertilizerEditor);
+
+document.addEventListener("keydown", (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+    if (fertilizerEditorMode && !fertilizerEditorMode.classList.contains("is-hidden")) {
+      event.preventDefault();
+      saveFertilizerEditor();
+    }
+  }
 });
 
 solverAllowedFertilizersSelect.addEventListener("change", () => {

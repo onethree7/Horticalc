@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
@@ -11,12 +12,14 @@ import yaml
 
 from horticalc.core import compute_solution
 from horticalc.data_io import (
+    Fertilizer,
     load_fertilizers,
     load_molar_masses,
     load_nutrient_solution_data,
     load_recipe,
     load_water_profile_data,
     repo_root,
+    save_fertilizers,
     save_nutrient_solution,
     save_recipe,
     save_water_profile,
@@ -97,6 +100,13 @@ class SolveResponse(BaseModel):
     achieved_elements_mg_per_l: Dict[str, float]
     errors_mg_per_l: Dict[str, float]
     errors_percent: Dict[str, float]
+
+
+class FertilizerPayload(BaseModel):
+    name: str
+    form: str | None = None
+    weight_factor: float | None = None
+    comp: Dict[str, float] | None = None
 
 
 class WaterProfilePayload(BaseModel):
@@ -217,6 +227,44 @@ def fertilizers() -> List[dict]:
         }
         for fert in FERTILIZERS.values()
     ]
+
+
+@app.put("/fertilizers")
+def put_fertilizers(payload: List[FertilizerPayload]) -> dict:
+    fertilizers: Dict[str, Fertilizer] = {}
+    seen = set()
+    for entry in payload:
+        name = entry.name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Fertilizer name is required")
+        if name in seen:
+            raise HTTPException(status_code=400, detail="Fertilizer names must be unique")
+        seen.add(name)
+
+        form = (entry.form or "").strip() or "fest"
+        weight = entry.weight_factor if entry.weight_factor is not None else 1.0
+        if not math.isfinite(weight):
+            raise HTTPException(status_code=400, detail="Invalid weight factor")
+
+        comp: Dict[str, float] = {}
+        if entry.comp:
+            for key, value in entry.comp.items():
+                if value is None or not math.isfinite(value):
+                    raise HTTPException(status_code=400, detail="Invalid fertilizer composition")
+                if value != 0:
+                    comp[key] = float(value)
+
+        fertilizers[name] = Fertilizer(
+            name=name,
+            form=form,
+            weight_factor=float(weight),
+            comp=comp,
+        )
+
+    global FERTILIZERS
+    FERTILIZERS = fertilizers
+    save_fertilizers(FERTILIZERS)
+    return {"count": len(FERTILIZERS)}
 
 
 @app.get("/water-profiles")

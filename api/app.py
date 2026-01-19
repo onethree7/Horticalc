@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
@@ -11,12 +12,14 @@ import yaml
 
 from horticalc.core import compute_solution
 from horticalc.data_io import (
+    Fertilizer,
     load_fertilizers,
     load_molar_masses,
     load_nutrient_solution_data,
     load_recipe,
     load_water_profile_data,
     repo_root,
+    save_fertilizers,
     save_nutrient_solution,
     save_recipe,
     save_water_profile,
@@ -44,6 +47,13 @@ RECIPES_DIR = repo_root() / "recipes"
 class FertilizerEntry(BaseModel):
     name: str
     grams: float = Field(ge=0)
+
+
+class FertilizerPayload(BaseModel):
+    name: str
+    form: str | None = None
+    weight_factor: float | None = None
+    comp: Dict[str, float] | None = None
 
 
 class RecipeRequest(BaseModel):
@@ -217,6 +227,38 @@ def fertilizers() -> List[dict]:
         }
         for fert in FERTILIZERS.values()
     ]
+
+
+@app.put("/fertilizers")
+def put_fertilizers(payload: List[FertilizerPayload]) -> dict:
+    new_ferts: Dict[str, Fertilizer] = {}
+    for entry in payload:
+        name = entry.name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Düngername darf nicht leer sein")
+        if name in new_ferts:
+            raise HTTPException(status_code=400, detail="Düngernamen müssen eindeutig sein")
+
+        form = entry.form.strip() if entry.form and entry.form.strip() else "fest"
+        weight = entry.weight_factor if entry.weight_factor is not None else 1.0
+        if not math.isfinite(weight):
+            raise HTTPException(status_code=400, detail="Ungültiger Gewichtswert")
+
+        comp: Dict[str, float] = {}
+        if entry.comp:
+            for key, value in entry.comp.items():
+                if not math.isfinite(value):
+                    raise HTTPException(status_code=400, detail="Ungültiger Nährstoffwert")
+                if value == 0:
+                    continue
+                comp[key] = value
+
+        new_ferts[name] = Fertilizer(name=name, form=form, weight_factor=weight, comp=comp)
+
+    global FERTILIZERS
+    FERTILIZERS = new_ferts
+    save_fertilizers(FERTILIZERS)
+    return {"count": len(FERTILIZERS)}
 
 
 @app.get("/water-profiles")

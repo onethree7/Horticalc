@@ -28,6 +28,10 @@
             <input type="radio" name="modeToggle" value="solver" />
             Solver Recipe
           </label>
+          <label>
+            <input type="radio" name="modeToggle" value="fertilizers" />
+            Dünger-Editor
+          </label>
         </div>
       </section>
 
@@ -290,6 +294,25 @@
               </table>
             </div>
           </div>
+        </section>
+      </div>
+
+      <div class="mode-panel is-hidden" id="fertilizerEditorMode">
+        <section class="block">
+          <h2>Dünger-Editor</h2>
+          <p class="hint">
+            Werte als Prozent eingeben (z.B. 15 für 15%). Speicherung erfolgt als Bruch (0.15) in der CSV.
+          </p>
+
+          <div class="actions inline-actions">
+            <input id="fertEditorSearch" type="text" placeholder="Suchen…" />
+            <button id="fertEditorAddRow" type="button">+</button>
+            <button id="fertEditorDeleteRow" type="button">-</button>
+            <button id="fertEditorSave" type="button">Speichern</button>
+            <span class="inline-hint">Komma oder Punkt als Dezimaltrenner. Ctrl+S speichert.</span>
+          </div>
+
+          <div class="table-wrap table-wrap--editor" id="fertilizerEditorTableWrap"></div>
         </section>
       </div>
 

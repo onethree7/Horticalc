@@ -53,6 +53,47 @@ def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
     return ferts
 
 
+def save_fertilizers(
+    fertilizers: Dict[str, Fertilizer],
+    csv_path: Path | None = None,
+) -> None:
+    if csv_path is None:
+        csv_path = repo_root() / "data" / "fertilizers.csv"
+
+    header: list[str] | None = None
+    if csv_path.exists():
+        with csv_path.open("r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            if reader.fieldnames:
+                header = list(reader.fieldnames)
+
+    if header is None:
+        comp_keys = set()
+        for fert in fertilizers.values():
+            comp_keys.update(fert.comp.keys())
+        header = ["NR", "Düngername", "Form", "Gewicht"] + sorted(comp_keys)
+
+    sorted_ferts = sorted(fertilizers.values(), key=lambda fert: fert.name.casefold())
+
+    with csv_path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=header)
+        writer.writeheader()
+        for index, fert in enumerate(sorted_ferts, start=1):
+            row = {key: "" for key in header}
+            row["NR"] = str(index)
+            row["Düngername"] = fert.name
+            row["Form"] = fert.form or "fest"
+            row["Gewicht"] = format(fert.weight_factor or 1.0, ".10g")
+            for key in header:
+                if key in ("NR", "Düngername", "Form", "Gewicht"):
+                    continue
+                value = fert.comp.get(key)
+                if value is None:
+                    continue
+                row[key] = format(value, ".10g")
+            writer.writerow(row)
+
+
 def load_molar_masses(path: Path | None = None) -> Dict[str, float]:
     if path is None:
         path = repo_root() / "data" / "molar_masses.yml"

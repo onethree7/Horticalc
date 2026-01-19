@@ -95,6 +95,9 @@ const solverTargetValues = Object.fromEntries(
 );
 const solverAllowedFertilizers = [];
 const solverFixedGrams = {};
+const saveAllowedFertilizersDebounced = debounce(() => {
+  lsSet(LAST_FERTILIZERS_ALLOWED_KEY, solverAllowedFertilizers);
+}, 200);
 
 const waterFieldDefinitions = [
   { key: "NH4", label: "Ammonium in NH4" },
@@ -140,6 +143,8 @@ const nutrientIntegerFormatter = new Intl.NumberFormat("de-DE", {
   minimumFractionDigits: 0,
   maximumFractionDigits: 0,
 });
+const LAST_FERTILIZERS_ALLOWED_KEY = "last_fertilizers_allowed";
+const LAST_SOLUTION_CALCULATED_KEY = "last_solution_calculated";
 const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
 const nutrientTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "Si"]);
 const oxideIntegerKeys = new Set([
@@ -174,6 +179,34 @@ const summaryLabelWidth = "12rem";
 
 function apiBase() {
   return apiBaseInput.value.replace(/\/$/, "");
+}
+
+function lsGet(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) {
+      return fallback;
+    }
+    return JSON.parse(raw);
+  } catch (error) {
+    return fallback;
+  }
+}
+
+function lsSet(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    // ignore storage errors
+  }
+}
+
+function debounce(fn, ms) {
+  let timer;
+  return (...args) => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => fn(...args), ms);
+  };
 }
 
 function createSelect(options, onChange) {
@@ -1579,14 +1612,49 @@ function buildRecipePayloadFromSolver(name) {
   );
 }
 
+function buildSolutionSnapshot() {
+  const fertilizers = selectedFertilizers
+    .map((fert, index) => ({
+      name: fert.name,
+      grams: Number(fertilizerAmounts[index]) || 0,
+    }))
+    .filter((entry) => entry.name);
+  return {
+    water_profile_value: waterProfileSelect.value || "",
+    osmosis_percent: Number(osmosisPercentInput.value) || 0,
+    water_unit: waterUnit,
+    water_values: { ...waterValues },
+    fertilizers,
+  };
+}
+
+function restoreSolverAllowedFromStorage() {
+  const allowed = lsGet(LAST_FERTILIZERS_ALLOWED_KEY, null);
+  if (!Array.isArray(allowed)) {
+    return false;
+  }
+  const options = new Set(fertilizerOptions.map((fert) => fert.name));
+  const filtered = allowed.filter((name) => options.has(name));
+  solverAllowedFertilizers.length = 0;
+  solverAllowedFertilizers.push(...filtered);
+  renderSolverAllowedOptions();
+  renderSolverFixedTable();
+  return true;
+}
+
 async function init() {
+  let hasStoredAllowed = false;
   try {
     fertilizerOptions = await fetchFertilizers();
   } catch (error) {
     reportError(error, "Fehler beim Laden der Dünger-Liste");
     fertilizerOptions = [];
   }
-  renderSolverAllowedOptions();
+  hasStoredAllowed = restoreSolverAllowedFromStorage();
+  if (!hasStoredAllowed) {
+    renderSolverAllowedOptions();
+    renderSolverFixedTable();
+  }
 
   try {
     molarMasses = await fetchMolarMasses();
@@ -1620,6 +1688,31 @@ async function init() {
 
   renderProfileOptions();
 
+  const savedSolution = lsGet(LAST_SOLUTION_CALCULATED_KEY, null);
+
+  if (savedSolution) {
+    waterUnit = savedSolution.water_unit === "mol_l" ? "mol_l" : "mg_l";
+    waterUnitToggle.checked = waterUnit === "mol_l";
+    osmosisPercentInput.value = Number(savedSolution.osmosis_percent) || 0;
+    waterProfileSelect.value = savedSolution.water_profile_value || "";
+    waterFieldDefinitions.forEach((field) => {
+      waterValues[field.key] = Number(savedSolution.water_values?.[field.key]) || 0;
+    });
+    renderWaterTable();
+    applyRecipe({ fertilizers: savedSolution.fertilizers || [] });
+    if (!hasStoredAllowed) {
+      seedSolverAllowedFertilizers();
+      lsSet(LAST_FERTILIZERS_ALLOWED_KEY, solverAllowedFertilizers);
+    }
+    try {
+      const data = await calculate();
+      renderCalculation(data);
+    } catch (error) {
+      reportError(error, "Berechnung fehlgeschlagen");
+    }
+    return;
+  }
+
   try {
     const defaultProfile = await fetchWaterProfileData("default");
     applyWaterProfile(defaultProfile);
@@ -1630,7 +1723,9 @@ async function init() {
   try {
     const recipe = await fetchDefaultRecipe();
     applyRecipe(recipe);
-    seedSolverAllowedFertilizers();
+    if (!hasStoredAllowed) {
+      seedSolverAllowedFertilizers();
+    }
     const data = await calculate();
     renderCalculation(data);
   } catch (error) {
@@ -1651,6 +1746,7 @@ calculateButton.addEventListener("click", async () => {
   try {
     const data = await calculate();
     renderCalculation(data);
+    lsSet(LAST_SOLUTION_CALCULATED_KEY, buildSolutionSnapshot());
   } catch (error) {
     reportError(error, "Berechnung fehlgeschlagen");
   }
@@ -1672,6 +1768,7 @@ solverAllowedFertilizersSelect.addEventListener("change", () => {
     }
   });
   renderSolverFixedTable();
+  saveAllowedFertilizersDebounced();
 });
 
 solveButton.addEventListener("click", async () => {

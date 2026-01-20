@@ -57,8 +57,6 @@ const fertilizerEditorTableWrap = document.querySelector("#fertilizerEditorTable
 const fertEditorSearchInput = document.querySelector("#fertEditorSearch");
 const fertEditorAddRowButton = document.querySelector("#fertEditorAddRow");
 const fertEditorDeleteRowButton = document.querySelector("#fertEditorDeleteRow");
-const fertEditorLoadButton = document.querySelector("#fertEditorLoad");
-const fertEditorSaveButton = document.querySelector("#fertEditorSave");
 
 const CALC_LITERS = 10.0;
 
@@ -84,14 +82,14 @@ let fertilizerEditorTable;
 let fertilizerEditorCompKeys = [];
 
 const fertilizerEditorPreferredKeys = [
-  "NO3",
   "NH4",
+  "NO3",
   "Ur-N",
-  "P",
-  "K",
-  "Ca",
-  "Mg",
-  "S",
+  "P2O5",
+  "K2O",
+  "CaO",
+  "MgO",
+  "Na2O",
   "SO4",
   "Fe",
   "Mn",
@@ -99,9 +97,9 @@ const fertilizerEditorPreferredKeys = [
   "Zn",
   "B",
   "Mo",
-  "Si",
-  "Na",
   "Cl",
+  "CO3",
+  "SiO2",
   "HCO3",
 ];
 
@@ -353,9 +351,7 @@ function setMode(mode) {
   solverMode.classList.toggle("is-hidden", !isSolver);
   fertilizerEditorMode.classList.toggle("is-hidden", !isEditor);
   activeMode = mode;
-  if (!isEditor) {
-    setProfileMode(mode);
-  }
+  setProfileFrameForMode(mode);
 }
 
 const profileConfigs = {
@@ -376,6 +372,25 @@ function setProfileMode(mode) {
   profileSectionHint.textContent = config.hint;
   solverProfileActions.classList.toggle("is-hidden", currentProfileMode !== "solver");
   renderProfileOptions();
+}
+
+function setProfileFrameForMode(mode) {
+  const isEditor = mode === "fertilizers";
+  profileSelect.classList.toggle("is-hidden", isEditor);
+  profileSelect.disabled = isEditor;
+  profileNameInput.classList.toggle("is-hidden", isEditor);
+  profileNameInput.disabled = isEditor;
+  resetProfileButton.classList.toggle("is-hidden", isEditor);
+  resetProfileButton.disabled = isEditor;
+  loadProfileButton.textContent = isEditor ? "Düngerliste laden" : "Laden";
+  saveProfileButton.textContent = isEditor ? "Düngerliste speichern" : "Speichern";
+  if (isEditor) {
+    profileSectionTitle.textContent = "Düngerportfolio";
+    profileSectionHint.textContent = "Düngerliste lokal speichern/laden.";
+    solverProfileActions.classList.add("is-hidden");
+  } else {
+    setProfileMode(mode);
+  }
 }
 
 function renderProfileOptions() {
@@ -418,22 +433,8 @@ function renderSolverTargetsTable() {
   });
 }
 
-function buildFertilizerCompKeys(fertilizers) {
-  const keySet = new Set();
-  fertilizers.forEach((fert) => {
-    Object.keys(fert.comp || {}).forEach((key) => {
-      keySet.add(key);
-    });
-  });
-  const ordered = [];
-  fertilizerEditorPreferredKeys.forEach((key) => {
-    if (keySet.has(key)) {
-      ordered.push(key);
-      keySet.delete(key);
-    }
-  });
-  ordered.push(...Array.from(keySet).sort((a, b) => a.localeCompare(b)));
-  return ordered;
+function buildFertilizerCompKeys() {
+  return fertilizerEditorPreferredKeys;
 }
 
 function setFertilizerEditorData(fertilizers) {
@@ -691,19 +692,6 @@ async function saveFertilizerEditor() {
     }
   } catch (error) {
     reportError(error, "Speichern fehlgeschlagen");
-  }
-}
-
-async function reloadFertilizerEditor() {
-  try {
-    fertilizerOptions = await fetchFertilizers();
-    setFertilizerEditorData(fertilizerOptions);
-    renderSelectionTable();
-    renderCalculatorTable();
-    renderSolverAllowedOptions();
-    renderSolverFixedTable();
-  } catch (error) {
-    reportError(error, "Fehler beim Laden der Dünger-Liste");
   }
 }
 
@@ -2129,8 +2117,6 @@ fertEditorSearchInput.addEventListener("input", (event) => {
 
 fertEditorAddRowButton.addEventListener("click", addFertilizerEditorRow);
 fertEditorDeleteRowButton.addEventListener("click", deleteFertilizerEditorRow);
-fertEditorLoadButton.addEventListener("click", reloadFertilizerEditor);
-fertEditorSaveButton.addEventListener("click", saveFertilizerEditor);
 
 solverAllowedFertilizersSelect.addEventListener("change", () => {
   solverAllowedFertilizers.length = 0;
@@ -2155,6 +2141,19 @@ solveButton.addEventListener("click", async () => {
 });
 
 loadProfileButton.addEventListener("click", async () => {
+  if (activeMode === "fertilizers") {
+    try {
+      fertilizerOptions = await fetchFertilizers();
+      setFertilizerEditorData(fertilizerOptions);
+      renderSelectionTable();
+      renderCalculatorTable();
+      renderSolverAllowedOptions();
+      renderSolverFixedTable();
+    } catch (error) {
+      reportError(error, "Fehler beim Laden der Dünger-Liste");
+    }
+    return;
+  }
   const selection = profileSelect.value;
   if (!selection) {
     reportError(null, "Bitte ein Profil auswählen.");
@@ -2216,6 +2215,10 @@ resetProfileButton.addEventListener("click", async () => {
 });
 
 saveProfileButton.addEventListener("click", async () => {
+  if (activeMode === "fertilizers") {
+    await saveFertilizerEditor();
+    return;
+  }
   const name = profileNameInput.value.trim();
   if (!name) {
     reportError(null, "Bitte einen Profilnamen angeben.");

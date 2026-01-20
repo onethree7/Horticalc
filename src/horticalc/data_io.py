@@ -22,6 +22,13 @@ def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def _is_nr_key(key: str) -> bool:
+    normalized = key.strip().casefold()
+    if normalized.endswith("."):
+        normalized = normalized[:-1]
+    return normalized == "nr"
+
+
 def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
     if csv_path is None:
         csv_path = repo_root() / "data" / "fertilizers.csv"
@@ -38,7 +45,9 @@ def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
 
             comp: Dict[str, float] = {}
             for k, v in row.items():
-                if k in ("NR", "Düngername", "Form", "Gewicht"):
+                if _is_nr_key(k) or k in ("Düngername", "Form", "Gewicht"):
+                    continue
+                if k.strip().casefold() == "hco3-v":
                     continue
                 if v is None or str(v).strip() == "":
                     continue
@@ -70,8 +79,17 @@ def save_fertilizers(
     if header is None:
         comp_keys = set()
         for fert in fertilizers.values():
-            comp_keys.update(fert.comp.keys())
-        header = ["NR", "Düngername", "Form", "Gewicht"] + sorted(comp_keys)
+            comp_keys.update(
+                key
+                for key in fert.comp.keys()
+                if not _is_nr_key(key) and key.strip().casefold() != "hco3-v"
+            )
+        header = ["Nr.", "Düngername", "Form", "Gewicht"] + sorted(comp_keys)
+
+    nr_header = next((key for key in header if _is_nr_key(key)), None)
+    if nr_header is None:
+        header = ["Nr."] + header
+        nr_header = "Nr."
 
     sorted_ferts = sorted(fertilizers.values(), key=lambda fert: fert.name.casefold())
 
@@ -80,12 +98,14 @@ def save_fertilizers(
         writer.writeheader()
         for index, fert in enumerate(sorted_ferts, start=1):
             row = {key: "" for key in header}
-            row["NR"] = str(index)
+            row[nr_header] = str(index)
             row["Düngername"] = fert.name
             row["Form"] = fert.form or "fest"
             row["Gewicht"] = format(fert.weight_factor or 1.0, ".10g")
             for key in header:
-                if key in ("NR", "Düngername", "Form", "Gewicht"):
+                if _is_nr_key(key) or key in ("Düngername", "Form", "Gewicht"):
+                    continue
+                if key.strip().casefold() == "hco3-v":
                     continue
                 value = fert.comp.get(key)
                 if value is None:

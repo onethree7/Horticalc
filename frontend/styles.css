@@ -204,7 +204,7 @@ main {
 
 
 .grid--fertilizer .col-index {
-  width: 2ch;
+  width: 5ch;
 }
 
 .grid--fertilizer .col-name {
@@ -212,7 +212,7 @@ main {
 }
 
 .grid--fertilizer .col-form {
-  width: 8rem;
+  width: 7ch;
 }
 
 .grid--fertilizer .col-weight,
@@ -220,8 +220,12 @@ main {
   width: 7rem;
 }
 
+.grid--fertilizer .col-weight {
+  width: 6ch;
+}
+
 .grid--fertilizer .col-nutrient {
-  width: var(--col-width-standard);
+  width: 6ch;
 }
 
 .grid--form th:first-child,
@@ -267,38 +271,57 @@ main {
   -webkit-overflow-scrolling: touch;
 }
 
+#fertilizerEditorTable {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+#fertilizerEditorTable th,
+#fertilizerEditorTable td {
+  padding: var(--space-1) var(--space-2);
+}
+
+#fertilizerEditorTable.grid--fertilizer-editor .col-nutrient {
+  width: 6ch;
+}
+
 #fertilizerEditorTable thead th {
   position: sticky;
   top: 0;
-  z-index: 5;
+  z-index: 8;
+  background-clip: padding-box;
 }
 
 #fertilizerEditorTable th:nth-child(1),
 #fertilizerEditorTable td:nth-child(1) {
   position: sticky;
   left: 0;
-  z-index: 6;
+  z-index: 7;
+  background-clip: padding-box;
 }
 
 #fertilizerEditorTable th:nth-child(2),
 #fertilizerEditorTable td:nth-child(2) {
   position: sticky;
-  left: 2ch;
-  z-index: 6;
+  left: 5ch;
+  z-index: 7;
+  background-clip: padding-box;
 }
 
 #fertilizerEditorTable th:nth-child(3),
 #fertilizerEditorTable td:nth-child(3) {
   position: sticky;
-  left: calc(2ch + 18rem);
-  z-index: 6;
+  left: calc(5ch + 18rem);
+  z-index: 7;
+  background-clip: padding-box;
 }
 
 #fertilizerEditorTable th:nth-child(4),
 #fertilizerEditorTable td:nth-child(4) {
   position: sticky;
-  left: calc(2ch + 18rem + 8rem);
-  z-index: 6;
+  left: calc(5ch + 18rem + 7ch);
+  z-index: 7;
+  background-clip: padding-box;
 }
 
 #fertilizerEditorTable tbody tr:nth-child(odd) td:nth-child(-n + 4) {
@@ -311,6 +334,7 @@ main {
 
 #fertilizerEditorTable thead th:nth-child(-n + 4) {
   background: #1a2230;
+  z-index: 9;
 }
 
 #fertilizerEditorTable td:nth-child(4),

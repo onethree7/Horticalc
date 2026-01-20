@@ -57,6 +57,7 @@ const fertilizerEditorTableWrap = document.querySelector("#fertilizerEditorTable
 const fertEditorSearchInput = document.querySelector("#fertEditorSearch");
 const fertEditorAddRowButton = document.querySelector("#fertEditorAddRow");
 const fertEditorDeleteRowButton = document.querySelector("#fertEditorDeleteRow");
+const fertEditorLoadButton = document.querySelector("#fertEditorLoad");
 const fertEditorSaveButton = document.querySelector("#fertEditorSave");
 
 const CALC_LITERS = 10.0;
@@ -164,21 +165,25 @@ const waterFieldDefinitions = [
 ];
 
 const waterValues = Object.fromEntries(waterFieldDefinitions.map((field) => [field.key, 0]));
-const numberFormatter = new Intl.NumberFormat("de-DE", {
+const numberFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 3,
   maximumFractionDigits: 3,
+  useGrouping: false,
 });
-const nutrientFormatter = new Intl.NumberFormat("de-DE", {
+const nutrientFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 0,
   maximumFractionDigits: 2,
+  useGrouping: false,
 });
-const ionFormatter = new Intl.NumberFormat("de-DE", {
+const ionFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
+  useGrouping: false,
 });
-const nutrientIntegerFormatter = new Intl.NumberFormat("de-DE", {
+const nutrientIntegerFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 0,
   maximumFractionDigits: 0,
+  useGrouping: false,
 });
 const LAST_FERTILIZERS_ALLOWED_KEY = "last_fertilizers_allowed";
 const LAST_SOLUTION_CALCULATED_KEY = "last_solution_calculated";
@@ -251,7 +256,7 @@ function parseDecimalInput(raw) {
   if (!s) {
     return null;
   }
-  const n = Number(s.replace(",", "."));
+  const n = Number(s);
   return Number.isFinite(n) ? n : null;
 }
 
@@ -686,6 +691,19 @@ async function saveFertilizerEditor() {
     }
   } catch (error) {
     reportError(error, "Speichern fehlgeschlagen");
+  }
+}
+
+async function reloadFertilizerEditor() {
+  try {
+    fertilizerOptions = await fetchFertilizers();
+    setFertilizerEditorData(fertilizerOptions);
+    renderSelectionTable();
+    renderCalculatorTable();
+    renderSolverAllowedOptions();
+    renderSolverFixedTable();
+  } catch (error) {
+    reportError(error, "Fehler beim Laden der Dünger-Liste");
   }
 }
 
@@ -2111,16 +2129,8 @@ fertEditorSearchInput.addEventListener("input", (event) => {
 
 fertEditorAddRowButton.addEventListener("click", addFertilizerEditorRow);
 fertEditorDeleteRowButton.addEventListener("click", deleteFertilizerEditorRow);
+fertEditorLoadButton.addEventListener("click", reloadFertilizerEditor);
 fertEditorSaveButton.addEventListener("click", saveFertilizerEditor);
-
-document.addEventListener("keydown", (event) => {
-  const isSaveKey = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s";
-  if (!isSaveKey || activeMode !== "fertilizers") {
-    return;
-  }
-  event.preventDefault();
-  saveFertilizerEditor();
-});
 
 solverAllowedFertilizersSelect.addEventListener("change", () => {
   solverAllowedFertilizers.length = 0;

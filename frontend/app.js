@@ -57,7 +57,6 @@ const fertilizerEditorTableWrap = document.querySelector("#fertilizerEditorTable
 const fertEditorSearchInput = document.querySelector("#fertEditorSearch");
 const fertEditorAddRowButton = document.querySelector("#fertEditorAddRow");
 const fertEditorDeleteRowButton = document.querySelector("#fertEditorDeleteRow");
-const fertEditorLoadButton = document.querySelector("#fertEditorLoad");
 const fertEditorSaveButton = document.querySelector("#fertEditorSave");
 
 const CALC_LITERS = 10.0;
@@ -87,11 +86,11 @@ const fertilizerEditorPreferredKeys = [
   "NO3",
   "NH4",
   "Ur-N",
-  "P",
-  "K",
-  "Ca",
-  "Mg",
-  "S",
+  "P2O5",
+  "K2O",
+  "CaO",
+  "MgO",
+  "Na2O",
   "SO4",
   "Fe",
   "Mn",
@@ -99,10 +98,9 @@ const fertilizerEditorPreferredKeys = [
   "Zn",
   "B",
   "Mo",
-  "Si",
-  "Na",
+  "SiO2",
   "Cl",
-  "HCO3",
+  "CO3",
 ];
 
 const solverTargetDefinitions = [
@@ -355,6 +353,10 @@ function setMode(mode) {
   activeMode = mode;
   if (!isEditor) {
     setProfileMode(mode);
+  } else {
+    profileSectionTitle.textContent = "Düngerliste laden und speichern";
+    profileSectionHint.textContent = "Düngerliste lokal laden und speichern.";
+    solverProfileActions.classList.add("is-hidden");
   }
 }
 
@@ -2129,7 +2131,6 @@ fertEditorSearchInput.addEventListener("input", (event) => {
 
 fertEditorAddRowButton.addEventListener("click", addFertilizerEditorRow);
 fertEditorDeleteRowButton.addEventListener("click", deleteFertilizerEditorRow);
-fertEditorLoadButton.addEventListener("click", reloadFertilizerEditor);
 fertEditorSaveButton.addEventListener("click", saveFertilizerEditor);
 
 solverAllowedFertilizersSelect.addEventListener("change", () => {

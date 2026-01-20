@@ -38,7 +38,7 @@ def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
 
             comp: Dict[str, float] = {}
             for k, v in row.items():
-                if k in ("NR", "Düngername", "Form", "Gewicht"):
+                if k in ("NR", "Nr", "Nr.", "Düngername", "Form", "Gewicht"):
                     continue
                 if v is None or str(v).strip() == "":
                     continue

@@ -251,6 +251,8 @@ def put_fertilizers(payload: List[FertilizerPayload]) -> dict:
                     raise HTTPException(status_code=400, detail="Ungültiger Nährstoffwert")
                 if value == 0:
                     continue
+                if key == "HCO3-V":
+                    continue
                 comp[key] = value
 
         new_ferts[name] = Fertilizer(name=name, form=form, weight_factor=weight, comp=comp)

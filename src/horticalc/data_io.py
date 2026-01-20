@@ -38,7 +38,7 @@ def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
 
             comp: Dict[str, float] = {}
             for k, v in row.items():
-                if k in ("NR", "Düngername", "Form", "Gewicht"):
+                if k in ("NR", "Nr", "Nr.", "Düngername", "Form", "Gewicht"):
                     continue
                 if v is None or str(v).strip() == "":
                     continue
@@ -71,8 +71,9 @@ def save_fertilizers(
         comp_keys = set()
         for fert in fertilizers.values():
             comp_keys.update(fert.comp.keys())
-        header = ["NR", "Düngername", "Form", "Gewicht"] + sorted(comp_keys)
+        header = ["Nr.", "Düngername", "Form", "Gewicht"] + sorted(comp_keys)
 
+    nr_key = next((key for key in header if key.strip().casefold() in {"nr", "nr."}), None)
     sorted_ferts = sorted(fertilizers.values(), key=lambda fert: fert.name.casefold())
 
     with csv_path.open("w", encoding="utf-8", newline="") as f:
@@ -80,12 +81,13 @@ def save_fertilizers(
         writer.writeheader()
         for index, fert in enumerate(sorted_ferts, start=1):
             row = {key: "" for key in header}
-            row["NR"] = str(index)
+            if nr_key:
+                row[nr_key] = str(index)
             row["Düngername"] = fert.name
             row["Form"] = fert.form or "fest"
             row["Gewicht"] = format(fert.weight_factor or 1.0, ".10g")
             for key in header:
-                if key in ("NR", "Düngername", "Form", "Gewicht"):
+                if key in ("NR", "Nr", "Nr.", "Düngername", "Form", "Gewicht"):
                     continue
                 value = fert.comp.get(key)
                 if value is None:

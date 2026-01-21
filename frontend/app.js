@@ -24,6 +24,7 @@ const ecWater18Value = document.querySelector("#ecWater18Value");
 const ecWater25Value = document.querySelector("#ecWater25Value");
 const profileSectionTitle = document.querySelector("#profileSectionTitle");
 const profileSectionHint = document.querySelector("#profileSectionHint");
+const profileSection = document.querySelector("#profileSection");
 const profileSelect = document.querySelector("#profileSelect");
 const loadProfileButton = document.querySelector("#loadProfile");
 const resetProfileButton = document.querySelector("#resetProfile");
@@ -352,6 +353,7 @@ function setMode(mode) {
   calculatorMode.classList.toggle("is-hidden", isSolver || isEditor);
   solverMode.classList.toggle("is-hidden", !isSolver);
   fertilizerEditorMode.classList.toggle("is-hidden", !isEditor);
+  profileSection.classList.toggle("is-hidden", isEditor);
   activeMode = mode;
   if (!isEditor) {
     setProfileMode(mode);

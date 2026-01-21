@@ -11,8 +11,8 @@ def test_load_fertilizers_ignores_number_field(tmp_path: Path) -> None:
     csv_path = tmp_path / "fertilizers.csv"
     with csv_path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["Nr.", "Düngername", "Form", "Gewicht", "NH4"])
-        writer.writerow(["12", "Test Dünger", "fest", "1.5", "0.12"])
+        writer.writerow(["Nr.", "Düngername", "Form", "Gewicht", "NH4", "NO3"])
+        writer.writerow(["12", "Test Dünger", "fest", "1.5", "0.12", "0"])
 
     fertilizers = load_fertilizers(csv_path)
     fert = fertilizers["Test Dünger"]

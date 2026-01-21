@@ -432,8 +432,13 @@ function buildFertilizerCompKeys(fertilizers) {
       keySet.delete(key);
     }
   });
-  ordered.push(...Array.from(keySet).sort((a, b) => a.localeCompare(b)));
-  return ordered;
+  const allKeys = [...ordered, ...Array.from(keySet).sort((a, b) => a.localeCompare(b))];
+  const hco3Index = allKeys.indexOf("HCO3");
+  if (hco3Index !== -1) {
+    allKeys.splice(hco3Index, 1);
+    allKeys.push("HCO3");
+  }
+  return allKeys;
 }
 
 function setFertilizerEditorData(fertilizers) {

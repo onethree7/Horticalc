@@ -1146,7 +1146,15 @@ function buildSummaryColgroup() {
   return colgroup;
 }
 
-function renderSummaryTable({ table, headerLabels, rowLabel, valueMap, valueKey, formatter }) {
+function renderSummaryTable({
+  table,
+  headerLabels,
+  rowLabel,
+  rowLabelClass,
+  valueMap,
+  valueKey,
+  formatter,
+}) {
   table.innerHTML = "";
   table.appendChild(buildSummaryColgroup());
 
@@ -1169,6 +1177,9 @@ function renderSummaryTable({ table, headerLabels, rowLabel, valueMap, valueKey,
   const labelCell = document.createElement("th");
   labelCell.textContent = rowLabel;
   labelCell.classList.add("row-label");
+  if (rowLabelClass) {
+    labelCell.classList.add(rowLabelClass);
+  }
   labelCell.scope = "row";
   tr.appendChild(labelCell);
 
@@ -1193,7 +1204,7 @@ function renderWaterSummaryTable(table, waterElements) {
     table,
     headerLabels: (column) => column.ionHeaderLabel,
     valueKey: (column) => column.element,
-    rowLabel: "Wasserprofil",
+    rowLabel: "Wasserwerte",
     valueMap: waterMap,
     formatter: (column, value) =>
       waterUnit === "mol_l" ? formatTraceValue(value) : formatNutrientValue(column.element, value),
@@ -1206,7 +1217,7 @@ function renderOxideSummaryTable(table, oxides) {
     table,
     headerLabels: (column) => column.oxideHeaderLabel,
     valueKey: (column) => column.oxide,
-    rowLabel: "Gesamtansatz",
+    rowLabel: "Raw/Oxide",
     valueMap: oxideMap,
     formatter: (column, value) => formatOxideValue(column.oxide, value),
   });
@@ -1218,7 +1229,8 @@ function renderIonSummaryTable(table, elements) {
     table,
     headerLabels: (column) => column.ionHeaderLabel,
     valueKey: (column) => column.element,
-    rowLabel: "Gesamtansatz",
+    rowLabel: "Gelöste Ionen",
+    rowLabelClass: "row-label--ion",
     valueMap: elementMap,
     formatter: (column, value) => formatNutrientValue(column.element, value),
   });

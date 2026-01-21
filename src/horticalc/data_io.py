@@ -47,10 +47,13 @@ def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
                 if v is None or str(v).strip() == "":
                     continue
                 try:
-                    comp[k] = float(v)
+                    value = float(v)
                 except ValueError:
                     # ignore text columns
                     continue
+                if value == 0:
+                    continue
+                comp[k] = value
 
             ferts[name] = Fertilizer(name=name, form=form, weight_factor=weight, comp=comp)
 

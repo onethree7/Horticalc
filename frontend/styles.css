@@ -148,8 +148,13 @@ main {
 
 .grid--matrix th,
 .grid--matrix td {
-  text-align: center;
+  text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.grid--matrix th.row-label,
+.grid--matrix td.row-label {
+  text-align: left;
 }
 
 .nutrient-grid {
@@ -171,6 +176,15 @@ main {
 
 .nutrient-grid col.col-row-label {
   width: 7.5rem;
+}
+
+.nutrient-grid col:not(.col-row-label) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.nutrient-grid col.col-row-label {
+  text-align: left;
 }
 
 .nutrient-grid col.col-n-total {
@@ -228,11 +242,22 @@ main {
   width: 6ch;
 }
 
-.grid--form th:first-child,
-.grid--form td:first-child {
+.grid col.col-index {
   text-align: center;
-  padding-left: var(--space-2);
-  padding-right: var(--space-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.grid col.col-weight,
+.grid col.col-amount,
+.grid col.col-nutrient {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.grid col.col-name,
+.grid col.col-form,
+.grid col.col-row-label {
+  text-align: left;
 }
 
 .grid select,
@@ -251,6 +276,24 @@ main {
   margin: 0 auto;
   display: block;
   text-align: right;
+}
+
+#waterValuesTable th:nth-child(2),
+#waterValuesTable td:nth-child(2),
+#solverTargetsTable th:nth-child(2),
+#solverTargetsTable td:nth-child(2),
+#solverFixedTable th:nth-child(2),
+#solverFixedTable td:nth-child(2),
+#solverFertilizersTable th:nth-child(2),
+#solverFertilizersTable td:nth-child(2) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#solverTargetsResultsTable th:nth-child(n + 2),
+#solverTargetsResultsTable td:nth-child(n + 2) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .actions {
@@ -621,6 +664,7 @@ main {
 
 .compact-ion-cell {
   font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .compact-balance-table {
@@ -638,7 +682,8 @@ main {
 .compact-balance-table td {
   padding: var(--space-1) var(--space-2);
   border: 1px solid #2b3543;
-  text-align: center;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .compact label,

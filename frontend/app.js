@@ -422,16 +422,23 @@ function renderSolverTargetsTable() {
 
 function buildFertilizerCompKeys(fertilizers) {
   const keySet = new Set();
+  const keyLookup = new Map();
   fertilizers.forEach((fert) => {
     Object.keys(fert.comp || {}).forEach((key) => {
       keySet.add(key);
+      const normalized = key.trim().toUpperCase();
+      if (!keyLookup.has(normalized)) {
+        keyLookup.set(normalized, key);
+      }
     });
   });
   const ordered = [];
   fertilizerEditorPreferredKeys.forEach((key) => {
-    if (keySet.has(key)) {
-      ordered.push(key);
-      keySet.delete(key);
+    const normalized = key.trim().toUpperCase();
+    const matchedKey = keyLookup.get(normalized);
+    if (matchedKey && keySet.has(matchedKey)) {
+      ordered.push(matchedKey);
+      keySet.delete(matchedKey);
     }
   });
   ordered.push(...Array.from(keySet).sort((a, b) => a.localeCompare(b)));

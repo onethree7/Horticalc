@@ -95,7 +95,7 @@ Hinweis: Details zur GUI (Layout/Bedienung) stehen zusätzlich in `docs/GUI.MD`.
 - Enthält die Düngeranalysen als Massenanteile.
 - Analysenwerte sind Anteile (z. B. `0,14` = 14%).
 - N‑Formen:
-  - In der CSV sind `NH4`, `NO3`, `Ur-N` als N‑Anteil (Element N) hinterlegt.
+  - In der CSV sind `NH4`, `NO3`, `UREA` als N‑Anteil (Element N) hinterlegt.
   - In der Ausgabe werden diese als `N_NH4`, `N_NO3`, `N_UREA` geführt.
 - Oxid‑Deklarationen wie auf Etiketten: `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O`.
 - Weitere deklarierte Formen: z. B. `SO4`, `CO3`, `SiO2`, `Cl`.
@@ -156,7 +156,7 @@ Umrechnungen erfolgen stöchiometrisch über Molmassen, z. B.:
 
 Wasserprofil‑Spezialfall:
 - `NH4`/`NO3` im Wasserprofil werden als Moleküle interpretiert und in `N_NH4`/`N_NO3` umgerechnet.
-- In `fertilizers.csv` sind `NH4`/`NO3`/`Ur-N` bereits als „N‑Anteil“ (Element N) hinterlegt.
+- In `fertilizers.csv` sind `NH4`/`NO3`/`UREA` bereits als „N‑Anteil“ (Element N) hinterlegt.
 
 ### 2) Ionen (mmol/L, meq/L) und Ladungsbilanz
 

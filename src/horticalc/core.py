@@ -17,7 +17,7 @@ from .sluijsmann import compute_sluijsmann
 
 COMP_COLS: List[str] = [
     # N forms (as element N fraction in fertilizers)
-    "NH4", "NO3", "Ur-N",
+    "NH4", "NO3", "UREA",
     # oxides
     "P2O5", "K2O", "CaO", "MgO", "Na2O",
     # anions / other
@@ -211,7 +211,7 @@ def _compute_nitrogen(
 
     n_fert_from_nh4 = forms_mg_l.get("NH4", 0.0)
     n_fert_from_no3 = forms_mg_l.get("NO3", 0.0)
-    n_fert_from_urea = forms_mg_l.get("Ur-N", 0.0)
+    n_fert_from_urea = forms_mg_l.get("UREA", 0.0)
 
     water_nh4_mg_l = water_forms.get("NH4", 0.0)
     water_no3_mg_l = water_forms.get("NO3", 0.0)

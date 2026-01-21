@@ -103,7 +103,7 @@ def _fertilizer_element_contrib_per_g(fert: Fertilizer, mm: Dict[str, float]) ->
 
     for form, frac in fert.comp.items():
         mg_per_g = float(frac) * 1000.0 * wf
-        if form in ("NH4", "NO3", "Ur-N"):
+        if form in ("NH4", "NO3", "UREA"):
             add("N_total", mg_per_g)
             if form == "NH4":
                 add("N_NH4", mg_per_g)

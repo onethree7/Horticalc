@@ -87,7 +87,7 @@ let fertilizerEditorCompKeys = [];
 const fertilizerEditorPreferredKeys = [
   "NO3",
   "NH4",
-  "Ur-N",
+  "UREA",
   "P2O5",
   "K2O",
   "CaO",

@@ -22,6 +22,10 @@ def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def _is_number_field(field: str) -> bool:
+    return field.strip().rstrip(".").casefold() == "nr"
+
+
 def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
     if csv_path is None:
         csv_path = repo_root() / "data" / "fertilizers.csv"
@@ -38,7 +42,7 @@ def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
 
             comp: Dict[str, float] = {}
             for k, v in row.items():
-                if k in ("NR", "Düngername", "Form", "Gewicht"):
+                if _is_number_field(k) or k in ("Düngername", "Form", "Gewicht"):
                     continue
                 if v is None or str(v).strip() == "":
                     continue
@@ -72,6 +76,7 @@ def save_fertilizers(
         for fert in fertilizers.values():
             comp_keys.update(fert.comp.keys())
         header = ["NR", "Düngername", "Form", "Gewicht"] + sorted(comp_keys)
+    number_field = next((field for field in header if _is_number_field(field)), None)
 
     sorted_ferts = sorted(fertilizers.values(), key=lambda fert: fert.name.casefold())
 
@@ -80,12 +85,13 @@ def save_fertilizers(
         writer.writeheader()
         for index, fert in enumerate(sorted_ferts, start=1):
             row = {key: "" for key in header}
-            row["NR"] = str(index)
+            if number_field:
+                row[number_field] = str(index)
             row["Düngername"] = fert.name
             row["Form"] = fert.form or "fest"
             row["Gewicht"] = format(fert.weight_factor or 1.0, ".10g")
             for key in header:
-                if key in ("NR", "Düngername", "Form", "Gewicht"):
+                if _is_number_field(key) or key in ("Düngername", "Form", "Gewicht"):
                     continue
                 value = fert.comp.get(key)
                 if value is None:

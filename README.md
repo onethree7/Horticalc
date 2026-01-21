@@ -1,13 +1,38 @@
-# Horticalc (molar‑correct)
+# Horticalc (molar‑korrekt) — ! WORK IN PROGRESS !
 
-Horticalc ist ein molar‑korrekter Düngerrechner mit Python‑Backend. Die Kernlogik läuft in einer schlanken CLI, eine Web‑GUI ist optional angebunden. Alle Stammdaten liegen versionierbar in lesbaren Textformaten (CSV/YAML), sodass Berechnungen nachvollziehbar und reproduzierbar bleiben.
+Horticalc ist ein Düngerrechner mit Python‑Backend. Die Berechnung basiert auf molaren Massen und stöchiometrisch korrekten Umrechnungen (z. B. Oxide → Elemente). Eingaben (Rezepte, Wasserprofile, Zielprofile) liegen als YAML, Stammdaten zu Düngern als CSV vor, sodass Ergebnisse reproduzierbar bleiben.
 
-**Schwerpunkte**
-- Molar‑stimmige Umrechnungen (Oxide → Elemente)
-- Getrennte N‑Formen (NH4, NO3, Urea)
-- Ionenbilanz (Anionen/Kationen) inkl. wählbarer Phosphat‑Spezies
-- EC‑Berechnung aus Ionenzusammensetzung
-- Erweiterbar um weitere Module (z. B. zusätzliche EC‑Modelle)
+Wichtig: Das Projekt ist in aktiver Entwicklung. Schnittstellen, Dateiformate und Annahmen können sich ändern.
+
+## Überblick: Komponenten (was macht was?)
+
+Rechner (Berechnung)
+- Zweck: Rechnet aus einem Rezept (Wasserprofil + Düngermengen) die resultierenden Konzentrationen.
+- Ergebnis u. a.: mg/L‑Totals (Elemente und Oxide), Ionen (mmol/L, meq/L), Ladungsbilanz, EC‑Schätzung, sowie Wasser‑ und Dünger‑Anteil separat.
+- Implementierung/Files:
+  - Kernberechnung: `src/horticalc/core.py`
+  - EC‑Berechnung: `src/horticalc/ec.py`
+  - Kennzahlen/NPK‑Metriken: `src/horticalc/metrics.py`
+  - Optional: Sluijsmann‑Kennzahlen (experimentell): `src/horticalc/sluijsmann.py`
+
+Solver (Zielwerte → Rezept)
+- Zweck: Ermittelt Gramm‑Mengen für eine erlaubte Dünger‑Liste, um gegebene Zielwerte (mg/L als Elemente) möglichst gut zu treffen.
+- Eigenschaften:
+  - Nichtnegative Lösung (keine negativen Gramm).
+  - Relative Gewichtung (kleine Targets werden nicht automatisch „wegoptimiert“), milde Overshoot‑Strafe und zusätzliche Heuristiken (z. B. „singleton supplier“‑Pass) zur Reduktion typischer Übertreibungen einzelner Dünger.
+  - In der Optimierung werden bestimmte Keys bewusst ignoriert (derzeit: S/SO4 sowie Na/Cl). Diese Werte werden trotzdem im finalen Ergebnis ausgerechnet und ausgegeben.
+- Implementierung/Files:
+  - Solver/Optimierer: `src/horticalc/solver.py`
+  - Finales Ergebnis wird immer über dieselbe Kernberechnung gerechnet: `src/horticalc/core.py`
+
+Dünger‑Editor (Stammdaten bearbeiten)
+- Zweck: Bearbeiten/Normalisieren der Dünger‑Stammdaten in `data/fertilizers.csv` über die Web‑GUI.
+- Typische Funktionen:
+  - Große editierbare Tabelle (Sticky Header/Spalten) für schnelles Scannen und Editieren.
+  - Speichern zurück in CSV über die API; Meta‑Spalten bleiben erhalten (werden nicht als Nährstoff interpretiert).
+- Implementierung/Files:
+  - Frontend: `frontend/index.html`, `frontend/app.js`, `frontend/styles.css`
+  - Backend‑API zum Laden/Speichern: `api/app.py` (nutzt `src/horticalc/data_io.py`)
 
 ---
 
@@ -22,13 +47,13 @@ python -m pip install -U pip setuptools wheel
 python -m pip install -r requirements.txt
 python -m pip install -e .
 
-# Testlauf (Golden Recipe)
+# Rechner: Golden Recipe (Beispiel)
 horticalc recipes/golden.yml --pretty
 
 # Ergebnis in Datei
 horticalc recipes/golden.yml --pretty --out solutions/golden_output.json
 
-# Solver: Zielwerte -> Rezept (S/SO4 werden ignoriert)
+# Solver: Zielwerte -> Rezept (Hinweis: S/SO4 sowie Na/Cl werden in der Optimierung ignoriert)
 horticalc solve recipes/solve_golden.yml --pretty
 ```
 
@@ -36,154 +61,150 @@ horticalc solve recipes/solve_golden.yml --pretty
 
 ## GUI + API (Web UI)
 
-Die GUI ist ein **statisches Frontend** unter `frontend/` und spricht die **FastAPI** unter `api/`. Die Tabellenansicht ist auf kompakte, ausrichtbare Spalten optimiert (Zebra‑Streifen, feste Spaltenbreiten, gruppierte N‑Formen).
+Die GUI ist ein statisches Frontend unter `frontend/` und spricht eine FastAPI unter `api/` an.
 
-### Planung (Roadmap)
-- GUI modularisieren: **Settings**, **Wasserwerte‑Menü**, **Dünger‑Tab**
-
-### Voraussetzungen
-- Python 3.10+
-
-### Setup (Windows / PowerShell)
-
-```powershell
-git clone https://github.com/onethree7/Horticalc
-cd Horticalc
-
-py -m venv .venv
-.\.venv\Scripts\python -m pip install -U pip setuptools wheel
-.\.venv\Scripts\python -m pip install -r .\requirements.txt
-.\.venv\Scripts\python -m pip install -e .\
-```
-
-### Setup (Linux / macOS)
-
-```bash
-git clone https://github.com/onethree7/Horticalc
-cd Horticalc
-
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -U pip setuptools wheel
-python -m pip install -r requirements.txt
-python -m pip install -e .
-```
-
-### Backend starten (Terminal 1)
-
+- Backend starten:
 ```bash
 python -m uvicorn api.app:app --host 0.0.0.0 --port 8000
 ```
-
-API‑Check:
-```
-http://127.0.0.1:8000/health
-```
-
-### Frontend starten (Terminal 2)
-
+- Frontend starten:
 ```bash
 python -m http.server 5173 --directory frontend
 ```
 
-Frontend‑URL:
-```
-http://127.0.0.1:5173/
-```
+URLs:
+- API Health: `http://127.0.0.1:8000/health`
+- Frontend: `http://127.0.0.1:5173/`
+
+API (Auszug, relevant für GUI):
+- `GET /health` – Healthcheck
+- `POST /calculate` – Rechner‑API (RecipeRequest → CalculationResponse)
+- `POST /solve` – Solver‑API (SolveRequest → SolveResponse)
+- `GET /fertilizers` / `PUT /fertilizers` – Dünger‑Stammdaten laden/speichern
+- `GET/POST/PUT /water-profiles` – Wasserprofile laden/speichern
+- `GET/POST/PUT /nutrient-solutions` – Zielprofile (Nährlösungen) laden/speichern
+- `GET/POST/PUT /recipes` – Rezepte laden/speichern
+
+Hinweis: Details zur GUI (Layout/Bedienung) stehen zusätzlich in `docs/GUI.MD`.
 
 ---
 
-## Datenmodell
+## Datenmodell (Dateien und Bedeutung)
 
-### 1) `data/fertilizers.csv`
-Enthält die Düngeranalysen in Massenanteilen.
+1) `data/fertilizers.csv` (Dünger‑Stammdaten)
+- Enthält die Düngeranalysen als Massenanteile.
+- Analysenwerte sind Anteile (z. B. `0,14` = 14%).
+- N‑Formen:
+  - In der CSV sind `NH4`, `NO3`, `Ur-N` als N‑Anteil (Element N) hinterlegt.
+  - In der Ausgabe werden diese als `N_NH4`, `N_NO3`, `N_UREA` geführt.
+- Oxid‑Deklarationen wie auf Etiketten: `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O`.
+- Weitere deklarierte Formen: z. B. `SO4`, `CO3`, `SiO2`, `Cl`.
+- `weight_factor` („Gewicht“): Skalierungsfaktor für Flüssigdünger (z. B. Dichte‑/Massenfaktor). Effektive Gramm = Gramm * weight_factor.
+- Meta‑Spalten (z. B. `Nr.` mit Punkt) sind keine Nährstoffe; sie werden beim Laden ignoriert, bleiben aber beim Speichern erhalten.
+- Historische Varianten wie `HCO3-V` werden nicht mehr geführt; es bleibt `HCO3`.
 
-Wichtig:
-- Die Analysenwerte sind **Massenanteile** (z.B. `0,14` = 14%).
-- `NH4`, `NO3`, `Ur-N` sind **N‑Anteile als Element N** und werden zu `N_NH4`, `N_NO3`, `N_UREA` aggregiert.
-- `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O` sind Oxid‑Deklarationen (wie Düngeretikett).
-- `SO4`, `CO3`, `SiO2`, `Cl` etc. sind als die jeweilige Form gespeichert.
-- `Gewicht` ist ein Faktor für Flüssigdünger (z.B. Dichte/Be): **effektive Gramm = Gramm * Gewicht**.
+2) `data/molar_masses.yml` (Molmassen)
+- Molare Massen für alle verwendeten Elemente/Verbindungen/Ionen, die für Umrechnungen und Ionenbilanz/EC benötigt werden.
 
-### 2) `data/molar_masses.yml`
-Molare Massen für alle verwendeten Formen (Elemente, Oxide, Ionen).
+3) `data/water_profiles/*.yml` (Wasserprofile)
+- Wasserwerte in mg/L.
+- `HCO3` wird als mg/L Bicarbonat geführt.
+- Optional: `osmosis_percent` (0–100). Wasserwerte werden dann entsprechend gemischt/verdünnt (Osmose‑Anteil).
 
-### 3) `data/water_profiles/*.yml`
-Wasserprofile in mg/L.
+4) `data/nutrient_solutions/*.yml` (Zielprofile / Referenzlösungen)
+- Zielwerte als `targets_mg_per_l` (mg/L als Elemente). Das ist kein Rezept, sondern ein Referenzprofil.
 
-Hinweise:
-- `HCO3` wird als mg/L (Bicarbonat) geführt.
-- Optional kann `osmosis_percent` (0–100) gesetzt werden; der Core verdünnt die Wasserwerte entsprechend.
-
-### 4) `data/nutrient_solutions/*.yml`
-Referenz‑Zielwerte (Elemente in mg/L), kein Dünger‑Rezept:
-- `targets_mg_per_l` (Zielwerte als mg/L **Elemente**)
-
-### 5) `recipes/*.yml`
-Ein Rezept definiert:
+5) `recipes/*.yml` (Rezepte für den Rechner)
+Ein Rezept definiert u. a.:
 - `liters`
-- `water_profile`
+- `water_profile` (Name → Datei unter `data/water_profiles/`)
 - `fertilizers: [{name, grams}, ...]`
 - optional: `phosphate_species` (`H2PO4` oder `HPO4`) für die Ladungsbilanz
-- optional: `urea_as_nh4` (Default `false`) – wenn `true`, zählt Urea‑N als NH4+ (Hydrolyse)
+- optional: `urea_as_nh4` (Default `false`) – wenn `true`, wird Urea‑N als NH4+ behandelt (Hydrolyse‑Annahme)
+- optional: `sluijsmann` – Konfiguration für zusätzliche Kennzahlen (siehe unten; experimentell)
 
-Zusätzlich zum Golden-Recipe gibt es einen zweiten Regressionstest:
+Beispiele/Regressionen:
+- `recipes/golden.yml`
 - `recipes/green_go_12_12_36.yml`
 
-### 6) `recipes/solve_*.yml` (Solver)
-Ein Solver‑Rezept definiert:
+6) `recipes/solve_*.yml` (Solver‑Rezepte)
+Ein Solver‑Rezept definiert u. a.:
 - `liters`
 - `water_profile`
-- `targets_mg_per_l` (Zielwerte als mg/L **Elemente**)
-- `fertilizers_allowed` (Liste der nutzbaren Dünger)
-- optional: `fixed_grams` (Dünger → feste Gramm)
-- optional: `phosphate_species` und `urea_as_nh4`
+- `targets_mg_per_l` (mg/L als Elemente)
+- `fertilizers_allowed` (Liste der nutzbaren Dünger‑Namen)
+- optional: `fixed_grams` (Düngername → feste Gramm, die der Solver nicht verändern darf)
+- optional: `phosphate_species`, `urea_as_nh4`
+- optional: Solver‑Tuning (Gewichtungen/Heuristiken; siehe `src/horticalc/solver.py`)
 
-Hinweis: **S/SO4 werden in der Optimierung ignoriert**, aber im Ergebnis weiterhin ausgegeben.
+Hinweis: In der Optimierung werden derzeit `S`, `SO4`, `Na`, `Cl` ignoriert. Diese Elemente/Ionen werden im finalen Ergebnis dennoch berechnet und ausgegeben.
 
 ---
 
-## Was genau wird gerechnet?
+## Was wird gerechnet? (Inhalte der Ausgabe)
 
-### Nährstoff‑Totals (mg/L als Element)
+### 1) Konzentrationen (mg/L)
 
-Der Core liefert u.a.:
-- `N_total`, `N_NH4`, `N_NO3`, `N_UREA`
-- `P`, `K`, `Ca`, `Mg`, `Na`, `S`, `Cl`, `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`, `Si`, `C`
+Der Rechner liefert u. a. Totals als mg/L:
+- Elemente: `N_total`, `N_NH4`, `N_NO3`, `N_UREA`, `P`, `K`, `Ca`, `Mg`, `Na`, `S`, `Cl`, `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`, `Si`, `C`
+- Oxid‑Darstellung (wie Etiketten): `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O` usw. (zusätzlich zu den Element‑Totals)
 
-Umrechnungen sind **stöchiometrisch** über Molmassen:
-- `P2O5 → P` mit Faktor `2*M(P)/M(P2O5)`
-- `K2O → K` mit Faktor `2*M(K)/M(K2O)`
+Umrechnungen erfolgen stöchiometrisch über Molmassen, z. B.:
+- `P2O5 → P` mit Faktor `2*M(P) / M(P2O5)`
+- `K2O → K` mit Faktor `2*M(K) / M(K2O)`
 - `CaO → Ca`, `MgO → Mg`, `Na2O → Na`, `SO4 → S`, `SiO2 → Si`, `CO3 → C`
 
-Bei Wasserwerten wird `NH4`/`NO3` als **Molekül** interpretiert und zu `N_NH4`/`N_NO3` umgerechnet (z.B. NO3→N ist /4,427).
-Bei Düngern ist `NH4`, `NO3`, `Ur-N` als **N‑Anteil** hinterlegt und wird entsprechend zu `N_NH4`, `N_NO3`, `N_UREA` gerechnet.
+Wasserprofil‑Spezialfall:
+- `NH4`/`NO3` im Wasserprofil werden als Moleküle interpretiert und in `N_NH4`/`N_NO3` umgerechnet.
+- In `fertilizers.csv` sind `NH4`/`NO3`/`Ur-N` bereits als „N‑Anteil“ (Element N) hinterlegt.
 
-### Ionenbilanz (meq/L)
+### 2) Ionen (mmol/L, meq/L) und Ladungsbilanz
 
-Der Core rechnet eine „klassische“ Ladungsbilanz aus den Hauptionen:
+Aus den Totals werden die Hauptionen für eine klassische Ladungsbilanz gebildet.
 
-Kationen: `NH4+`, `K+`, `Ca2+`, `Mg2+`, `Na+`
+Kationen (typisch):
+- `NH4+`, `K+`, `Ca2+`, `Mg2+`, `Na+`
 
-Anionen: `NO3-`, `H2PO4-` (oder `HPO4^2-`), `SO4^2-`, `Cl-`, optional `HCO3-` und `CO3^2-`
+Anionen (typisch):
+- `NO3-`, `H2PO4-` oder `HPO4^2-` (je nach `phosphate_species`), `SO4^2-`, `Cl-`
+- optional: `HCO3-` und `CO3^2-`
 
 Ergebnis:
 - Summe Kationen (meq/L)
 - Summe Anionen (meq/L)
-- Fehler in % (signed + absolut)
+- Fehler in % (signed und absolut)
 
-Hinweis: Phosphat‑Ladung ist pH‑abhängig; deshalb ist `phosphate_species` konfigurierbar.
+Wichtig: Phosphat‑Spezies ist pH‑abhängig; daher ist `phosphate_species` ein expliziter Schalter. Es wird hier nicht automatisch aus pH geschätzt.
 
-### Electrical Conductivity (EC)
+### 3) EC (Electrical Conductivity) — Näherung
 
-Der Core berechnet EC **ionenbasiert** aus der vorhandenen Ionenzusammensetzung.
-Ausgabe ist in der Ergebnis‑JSON unter `ec` enthalten (EC bei 18 °C und 25 °C).
+EC wird aus der Ionenzusammensetzung berechnet und ist eine Näherung.
 
-Details, Formeln, Einheiten, Parameter und Quellen stehen in [`docs/EC.md`](docs/EC.md).
+- Ansatz:
+  - Für unterstützte Ionen wird ein McCleskey‑Modell verwendet (temperaturabhängige Parameter + Korrektur über Ionenstärke).
+  - Für einzelne Ionen existiert eine Fallback‑Leitfähigkeit (z. B. bei fehlenden McCleskey‑Parametern) mit einfacher Temperatur‑Skalierung.
+  - Ionen ohne Parameter werden ignoriert und als „nicht abgedeckt“ gekennzeichnet.
+- Ausgabe:
+  - EC bei 18 °C und 25 °C
+  - optional ein Beitrags‑Breakdown pro Ion
+  - optional Transportzahlen
+  - optional ATC‑Hochrechnung auf 25 °C über einen festen Alpha‑Faktor
+
+Interpretation:
+- Die EC‑Werte sind nicht „gemessen“, sondern aus Tabellen/Parametern berechnet.
+- Abdeckung und Warnungen werden im EC‑Output mitgeführt (welche Ionen einbezogen/ignoriert wurden).
+- Details, Formeln und Parameter sind in `docs/EC.md` dokumentiert.
+
+### 4) Sluijsmann‑Kennzahlen (experimentell / hypothetisch)
+
+Optional kann die Berechnung zusätzliche Kennzahlen nach „Sluijsmann“ erzeugen.
+- Status: experimentell/hypothetisch; das Modell stammt aus der Agrarwirtschaft und ist nicht als Standard‑Werkzeug für hydroponische Nährlösungen etabliert.
+- Aktivierung: über den Schlüssel `sluijsmann` im Rezept (siehe `recipes/*.yml`).
+- Implementierung: `src/horticalc/sluijsmann.py` (Tests: `tests/test_sluijsmann.py`).
 
 ---
 
-## Ordnerstruktur
+## Ordnerstruktur (relevant für Entwicklung)
 
 ```
 .
@@ -193,36 +214,21 @@ Details, Formeln, Einheiten, Parameter und Quellen stehen in [`docs/EC.md`](docs
 │   ├── fertilizers.csv
 │   ├── molar_masses.yml
 │   ├── nutrient_solutions/
-│   │   ├── Bugbee_Utah_Hydroponic_Cannabis_2022.yml
-│   │   ├── Hoagland_Arnon_1950_Solution1_Nitrate.yml
-│   │   ├── Hoagland_Arnon_1950_Solution2_AmmoniumPhosphate.yml
-│   │   ├── Knop_1861_Standard.yml
-│   │   ├── Long_Ashton_Nutrient_Solution_LANS_NitrateType.yml
-│   │   ├── Murashige_Skoog_MS_1962_FullStrength.yml
-│   │   └── Yoshida_Rice_Solution_1976_CommonVariant.yml
 │   └── water_profiles/
-│       └── default.yml
 ├── docs/
-│   ├── AGENTS.md
 │   ├── EC.md
-│   ├── feature_osmosis_mix.md
-│   ├── golden_example_output.txt
 │   ├── GUI.MD
-│   └── terminology_style_guide.md
+│   └── ...
 ├── frontend/
 │   ├── index.html
 │   ├── styles.css
 │   └── app.js
 ├── recipes/
-│   ├── default.yml
 │   ├── golden.yml
 │   ├── green_go_12_12_36.yml
 │   └── solve_golden.yml
 ├── solutions/
-│   ├── golden_output.json
-│   └── green_go_12_12_36_output.json
 ├── src/horticalc/
-│   ├── __init__.py
 │   ├── __main__.py
 │   ├── core.py
 │   ├── data_io.py
@@ -240,3 +246,9 @@ Details, Formeln, Einheiten, Parameter und Quellen stehen in [`docs/EC.md`](docs
 ```
 
 ---
+
+## Tests
+
+```bash
+python -m pytest -q
+```

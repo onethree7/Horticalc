@@ -165,15 +165,40 @@
                 </div>
               </div>
             </div>
+            <div class="summary-toolbar">
+              <div class="segmented" id="summaryViewToggle" role="tablist" aria-label="Ergebnis-Ansicht">
+                <button class="segmented-btn" type="button" role="tab" data-summary-view="water">
+                  Wasserwerte
+                </button>
+                <button class="segmented-btn" type="button" role="tab" data-summary-view="oxide">
+                  Raw/Oxide
+                </button>
+                <button class="segmented-btn" type="button" role="tab" data-summary-view="ion">
+                  Gelöste Ionen
+                </button>
+              </div>
+            </div>
             <div class="summary-scroll" id="summaryScroll">
               <div class="summary-tables">
-                <div class="table-card">
+                <div class="table-card summary-panel" data-summary-panel="water">
+                  <div class="table-card-title">
+                    <h3>Wasserwerte</h3>
+                    <span class="table-badge" id="waterSummaryBadge">mg/L</span>
+                  </div>
                   <table class="grid grid--matrix nutrient-grid nutrient-grid--summary" id="waterSummaryTable"></table>
                 </div>
-                <div class="table-card">
+                <div class="table-card summary-panel" data-summary-panel="oxide">
+                  <div class="table-card-title">
+                    <h3>Raw/Oxide</h3>
+                    <span class="table-badge" id="oxideSummaryBadge">mg/L (Oxid)</span>
+                  </div>
                   <table class="grid grid--matrix nutrient-grid nutrient-grid--summary" id="oxideSummaryTable"></table>
                 </div>
-                <div class="table-card">
+                <div class="table-card summary-panel" data-summary-panel="ion">
+                  <div class="table-card-title">
+                    <h3>Gelöste Ionen</h3>
+                    <span class="table-badge" id="ionSummaryBadge">mg/L</span>
+                  </div>
                   <table class="grid grid--matrix nutrient-grid nutrient-grid--summary" id="ionSummaryTable"></table>
                 </div>
               </div>

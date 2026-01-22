@@ -39,6 +39,10 @@ const waterSummaryTable = document.querySelector("#waterSummaryTable");
 const oxideSummaryTable = document.querySelector("#oxideSummaryTable");
 const ionSummaryTable = document.querySelector("#ionSummaryTable");
 const waterSummaryBadge = document.querySelector("#waterSummaryBadge");
+const oxideSummaryBadge = document.querySelector("#oxideSummaryBadge");
+const ionSummaryBadge = document.querySelector("#ionSummaryBadge");
+const summaryViewToggle = document.querySelector("#summaryViewToggle");
+const summaryPanels = document.querySelectorAll(".summary-panel[data-summary-panel]");
 const ionMeqList = document.querySelector("#ionMeqList");
 const ionBalanceList = document.querySelector("#ionBalanceList");
 const modeToggleInputs = document.querySelectorAll('input[name="modeToggle"]');
@@ -83,6 +87,7 @@ let fertilizerEditorSelectedIndex = 0;
 let fertilizerEditorFilter = "";
 let fertilizerEditorTable;
 let fertilizerEditorCompKeys = [];
+let summaryView = "ion";
 
 const fertilizerEditorPreferredKeys = [
   "NO3",
@@ -188,6 +193,7 @@ const nutrientIntegerFormatter = new Intl.NumberFormat("en-US", {
 });
 const LAST_FERTILIZERS_ALLOWED_KEY = "last_fertilizers_allowed";
 const LAST_SOLUTION_CALCULATED_KEY = "last_solution_calculated";
+const SUMMARY_VIEW_KEY = "horticalc.summary_view";
 const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
 const nutrientTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "Si"]);
 const oxideIntegerKeys = new Set([
@@ -1213,6 +1219,9 @@ function renderWaterSummaryTable(table, waterElements) {
 
 function renderOxideSummaryTable(table, oxides) {
   const oxideMap = new Map(Object.entries(oxides || {}));
+  if (oxideSummaryBadge) {
+    oxideSummaryBadge.textContent = "mg/L (Oxid)";
+  }
   renderSummaryTable({
     table,
     headerLabels: (column) => column.oxideHeaderLabel,
@@ -1225,6 +1234,9 @@ function renderOxideSummaryTable(table, oxides) {
 
 function renderIonSummaryTable(table, elements) {
   const elementMap = new Map(Object.entries(elements || {}));
+  if (ionSummaryBadge) {
+    ionSummaryBadge.textContent = "mg/L";
+  }
   renderSummaryTable({
     table,
     headerLabels: (column) => column.ionHeaderLabel,
@@ -1234,6 +1246,32 @@ function renderIonSummaryTable(table, elements) {
     valueMap: elementMap,
     formatter: (column, value) => formatNutrientValue(column.element, value),
   });
+}
+
+function setSummaryView(nextView) {
+  const allowed = new Set(["water", "oxide", "ion"]);
+  const view = allowed.has(nextView) ? nextView : "ion";
+  summaryView = view;
+  lsSet(SUMMARY_VIEW_KEY, view);
+
+  if (summaryViewToggle) {
+    summaryViewToggle.querySelectorAll("button[data-summary-view]").forEach((button) => {
+      const isActive = button.dataset.summaryView === view;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-selected", isActive ? "true" : "false");
+      button.tabIndex = isActive ? 0 : -1;
+    });
+  }
+
+  summaryPanels.forEach((panel) => {
+    const panelView = panel.dataset.summaryPanel;
+    panel.hidden = panelView !== view;
+  });
+
+  const summaryScroll = document.querySelector("#summaryScroll");
+  if (summaryScroll) {
+    summaryScroll.scrollLeft = 0;
+  }
 }
 
 function getSummaryTables() {
@@ -2143,6 +2181,16 @@ modeToggleInputs.forEach((input) => {
   });
 });
 
+if (summaryViewToggle) {
+  summaryViewToggle.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-summary-view]");
+    if (!button) {
+      return;
+    }
+    setSummaryView(button.dataset.summaryView);
+  });
+}
+
 fertEditorSearchInput.addEventListener("input", (event) => {
   fertilizerEditorFilter = event.target.value || "";
   renderFertilizerEditor();
@@ -2358,6 +2406,9 @@ toggleWaterValuesButton.addEventListener("click", () => {
   const isCollapsed = waterContent.classList.toggle("is-collapsed");
   toggleWaterValuesButton.textContent = isCollapsed ? "Wasserwerte anzeigen" : "Wasserwerte ausblenden";
 });
+
+summaryView = lsGet(SUMMARY_VIEW_KEY, "ion");
+setSummaryView(summaryView);
 
 initializeFertilizerTables();
 renderSolverTargetsTable();

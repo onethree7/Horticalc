@@ -198,6 +198,10 @@ main {
   hyphens: auto;
 }
 
+.nutrient-grid--summary .row-label--ion {
+  font-size: 1.1em;
+}
+
 .nutrient-grid--summary thead th:first-child {
   text-align: left;
 }

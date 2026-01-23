@@ -1517,11 +1517,6 @@ function siFromSio2(mgSio2) {
   return mgSio2 ? (mgSio2 * getMolarMassOrOne("Si")) / getMolarMassOrOne("SiO2") : 0;
 }
 
-function normalizeWaterValues(rawValues, osmosisPercent) {
-  const factor = 1 - clamp(osmosisPercent, 0, 100) / 100;
-  return normalizeWaterValuesWithFactor(rawValues, factor);
-}
-
 function normalizeWaterValuesWithFactor(rawValues, factor) {
   const normalized = {};
   const hco3Direct = rawValues.HCO3 || 0;
@@ -1563,67 +1558,8 @@ function normalizeWaterValuesWithFactor(rawValues, factor) {
   return normalized;
 }
 
-function buildWaterPayloadFromValues(rawValues) {
-  return normalizeWaterValuesWithFactor(rawValues, 1);
-}
-
 function buildWaterPayloadForApi(rawValues) {
-  return buildWaterPayloadFromValues(rawValues);
-}
-
-function computeWaterElements(normalizedWater) {
-  const elements = {};
-
-  const nh4 = normalizedWater.NH4 || 0;
-  const no3 = normalizedWater.NO3 || 0;
-  elements.N_total = nFromNh4(nh4) + nFromNo3(no3);
-
-  const p2o5 = normalizedWater.P2O5 || 0;
-  if (p2o5) {
-    elements.P = pFromP2o5(p2o5);
-  }
-
-  const k2o = normalizedWater.K2O || 0;
-  if (k2o) {
-    elements.K = kFromK2o(k2o);
-  }
-
-  const cao = normalizedWater.CaO || 0;
-  if (cao) {
-    elements.Ca = caFromCao(cao);
-  }
-
-  const mgo = normalizedWater.MgO || 0;
-  if (mgo) {
-    elements.Mg = mgFromMgo(mgo);
-  }
-
-  const na2o = normalizedWater.Na2O || 0;
-  if (na2o) {
-    elements.Na = naFromNa2o(na2o);
-  }
-
-  const so4 = normalizedWater.SO4 || 0;
-  if (so4) {
-    elements.S = sFromSo4(so4);
-  }
-
-  ["Cl", "Fe", "Mn", "Cu", "Zn", "B", "Mo"].forEach((key) => {
-    if (normalizedWater[key]) {
-      elements[key] = normalizedWater[key];
-    }
-  });
-
-  if (normalizedWater.HCO3) {
-    elements.HCO3 = normalizedWater.HCO3;
-  }
-
-  const sio2 = normalizedWater.SiO2 || 0;
-  if (sio2) {
-    elements.Si = siFromSio2(sio2);
-  }
-
-  return elements;
+  return normalizeWaterValuesWithFactor(rawValues, 1);
 }
 
 function waterElementsForDisplay(elements) {

@@ -1327,10 +1327,6 @@ function setSummaryView(nextView) {
   }
 }
 
-function getSummaryTables() {
-  return [waterSummaryTable, oxideSummaryTable, ionSummaryTable].filter(Boolean);
-}
-
 function normalizeColumnKey(key) {
   return key.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
@@ -1385,10 +1381,6 @@ function formatOxideValue(key, value) {
   }
 
   return nutrientFormatter.format(value);
-}
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
 }
 
 function buildWaterPayloadForApi(rawValues) {

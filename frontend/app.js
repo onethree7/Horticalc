@@ -985,10 +985,6 @@ function getMolarMass(key) {
   return Number.isFinite(value) ? value : null;
 }
 
-function getMolarMassOrOne(key) {
-  return getMolarMass(key) || 1;
-}
-
 function mgToMol(key, value) {
   if (!Number.isFinite(value)) {
     return 0;
@@ -1337,26 +1333,6 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-function po4FromP2o5(mgP2o5) {
-  return mgP2o5 ? (mgP2o5 * 2 * getMolarMassOrOne("PO4")) / getMolarMassOrOne("P2O5") : 0;
-}
-
-function kFromK2o(mgK2O) {
-  return mgK2O ? (mgK2O * 2 * getMolarMassOrOne("K")) / getMolarMassOrOne("K2O") : 0;
-}
-
-function caFromCao(mgCaO) {
-  return mgCaO ? (mgCaO * getMolarMassOrOne("Ca")) / getMolarMassOrOne("CaO") : 0;
-}
-
-function mgFromMgo(mgMgO) {
-  return mgMgO ? (mgMgO * getMolarMassOrOne("Mg")) / getMolarMassOrOne("MgO") : 0;
-}
-
-function naFromNa2o(mgNa2O) {
-  return mgNa2O ? (mgNa2O * 2 * getMolarMassOrOne("Na")) / getMolarMassOrOne("Na2O") : 0;
-}
-
 function buildWaterPayloadForApi(rawValues) {
   return { ...rawValues };
 }
@@ -1649,69 +1625,10 @@ function seedSolverAllowedFertilizers() {
 }
 
 function applyWaterProfile(profile) {
-  const mg = profile.mg_per_l || {};
-  const hasValue = (value) => value !== undefined && value !== null;
-  const standardMgKeyMap = {
-    NH4: "NH4",
-    NH3: "NH3",
-    NO3: "NO3",
-    NO2: "NO2",
-    P: "P",
-    SO4: "SO4",
-    S: "S",
-    Cl: "Cl",
-    Fe: "Fe",
-    Mn: "Mn",
-    Cu: "Cu",
-    Zn: "Zn",
-    B: "B",
-    Mo: "Mo",
-    SiO2: "SiO2",
-    HCO3: "HCO3",
-    CO3: "CO3",
-    CaCO3: "CaCO3",
-    KH: "KH",
-  };
-
+  const mg = profile.normalized_mg_per_l || profile.mg_per_l || {};
   waterFieldDefinitions.forEach((field) => {
-    waterValues[field.key] = 0;
+    waterValues[field.key] = Number(mg[field.key]) || 0;
   });
-
-  Object.entries(standardMgKeyMap).forEach(([fieldKey, mgKey]) => {
-    if (hasValue(mg[mgKey])) {
-      waterValues[fieldKey] = Number(mg[mgKey]) || 0;
-    }
-  });
-
-  if (hasValue(mg.PO4)) {
-    waterValues.PO4 = Number(mg.PO4) || 0;
-  } else if (hasValue(mg.P2O5)) {
-    waterValues.PO4 = po4FromP2o5(Number(mg.P2O5) || 0);
-  }
-
-  if (hasValue(mg.K)) {
-    waterValues.K = Number(mg.K) || 0;
-  } else if (hasValue(mg.K2O)) {
-    waterValues.K = kFromK2o(Number(mg.K2O) || 0);
-  }
-
-  if (hasValue(mg.Ca)) {
-    waterValues.Ca = Number(mg.Ca) || 0;
-  } else if (hasValue(mg.CaO)) {
-    waterValues.Ca = caFromCao(Number(mg.CaO) || 0);
-  }
-
-  if (hasValue(mg.Mg)) {
-    waterValues.Mg = Number(mg.Mg) || 0;
-  } else if (hasValue(mg.MgO)) {
-    waterValues.Mg = mgFromMgo(Number(mg.MgO) || 0);
-  }
-
-  if (hasValue(mg.Na)) {
-    waterValues.Na = Number(mg.Na) || 0;
-  } else if (hasValue(mg.Na2O)) {
-    waterValues.Na = naFromNa2o(Number(mg.Na2O) || 0);
-  }
 
   waterProfileNameInput.value = profile.name || "";
   osmosisPercentInput.value = profile.osmosis_percent ?? 0;

@@ -412,6 +412,23 @@ main {
   outline-offset: 2px;
 }
 
+.mode-toggle.segmented {
+  padding: 0.3rem;
+}
+
+.mode-toggle .segmented-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.mode-toggle .segmented-btn input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .summary-panel[hidden] {
   display: none !important;
 }

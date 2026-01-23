@@ -616,11 +616,6 @@ main {
   padding: 0 var(--space-2);
 }
 
-.is-align-fail {
-  outline: 2px solid rgba(255, 77, 77, 0.8);
-  outline-offset: 2px;
-}
-
 .compact-card {
   padding: var(--space-2) var(--space-3);
 }

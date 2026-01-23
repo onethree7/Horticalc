@@ -147,6 +147,9 @@ ALLOWED_WATER_KEYS = {
     "Na",
     "Cl",
     "HCO3",
+    "CO3",
+    "CaCO3",
+    "KH",
     "Fe",
     "Mn",
     "Cu",
@@ -185,29 +188,13 @@ ALLOWED_TARGET_KEYS = {
 }
 
 
-def hco3_from_caco3(value: float) -> float:
-    if value == 0.0:
-        return 0.0
-    equiv_weight_caco3 = MOLAR_MASSES["CaCO3"] / 2.0
-    return value * MOLAR_MASSES["HCO3"] / equiv_weight_caco3
-
-
-def hco3_from_kh(value: float) -> float:
-    if value == 0.0:
-        return 0.0
-    mg_l_caco3 = value * 17.848
-    return hco3_from_caco3(mg_l_caco3)
-
-
 def sanitize_water_profile(mg_per_l: Dict[str, float]) -> Dict[str, float]:
-    sanitized = dict(mg_per_l)
-    hco3 = sanitized.get("HCO3", 0.0)
-    if hco3 == 0.0:
-        hco3 = hco3_from_caco3(sanitized.get("CaCO3", 0.0)) + hco3_from_kh(sanitized.get("KH", 0.0))
-        if hco3:
-            sanitized["HCO3"] = hco3
-    for key in ("KH", "CaCO3", "CO3"):
-        sanitized.pop(key, None)
+    sanitized: Dict[str, float] = {}
+    for key, value in mg_per_l.items():
+        try:
+            sanitized[key] = float(value)
+        except (TypeError, ValueError):
+            sanitized[key] = 0.0
     return sanitized
 
 

@@ -918,7 +918,6 @@ function renderWaterTable() {
     input.addEventListener("input", (event) => {
       const parsed = Number(event.target.value) || 0;
       waterValues[field.key] = waterUnit === "mol_l" ? molToMg(field.key, parsed) : parsed;
-      updateHco3FromHelper(field.key);
       scheduleRecalculate();
     });
     valueCell.appendChild(input);
@@ -1338,83 +1337,6 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-function hco3FromCaco3Value(mgCaCO3) {
-  if (!mgCaCO3) {
-    return 0;
-  }
-  const equiv = getMolarMassOrOne("CaCO3") / 2;
-  return (mgCaCO3 * getMolarMassOrOne("HCO3")) / equiv;
-}
-
-function hco3FromCo3Value(mgCo3) {
-  if (!mgCo3) {
-    return 0;
-  }
-  return (mgCo3 * getMolarMassOrOne("HCO3")) / getMolarMassOrOne("CO3");
-}
-
-function hco3FromKhValue(dKh) {
-  if (!dKh) {
-    return 0;
-  }
-  return hco3FromCaco3Value(dKh * 17.848);
-}
-
-const carbonateHco3Converters = {
-  CO3: hco3FromCo3Value,
-  CaCO3: hco3FromCaco3Value,
-  KH: hco3FromKhValue,
-};
-
-function updateHco3FromHelper(key) {
-  const converter = carbonateHco3Converters[key];
-  if (!converter) {
-    return;
-  }
-  waterValues.HCO3 = converter(waterValues[key] || 0);
-  updateWaterInputValue("HCO3");
-}
-
-function p2o5FromP(mgP) {
-  return mgP ? (mgP * getMolarMassOrOne("P2O5")) / (2 * getMolarMassOrOne("P")) : 0;
-}
-
-function p2o5FromPo4(mgPO4) {
-  if (!mgPO4) {
-    return 0;
-  }
-  const mgP = (mgPO4 * getMolarMassOrOne("P")) / getMolarMassOrOne("PO4");
-  return p2o5FromP(mgP);
-}
-
-function pFromP2o5(mgP2O5) {
-  return mgP2O5 ? (mgP2O5 * 2 * getMolarMassOrOne("P")) / getMolarMassOrOne("P2O5") : 0;
-}
-
-function so4FromS(mgS) {
-  return mgS ? (mgS * getMolarMassOrOne("SO4")) / getMolarMassOrOne("S") : 0;
-}
-
-function sFromSo4(mgSo4) {
-  return mgSo4 ? (mgSo4 * getMolarMassOrOne("S")) / getMolarMassOrOne("SO4") : 0;
-}
-
-function k2oFromK(mgK) {
-  return mgK ? (mgK * getMolarMassOrOne("K2O")) / (2 * getMolarMassOrOne("K")) : 0;
-}
-
-function na2oFromNa(mgNa) {
-  return mgNa ? (mgNa * getMolarMassOrOne("Na2O")) / (2 * getMolarMassOrOne("Na")) : 0;
-}
-
-function caoFromCa(mgCa) {
-  return mgCa ? (mgCa * getMolarMassOrOne("CaO")) / getMolarMassOrOne("Ca") : 0;
-}
-
-function mgoFromMg(mgMg) {
-  return mgMg ? (mgMg * getMolarMassOrOne("MgO")) / getMolarMassOrOne("Mg") : 0;
-}
-
 function po4FromP2o5(mgP2o5) {
   return mgP2o5 ? (mgP2o5 * 2 * getMolarMassOrOne("PO4")) / getMolarMassOrOne("P2O5") : 0;
 }
@@ -1435,61 +1357,8 @@ function naFromNa2o(mgNa2O) {
   return mgNa2O ? (mgNa2O * 2 * getMolarMassOrOne("Na")) / getMolarMassOrOne("Na2O") : 0;
 }
 
-function nFromNh4(mgNh4) {
-  return mgNh4 ? (mgNh4 * getMolarMassOrOne("N")) / getMolarMassOrOne("NH4") : 0;
-}
-
-function nFromNo3(mgNo3) {
-  return mgNo3 ? (mgNo3 * getMolarMassOrOne("N")) / getMolarMassOrOne("NO3") : 0;
-}
-
-function siFromSio2(mgSio2) {
-  return mgSio2 ? (mgSio2 * getMolarMassOrOne("Si")) / getMolarMassOrOne("SiO2") : 0;
-}
-
-function normalizeWaterValuesWithFactor(rawValues, factor) {
-  const normalized = {};
-  const hco3Direct = rawValues.HCO3 || 0;
-  const useDerivedHco3 = hco3Direct === 0;
-
-  const add = (key, value) => {
-    if (!Number.isFinite(value) || value === 0) {
-      return;
-    }
-    normalized[key] = (normalized[key] || 0) + value * factor;
-  };
-
-  const hco3FromCaco3 = hco3FromCaco3Value;
-  const hco3FromKh = hco3FromKhValue;
-
-  add("NH4", (rawValues.NH4 || 0) + (rawValues.NH3 || 0));
-  add("NO3", (rawValues.NO3 || 0) + (rawValues.NO2 || 0));
-  add("P2O5", p2o5FromPo4(rawValues.PO4 || 0));
-  add("P2O5", p2o5FromP(rawValues.P || 0));
-  add("SO4", (rawValues.SO4 || 0) + so4FromS(rawValues.S || 0));
-  add("K2O", k2oFromK(rawValues.K || 0));
-  add("Na2O", na2oFromNa(rawValues.Na || 0));
-  add("CaO", caoFromCa(rawValues.Ca || 0));
-  add("MgO", mgoFromMg(rawValues.Mg || 0));
-  add("Cl", rawValues.Cl || 0);
-  add("Fe", rawValues.Fe || 0);
-  add("Mn", rawValues.Mn || 0);
-  add("Cu", rawValues.Cu || 0);
-  add("Zn", rawValues.Zn || 0);
-  add("B", rawValues.B || 0);
-  add("Mo", rawValues.Mo || 0);
-  if (useDerivedHco3) {
-    add("HCO3", hco3FromCaco3(rawValues.CaCO3 || 0) + hco3FromKh(rawValues.KH || 0));
-  } else {
-    add("HCO3", hco3Direct);
-  }
-  add("SiO2", rawValues.SiO2 || 0);
-
-  return normalized;
-}
-
 function buildWaterPayloadForApi(rawValues) {
-  return normalizeWaterValuesWithFactor(rawValues, 1);
+  return { ...rawValues };
 }
 
 function waterElementsForDisplay(elements) {
@@ -1781,8 +1650,7 @@ function seedSolverAllowedFertilizers() {
 
 function applyWaterProfile(profile) {
   const mg = profile.mg_per_l || {};
-  const hco3Direct = mg.HCO3 || 0;
-  const derivedHco3 = hco3Direct ? 0 : hco3FromCaco3Value(mg.CaCO3 || 0) + hco3FromKhValue(mg.KH || 0);
+  const hasValue = (value) => value !== undefined && value !== null;
   const standardMgKeyMap = {
     NH4: "NH4",
     NH3: "NH3",
@@ -1799,6 +1667,10 @@ function applyWaterProfile(profile) {
     B: "B",
     Mo: "Mo",
     SiO2: "SiO2",
+    HCO3: "HCO3",
+    CO3: "CO3",
+    CaCO3: "CaCO3",
+    KH: "KH",
   };
 
   waterFieldDefinitions.forEach((field) => {
@@ -1806,24 +1678,40 @@ function applyWaterProfile(profile) {
   });
 
   Object.entries(standardMgKeyMap).forEach(([fieldKey, mgKey]) => {
-    waterValues[fieldKey] = mg[mgKey] || 0;
+    if (hasValue(mg[mgKey])) {
+      waterValues[fieldKey] = Number(mg[mgKey]) || 0;
+    }
   });
 
-  if (mg.PO4) {
-    waterValues.PO4 = mg.PO4;
-  } else if (mg.P2O5) {
-    waterValues.PO4 = po4FromP2o5(mg.P2O5);
+  if (hasValue(mg.PO4)) {
+    waterValues.PO4 = Number(mg.PO4) || 0;
+  } else if (hasValue(mg.P2O5)) {
+    waterValues.PO4 = po4FromP2o5(Number(mg.P2O5) || 0);
   }
 
-  waterValues.K = mg.K || kFromK2o(mg.K2O || 0);
-  waterValues.Ca = mg.Ca || caFromCao(mg.CaO || 0);
-  waterValues.Mg = mg.Mg || mgFromMgo(mg.MgO || 0);
-  waterValues.Na = mg.Na || naFromNa2o(mg.Na2O || 0);
+  if (hasValue(mg.K)) {
+    waterValues.K = Number(mg.K) || 0;
+  } else if (hasValue(mg.K2O)) {
+    waterValues.K = kFromK2o(Number(mg.K2O) || 0);
+  }
 
-  waterValues.HCO3 = hco3Direct || derivedHco3;
-  waterValues.CO3 = 0;
-  waterValues.CaCO3 = 0;
-  waterValues.KH = 0;
+  if (hasValue(mg.Ca)) {
+    waterValues.Ca = Number(mg.Ca) || 0;
+  } else if (hasValue(mg.CaO)) {
+    waterValues.Ca = caFromCao(Number(mg.CaO) || 0);
+  }
+
+  if (hasValue(mg.Mg)) {
+    waterValues.Mg = Number(mg.Mg) || 0;
+  } else if (hasValue(mg.MgO)) {
+    waterValues.Mg = mgFromMgo(Number(mg.MgO) || 0);
+  }
+
+  if (hasValue(mg.Na)) {
+    waterValues.Na = Number(mg.Na) || 0;
+  } else if (hasValue(mg.Na2O)) {
+    waterValues.Na = naFromNa2o(Number(mg.Na2O) || 0);
+  }
 
   waterProfileNameInput.value = profile.name || "";
   osmosisPercentInput.value = profile.osmosis_percent ?? 0;

@@ -14,7 +14,7 @@ const resetWaterProfileButton = document.querySelector("#resetWaterProfile");
 const osmosisPercentInput = document.querySelector("#osmosisPercent");
 const waterUnitToggle = document.querySelector("#waterUnitToggle");
 const toggleWaterValuesButton = document.querySelector("#toggleWaterValues");
-const waterContent = document.querySelector("#waterContent");
+const waterSection = document.querySelector("#waterSection");
 const npkAllPctValue = document.querySelector("#npkAllPct");
 const npkPNormValue = document.querySelector("#npkPNorm");
 const npkNpkPctValue = document.querySelector("#npkNpkPct");
@@ -2128,11 +2128,18 @@ waterUnitToggle.addEventListener("change", (event) => {
   scheduleRecalculate();
 });
 
+const setWaterValuesToggleState = (isOpen) => {
+  toggleWaterValuesButton.classList.toggle("is-active", isOpen);
+  toggleWaterValuesButton.setAttribute("aria-pressed", String(isOpen));
+  toggleWaterValuesButton.setAttribute("aria-expanded", String(isOpen));
+};
+
 toggleWaterValuesButton.addEventListener("click", () => {
-  const isCollapsed = waterContent.classList.toggle("is-collapsed");
-  toggleWaterValuesButton.textContent = isCollapsed ? "Wasserwerte anzeigen" : "Wasserwerte ausblenden";
+  const isCollapsed = waterSection.classList.toggle("is-collapsed");
+  setWaterValuesToggleState(!isCollapsed);
 });
 
+setWaterValuesToggleState(!waterSection.classList.contains("is-collapsed"));
 summaryView = lsGet(SUMMARY_VIEW_KEY, "ion");
 setSummaryView(summaryView);
 

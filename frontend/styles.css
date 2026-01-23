@@ -465,31 +465,7 @@ main {
   min-width: 0;
 }
 
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.toggle-button {
-  background: rgba(20, 22, 24, 0.85);
-  color: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 999px;
-  padding: var(--space-1) var(--space-4);
-  font-size: var(--text-xs);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  transition: border 0.2s ease, color 0.2s ease, background 0.2s ease;
-}
-
-.toggle-button:hover {
-  border-color: rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.water-content.is-collapsed {
+.water-section.is-collapsed {
   display: none;
 }
 

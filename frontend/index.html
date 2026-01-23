@@ -32,15 +32,15 @@
             <input type="radio" name="modeToggle" value="fertilizers" />
             Dünger-Editor
           </label>
+          <button class="segmented-btn" id="toggleWaterValues" type="button" aria-pressed="false">
+            Wasserwerte
+          </button>
         </div>
       </section>
 
-      <section class="block" id="waterSection">
-        <div class="section-header">
-          <h2>Wasserwerte</h2>
-          <button class="toggle-button" id="toggleWaterValues" type="button">Wasserwerte anzeigen</button>
-        </div>
-        <div class="water-content is-collapsed" id="waterContent">
+      <section class="block water-section is-collapsed" id="waterSection">
+        <h2>Wasserwerte</h2>
+        <div class="water-content" id="waterContent">
           <p class="hint">Profile lokal speichern/laden und Osmose-Anteil berücksichtigen.</p>
           <div class="water-controls">
             <div class="water-control-group">

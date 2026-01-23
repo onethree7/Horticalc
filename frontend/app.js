@@ -1406,10 +1406,17 @@ function waterElementsForDisplay(elements) {
   return converted;
 }
 
+function buildSelectedFertilizerEntries({ allowZeroGrams = false } = {}) {
+  return selectedFertilizers
+    .map((fert, index) => ({
+      name: fert.name,
+      grams: Number(fertilizerAmounts[index]) || 0,
+    }))
+    .filter((entry) => entry.name && (allowZeroGrams || entry.grams > 0));
+}
+
 function buildPayload() {
-  const fertilizers = selectedFertilizers
-    .map((fert, index) => ({ name: fert.name, grams: fertilizerAmounts[index] }))
-    .filter((entry) => entry.name && entry.grams > 0);
+  const fertilizers = buildSelectedFertilizerEntries();
 
   const waterPayload = buildWaterPayloadForApi(waterValues);
 
@@ -1741,9 +1748,7 @@ function buildRecipePayload(name, fertilizers, liters, ureaAsNh4, phosphateSpeci
 }
 
 function buildRecipePayloadFromSelection(name) {
-  const fertilizers = selectedFertilizers
-    .map((fert, index) => ({ name: fert.name, grams: fertilizerAmounts[index] }))
-    .filter((entry) => entry.name && entry.grams > 0);
+  const fertilizers = buildSelectedFertilizerEntries();
   return buildRecipePayload(name, fertilizers, CALC_LITERS, false, "H2PO4");
 }
 
@@ -1759,12 +1764,7 @@ function buildRecipePayloadFromSolver(name) {
 }
 
 function buildSolutionSnapshot() {
-  const fertilizers = selectedFertilizers
-    .map((fert, index) => ({
-      name: fert.name,
-      grams: Number(fertilizerAmounts[index]) || 0,
-    }))
-    .filter((entry) => entry.name);
+  const fertilizers = buildSelectedFertilizerEntries({ allowZeroGrams: true });
   return {
     water_profile_value: waterProfileSelect.value || "",
     osmosis_percent: Number(osmosisPercentInput.value) || 0,

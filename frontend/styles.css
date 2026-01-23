@@ -513,55 +513,54 @@ main {
   color: rgba(255, 255, 255, 0.92);
 }
 
+/* EC KPI – gleiche Hierarchie wie NPK */
+.ec-card .metric-title {
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: var(--text-xs);
+}
+
 .ec-lines {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  width: 100%;
+  gap: 6px;
 }
 
 .ec-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
+  display: grid;
+  grid-template-columns: 48px auto auto auto auto;
+  align-items: baseline;
+  column-gap: 10px;
 }
 
-.ec-name {
-  min-width: 70px;
-  font-size: var(--text-sm);
-  color: rgba(255, 255, 255, 0.7);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.ec-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.ec-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 2px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.06);
-  font-size: var(--text-xs);
-  color: rgba(255, 255, 255, 0.9);
-  white-space: nowrap;
+/* 25 °C minimal stärker */
+.ec-line.ec-primary {
+  opacity: 1;
 }
 
 .ec-temp {
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85em;
+  opacity: 0.75;
 }
 
-.ec-val {
+/* gleiche Typo wie KPI-Zahlen */
+.ec-value {
+  font-size: 1em;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Labels bewusst klein & ruhig */
+.ec-label {
+  font-size: 0.8em;
+  opacity: 0.65;
+}
+
+/* Wasser visuell sekundär */
+.ec-value.muted {
+  opacity: 0.75;
 }
 
 .water-controls {

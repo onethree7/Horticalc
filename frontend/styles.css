@@ -512,6 +512,11 @@ main {
   text-align: center;
 }
 
+.summary-metric-card.ec-metric {
+  align-items: flex-start;
+  text-align: left;
+}
+
 .metric-row {
   display: flex;
   align-items: baseline;
@@ -531,6 +536,57 @@ main {
 .metric-value {
   font-weight: 600;
   color: rgba(255, 255, 255, 0.92);
+}
+
+.ec-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.ec-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.ec-name {
+  min-width: 70px;
+  font-size: var(--text-sm);
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ec-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.ec-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: var(--text-xs);
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+}
+
+.ec-temp {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.ec-val {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .water-controls {

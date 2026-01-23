@@ -409,9 +409,20 @@ function setMode(mode) {
   fertilizerEditorMode.classList.toggle("is-hidden", !isEditor);
   profileSection.classList.toggle("is-hidden", isEditor);
   activeMode = mode;
+  updateModeToggleUI();
   if (!isEditor) {
     setProfileMode(mode);
   }
+}
+
+function updateModeToggleUI() {
+  modeToggleInputs.forEach((input) => {
+    const label = input.closest("label");
+    if (!label) {
+      return;
+    }
+    label.classList.toggle("is-active", input.checked);
+  });
 }
 
 const profileConfigs = {

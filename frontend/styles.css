@@ -58,7 +58,15 @@ body {
   font-size: var(--text-sm);
 }
 
-.api-config input {
+.input-field,
+.api-config input,
+.grid select,
+.grid input,
+.water-control-row select,
+.water-control-row input,
+.solver-settings input,
+.solver-settings select,
+#solverAllowedFertilizers {
   padding: var(--space-2) var(--space-3);
   background: #0f141d;
   border: 1px solid #2b3543;
@@ -241,11 +249,7 @@ main {
 .grid select,
 .grid input {
   width: 100%;
-  background: #0f141d;
-  border: 1px solid #2b3543;
-  color: inherit;
   padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-1);
   font-size: var(--text-sm);
 }
 
@@ -534,11 +538,6 @@ main {
 .water-control-row select,
 .water-control-row input {
   min-width: 220px;
-  padding: var(--space-2) var(--space-3);
-  background: #0f141d;
-  border: 1px solid #2b3543;
-  color: inherit;
-  border-radius: var(--radius-1);
   font-size: var(--text-sm);
 }
 
@@ -717,16 +716,6 @@ main {
   align-items: center;
   flex-wrap: wrap;
   margin-bottom: var(--space-3);
-}
-
-.solver-settings input,
-.solver-settings select,
-#solverAllowedFertilizers {
-  padding: var(--space-2) var(--space-3);
-  background: #0f141d;
-  border: 1px solid #2b3543;
-  color: inherit;
-  border-radius: var(--radius-1);
 }
 
 .solver-columns {

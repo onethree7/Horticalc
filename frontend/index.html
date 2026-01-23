@@ -150,18 +150,22 @@
                 <div class="metric-value" id="npkNpkPct">-</div>
               </div>
               <div class="summary-metric-card">
-                <div class="metric-label">EC Werte</div>
-                <div class="metric-row">
-                  <span class="metric-label">Wasserwerte: EC18/25</span>
-                  <span class="metric-value">
-                    <span id="ecWater18Value">-</span>/<span id="ecWater25Value">-</span>
-                  </span>
-                </div>
-                <div class="metric-row">
-                  <span class="metric-label">Wasser + Dünger: EC18/25</span>
-                  <span class="metric-value">
-                    <span id="ec18Value">-</span>/<span id="ec25Value">-</span>
-                  </span>
+                <div class="metric-label">EC (mS/cm)</div>
+                <div class="ec-metric">
+                  <div class="ec-line">
+                    <span class="ec-name">Lösung</span>
+                    <div class="ec-chips">
+                      <span class="ec-chip"><span class="ec-temp">@18°C</span><span id="ec18Value" class="ec-val">-</span></span>
+                      <span class="ec-chip"><span class="ec-temp">@25°C</span><span id="ec25Value" class="ec-val">-</span></span>
+                    </div>
+                  </div>
+                  <div class="ec-line">
+                    <span class="ec-name">Wasser</span>
+                    <div class="ec-chips">
+                      <span class="ec-chip"><span class="ec-temp">@18°C</span><span id="ecWater18Value" class="ec-val">-</span></span>
+                      <span class="ec-chip"><span class="ec-temp">@25°C</span><span id="ecWater25Value" class="ec-val">-</span></span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

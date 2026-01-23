@@ -465,9 +465,6 @@ main {
   min-width: 0;
 }
 
-.water-section.is-collapsed {
-  display: none;
-}
 
 .summary-metrics {
   display: grid;

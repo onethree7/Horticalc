@@ -1977,6 +1977,24 @@ solveButton.addEventListener("click", async () => {
   }
 });
 
+const applyRecipeProfile = async (recipe) => {
+  applyRecipe(recipe);
+  seedSolverAllowedFertilizers();
+  if (recipe.water_profile) {
+    const filename = recipe.water_profile.endsWith(".yml")
+      ? recipe.water_profile
+      : `${recipe.water_profile}.yml`;
+    waterProfileSelect.value = filename;
+    const profile = await fetchWaterProfileData(recipe.water_profile);
+    applyWaterProfile(profile);
+  }
+  if (recipe.osmosis_percent !== undefined && recipe.osmosis_percent !== null) {
+    osmosisPercentInput.value = recipe.osmosis_percent;
+  }
+  profileNameInput.value = recipe.name || "";
+  scheduleRecalculate();
+};
+
 loadProfileButton.addEventListener("click", async () => {
   const selection = profileSelect.value;
   if (!selection) {
@@ -1990,21 +2008,7 @@ loadProfileButton.addEventListener("click", async () => {
       profileNameInput.value = solution.name || "";
     } else {
       const recipe = await fetchRecipeData(selection);
-      applyRecipe(recipe);
-      seedSolverAllowedFertilizers();
-      if (recipe.water_profile) {
-        const filename = recipe.water_profile.endsWith(".yml")
-          ? recipe.water_profile
-          : `${recipe.water_profile}.yml`;
-        waterProfileSelect.value = filename;
-        const profile = await fetchWaterProfileData(recipe.water_profile);
-        applyWaterProfile(profile);
-      }
-      if (recipe.osmosis_percent !== undefined && recipe.osmosis_percent !== null) {
-        osmosisPercentInput.value = recipe.osmosis_percent;
-      }
-      profileNameInput.value = recipe.name || "";
-      scheduleRecalculate();
+      await applyRecipeProfile(recipe);
     }
   } catch (error) {
     reportError(error, "Fehler beim Laden des Profils");
@@ -2017,21 +2021,7 @@ resetProfileButton.addEventListener("click", async () => {
       resetSolverTargets();
     } else {
       const recipe = await fetchDefaultRecipe();
-      applyRecipe(recipe);
-      seedSolverAllowedFertilizers();
-      if (recipe.water_profile) {
-        const filename = recipe.water_profile.endsWith(".yml")
-          ? recipe.water_profile
-          : `${recipe.water_profile}.yml`;
-        waterProfileSelect.value = filename;
-        const profile = await fetchWaterProfileData(recipe.water_profile);
-        applyWaterProfile(profile);
-      }
-      if (recipe.osmosis_percent !== undefined && recipe.osmosis_percent !== null) {
-        osmosisPercentInput.value = recipe.osmosis_percent;
-      }
-      profileNameInput.value = recipe.name || "";
-      scheduleRecalculate();
+      await applyRecipeProfile(recipe);
     }
   } catch (error) {
     reportError(error, "Reset fehlgeschlagen");

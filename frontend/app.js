@@ -13,7 +13,6 @@ const saveWaterProfileButton = document.querySelector("#saveWaterProfile");
 const resetWaterProfileButton = document.querySelector("#resetWaterProfile");
 const osmosisPercentInput = document.querySelector("#osmosisPercent");
 const waterUnitToggle = document.querySelector("#waterUnitToggle");
-const toggleWaterValuesButton = document.querySelector("#toggleWaterValues");
 const waterSection = document.querySelector("#waterSection");
 const npkAllPctValue = document.querySelector("#npkAllPct");
 const npkPNormValue = document.querySelector("#npkPNorm");
@@ -404,13 +403,15 @@ function renderTableRows(tableBody, rowCount, buildRow) {
 function setMode(mode) {
   const isSolver = mode === "solver";
   const isEditor = mode === "fertilizers";
-  calculatorMode.classList.toggle("is-hidden", isSolver || isEditor);
+  const isWater = mode === "water";
+  calculatorMode.classList.toggle("is-hidden", isSolver || isEditor || isWater);
   solverMode.classList.toggle("is-hidden", !isSolver);
   fertilizerEditorMode.classList.toggle("is-hidden", !isEditor);
-  profileSection.classList.toggle("is-hidden", isEditor);
+  waterSection.classList.toggle("is-hidden", !isWater);
+  profileSection.classList.toggle("is-hidden", isEditor || isWater);
   activeMode = mode;
   updateModeToggleUI();
-  if (!isEditor) {
+  if (!isEditor && !isWater) {
     setProfileMode(mode);
   }
 }
@@ -2128,18 +2129,6 @@ waterUnitToggle.addEventListener("change", (event) => {
   scheduleRecalculate();
 });
 
-const setWaterValuesToggleState = (isOpen) => {
-  toggleWaterValuesButton.classList.toggle("is-active", isOpen);
-  toggleWaterValuesButton.setAttribute("aria-pressed", String(isOpen));
-  toggleWaterValuesButton.setAttribute("aria-expanded", String(isOpen));
-};
-
-toggleWaterValuesButton.addEventListener("click", () => {
-  const isCollapsed = waterSection.classList.toggle("is-collapsed");
-  setWaterValuesToggleState(!isCollapsed);
-});
-
-setWaterValuesToggleState(!waterSection.classList.contains("is-collapsed"));
 summaryView = lsGet(SUMMARY_VIEW_KEY, "ion");
 setSummaryView(summaryView);
 

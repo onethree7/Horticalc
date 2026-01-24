@@ -92,6 +92,40 @@ def _oxide_to_element(mg_l_oxide: float, mm: Dict[str, float], oxide: str) -> Tu
     raise ValueError(f"Unsupported oxide: {oxide}")
 
 
+def oxide_to_element_mg_l(mm: Dict[str, float], oxide_key: str, mg_l: float) -> Tuple[str, float]:
+    mg_l_oxide = float(mg_l)
+    if mg_l_oxide == 0.0:
+        if oxide_key == "P2O5":
+            return "P", 0.0
+        if oxide_key == "K2O":
+            return "K", 0.0
+        if oxide_key == "CaO":
+            return "Ca", 0.0
+        if oxide_key == "MgO":
+            return "Mg", 0.0
+        if oxide_key == "Na2O":
+            return "Na", 0.0
+        if oxide_key == "SO4":
+            return "S", 0.0
+        raise ValueError(f"Unsupported oxide/form: {oxide_key}")
+    if oxide_key in OXIDE_ELEMENT_FORMS:
+        return _oxide_to_element(mg_l_oxide, mm, oxide_key)
+    return _form_to_element(mg_l_oxide, mm, oxide_key)
+
+
+def augment_water_profile_with_elements(mm: Dict[str, float], water_profile: Dict[str, float]) -> Dict[str, float]:
+    augmented = dict(water_profile)
+    for oxide_key in OXIDE_ELEMENT_FORMS + ("SO4",):
+        mg_l_oxide = float(water_profile.get(oxide_key, 0.0))
+        if mg_l_oxide == 0.0:
+            continue
+        element_key, mg_l_element = oxide_to_element_mg_l(mm, oxide_key, mg_l_oxide)
+        augmented[element_key] = mg_l_element
+        if oxide_key == "P2O5":
+            augmented["PO4"] = mg_l_oxide * (2 * _mm(mm, "PO4")) / _mm(mm, "P2O5")
+    return augmented
+
+
 def _form_to_element(mg_l: float, mm: Dict[str, float], form: str) -> Tuple[str, float]:
     if form in ("Fe", "Mn", "Cu", "Zn", "B", "Mo", "Cl"):
         return form, mg_l

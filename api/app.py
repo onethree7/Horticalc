@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 import yaml
 
-from horticalc.core import compute_solution, normalize_water_profile
+from horticalc.core import augment_water_profile_with_elements, compute_solution, normalize_water_profile
 from horticalc.data_io import (
     Fertilizer,
     load_fertilizers,
@@ -201,38 +201,7 @@ def sanitize_water_profile(mg_per_l: Dict[str, float]) -> Dict[str, float]:
 
 def normalized_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) -> Dict[str, float]:
     normalized = normalize_water_profile(mm, water_mg_l)
-
-    def oxide_to_element(oxide_mg_l: float, oxide_key: str, element_key: str, multiplier: float = 1.0) -> float:
-        if oxide_mg_l == 0.0:
-            return 0.0
-        return oxide_mg_l * (multiplier * mm[element_key]) / mm[oxide_key]
-
-    p2o5_mg_l = normalized.get("P2O5", 0.0)
-    if p2o5_mg_l:
-        normalized["P"] = oxide_to_element(p2o5_mg_l, "P2O5", "P", multiplier=2.0)
-        normalized["PO4"] = oxide_to_element(p2o5_mg_l, "P2O5", "PO4", multiplier=2.0)
-
-    k2o_mg_l = normalized.get("K2O", 0.0)
-    if k2o_mg_l:
-        normalized["K"] = oxide_to_element(k2o_mg_l, "K2O", "K", multiplier=2.0)
-
-    ca_o_mg_l = normalized.get("CaO", 0.0)
-    if ca_o_mg_l:
-        normalized["Ca"] = oxide_to_element(ca_o_mg_l, "CaO", "Ca")
-
-    mg_o_mg_l = normalized.get("MgO", 0.0)
-    if mg_o_mg_l:
-        normalized["Mg"] = oxide_to_element(mg_o_mg_l, "MgO", "Mg")
-
-    na2o_mg_l = normalized.get("Na2O", 0.0)
-    if na2o_mg_l:
-        normalized["Na"] = oxide_to_element(na2o_mg_l, "Na2O", "Na", multiplier=2.0)
-
-    so4_mg_l = normalized.get("SO4", 0.0)
-    if so4_mg_l:
-        normalized["S"] = oxide_to_element(so4_mg_l, "SO4", "S")
-
-    return normalized
+    return augment_water_profile_with_elements(mm, normalized)
 
 
 @app.get("/health")

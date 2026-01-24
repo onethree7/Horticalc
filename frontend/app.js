@@ -53,6 +53,9 @@ const solverAllowedFertilizersSelect = document.querySelector("#solverAllowedFer
 const solverFixedTable = document.querySelector("#solverFixedTable tbody");
 const solverFertilizersTable = document.querySelector("#solverFertilizersTable tbody");
 const solverTargetsResultsTable = document.querySelector("#solverTargetsResultsTable tbody");
+const solverTargetScaleDownButton = document.querySelector("#solverTargetScaleDown");
+const solverTargetScaleUpButton = document.querySelector("#solverTargetScaleUp");
+const solverTargetScaleValue = document.querySelector("#solverTargetScaleValue");
 const solveButton = document.querySelector("#solveBtn");
 const solverLitersInput = document.querySelector("#solverLiters");
 const solverUreaToggle = document.querySelector("#solverUreaToggle");
@@ -136,6 +139,12 @@ const solverTargetDefinitions = [
 const solverTargetValues = Object.fromEntries(
   solverTargetDefinitions.map((field) => [field.key, 0])
 );
+const solverTargetBaseValues = Object.fromEntries(
+  solverTargetDefinitions.map((field) => [field.key, 0])
+);
+let solverTargetScaleFactor = 1.0;
+const SOLVER_TARGET_SCALE_UP = 1.05;
+const SOLVER_TARGET_SCALE_DOWN = 0.95;
 const solverAllowedFertilizers = [];
 const solverFixedGrams = {};
 const saveAllowedFertilizersDebounced = debounce(() => {
@@ -477,13 +486,37 @@ function renderSolverTargetsTable() {
     input.step = "0.1";
     input.value = solverTargetValues[field.key] || 0;
     input.addEventListener("input", (event) => {
-      solverTargetValues[field.key] = Number(event.target.value) || 0;
+      const rawValue = Math.max(0, Number(event.target.value) || 0);
+      solverTargetValues[field.key] = rawValue;
+      solverTargetBaseValues[field.key] =
+        solverTargetScaleFactor > 0 ? roundSolverTargetValue(rawValue / solverTargetScaleFactor) : 0;
     });
     valueCell.appendChild(input);
 
     row.append(labelCell, valueCell);
     solverTargetsTable.appendChild(row);
   });
+}
+
+function roundSolverTargetValue(value) {
+  return Math.round(value * 1000) / 1000;
+}
+
+function updateSolverTargetScaleDisplay() {
+  if (solverTargetScaleValue) {
+    solverTargetScaleValue.textContent = `${solverTargetScaleFactor.toFixed(2)}x`;
+  }
+}
+
+function applySolverTargetScaleFactor(nextFactor) {
+  solverTargetScaleFactor = Math.max(0, nextFactor);
+  solverTargetDefinitions.forEach((field) => {
+    const baseValue = solverTargetBaseValues[field.key] || 0;
+    const scaledValue = roundSolverTargetValue(baseValue * solverTargetScaleFactor);
+    solverTargetValues[field.key] = Math.max(0, scaledValue);
+  });
+  updateSolverTargetScaleDisplay();
+  renderSolverTargetsTable();
 }
 
 function buildFertilizerCompKeys(fertilizers) {
@@ -1662,16 +1695,23 @@ function applyRecipe(recipe) {
 
 function applyNutrientSolution(solution) {
   const targets = solution?.targets_mg_per_l || solution?.targets || {};
+  solverTargetScaleFactor = 1.0;
   solverTargetDefinitions.forEach((field) => {
-    solverTargetValues[field.key] = Number(targets[field.key]) || 0;
+    const value = Number(targets[field.key]) || 0;
+    solverTargetBaseValues[field.key] = value;
+    solverTargetValues[field.key] = value;
   });
+  updateSolverTargetScaleDisplay();
   renderSolverTargetsTable();
 }
 
 function resetSolverTargets() {
+  solverTargetScaleFactor = 1.0;
   solverTargetDefinitions.forEach((field) => {
     solverTargetValues[field.key] = 0;
+    solverTargetBaseValues[field.key] = 0;
   });
+  updateSolverTargetScaleDisplay();
   renderSolverTargetsTable();
   renderSolverResults(null);
 }
@@ -1950,6 +1990,18 @@ solverAllowedFertilizersSelect.addEventListener("change", () => {
   renderSolverFixedTable();
   saveAllowedFertilizersDebounced();
 });
+
+if (solverTargetScaleDownButton) {
+  solverTargetScaleDownButton.addEventListener("click", () => {
+    applySolverTargetScaleFactor(solverTargetScaleFactor * SOLVER_TARGET_SCALE_DOWN);
+  });
+}
+
+if (solverTargetScaleUpButton) {
+  solverTargetScaleUpButton.addEventListener("click", () => {
+    applySolverTargetScaleFactor(solverTargetScaleFactor * SOLVER_TARGET_SCALE_UP);
+  });
+}
 
 solveButton.addEventListener("click", async () => {
   try {

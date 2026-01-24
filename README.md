@@ -2,7 +2,47 @@
 
 Horticalc ist ein Düngerrechner mit Python‑Backend. Die Berechnung basiert auf molaren Massen und stöchiometrisch korrekten Umrechnungen (z. B. Oxide → Elemente). Eingaben (Rezepte, Wasserprofile, Zielprofile) liegen als YAML, Stammdaten zu Düngern als CSV vor, sodass Ergebnisse reproduzierbar bleiben.
 
-Wichtig: Das Projekt ist in aktiver Entwicklung. Schnittstellen, Dateiformate und Annahmen können sich ändern.
+> [!IMPORTANT]
+> **Was ist stabil, was ist experimentell**
+> - **Stabil:** Kernberechnung (Oxide → Elemente, N‑Formen, Ionenbilanz) sowie CLI/API‑Flows.
+> - **Stabil mit bewusstem Scope:** Solver liefert robuste, nichtnegative Lösungen, ignoriert aber einige Targets gezielt in der Optimierung (siehe unten).
+> - **Experimentell:** Sluijsmann‑Kennzahlen und Teile der EC‑Herleitung/Abdeckung.
+>
+> Das Projekt ist in aktiver Entwicklung. Schnittstellen, Dateiformate und Annahmen können sich ändern.
+
+Kurzreferenzen statt Duplikate:
+- EC‑Details: `docs/EC.md`
+- GUI‑Details: `docs/GUI.MD`
+
+---
+
+## Eingaben und Einheiten (entscheidend für korrekte Erwartungen)
+
+### Wasserprofil (`data/water_profiles/*.yml`)
+- Einheiten: **mg/L als Molekül/Form**.
+- Beispiel: `NH4` im Wasserprofil bedeutet mg/L **NH4** (nicht „mg/L N als NH4“).
+
+### Targets im Solver (`targets_mg_per_l`)
+- Einheiten: **mg/L als Elemente**.
+- Beispiel: `N_total`, `N_NH4`, `P`, `K`, `Ca`, `Mg` sind Element‑Targets.
+
+### Dünger‑CSV (`data/fertilizers.csv`)
+- Werte sind **Fraktionen/Massenanteile** (z. B. `0.14` = 14%).
+- N‑Formen (`NH4`, `UREA`) sind als **Element‑N‑Fraktionen** zu verstehen.
+
+---
+
+## Bewusste Annahmen / Grenzen
+
+- **Ignorierte Targets im Solver:** In der Optimierung werden derzeit `S`, `SO4`, `Na`, `Cl` bewusst ignoriert. Sie werden im finalen Ergebnis dennoch berechnet und ausgegeben.
+- **Phosphat‑Spezies als Schalter:** `phosphate_species` ist ein expliziter Modell‑Schalter (`H2PO4` oder `HPO4`) und keine automatische pH‑Schätzung.
+- **EC ist eine Näherung mit Abdeckung:** EC wird aus modellierten Ionen berechnet. Nicht abgedeckte Ionen werden ignoriert und als Abdeckung/Warnung ausgewiesen (Details in `docs/EC.md`).
+
+---
+
+## Bekannte heikle Stellen (bewusst so dokumentiert)
+
+- **NH3‑Normalisierung:** Ammoniak/Ammonium‑Sicht ist modellseitig eine bewusste Vereinfachung. Die gewählte Behandlung ist Absicht und sollte bei Interpretationen berücksichtigt werden.
 
 ## Überblick: Komponenten (was macht was?)
 
@@ -95,8 +135,8 @@ Hinweis: Details zur GUI (Layout/Bedienung) stehen zusätzlich in `docs/GUI.MD`.
 - Enthält die Düngeranalysen als Massenanteile.
 - Analysenwerte sind Anteile (z. B. `0,14` = 14%).
 - N‑Formen:
-  - In der CSV sind `NH4`, `NO3`, `UREA` als N‑Anteil (Element N) hinterlegt.
-  - In der Ausgabe werden diese als `N_NH4`, `N_NO3`, `N_UREA` geführt.
+  - In der CSV sind `NH4` und `UREA` als N‑Anteil (Element N) hinterlegt.
+  - In der Ausgabe werden diese als `N_NH4` und `N_UREA` geführt.
 - Oxid‑Deklarationen wie auf Etiketten: `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O`.
 - Weitere deklarierte Formen: z. B. `SO4`, `CO3`, `SiO2`, `Cl`.
 - `weight_factor` („Gewicht“): Skalierungsfaktor für Flüssigdünger (z. B. Dichte‑/Massenfaktor). Effektive Gramm = Gramm * weight_factor.
@@ -146,7 +186,7 @@ Hinweis: In der Optimierung werden derzeit `S`, `SO4`, `Na`, `Cl` ignoriert. Die
 ### 1) Konzentrationen (mg/L)
 
 Der Rechner liefert u. a. Totals als mg/L:
-- Elemente: `N_total`, `N_NH4`, `N_NO3`, `N_UREA`, `P`, `K`, `Ca`, `Mg`, `Na`, `S`, `Cl`, `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`, `Si`, `C`
+- Elemente: `N_total`, `N_NH4`, `N_UREA`, `P`, `K`, `Ca`, `Mg`, `Na`, `S`, `Cl`, `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`, `Si`, `C`
 - Oxid‑Darstellung (wie Etiketten): `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O` usw. (zusätzlich zu den Element‑Totals)
 
 Umrechnungen erfolgen stöchiometrisch über Molmassen, z. B.:
@@ -155,8 +195,8 @@ Umrechnungen erfolgen stöchiometrisch über Molmassen, z. B.:
 - `CaO → Ca`, `MgO → Mg`, `Na2O → Na`, `SO4 → S`, `SiO2 → Si`, `CO3 → C`
 
 Wasserprofil‑Spezialfall:
-- `NH4`/`NO3` im Wasserprofil werden als Moleküle interpretiert und in `N_NH4`/`N_NO3` umgerechnet.
-- In `fertilizers.csv` sind `NH4`/`NO3`/`UREA` bereits als „N‑Anteil“ (Element N) hinterlegt.
+- `NH4` im Wasserprofil wird als Molekül interpretiert und in `N_NH4` umgerechnet.
+- In `fertilizers.csv` sind `NH4`/`UREA` bereits als „N‑Anteil“ (Element N) hinterlegt.
 
 ### 2) Ionen (mmol/L, meq/L) und Ladungsbilanz
 
@@ -166,7 +206,7 @@ Kationen (typisch):
 - `NH4+`, `K+`, `Ca2+`, `Mg2+`, `Na+`
 
 Anionen (typisch):
-- `NO3-`, `H2PO4-` oder `HPO4^2-` (je nach `phosphate_species`), `SO4^2-`, `Cl-`
+- `H2PO4-` oder `HPO4^2-` (je nach `phosphate_species`), `SO4^2-`, `Cl-`
 - optional: `HCO3-` und `CO3^2-`
 
 Ergebnis:

@@ -513,9 +513,16 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
         if not profile_path.exists():
             raise HTTPException(status_code=404, detail="Water profile not found")
         profile = load_water_profile_data(profile_path)
-        water_mg_l = sanitize_water_profile(profile.get("mg_per_l") or {})
+        mg_per_l = profile.get("mg_per_l") or {}
+        for key in mg_per_l:
+            if key not in ALLOWED_WATER_KEYS:
+                raise HTTPException(status_code=400, detail=f"Invalid water key: {key}")
+        water_mg_l = sanitize_water_profile(mg_per_l)
         osmosis_percent = float(profile.get("osmosis_percent") or 0)
     elif payload.water_mg_l:
+        for key, _ in payload.water_mg_l.items():
+            if key not in ALLOWED_WATER_KEYS:
+                raise HTTPException(status_code=400, detail=f"Invalid water key: {key}")
         water_mg_l = sanitize_water_profile(payload.water_mg_l)
         if payload.osmosis_percent is not None:
             osmosis_percent = float(payload.osmosis_percent)

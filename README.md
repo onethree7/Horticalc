@@ -2,7 +2,20 @@
 
 Horticalc ist ein Düngerrechner mit Python‑Backend. Die Berechnung basiert auf molaren Massen und stöchiometrisch korrekten Umrechnungen (z. B. Oxide → Elemente). Eingaben (Rezepte, Wasserprofile, Zielprofile) liegen als YAML, Stammdaten zu Düngern als CSV vor, sodass Ergebnisse reproduzierbar bleiben.
 
-Wichtig: Das Projekt ist in aktiver Entwicklung. Schnittstellen, Dateiformate und Annahmen können sich ändern.
+## Was ist stabil, was ist experimentell
+
+> **Erwartungsmanagement (kurz & ehrlich):**
+>
+> **Stabil / belastbar:**
+> - Kernberechnung (Oxide → Elemente, molare Umrechnungen, Ionenbilanz als Modell).
+> - CLI/Backend-Workflows mit YAML/CSV als Datenquellen.
+>
+> **Experimentell / kann sich ändern:**
+> - Solver-Heuristiken und deren Gewichtungen/Strafen.
+> - EC-Modellierung im Detail (Parameterabdeckung, Fallbacks, Reporting).
+> - Optionale Zusatzmetriken wie Sluijsmann-Kennzahlen.
+>
+> Das Projekt ist aktiv in Entwicklung; Schnittstellen, Dateiformate und Annahmen können sich ändern.
 
 ## Überblick: Komponenten (was macht was?)
 
@@ -89,14 +102,32 @@ Hinweis: Details zur GUI (Layout/Bedienung) stehen zusätzlich in `docs/GUI.MD`.
 
 ---
 
+## Eingaben und Einheiten
+
+Damit Solver, Rechner und GUI konsistent bleiben, gelten folgende Konventionen:
+
+- **Wasserprofil (`data/water_profiles/*.yml`)**
+  - Werte sind **mg/L als Molekül/Form** (z. B. `NH4`, `HCO3`, `SO4`).
+  - N-Formen im Wasserprofil werden als Formen interpretiert und intern auf Element-N umgerechnet.
+
+- **Targets (`targets_mg_per_l`)**
+  - Zielwerte sind **mg/L als Elemente** (z. B. `N`, `P`, `K`, `Ca`, `Mg`).
+  - Der Solver arbeitet auf dieser Element-Basis.
+
+- **Dünger-CSV (`data/fertilizers.csv`)**
+  - Analysen sind **Fraktionen/Massenanteile** (z. B. `0.14` = 14 %).
+  - Bei N-Formen (`NH4`, `UREA`) sind die Werte als **Element-N** zu verstehen (nicht als Molekülmasse).
+
+---
+
 ## Datenmodell (Dateien und Bedeutung)
 
 1) `data/fertilizers.csv` (Dünger‑Stammdaten)
 - Enthält die Düngeranalysen als Massenanteile.
 - Analysenwerte sind Anteile (z. B. `0,14` = 14%).
 - N‑Formen:
-  - In der CSV sind `NH4`, `NO3`, `UREA` als N‑Anteil (Element N) hinterlegt.
-  - In der Ausgabe werden diese als `N_NH4`, `N_NO3`, `N_UREA` geführt.
+  - In der CSV sind `NH4` und `UREA` als N‑Anteil (Element N) hinterlegt.
+  - In der Ausgabe werden diese als `N_NH4` und `N_UREA` geführt.
 - Oxid‑Deklarationen wie auf Etiketten: `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O`.
 - Weitere deklarierte Formen: z. B. `SO4`, `CO3`, `SiO2`, `Cl`.
 - `weight_factor` („Gewicht“): Skalierungsfaktor für Flüssigdünger (z. B. Dichte‑/Massenfaktor). Effektive Gramm = Gramm * weight_factor.
@@ -141,66 +172,24 @@ Hinweis: In der Optimierung werden derzeit `S`, `SO4`, `Na`, `Cl` ignoriert. Die
 
 ---
 
-## Was wird gerechnet? (Inhalte der Ausgabe)
+## Bewusste Annahmen / Grenzen
 
-### 1) Konzentrationen (mg/L)
+- **Ignorierte Targets im Solver:** In der Optimierung werden derzeit `S`, `SO4`, `Na`, `Cl` ignoriert. Diese Werte werden im finalen Ergebnis trotzdem berechnet und ausgewiesen.
+- **Phosphat-Spezies als Schalter:** `phosphate_species` ist eine bewusste Modellannahme (kein automatisches pH-Modell).
+- **EC ist eine Näherung inkl. Abdeckung:** Nicht alle Ionen sind gleich gut parametrisiert. Die EC-Ausgabe führt daher Abdeckung/Warnungen mit. Details: `docs/EC.md`.
 
-Der Rechner liefert u. a. Totals als mg/L:
-- Elemente: `N_total`, `N_NH4`, `N_NO3`, `N_UREA`, `P`, `K`, `Ca`, `Mg`, `Na`, `S`, `Cl`, `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`, `Si`, `C`
-- Oxid‑Darstellung (wie Etiketten): `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O` usw. (zusätzlich zu den Element‑Totals)
+## Bekannte heikle Stellen
 
-Umrechnungen erfolgen stöchiometrisch über Molmassen, z. B.:
-- `P2O5 → P` mit Faktor `2*M(P) / M(P2O5)`
-- `K2O → K` mit Faktor `2*M(K) / M(K2O)`
-- `CaO → Ca`, `MgO → Mg`, `Na2O → Na`, `SO4 → S`, `SiO2 → Si`, `CO3 → C`
+- **NH3-Normalisierung (bewusste Entscheidung):** Ammoniak wird im Modell explizit behandelt; die gewählte Normalisierung ist dokumentiert und soll konsistent bleiben.
 
-Wasserprofil‑Spezialfall:
-- `NH4`/`NO3` im Wasserprofil werden als Moleküle interpretiert und in `N_NH4`/`N_NO3` umgerechnet.
-- In `fertilizers.csv` sind `NH4`/`NO3`/`UREA` bereits als „N‑Anteil“ (Element N) hinterlegt.
+## Weiterführende Doku
 
-### 2) Ionen (mmol/L, meq/L) und Ladungsbilanz
+- EC-Modell & Hintergründe: `docs/EC.md`
+- GUI/Bedienung/Flows: `docs/GUI.MD`
 
-Aus den Totals werden die Hauptionen für eine klassische Ladungsbilanz gebildet.
+## Sluijsmann‑Kennzahlen (experimentell)
 
-Kationen (typisch):
-- `NH4+`, `K+`, `Ca2+`, `Mg2+`, `Na+`
-
-Anionen (typisch):
-- `NO3-`, `H2PO4-` oder `HPO4^2-` (je nach `phosphate_species`), `SO4^2-`, `Cl-`
-- optional: `HCO3-` und `CO3^2-`
-
-Ergebnis:
-- Summe Kationen (meq/L)
-- Summe Anionen (meq/L)
-- Fehler in % (signed und absolut)
-
-Wichtig: Phosphat‑Spezies ist pH‑abhängig; daher ist `phosphate_species` ein expliziter Schalter. Es wird hier nicht automatisch aus pH geschätzt.
-
-### 3) EC (Electrical Conductivity) — Näherung
-
-EC wird aus der Ionenzusammensetzung berechnet und ist eine Näherung.
-
-- Ansatz:
-  - Für unterstützte Ionen wird ein McCleskey‑Modell verwendet (temperaturabhängige Parameter + Korrektur über Ionenstärke).
-  - Für einzelne Ionen existiert eine Fallback‑Leitfähigkeit (z. B. bei fehlenden McCleskey‑Parametern) mit einfacher Temperatur‑Skalierung.
-  - Ionen ohne Parameter werden ignoriert und als „nicht abgedeckt“ gekennzeichnet.
-- Ausgabe:
-  - EC bei 18 °C und 25 °C
-  - optional ein Beitrags‑Breakdown pro Ion
-  - optional Transportzahlen
-  - optional ATC‑Hochrechnung auf 25 °C über einen festen Alpha‑Faktor
-
-Interpretation:
-- Die EC‑Werte sind nicht „gemessen“, sondern aus Tabellen/Parametern berechnet.
-- Abdeckung und Warnungen werden im EC‑Output mitgeführt (welche Ionen einbezogen/ignoriert wurden).
-- Details, Formeln und Parameter sind in `docs/EC.md` dokumentiert.
-
-### 4) Sluijsmann‑Kennzahlen (experimentell / hypothetisch)
-
-Optional kann die Berechnung zusätzliche Kennzahlen nach „Sluijsmann“ erzeugen.
-- Status: experimentell/hypothetisch; das Modell stammt aus der Agrarwirtschaft und ist nicht als Standard‑Werkzeug für hydroponische Nährlösungen etabliert.
-- Aktivierung: über den Schlüssel `sluijsmann` im Rezept (siehe `recipes/*.yml`).
-- Implementierung: `src/horticalc/sluijsmann.py` (Tests: `tests/test_sluijsmann.py`).
+Optional können zusätzliche Kennzahlen aktiviert werden. Diese gelten als experimentell.
 
 ---
 
@@ -252,3 +241,4 @@ Optional kann die Berechnung zusätzliche Kennzahlen nach „Sluijsmann“ erzeu
 ```bash
 python -m pytest -q
 ```
+

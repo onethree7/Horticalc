@@ -222,7 +222,6 @@ def _solve_weights(
         return np.array([])
     if fixed.size:
         b = b - A @ fixed
-    b = np.maximum(b, 0.0)
     A_var = A[:, variable_mask]
     if A_var.size == 0:
         return np.zeros(int(variable_mask.sum()))

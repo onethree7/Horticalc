@@ -416,15 +416,12 @@ class CalcResult:
     sluijsmann: Dict[str, float | dict]
     osmosis_percent: float
 
-    def to_dict(self) -> dict:
+    def to_dict(self, include_forms: bool = True) -> dict:
         from .metrics import format_npks
         from .ec import compute_ec
 
-        return {
+        payload = {
             "liters": self.liters,
-            "forms_mg_per_l": self.forms_mg_l,
-            "water_forms_mg_per_l": self.water_forms_mg_l,
-            "fertilizer_forms_mg_per_l": self.fertilizer_forms_mg_l,
             "elements_mg_per_l": self.elements_mg_l,
             "oxides_mg_per_l": self.oxides_mg_l,
             "ions_mmol_per_l": self.ions_mmol_l,
@@ -447,6 +444,15 @@ class CalcResult:
             "sluijsmann": self.sluijsmann,
             "osmosis_percent": self.osmosis_percent,
         }
+        if include_forms:
+            payload.update(
+                {
+                    "forms_mg_per_l": self.forms_mg_l,
+                    "water_forms_mg_per_l": self.water_forms_mg_l,
+                    "fertilizer_forms_mg_per_l": self.fertilizer_forms_mg_l,
+                }
+            )
+        return payload
 
 
 def compute_solution(

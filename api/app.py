@@ -68,9 +68,9 @@ class RecipeRequest(BaseModel):
 
 class CalculationResponse(BaseModel):
     liters: float
-    forms_mg_per_l: Dict[str, float]
-    water_forms_mg_per_l: Dict[str, float]
-    fertilizer_forms_mg_per_l: Dict[str, float]
+    forms_mg_per_l: Dict[str, float] | None = None
+    water_forms_mg_per_l: Dict[str, float] | None = None
+    fertilizer_forms_mg_per_l: Dict[str, float] | None = None
     elements_mg_per_l: Dict[str, float]
     oxides_mg_per_l: Dict[str, float]
     ions_mmol_per_l: Dict[str, float]
@@ -472,7 +472,7 @@ async def save_recipe_profile(request: Request) -> dict:
 
 
 @app.post("/calculate", response_model=CalculationResponse)
-def calculate(payload: RecipeRequest) -> CalculationResponse:
+def calculate(payload: RecipeRequest, include_forms: bool = True) -> CalculationResponse:
     water_mg_l: Dict[str, float] = {}
     osmosis_percent = 0.0
     if payload.water_profile_name:
@@ -514,7 +514,7 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    return CalculationResponse(**result.to_dict())
+    return CalculationResponse(**result.to_dict(include_forms=include_forms))
 
 
 @app.post("/solve", response_model=SolveResponse)

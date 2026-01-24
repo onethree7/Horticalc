@@ -9,7 +9,7 @@ from horticalc.core import compute_solution
 from horticalc.data_io import load_fertilizers, load_molar_masses
 
 
-def test_forms_mg_per_l_includes_water_and_fertilizer() -> None:
+def _compute_payload(include_forms: bool) -> dict:
     fertilizers = load_fertilizers()
     molar_masses = load_molar_masses()
     recipe = {
@@ -21,7 +21,11 @@ def test_forms_mg_per_l_includes_water_and_fertilizer() -> None:
     water_mg_l = {"NO3": 10.0, "HCO3": 20.0}
 
     result = compute_solution(recipe, fertilizers, molar_masses, water_mg_l=water_mg_l)
-    payload = result.to_dict()
+    return result.to_dict(include_forms=include_forms)
+
+
+def test_forms_mg_per_l_included_by_default() -> None:
+    payload = _compute_payload(include_forms=True)
 
     forms = payload["forms_mg_per_l"]
     water_forms = payload["water_forms_mg_per_l"]
@@ -33,3 +37,15 @@ def test_forms_mg_per_l_includes_water_and_fertilizer() -> None:
     assert water_forms["HCO3"] == pytest.approx(20.0, rel=0, abs=1e-6)
     assert forms["NO3"] == pytest.approx(110.0, rel=0, abs=1e-6)
     assert forms["HCO3"] == pytest.approx(20.0, rel=0, abs=1e-6)
+
+
+def test_forms_mg_per_l_can_be_excluded() -> None:
+    payload = _compute_payload(include_forms=False)
+
+    assert "forms_mg_per_l" not in payload
+    assert "water_forms_mg_per_l" not in payload
+    assert "fertilizer_forms_mg_per_l" not in payload
+
+    assert "elements_mg_per_l" in payload
+    assert "oxides_mg_per_l" in payload
+    assert "ions_mmol_per_l" in payload

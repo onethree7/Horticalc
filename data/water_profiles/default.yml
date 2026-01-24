@@ -3,9 +3,7 @@ source: Excel Wasserwerte (inkl. Osmosefaktor)
 osmosis_percent: 66
 mg_per_l:
   NH4: 0.02
-  NH3: 0
   NO3: 2
-  NO2: 0
   PO4: 0
   P: 0
   K: 2.6

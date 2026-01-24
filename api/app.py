@@ -137,9 +137,7 @@ class RecipePayload(BaseModel):
 
 ALLOWED_WATER_KEYS = {
     "NH4",
-    "NH3",
     "NO3",
-    "NO2",
     "PO4",
     "P",
     "SO4",

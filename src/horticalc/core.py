@@ -171,9 +171,6 @@ def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) 
     for key in WATER_PROFILE_KEYS:
         add(key, raw.get(key, 0.0))
 
-    add("NH4", raw.get("NH3", 0.0))
-    add("NO3", raw.get("NO2", 0.0))
-
     add("P2O5", p2o5_from_po4(raw.get("PO4", 0.0)))
     add("P2O5", p2o5_from_p(raw.get("P", 0.0)))
 

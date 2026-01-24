@@ -160,9 +160,7 @@ const saveAllowedFertilizersDebounced = debounce(() => {
 
 const waterFieldDefinitions = [
   { key: "NH4", label: "Ammonium in NH4" },
-  { key: "NH3", label: "Ammoniak in NH3" },
   { key: "NO3", label: "Nitrat in NO3" },
-  { key: "NO2", label: "Nitrit in NO2" },
   { key: "PO4", label: "Phosphat in PO4" },
   { key: "P", label: "Phosphor in P" },
   { key: "K", label: "Kalium in K" },

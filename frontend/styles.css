@@ -488,8 +488,8 @@ main {
 }
 
 .summary-metric-card.ec-metric {
-  align-items: flex-start;
-  text-align: left;
+  align-items: center;
+  text-align: center;
 }
 
 .metric-row {

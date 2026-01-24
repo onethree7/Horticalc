@@ -257,6 +257,11 @@
           <div class="solver-columns">
             <div class="solver-column">
               <h3>Zielwerte (mg/L)</h3>
+              <div class="actions inline-actions">
+                <button id="solverTargetScaleDown" type="button">-</button>
+                <button id="solverTargetScaleUp" type="button">+</button>
+                <span class="inline-hint">Skalierung <span id="solverTargetScaleValue">1.00x</span></span>
+              </div>
               <div class="table-wrap">
                 <table class="grid grid--form" id="solverTargetsTable">
                   <thead>

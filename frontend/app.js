@@ -33,6 +33,9 @@ const solverProfileActions = document.querySelector("#solverProfileActions");
 const saveSolverAsRecipeButton = document.querySelector("#saveSolverAsRecipe");
 const applySolverToCalculatorButton = document.querySelector("#applySolverToCalculator");
 const applyScaleToCalcLiters = document.querySelector("#applyScaleToCalcLiters");
+const calculatorScaleDownButton = document.querySelector("#calculatorScaleDown");
+const calculatorScaleUpButton = document.querySelector("#calculatorScaleUp");
+const calculatorScaleValue = document.querySelector("#calculatorScaleValue");
 
 const waterSummaryTable = document.querySelector("#waterSummaryTable");
 const oxideSummaryTable = document.querySelector("#oxideSummaryTable");
@@ -142,9 +145,13 @@ const solverTargetValues = Object.fromEntries(
 const solverTargetBaseValues = Object.fromEntries(
   solverTargetDefinitions.map((field) => [field.key, 0])
 );
+const calculatorBaseAmounts = [0];
 let solverTargetScaleFactor = 1.0;
+let calculatorScaleFactor = 1.0;
 const SOLVER_TARGET_SCALE_UP = 1.05;
 const SOLVER_TARGET_SCALE_DOWN = 0.95;
+const CALCULATOR_SCALE_UP = SOLVER_TARGET_SCALE_UP;
+const CALCULATOR_SCALE_DOWN = SOLVER_TARGET_SCALE_DOWN;
 const solverAllowedFertilizers = [];
 const solverFixedGrams = {};
 const saveAllowedFertilizersDebounced = debounce(() => {
@@ -489,7 +496,7 @@ function renderSolverTargetsTable() {
       const rawValue = Math.max(0, Number(event.target.value) || 0);
       solverTargetValues[field.key] = rawValue;
       solverTargetBaseValues[field.key] =
-        solverTargetScaleFactor > 0 ? roundSolverTargetValue(rawValue / solverTargetScaleFactor) : 0;
+        solverTargetScaleFactor > 0 ? roundScaledValue(rawValue / solverTargetScaleFactor) : 0;
     });
     valueCell.appendChild(input);
 
@@ -498,25 +505,76 @@ function renderSolverTargetsTable() {
   });
 }
 
-function roundSolverTargetValue(value) {
+function roundScaledValue(value) {
   return Math.round(value * 1000) / 1000;
 }
 
-function updateSolverTargetScaleDisplay() {
-  if (solverTargetScaleValue) {
-    solverTargetScaleValue.textContent = `${solverTargetScaleFactor.toFixed(2)}x`;
+function updateScaleDisplay(displayEl, factor) {
+  if (displayEl) {
+    displayEl.textContent = `${factor.toFixed(2)}x`;
   }
 }
 
-function applySolverTargetScaleFactor(nextFactor) {
-  solverTargetScaleFactor = Math.max(0, nextFactor);
-  solverTargetDefinitions.forEach((field) => {
-    const baseValue = solverTargetBaseValues[field.key] || 0;
-    const scaledValue = roundSolverTargetValue(baseValue * solverTargetScaleFactor);
-    solverTargetValues[field.key] = Math.max(0, scaledValue);
+function applyScaleFactor({
+  nextFactor,
+  definitions,
+  getBaseValue,
+  setScaledValue,
+  setFactor,
+  render,
+  displayEl,
+}) {
+  const factor = Math.max(0, nextFactor);
+  setFactor(factor);
+  definitions.forEach((definition) => {
+    const baseValue = getBaseValue(definition) || 0;
+    const scaledValue = roundScaledValue(baseValue * factor);
+    setScaledValue(definition, Math.max(0, scaledValue));
   });
-  updateSolverTargetScaleDisplay();
-  renderSolverTargetsTable();
+  updateScaleDisplay(displayEl, factor);
+  render();
+}
+
+function updateSolverTargetScaleDisplay() {
+  updateScaleDisplay(solverTargetScaleValue, solverTargetScaleFactor);
+}
+
+function applySolverTargetScaleFactor(nextFactor) {
+  applyScaleFactor({
+    nextFactor,
+    definitions: solverTargetDefinitions,
+    getBaseValue: (field) => solverTargetBaseValues[field.key],
+    setScaledValue: (field, value) => {
+      solverTargetValues[field.key] = value;
+    },
+    setFactor: (factor) => {
+      solverTargetScaleFactor = factor;
+    },
+    render: renderSolverTargetsTable,
+    displayEl: solverTargetScaleValue,
+  });
+}
+
+function updateCalculatorScaleDisplay() {
+  updateScaleDisplay(calculatorScaleValue, calculatorScaleFactor);
+}
+
+function applyCalculatorScaleFactor(nextFactor) {
+  const definitions = fertilizerAmounts.map((_, index) => index);
+  applyScaleFactor({
+    nextFactor,
+    definitions,
+    getBaseValue: (index) => calculatorBaseAmounts[index],
+    setScaledValue: (index, value) => {
+      fertilizerAmounts[index] = value;
+    },
+    setFactor: (factor) => {
+      calculatorScaleFactor = factor;
+    },
+    render: renderCalculatorTable,
+    displayEl: calculatorScaleValue,
+  });
+  scheduleRecalculate();
 }
 
 function buildFertilizerCompKeys(fertilizers) {
@@ -963,6 +1021,11 @@ function renderSelectionTable() {
 function renderCalculatorTable() {
   renderTableRows(calculatorTable, selectedFertilizers.length, (i) => {
     const row = document.createElement("tr");
+    if (calculatorBaseAmounts[i] === undefined) {
+      const currentAmount = Math.max(0, Number(fertilizerAmounts[i]) || 0);
+      calculatorBaseAmounts[i] =
+        calculatorScaleFactor > 0 ? roundScaledValue(currentAmount / calculatorScaleFactor) : 0;
+    }
 
     const indexCell = document.createElement("td");
     indexCell.textContent = `${i + 1}`;
@@ -978,7 +1041,10 @@ function renderCalculatorTable() {
     input.step = "0.01";
     input.value = fertilizerAmounts[i];
     input.addEventListener("input", (event) => {
-      fertilizerAmounts[i] = Number(event.target.value) || 0;
+      const rawValue = Math.max(0, Number(event.target.value) || 0);
+      fertilizerAmounts[i] = rawValue;
+      calculatorBaseAmounts[i] =
+        calculatorScaleFactor > 0 ? roundScaledValue(rawValue / calculatorScaleFactor) : 0;
       scheduleRecalculate();
     });
     amountCell.appendChild(input);
@@ -1672,23 +1738,29 @@ function applyRecipe(recipe) {
   const fertilizers = Array.isArray(recipe.fertilizers) ? recipe.fertilizers : [];
   selectedFertilizers.length = 0;
   fertilizerAmounts.length = 0;
+  calculatorBaseAmounts.length = 0;
+  calculatorScaleFactor = 1.0;
 
   fertilizers.forEach((entry) => {
     const name = entry.name || "";
     const match = fertilizerOptions.find((opt) => opt.name === name);
+    const grams = Math.max(0, Number(entry.grams) || 0);
     selectedFertilizers.push({
       name,
       form: match ? match.form : "",
       weight: match ? match.weight_factor : "",
     });
-    fertilizerAmounts.push(Number(entry.grams) || 0);
+    fertilizerAmounts.push(grams);
+    calculatorBaseAmounts.push(roundScaledValue(grams));
   });
 
   if (!selectedFertilizers.length) {
     selectedFertilizers.push({ name: "", form: "", weight: "" });
     fertilizerAmounts.push(0);
+    calculatorBaseAmounts.push(0);
   }
 
+  updateCalculatorScaleDisplay();
   renderSelectionTable();
   renderCalculatorTable();
 }
@@ -1750,6 +1822,7 @@ function applyWaterProfile(profile) {
 function addFertilizerRow() {
   selectedFertilizers.push({ name: "", form: "", weight: "" });
   fertilizerAmounts.push(0);
+  calculatorBaseAmounts.push(0);
   renderSelectionTable();
   renderCalculatorTable();
 }
@@ -1761,6 +1834,7 @@ function removeFertilizerRow() {
 
   selectedFertilizers.pop();
   fertilizerAmounts.pop();
+  calculatorBaseAmounts.pop();
   renderSelectionTable();
   renderCalculatorTable();
 }
@@ -2003,6 +2077,18 @@ if (solverTargetScaleUpButton) {
   });
 }
 
+if (calculatorScaleDownButton) {
+  calculatorScaleDownButton.addEventListener("click", () => {
+    applyCalculatorScaleFactor(calculatorScaleFactor * CALCULATOR_SCALE_DOWN);
+  });
+}
+
+if (calculatorScaleUpButton) {
+  calculatorScaleUpButton.addEventListener("click", () => {
+    applyCalculatorScaleFactor(calculatorScaleFactor * CALCULATOR_SCALE_UP);
+  });
+}
+
 solveButton.addEventListener("click", async () => {
   try {
     const data = await solveRecipe();
@@ -2185,6 +2271,7 @@ summaryView = lsGet(SUMMARY_VIEW_KEY, "ion");
 setSummaryView(summaryView);
 
 initializeFertilizerTables();
+updateCalculatorScaleDisplay();
 renderSolverTargetsTable();
 setMode("calculator");
 updateSolverResultActions();

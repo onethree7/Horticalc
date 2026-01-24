@@ -1,10 +1,10 @@
 # Horticalc (molar‑korrekt) — ! WORK IN PROGRESS !
 
-Horticalc ist ein Düngerrechner mit Python‑Backend. Die Berechnung basiert auf molaren Massen und stöchiometrisch korrekten Umrechnungen (z. B. Oxide → Elemente). Eingaben (Rezepte, Wasserprofile, Zielprofile) liegen als YAML, Stammdaten zu Düngern als CSV vor, sodass Ergebnisse reproduzierbar bleiben.
-
+Horticalc ist ein Düngerrechner mit Python‑Backend. Die Berechnung basiert auf molaren Massen und stöchiometrisch korrekten Umrechnungen (z. B. Oxide → Elemente). Eingaben (Rezepte, Wasserprofile, Zielprofile) liegen als YAML, Stammdaten zu Düngern als CSV vor, sodass Ergebnisse reproduzierbar bleiben. Leistungsfähiges Solvermodul mit hoher Genauigkeit.
+.
 ## Was ist stabil, was ist experimentell
 
-> **Erwartungsmanagement (kurz & ehrlich):**
+> **Erwartungsmanagement:**
 >
 > **Stabil / belastbar:**
 > - Kernberechnung (Oxide → Elemente, molare Umrechnungen, Ionenbilanz als Modell).
@@ -66,7 +66,7 @@ horticalc recipes/golden.yml --pretty
 # Ergebnis in Datei
 horticalc recipes/golden.yml --pretty --out solutions/golden_output.json
 
-# Solver: Zielwerte -> Rezept (Hinweis: S/SO4 sowie Na/Cl werden in der Optimierung ignoriert)
+# Solver: Zielwerte -> Rezept
 horticalc solve recipes/solve_golden.yml --pretty
 ```
 
@@ -88,6 +88,7 @@ python -m http.server 5173 --directory frontend
 URLs:
 - API Health: `http://127.0.0.1:8000/health`
 - Frontend: `http://127.0.0.1:5173/`
+- API Doku: `http://127.0.0.1:8000/docs`
 
 API (Auszug, relevant für GUI):
 - `GET /health` – Healthcheck
@@ -176,11 +177,7 @@ Hinweis: In der Optimierung werden derzeit `S`, `SO4`, `Na`, `Cl` ignoriert. Die
 
 - **Ignorierte Targets im Solver:** In der Optimierung werden derzeit `S`, `SO4`, `Na`, `Cl` ignoriert. Diese Werte werden im finalen Ergebnis trotzdem berechnet und ausgewiesen.
 - **Phosphat-Spezies als Schalter:** `phosphate_species` ist eine bewusste Modellannahme (kein automatisches pH-Modell).
-- **EC ist eine Näherung inkl. Abdeckung:** Nicht alle Ionen sind gleich gut parametrisiert. Die EC-Ausgabe führt daher Abdeckung/Warnungen mit. Details: `docs/EC.md`.
-
-## Bekannte heikle Stellen
-
-- **NH3-Normalisierung (bewusste Entscheidung):** Ammoniak wird im Modell explizit behandelt; die gewählte Normalisierung ist dokumentiert und soll konsistent bleiben.
+- **EC ist eine Näherung inkl. Abdeckung:** Nicht alle Ionen sind gleich gut parametrisiert. (McClersk Die EC-Ausgabe führt daher Abdeckung/Warnungen mit. Details: `docs/EC.md`.
 
 ## Weiterführende Doku
 

@@ -362,6 +362,9 @@ def _compute_ions(
 @dataclass
 class CalcResult:
     liters: float
+    forms_mg_l: Dict[str, float]
+    water_forms_mg_l: Dict[str, float]
+    fertilizer_forms_mg_l: Dict[str, float]
     elements_mg_l: Dict[str, float]
     oxides_mg_l: Dict[str, float]
     ions_mmol_l: Dict[str, float]
@@ -388,6 +391,9 @@ class CalcResult:
 
         return {
             "liters": self.liters,
+            "forms_mg_per_l": self.forms_mg_l,
+            "water_forms_mg_per_l": self.water_forms_mg_l,
+            "fertilizer_forms_mg_per_l": self.fertilizer_forms_mg_l,
             "elements_mg_per_l": self.elements_mg_l,
             "oxides_mg_per_l": self.oxides_mg_l,
             "ions_mmol_per_l": self.ions_mmol_l,
@@ -448,6 +454,12 @@ def compute_solution(
 
     # 2) Add water baseline (water profile is in mg/L of its own forms)
     # Water NH4/NO3 are interpreted as molecules (NH4, NO3), NOT "N as ...".
+    water_forms_mg_l = {k: water_forms.get(k, 0.0) for k in COMP_COLS}
+    fertilizer_forms_mg_l = dict(forms_mg_l)
+    total_forms_mg_l = {
+        k: fertilizer_forms_mg_l.get(k, 0.0) + water_forms_mg_l.get(k, 0.0)
+        for k in COMP_COLS
+    }
 
     # 3) Compute element totals (mg/L), oxides, and ions
     elements, oxides, ions_mmol, ions_meq, ion_balance = _compute_solution_state(
@@ -488,6 +500,9 @@ def compute_solution(
 
     return CalcResult(
         liters=liters,
+        forms_mg_l=total_forms_mg_l,
+        water_forms_mg_l=water_forms_mg_l,
+        fertilizer_forms_mg_l=fertilizer_forms_mg_l,
         elements_mg_l=elements,
         oxides_mg_l=oxides,
         ions_mmol_l=ions_mmol,

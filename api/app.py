@@ -68,6 +68,9 @@ class RecipeRequest(BaseModel):
 
 class CalculationResponse(BaseModel):
     liters: float
+    forms_mg_per_l: Dict[str, float]
+    water_forms_mg_per_l: Dict[str, float]
+    fertilizer_forms_mg_per_l: Dict[str, float]
     elements_mg_per_l: Dict[str, float]
     oxides_mg_per_l: Dict[str, float]
     ions_mmol_per_l: Dict[str, float]

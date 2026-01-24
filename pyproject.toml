@@ -1,7 +1,7 @@
 [project]
 name = "horticalc"
 version = "0.1.0"
-description = "Horticalc (molar-correct) – CSV/YAML Backend statt Excel"
+description = "Horticalc (molar-correct) – CSV/YAML Backend"
 requires-python = ">=3.10"
 dependencies = [
   "PyYAML>=6.0",

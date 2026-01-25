@@ -445,7 +445,7 @@ function updateModeToggleUI() {
 const profileConfigs = {
   calculator: {
     title: "Recipe",
-    hint: "Recipe lokal speichern/laden.",
+    hint: "Recipe lokal speichern/laden. Solver-Rezepte sind unter Nutrient Solution gespeichert.",
   },
   solver: {
     title: "Nutrient Solution",

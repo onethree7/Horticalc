@@ -412,6 +412,10 @@ def recipes() -> List[dict]:
         return []
     recipes_out = []
     for path in sorted(RECIPES_DIR.glob("*.yml")):
+        if path.stem.startswith("solve_"):
+            continue
+        if path.name == "default.yml":
+            continue
         data = load_recipe(path)
         recipes_out.append(
             {

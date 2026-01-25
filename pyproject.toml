@@ -6,6 +6,7 @@ requires-python = ">=3.10"
 dependencies = [
   "PyYAML>=6.0",
   "numpy>=1.26.0",
+  "pyinstaller>=6.6.0",
 ]
 
 [project.scripts]

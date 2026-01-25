@@ -72,12 +72,10 @@ horticalc solve recipes/solve_golden.yml --pretty
 
 ---
 
-## Build/Packaging (PyInstaller)
-
-Zusätzlich zu den Runtime-Abhängigkeiten gibt es eine kleine Dev-/Build-Liste.
+Build/Packaging (PyInstaller):
 
 ```bash
-python -m pip install -r requirements.txt -r requirements-dev.txt
+python -m pip install -r requirements.txt
 ```
 
 ---

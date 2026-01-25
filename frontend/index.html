@@ -12,7 +12,7 @@
       <div class="api-config">
         <label for="apiBase">API Base URL</label>
         <input id="apiBase" type="url" value="http://localhost:8000" />
-        <button id="reloadData">Dünger laden</button>
+        <button id="reloadData" class="btn btn--outline">Dünger laden</button>
       </div>
     </header>
 
@@ -48,15 +48,15 @@
               <label for="waterProfileSelect">Profil auswählen</label>
               <div class="water-control-row">
                 <select id="waterProfileSelect"></select>
-                <button id="loadWaterProfile" type="button">Laden</button>
-                <button id="resetWaterProfile" type="button">Reset Default</button>
+                <button id="loadWaterProfile" class="btn btn--outline" type="button">Laden</button>
+                <button id="resetWaterProfile" class="btn btn--outline" type="button">Reset Default</button>
               </div>
             </div>
             <div class="water-control-group">
               <label for="waterProfileName">Profilname zum Speichern</label>
               <div class="water-control-row">
                 <input id="waterProfileName" type="text" placeholder="z.B. stadenburdenhard" />
-                <button id="saveWaterProfile" type="button">Speichern</button>
+                <button id="saveWaterProfile" class="btn btn--outline" type="button">Speichern</button>
               </div>
             </div>
             <div class="water-control-group water-settings">
@@ -96,25 +96,25 @@
             <label for="profileSelect">Profil auswählen</label>
             <div class="water-control-row">
               <select id="profileSelect"></select>
-              <button id="loadProfile" type="button">Laden</button>
-              <button id="resetProfile" type="button">Reset Default</button>
+              <button id="loadProfile" class="btn btn--outline" type="button">Laden</button>
+              <button id="resetProfile" class="btn btn--outline" type="button">Reset Default</button>
             </div>
           </div>
           <div class="water-control-group">
             <label for="profileName">Profilname zum Speichern</label>
             <div class="water-control-row">
               <input id="profileName" type="text" placeholder="z.B. default" />
-              <button id="saveProfile" type="button">Speichern</button>
+              <button id="saveProfile" class="btn btn--outline" type="button">Speichern</button>
             </div>
           </div>
         </div>
         <div class="actions is-hidden" id="solverProfileActions">
-          <button id="saveSolverAsRecipe" type="button">Als Recipe speichern</button>
+          <button id="saveSolverAsRecipe" class="btn btn--outline" type="button">Als Recipe speichern</button>
           <label class="toggle">
             <input id="applyScaleToCalcLiters" type="checkbox" checked />
             <span>Beim Übernehmen auf 10L-Rechner skalieren</span>
           </label>
-          <button id="applySolverToCalculator" type="button">Im Düngerrechner übernehmen</button>
+          <button id="applySolverToCalculator" class="btn btn--outline" type="button">Im Düngerrechner übernehmen</button>
         </div>
       </section>
 
@@ -122,8 +122,8 @@
         <section class="block">
           <h2>Düngemittel-Auswahl (Komponenten)</h2>
           <div class="actions inline-actions">
-            <button id="addFertilizerRow" type="button">+</button>
-            <button id="removeFertilizerRow" type="button">-</button>
+            <button id="addFertilizerRow" class="btn btn--outline btn--icon" type="button">+</button>
+            <button id="removeFertilizerRow" class="btn btn--outline btn--icon" type="button">-</button>
             <span class="inline-hint">Wähle Dünger aus der Datenbank, das Plus fügt weitere Zeilen hinzu.</span>
           </div>
           <div class="table-wrap" id="fertilizerSelectTableWrap"></div>
@@ -133,13 +133,13 @@
           <h2>Nährlösung-Rechner</h2>
           <p class="hint">Mengen eingeben und Berechnung starten.</p>
           <div class="actions inline-actions">
-            <button id="calculatorScaleDown" type="button">-</button>
-            <button id="calculatorScaleUp" type="button">+</button>
+            <button id="calculatorScaleDown" class="btn btn--outline btn--icon" type="button">-</button>
+            <button id="calculatorScaleUp" class="btn btn--outline btn--icon" type="button">+</button>
             <span class="inline-hint">Skalierung <span id="calculatorScaleValue">1.00x</span></span>
           </div>
           <div class="table-wrap" id="calculatorTableWrap"></div>
           <div class="actions">
-            <button id="calculateBtn">Berechnen</button>
+            <button id="calculateBtn" class="btn btn--outline-primary">Berechnen</button>
           </div>
           <div class="summary">
             <div class="summary-metrics">
@@ -258,8 +258,8 @@
             <div class="solver-column">
               <h3>Zielwerte (mg/L)</h3>
               <div class="actions inline-actions">
-                <button id="solverTargetScaleDown" type="button">-</button>
-                <button id="solverTargetScaleUp" type="button">+</button>
+                <button id="solverTargetScaleDown" class="btn btn--outline btn--icon" type="button">-</button>
+                <button id="solverTargetScaleUp" class="btn btn--outline btn--icon" type="button">+</button>
                 <span class="inline-hint">Skalierung <span id="solverTargetScaleValue">1.00x</span></span>
               </div>
               <div class="table-wrap">
@@ -295,7 +295,7 @@
             </div>
           </div>
           <div class="actions">
-            <button id="solveBtn" type="button">Solve</button>
+            <button id="solveBtn" class="btn btn--outline-primary" type="button">Solve</button>
           </div>
           <div class="solver-results">
             <div class="table-wrap">
@@ -338,16 +338,16 @@
             <div class="water-control-group">
               <label>Düngerliste</label>
               <div class="water-control-row">
-                <button id="fertEditorLoad" type="button">Laden</button>
-                <button id="fertEditorSave" type="button">Speichern</button>
+                <button id="fertEditorLoad" class="btn btn--outline" type="button">Laden</button>
+                <button id="fertEditorSave" class="btn btn--outline" type="button">Speichern</button>
               </div>
             </div>
           </div>
 
           <div class="actions inline-actions">
             <input id="fertEditorSearch" type="text" placeholder="Suchen…" />
-            <button id="fertEditorAddRow" type="button">+</button>
-            <button id="fertEditorDeleteRow" type="button">-</button>
+            <button id="fertEditorAddRow" class="btn btn--outline btn--icon" type="button">+</button>
+            <button id="fertEditorDeleteRow" class="btn btn--outline btn--icon" type="button">-</button>
           </div>
 
           <div class="table-wrap table-wrap--editor" id="fertilizerEditorTableWrap"></div>

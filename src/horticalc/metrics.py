@@ -38,7 +38,9 @@ def round1(value: float) -> float:
     return float(Decimal(str(value)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP))
 
 
-def _get_sources(result: CalcResult | Mapping[str, object]) -> tuple[Mapping[str, float], Mapping[str, float]]:
+def _get_sources(
+    result: CalcResult | Mapping[str, object],
+) -> tuple[Mapping[str, float], Mapping[str, float], Mapping[str, float]]:
     if is_dataclass(result):
         data = asdict(result)
     elif isinstance(result, Mapping):
@@ -48,7 +50,8 @@ def _get_sources(result: CalcResult | Mapping[str, object]) -> tuple[Mapping[str
 
     elements = data.get("elements_mg_per_l") or data.get("elements_mg_l") or {}
     oxides = data.get("oxides_mg_per_l") or data.get("oxides_mg_l") or {}
-    return elements, oxides
+    ions = data.get("ions_mmol_per_l") or data.get("ions_mmol_l") or {}
+    return elements, oxides, ions
 
 
 def _sum_keys(keys: list[str], elements: Mapping[str, float], oxides: Mapping[str, float]) -> float:
@@ -62,7 +65,7 @@ def _sum_keys(keys: list[str], elements: Mapping[str, float], oxides: Mapping[st
 
 
 def format_npks(result: CalcResult | Mapping[str, object]) -> dict[str, str | dict[str, float | int]]:
-    elements, oxides = _get_sources(result)
+    elements, oxides, ions = _get_sources(result)
 
     n_nh4 = float(elements.get("N_NH4", 0.0) or 0.0)
     n_no3 = float(elements.get("N_NO3", 0.0) or 0.0)
@@ -117,19 +120,27 @@ def format_npks(result: CalcResult | Mapping[str, object]) -> dict[str, str | di
         ratio_str = f"{ratio:.1f}".rstrip("0").rstrip(".")
         return f"{label}=1:{ratio_str}"
 
+    nh4 = float(ions.get("NH4+", 0.0) or 0.0)
+    no3 = float(ions.get("NO3-", 0.0) or 0.0)
+    k_ion = float(ions.get("K+", 0.0) or 0.0)
+    ca_ion = float(ions.get("Ca+2", 0.0) or 0.0)
+    mg_ion = float(ions.get("Mg+2", 0.0) or 0.0)
+    na_ion = float(ions.get("Na+", 0.0) or 0.0)
+    so4_ion = float(ions.get("SO4^2-", 0.0) or 0.0)
+    cl_ion = float(ions.get("Cl-", 0.0) or 0.0)
+    hco3_ion = float(ions.get("HCO3-", 0.0) or 0.0)
+    phosphate_key = "H2PO4-" if "H2PO4-" in ions else "HPO4^2-"
+    phosphate_ion = float(ions.get(phosphate_key, 0.0) or 0.0)
+
     npk_ratios = {
-        "N:K": ratio_string("N:K", n_total, float(elements.get("K", 0.0) or 0.0)),
-        "CaO:K2O": ratio_string("CaO:K2O", cao, k2o),
-        "MgO:CaO": ratio_string("MgO:CaO", mgo, cao),
-        "Na2O:MgO": ratio_string("Na2O:MgO", float(oxides.get("Na2O", 0.0) or 0.0), mgo),
-        "SO4:P2O5": ratio_string("SO4:P2O5", float(oxides.get("SO4", 0.0) or 0.0), p2o5),
-        "P2O5:K2O": ratio_string("P2O5:K2O", p2o5, k2o),
-        "Fe:MgO": ratio_string("Fe:MgO", float(elements.get("Fe", 0.0) or 0.0), mgo),
-        "CO3:SiO2": ratio_string(
-            "CO3:SiO2",
-            float(oxides.get("CO3", 0.0) or 0.0),
-            float(oxides.get("SiO2", 0.0) or 0.0),
-        ),
+        "N:K": ratio_string("N:K", nh4 + no3, k_ion),
+        "Ca2+:K+": ratio_string("Ca2+:K+", ca_ion, k_ion),
+        "Mg2+:Ca2+": ratio_string("Mg2+:Ca2+", mg_ion, ca_ion),
+        "Na+:Mg2+": ratio_string("Na+:Mg2+", na_ion, mg_ion),
+        "SO4^2-:PO4": ratio_string("SO4^2-:PO4", so4_ion, phosphate_ion),
+        "PO4:K+": ratio_string("PO4:K+", phosphate_ion, k_ion),
+        "Cl-:HCO3-": ratio_string("Cl-:HCO3-", cl_ion, hco3_ion),
+        "NH4+:NO3-": ratio_string("NH4+:NO3-", nh4, no3),
     }
 
     return {

@@ -75,13 +75,13 @@ const fertEditorSaveButton = document.querySelector("#fertEditorSave");
 const CALC_LITERS = 10.0;
 const npkRatioKeys = [
   "N:K",
-  "CaO:K2O",
-  "MgO:CaO",
-  "Na2O:MgO",
-  "SO4:P2O5",
-  "P2O5:K2O",
-  "Fe:MgO",
-  "CO3:SiO2",
+  "Ca2+:K+",
+  "Mg2+:Ca2+",
+  "Na+:Mg2+",
+  "SO4^2-:PO4",
+  "PO4:K+",
+  "Cl-:HCO3-",
+  "NH4+:NO3-",
 ];
 
 let fertilizerOptions = [];

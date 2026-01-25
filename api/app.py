@@ -473,7 +473,12 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
     water_mg_l: Dict[str, float] = {}
     osmosis_percent = 0.0
     if payload.water_profile_name:
-        profile_path = WATER_PROFILES_DIR / payload.water_profile_name
+        filename = (
+            payload.water_profile_name
+            if payload.water_profile_name.endswith(".yml")
+            else f"{payload.water_profile_name}.yml"
+        )
+        profile_path = WATER_PROFILES_DIR / filename
         if not profile_path.exists():
             raise HTTPException(status_code=404, detail="Water profile not found")
         profile = load_water_profile_data(profile_path)

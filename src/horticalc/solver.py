@@ -15,11 +15,11 @@ from .core import (
 )
 from .data_io import (
     Fertilizer,
+    data_root,
     load_fertilizers,
     load_molar_masses,
     load_recipe,
     load_water_profile_data,
-    repo_root,
 )
 
 
@@ -405,7 +405,7 @@ def _resolve_water_profile(recipe: dict, water_profile_data: dict | None) -> dic
         return water_profile_value
     if not water_profile_value:
         water_profile_value = "default"
-    wp_path = repo_root() / "data" / "water_profiles" / f"{water_profile_value}.yml"
+    wp_path = data_root() / "water_profiles" / f"{water_profile_value}.yml"
     return load_water_profile_data(wp_path)
 
 

@@ -406,7 +406,7 @@ main {
   outline-offset: -2px;
 }
 
-.inline-actions button {
+.inline-actions .icon-button {
   width: 1.6rem;
   height: 1.6rem;
   padding: 0;

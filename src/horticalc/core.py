@@ -422,9 +422,6 @@ class CalcResult:
 
         return {
             "liters": self.liters,
-            "forms_mg_per_l": self.forms_mg_l,
-            "water_forms_mg_per_l": self.water_forms_mg_l,
-            "fertilizer_forms_mg_per_l": self.fertilizer_forms_mg_l,
             "elements_mg_per_l": self.elements_mg_l,
             "oxides_mg_per_l": self.oxides_mg_l,
             "ions_mmol_per_l": self.ions_mmol_l,

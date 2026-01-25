@@ -72,14 +72,6 @@ horticalc solve recipes/solve_golden.yml --pretty
 
 ---
 
-Build/Packaging (PyInstaller):
-
-```bash
-python -m pip install -r requirements.txt
-```
-
----
-
 ## GUI + API (Web UI)
 
 Die GUI ist ein statisches Frontend unter `frontend/` und spricht eine FastAPI unter `api/` an.
@@ -246,3 +238,4 @@ Optional können zusätzliche Kennzahlen aktiviert werden. Diese gelten als expe
 ```bash
 python -m pytest -q
 ```
+

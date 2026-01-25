@@ -5,11 +5,13 @@ description = "Horticalc (molar-correct) – CSV/YAML Backend"
 requires-python = ">=3.10"
 dependencies = [
   "PyYAML>=6.0",
+  "PyInstaller>=6.0",
   "numpy>=1.26.0",
 ]
 
 [project.scripts]
 horticalc = "horticalc.__main__:main"
+horticalc-build = "horticalc.packaging:main"
 
 [build-system]
 requires = ["setuptools>=68"]

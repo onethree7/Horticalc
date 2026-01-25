@@ -129,7 +129,7 @@ const solverTargetBaseValues = Object.fromEntries(
 const calculatorBaseAmounts = [0];
 let solverTargetScaleFactor = 1.0;
 let calculatorScaleFactor = 1.0;
-const SCALE_STEP = 0.05;
+const SCALE_STEP = 0.1;
 const solverAllowedFertilizers = [];
 const solverFixedGrams = {};
 const saveAllowedFertilizersDebounced = debounce(() => {

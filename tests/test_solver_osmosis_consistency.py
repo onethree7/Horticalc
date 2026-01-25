@@ -1,3 +1,4 @@
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -62,6 +63,37 @@ class TestSolverOsmosisConsistency(unittest.TestCase):
             expected = result.achieved_elements_mg_l.get(key, 0.0)
             actual = recomputed.elements_mg_l.get(key, 0.0)
             self.assertLessEqual(abs(actual - expected), 1e-6, f"{key} mismatch: {actual} vs {expected}")
+
+    def test_solution_serialization_deterministic(self) -> None:
+        ferts = load_fertilizers()
+        molar_masses = load_molar_masses()
+
+        recipe = {
+            "liters": 5.0,
+            "fertilizers": [
+                {"name": "Yara Tera CALCINIT", "grams": 5.0},
+                {"name": "Biolchim Green-Go 12-12-36", "grams": 3.5},
+            ],
+            "urea_as_nh4": False,
+            "phosphate_species": "H2PO4",
+        }
+        water_profile = {
+            "Ca": 80.0,
+            "Mg": 20.0,
+            "NO3": 10.0,
+        }
+
+        first = compute_solution(recipe, ferts, molar_masses, water_profile)
+        second = compute_solution(recipe, ferts, molar_masses, water_profile)
+
+        for label, payload in (
+            ("elements", (first.elements_mg_l, second.elements_mg_l)),
+            ("oxides", (first.oxides_mg_l, second.oxides_mg_l)),
+            ("ions", (first.ions_mmol_l, second.ions_mmol_l)),
+        ):
+            first_json = json.dumps(payload[0], sort_keys=True)
+            second_json = json.dumps(payload[1], sort_keys=True)
+            self.assertEqual(first_json, second_json, f"{label} serialization mismatch")
 
 
 if __name__ == "__main__":

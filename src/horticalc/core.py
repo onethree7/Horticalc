@@ -196,6 +196,11 @@ def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) 
         equiv_weight_caco3 = _mm(mm, "CaCO3") / 2.0
         return mg_l_caco3 * _mm(mm, "HCO3") / equiv_weight_caco3
 
+    def hco3_from_co3(mg_l_co3: float) -> float:
+        if mg_l_co3 == 0.0:
+            return 0.0
+        return mg_l_co3 * _mm(mm, "HCO3") / _mm(mm, "CO3")
+
     def hco3_from_kh(dkh: float) -> float:
         if dkh == 0.0:
             return 0.0
@@ -204,6 +209,14 @@ def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) 
 
     for key in WATER_PROFILE_KEYS:
         add(key, raw.get(key, 0.0))
+
+    helper_hco3 = (
+        hco3_from_co3(raw.get("CO3", 0.0))
+        + hco3_from_caco3(raw.get("CaCO3", 0.0))
+        + hco3_from_kh(raw.get("KH", 0.0))
+    )
+    if helper_hco3 > 0.0:
+        normalized["HCO3"] = helper_hco3
 
     add("P2O5", p2o5_from_po4(raw.get("PO4", 0.0)))
     add("P2O5", p2o5_from_p(raw.get("P", 0.0)))
@@ -217,10 +230,6 @@ def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) 
     }
     for element_key, (oxide_key, multiplier) in element_to_oxide.items():
         add(oxide_key, oxide_from_element(raw.get(element_key, 0.0), oxide_key, element_key, multiplier=multiplier))
-
-    if raw.get("HCO3", 0.0) == 0.0:
-        add("HCO3", hco3_from_caco3(raw.get("CaCO3", 0.0)))
-        add("HCO3", hco3_from_kh(raw.get("KH", 0.0)))
 
     return normalized
 

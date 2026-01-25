@@ -53,6 +53,7 @@ const solverMode = document.querySelector("#solverMode");
 const fertilizerEditorMode = document.querySelector("#fertilizerEditorMode");
 const solverTargetsTable = document.querySelector("#solverTargetsTable tbody");
 const solverAllowedFertilizersSelect = document.querySelector("#solverAllowedFertilizers");
+const solverAllowedFromRecipeButton = document.querySelector("#solverAllowedFromRecipe");
 const solverFixedTable = document.querySelector("#solverFixedTable tbody");
 const solverFertilizersTable = document.querySelector("#solverFertilizersTable tbody");
 const solverTargetsResultsTable = document.querySelector("#solverTargetsResultsTable tbody");
@@ -1893,17 +1894,44 @@ function updateSolverResultActions() {
   applySolverToCalculatorButton.disabled = !hasResult;
 }
 
-function seedSolverAllowedFertilizers() {
-  if (solverAllowedFertilizers.length) {
-    return;
-  }
-  selectedFertilizers.forEach((fert) => {
-    if (fert.name && !solverAllowedFertilizers.includes(fert.name)) {
-      solverAllowedFertilizers.push(fert.name);
+function collectSelectedFertilizerNames() {
+  const names = selectedFertilizers.map((fert) => fert.name).filter(Boolean);
+  return Array.from(new Set(names));
+}
+
+function pruneSolverFixedGrams() {
+  Object.keys(solverFixedGrams).forEach((key) => {
+    if (!solverAllowedFertilizers.includes(key)) {
+      delete solverFixedGrams[key];
     }
   });
+}
+
+function updateSolverAllowedFertilizers(names, mode = "merge") {
+  const uniqueNames = Array.from(new Set(names.filter(Boolean)));
+  if (mode === "replace") {
+    solverAllowedFertilizers.length = 0;
+    solverAllowedFertilizers.push(...uniqueNames);
+  } else {
+    uniqueNames.forEach((name) => {
+      if (!solverAllowedFertilizers.includes(name)) {
+        solverAllowedFertilizers.push(name);
+      }
+    });
+  }
+  pruneSolverFixedGrams();
   renderSolverAllowedOptions();
   renderSolverFixedTable();
+  lsSet(LAST_FERTILIZERS_ALLOWED_KEY, solverAllowedFertilizers);
+}
+
+function syncSolverAllowedWithSelection(mode = "merge") {
+  const names = collectSelectedFertilizerNames();
+  if (!names.length) {
+    return false;
+  }
+  updateSolverAllowedFertilizers(names, mode);
+  return true;
 }
 
 function applyWaterProfile(profile) {
@@ -2079,10 +2107,7 @@ async function init() {
     applyWaterHelpers(waterValues, getMolarMass);
     renderWaterTable();
     applyRecipe({ fertilizers: savedSolution.fertilizers || [] });
-    if (!hasStoredAllowed) {
-      seedSolverAllowedFertilizers();
-      lsSet(LAST_FERTILIZERS_ALLOWED_KEY, solverAllowedFertilizers);
-    }
+    syncSolverAllowedWithSelection("merge");
     try {
       const data = await calculate();
       renderCalculation(data);
@@ -2102,9 +2127,7 @@ async function init() {
   try {
     const recipe = await fetchDefaultRecipe();
     applyRecipe(recipe);
-    if (!hasStoredAllowed) {
-      seedSolverAllowedFertilizers();
-    }
+    syncSolverAllowedWithSelection("merge");
     const data = await calculate();
     renderCalculation(data);
   } catch (error) {
@@ -2161,14 +2184,16 @@ solverAllowedFertilizersSelect.addEventListener("change", () => {
   solverAllowedFertilizers.length = 0;
   const selected = Array.from(solverAllowedFertilizersSelect.selectedOptions).map((opt) => opt.value);
   solverAllowedFertilizers.push(...selected);
-  Object.keys(solverFixedGrams).forEach((key) => {
-    if (!solverAllowedFertilizers.includes(key)) {
-      delete solverFixedGrams[key];
-    }
-  });
+  pruneSolverFixedGrams();
   renderSolverFixedTable();
   saveAllowedFertilizersDebounced();
 });
+
+if (solverAllowedFromRecipeButton) {
+  solverAllowedFromRecipeButton.addEventListener("click", () => {
+    syncSolverAllowedWithSelection("replace");
+  });
+}
 
 if (solverTargetScaleDownButton) {
   solverTargetScaleDownButton.addEventListener("click", () => {
@@ -2196,6 +2221,7 @@ if (calculatorScaleUpButton) {
 
 solveButton.addEventListener("click", async () => {
   try {
+    syncSolverAllowedWithSelection("merge");
     const data = await solveRecipe();
     renderSolverResults(data);
   } catch (error) {
@@ -2205,7 +2231,7 @@ solveButton.addEventListener("click", async () => {
 
 const applyRecipeProfile = async (recipe) => {
   applyRecipe(recipe);
-  seedSolverAllowedFertilizers();
+  syncSolverAllowedWithSelection("merge");
   if (recipe.water_profile) {
     const filename = recipe.water_profile.endsWith(".yml")
       ? recipe.water_profile
@@ -2320,7 +2346,7 @@ applySolverToCalculatorButton.addEventListener("click", async () => {
     fertilizers,
   };
   applyRecipe(recipe);
-  seedSolverAllowedFertilizers();
+  syncSolverAllowedWithSelection("merge");
   const calculatorInput = Array.from(modeToggleInputs).find((input) => input.value === "calculator");
   if (calculatorInput) {
     calculatorInput.checked = true;

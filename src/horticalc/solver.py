@@ -79,7 +79,7 @@ def _normalize_targets(targets: Dict[str, float]) -> Dict[str, float]:
     return cleaned
 
 
-def _objective_keys(targets: Dict[str, float], *, allow_n_total_with_forms: bool = False) -> List[str]:
+def _objective_keys(targets: Dict[str, float], *, allow_n_total_with_forms: bool = True) -> List[str]:
     keys = []
     for key, val in targets.items():
         if val == 0:
@@ -255,6 +255,15 @@ def _solve_weights(
         for idx, key in enumerate(objective_keys):
             if key in n_form_priority_weights:
                 base_priority[idx] *= max(0.0, float(n_form_priority_weights[key]))
+    n_total_priority = None
+    for idx, key in enumerate(objective_keys):
+        if key == "N_total":
+            n_total_priority = base_priority[idx]
+            break
+    if n_total_priority is not None:
+        for idx, key in enumerate(objective_keys):
+            if key in ("N_NO3", "N_NH4", "N_UREA"):
+                base_priority[idx] = min(base_priority[idx], n_total_priority)
     overshoot_only_weights = None
     if n_total_governor_enabled:
         overshoot_only_weights = np.zeros(len(objective_keys), dtype=float)
@@ -264,7 +273,6 @@ def _solve_weights(
                 overshoot_only_weights[idx] = (base_priority[idx] / scale) * max(
                     0.0, float(n_total_governor_weight)
                 )
-                base_priority[idx] = 0.0
     return _nnls_weighted_irls(
         A_var,
         b,
@@ -436,13 +444,14 @@ def solve_recipe_data(
     n_total_governor_weight = float(solver_config.get("n_total_governor_weight", 1.0))
     n_form_priority_weights = solver_config.get("n_form_priority_weights") or {}
     default_priority_groups = [
-        ["N_NO3", "N_NH4", "N_UREA", "N_total"],
+        ["N_total"],
+        ["N_NO3", "N_NH4", "N_UREA"],
         ["K"],
         ["P"],
         ["Ca"],
         ["Mg"],
     ]
-    default_priority_group_weights = [3.0, 2.5, 2.0, 1.5, 1.5]
+    default_priority_group_weights = [3.5, 3.0, 2.5, 2.0, 1.5, 1.5]
     priority_groups_override = solver_config.get("priority_groups")
     priority_group_weights_override = solver_config.get("priority_group_weights")
     priority_groups = priority_groups_override or default_priority_groups
@@ -457,7 +466,7 @@ def solve_recipe_data(
         raise ValueError("priority_groups and priority_group_weights must have the same length")
     if not macro_priority_enabled:
         priority_groups = []
-    objective_keys = _objective_keys(target_raw, allow_n_total_with_forms=n_total_governor_enabled)
+    objective_keys = _objective_keys(target_raw, allow_n_total_with_forms=True)
     if not objective_keys:
         raise ValueError("No solvable targets defined (S/SO4/Na/Cl are ignored).")
 

@@ -961,24 +961,56 @@ function renderSolverResults(data) {
   const keys = data?.objective_elements?.length
     ? data.objective_elements
     : Object.keys(targets);
+  const nitrogenKeys = ["N_total", "N_NO3", "N_NH4", "N_UREA"];
+  const labelMap = {
+    N_total: "N-Σ",
+    N_NO3: "NO3",
+    N_NH4: "NH4",
+    N_UREA: "UREA",
+  };
+  const displayKeys = [
+    ...nitrogenKeys,
+    ...keys.filter((key) => !nitrogenKeys.includes(key)),
+  ];
 
-  keys.forEach((key) => {
+  displayKeys.forEach((key) => {
     const row = document.createElement("tr");
     const keyCell = document.createElement("td");
-    keyCell.textContent = key;
+    keyCell.textContent = labelMap[key] || key;
+    if (key !== "N_total" && nitrogenKeys.includes(key)) {
+      keyCell.classList.add("solver-n-extra");
+    }
+
+    const targetValue = Number(targets[key] ?? 0);
+    const achievedValue = Number(achieved[key] ?? 0);
+    const errorValue = Number.isFinite(errors[key])
+      ? Number(errors[key])
+      : achievedValue - targetValue;
+    const percentValue = Number.isFinite(errorsPercent[key])
+      ? Number(errorsPercent[key])
+      : targetValue
+        ? (achievedValue - targetValue) / targetValue * 100
+        : NaN;
 
     const targetCell = document.createElement("td");
-    targetCell.textContent = formatNumber(Number(targets[key]), nutrientFormatter);
+    targetCell.textContent = formatNumber(targetValue, nutrientFormatter);
 
     const achievedCell = document.createElement("td");
-    achievedCell.textContent = formatNumber(Number(achieved[key]), nutrientFormatter);
+    achievedCell.textContent = formatNumber(achievedValue, nutrientFormatter);
 
     const deltaCell = document.createElement("td");
-    deltaCell.textContent = formatNumber(Number(errors[key]), nutrientFormatter);
+    deltaCell.textContent = formatNumber(errorValue, nutrientFormatter);
 
     const percentCell = document.createElement("td");
-    const percent = Number(errorsPercent[key]);
-    percentCell.textContent = Number.isFinite(percent) ? `${percent.toFixed(1)}%` : "-";
+    percentCell.textContent = Number.isFinite(percentValue) ? `${percentValue.toFixed(1)}%` : "-";
+
+    if (key !== "N_total" && nitrogenKeys.includes(key)) {
+      targetCell.classList.add("solver-n-extra");
+      achievedCell.classList.add("solver-n-extra");
+      deltaCell.classList.add("solver-n-extra");
+      percentCell.classList.add("solver-n-extra");
+      row.classList.add("solver-n-row");
+    }
 
     row.append(keyCell, targetCell, achievedCell, deltaCell, percentCell);
     solverTargetsResultsTable.appendChild(row);

@@ -838,3 +838,12 @@ main {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: var(--space-4);
 }
+
+.solver-results .solver-n-extra {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9em;
+}
+
+.solver-results .solver-n-row td:first-child {
+  padding-left: 1rem;
+}

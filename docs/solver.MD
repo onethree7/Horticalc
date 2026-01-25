@@ -13,6 +13,22 @@ Given:
 
 Find non-negative fertilizer grams that best match the targets, while keeping behavior deterministic and producing stable, realistic solutions.
 
+## Allowed fertilizers in the UI
+
+The solver UI maintains its allowed fertilizer list in the browser (localStorage key
+`last_fertilizers_allowed`). It is **global per browser**, not per recipe/profile.
+
+Current behavior:
+
+- When the UI loads, it restores the stored list and filters it to known fertilizers.
+- When a recipe is loaded (or a solver result is applied to the calculator), the recipe’s
+  fertilizers are **merged** into the allowed list so they are always included.
+- When solving, the current recipe fertilizers are merged as a safety step if the list was empty
+  or out of date.
+- Clicking **“Allowed aus Rezept übernehmen”** replaces the allowed list with the fertilizers
+  currently selected in the recipe/calculator.
+- Manual changes in the multi-select are persisted back to localStorage.
+
 ## Data model and units
 
 - Targets and achieved values are expressed as mg/L of *elements* (e.g., `K`, `Ca`, `P`, `Fe`).

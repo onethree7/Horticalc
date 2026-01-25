@@ -1517,6 +1517,14 @@ function setSummaryView(nextView) {
     panel.hidden = panelView !== view;
   });
 
+  if (summaryViewToggle) {
+    const activePanel = document.querySelector(`.summary-panel[data-summary-panel="${view}"]`);
+    const activeTitle = activePanel?.querySelector(".table-card-title");
+    if (activeTitle && !activeTitle.contains(summaryViewToggle)) {
+      activeTitle.prepend(summaryViewToggle);
+    }
+  }
+
   const summaryScroll = document.querySelector("#summaryScroll");
   if (summaryScroll) {
     summaryScroll.scrollLeft = 0;

@@ -170,6 +170,24 @@ main {
   min-width: max-content;
 }
 
+.summary .nutrient-grid--summary th,
+.summary .nutrient-grid--summary td {
+  padding: var(--space-1) var(--space-2);
+  line-height: 1.1;
+}
+
+.summary .nutrient-grid--summary col {
+  width: 3.6rem;
+}
+
+.summary .nutrient-grid--summary col.col-row-label {
+  width: 6.2rem;
+}
+
+.summary .nutrient-grid--summary col.col-n-total {
+  width: 4.4rem;
+}
+
 .nutrient-grid th,
 .nutrient-grid td {
   white-space: nowrap;

@@ -4,7 +4,10 @@ import argparse
 import json
 from pathlib import Path
 
-from .core import run_recipe, solve_recipe
+try:
+    from .core import run_recipe, solve_recipe
+except ImportError:  # pragma: no cover - fallback for PyInstaller
+    from horticalc.core import run_recipe, solve_recipe
 
 
 def main(argv: list[str] | None = None) -> None:

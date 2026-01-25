@@ -9,6 +9,8 @@ from fastapi.testclient import TestClient
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(ROOT / "src"))
 
+from horticalc.schema import SOLVER_TARGET_DEFINITIONS
+
 spec = importlib.util.spec_from_file_location("api_app", ROOT / "api" / "app.py")
 api_app = importlib.util.module_from_spec(spec)
 assert spec and spec.loader
@@ -36,6 +38,12 @@ class TestSolveTargetKeys(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["detail"], "Invalid target key: INVALID")
+
+    def test_solver_target_schema_endpoint(self) -> None:
+        response = self.client.get("/schema/solver-targets")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), list(SOLVER_TARGET_DEFINITIONS))
 
 
 if __name__ == "__main__":

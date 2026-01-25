@@ -24,6 +24,7 @@ from horticalc.data_io import (
     save_recipe,
     save_water_profile,
 )
+from horticalc.schema import SOLVER_TARGET_DEFINITIONS, SOLVER_TARGET_KEYS
 from horticalc.solver import solve_recipe_data
 
 
@@ -162,30 +163,6 @@ ALLOWED_WATER_KEYS = {
     "Na2O",
 }
 
-ALLOWED_TARGET_KEYS = {
-    "N_total",
-    "N_NH4",
-    "N_NO3",
-    "N_UREA",
-    "P",
-    "K",
-    "Ca",
-    "Mg",
-    "S",
-    "SO4",
-    "Fe",
-    "Mn",
-    "Cu",
-    "Zn",
-    "B",
-    "Mo",
-    "Si",
-    "Cl",
-    "Na",
-    "HCO3",
-}
-
-
 def sanitize_water_profile(mg_per_l: Dict[str, float]) -> Dict[str, float]:
     sanitized: Dict[str, float] = {}
     for key, value in mg_per_l.items():
@@ -204,6 +181,11 @@ def normalized_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float])
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/schema/solver-targets")
+def solver_target_schema() -> List[dict]:
+    return list(SOLVER_TARGET_DEFINITIONS)
 
 
 @app.get("/fertilizers")
@@ -372,7 +354,7 @@ async def save_nutrient_solution_profile(request: Request) -> dict:
 
     targets_mg_per_l: Dict[str, float] = {}
     for key, value in solution.targets_mg_per_l.items():
-        if key not in ALLOWED_TARGET_KEYS:
+        if key not in SOLVER_TARGET_KEYS:
             raise HTTPException(status_code=400, detail=f"Invalid target key: {key}")
         try:
             targets_mg_per_l[key] = float(value)
@@ -535,7 +517,7 @@ def solve(payload: SolveRequest) -> SolveResponse:
 
     targets: Dict[str, float] = {}
     for key, value in payload.targets.items():
-        if key not in ALLOWED_TARGET_KEYS:
+        if key not in SOLVER_TARGET_KEYS:
             raise HTTPException(status_code=400, detail=f"Invalid target key: {key}")
         targets[key] = value
 

@@ -117,7 +117,7 @@ const fertilizerEditorPreferredKeys = [
   "HCO3",
 ];
 
-const solverTargetDefinitions = [
+const solverTargetFallbackDefinitions = [
   { key: "N_total", label: "N_total" },
   { key: "N_NH4", label: "N_NH4" },
   { key: "N_NO3", label: "N_NO3" },
@@ -140,12 +140,9 @@ const solverTargetDefinitions = [
   { key: "HCO3", label: "HCO3" },
 ];
 
-const solverTargetValues = Object.fromEntries(
-  solverTargetDefinitions.map((field) => [field.key, 0])
-);
-const solverTargetBaseValues = Object.fromEntries(
-  solverTargetDefinitions.map((field) => [field.key, 0])
-);
+let solverTargetDefinitions = [];
+let solverTargetValues = {};
+let solverTargetBaseValues = {};
 const calculatorBaseAmounts = [0];
 let solverTargetScaleFactor = 1.0;
 let calculatorScaleFactor = 1.0;
@@ -477,6 +474,40 @@ function renderProfileOptions() {
     profileSelect.appendChild(option);
   });
 }
+
+function normalizeSolverTargetDefinitions(definitions) {
+  if (!Array.isArray(definitions)) {
+    return [];
+  }
+  return definitions
+    .map((entry) => {
+      if (!entry || !entry.key) {
+        return null;
+      }
+      return {
+        key: entry.key,
+        label: entry.label || entry.key,
+      };
+    })
+    .filter(Boolean);
+}
+
+function setSolverTargetDefinitions(definitions) {
+  const normalized = normalizeSolverTargetDefinitions(definitions);
+  solverTargetDefinitions = normalized;
+  const nextValues = {};
+  const nextBaseValues = {};
+  solverTargetDefinitions.forEach((field) => {
+    const existingValue = Number(solverTargetValues[field.key]) || 0;
+    const existingBase = Number(solverTargetBaseValues[field.key]) || existingValue;
+    nextValues[field.key] = existingValue;
+    nextBaseValues[field.key] = existingBase;
+  });
+  solverTargetValues = nextValues;
+  solverTargetBaseValues = nextBaseValues;
+}
+
+setSolverTargetDefinitions(solverTargetFallbackDefinitions);
 
 function renderSolverTargetsTable() {
   solverTargetsTable.innerHTML = "";
@@ -1691,6 +1722,10 @@ function fetchMolarMasses() {
   return fetchJson(`${apiBase()}/molar-masses`, "Fehler beim Laden der Molmassen");
 }
 
+function fetchSolverTargetSchema() {
+  return fetchJson(`${apiBase()}/schema/solver-targets`, "Fehler beim Laden der Solver-Ziele");
+}
+
 function fetchWaterProfiles() {
   return fetchJson(`${apiBase()}/water-profiles`, "Fehler beim Laden der Wasserprofile");
 }
@@ -2020,8 +2055,25 @@ function restoreSolverAllowedFromStorage() {
   return true;
 }
 
+async function loadSolverTargetDefinitions() {
+  let definitions = solverTargetFallbackDefinitions;
+  try {
+    const schema = await fetchSolverTargetSchema();
+    const normalized = normalizeSolverTargetDefinitions(schema);
+    if (normalized.length) {
+      definitions = normalized;
+    }
+  } catch (error) {
+    reportError(error, "Fehler beim Laden der Solver-Ziele");
+  }
+  setSolverTargetDefinitions(definitions);
+  updateSolverTargetScaleDisplay();
+  renderSolverTargetsTable();
+}
+
 async function init() {
   let hasStoredAllowed = false;
+  await loadSolverTargetDefinitions();
   try {
     fertilizerOptions = await fetchFertilizers();
   } catch (error) {

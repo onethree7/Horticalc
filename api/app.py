@@ -524,9 +524,15 @@ def solve(payload: SolveRequest) -> SolveResponse:
         if "osmosis_percent" not in water_profile_data:
             water_profile_data["osmosis_percent"] = 0.0
 
+    targets: Dict[str, float] = {}
+    for key, value in payload.targets.items():
+        if key not in ALLOWED_TARGET_KEYS:
+            raise HTTPException(status_code=400, detail=f"Invalid target key: {key}")
+        targets[key] = value
+
     recipe = {
         "liters": payload.liters,
-        "targets": payload.targets,
+        "targets": targets,
         "fertilizers_allowed": payload.fertilizers_allowed,
         "fixed_grams": payload.fixed_grams,
         "urea_as_nh4": payload.urea_as_nh4,

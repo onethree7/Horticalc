@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
-from horticalc.data_io import Fertilizer, load_fertilizers, save_fertilizers
+from horticalc.data_io import Fertilizer, data_root, load_fertilizers, save_fertilizers
 
 
 def test_load_fertilizers_ignores_number_field(tmp_path: Path) -> None:
@@ -42,3 +42,9 @@ def test_save_fertilizers_preserves_number_column(tmp_path: Path) -> None:
 
     assert rows[0]["Nr."] == "1"
     assert rows[0]["NH4"] == "0.12"
+
+
+def test_data_root_points_to_repo_data_dir() -> None:
+    root = data_root()
+    assert root.name == "data"
+    assert (root / "fertilizers.csv").exists()

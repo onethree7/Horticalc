@@ -6,11 +6,11 @@ from typing import Dict, List, Tuple
 
 from .data_io import (
     Fertilizer,
+    data_root,
     load_fertilizers,
     load_molar_masses,
     load_recipe,
     load_water_profile_data,
-    repo_root,
 )
 from .sluijsmann import compute_sluijsmann
 
@@ -570,7 +570,7 @@ def run_recipe(recipe_path: Path) -> dict:
     mm = load_molar_masses()
 
     wp_name = str(recipe.get("water_profile") or "default")
-    wp_path = repo_root() / "data" / "water_profiles" / f"{wp_name}.yml"
+    wp_path = data_root() / "water_profiles" / f"{wp_name}.yml"
     water_profile = load_water_profile_data(wp_path)
     osmosis_percent = float(recipe.get("osmosis_percent", water_profile.get("osmosis_percent", 0.0)))
     water = water_profile.get("mg_per_l") or {}

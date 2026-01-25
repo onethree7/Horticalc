@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Dict, List
 
 import numpy as np
-import yaml
 
 from .core import (
     OTHER_ELEMENT_FORMS,
@@ -14,7 +13,14 @@ from .core import (
     _oxide_to_element,
     compute_solution,
 )
-from .data_io import Fertilizer, load_fertilizers, load_molar_masses, load_water_profile_data, repo_root
+from .data_io import (
+    Fertilizer,
+    load_fertilizers,
+    load_molar_masses,
+    load_recipe,
+    load_water_profile_data,
+    repo_root,
+)
 
 
 IGNORED_TARGETS = {"S", "SO4", "NA", "CL"}
@@ -391,12 +397,6 @@ def _singleton_supplier_pass(
     return adjusted
 
 
-def _load_solver_recipe(path: Path) -> dict:
-    with path.open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
-    return data
-
-
 def _resolve_water_profile(recipe: dict, water_profile_data: dict | None) -> dict:
     if water_profile_data is not None:
         return water_profile_data
@@ -651,5 +651,5 @@ def solve_recipe_data(
 
 
 def solve_recipe(recipe_path: Path) -> SolveResult:
-    recipe = _load_solver_recipe(recipe_path)
+    recipe = load_recipe(recipe_path)
     return solve_recipe_data(recipe)

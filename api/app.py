@@ -10,7 +10,12 @@ from pydantic import BaseModel, Field
 
 import yaml
 
-from horticalc.core import augment_water_profile_with_elements, compute_solution, normalize_water_profile
+from horticalc.core import (
+    COMP_COLS,
+    augment_water_profile_with_elements,
+    compute_solution,
+    normalize_water_profile,
+)
 from horticalc.data_io import (
     Fertilizer,
     load_fertilizers,
@@ -204,6 +209,11 @@ def normalized_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float])
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/schema/fertilizer-comp-keys")
+def fertilizer_comp_keys() -> dict:
+    return {"keys": COMP_COLS}
 
 
 @app.get("/fertilizers")

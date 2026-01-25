@@ -18,6 +18,16 @@ and output keys defined in `src/horticalc/core.py`.
   canonical term above applies.
 - Use the same capitalization in user-facing strings (e.g., “Solver Recipe”).
 
+## 1a) German UI Terms
+
+When the UI is in German, use the following mappings consistently:
+
+| Canonical term | German UI term | Notes |
+| --- | --- | --- |
+| **Recipe** | **Düngerrezept** | Used for calculator recipes. |
+| **Solver Recipe** | **Zielprofil** | Used for solver targets/constraints. |
+| **Solution Output** | **Lösungsanalyse** | Use when referencing the computed output. |
+
 ## 2) Core-Aligned Output Keys (source: `CalcResult.to_dict`)
 
 The following keys are the **canonical field names**. Do not rename or paraphrase them in
@@ -76,4 +86,3 @@ Avoid:
 ✅ “Nutrient Solution (Solution Output): `elements_mg_per_l`”
 
 ❌ “Recipe results: elements mg/l”
-

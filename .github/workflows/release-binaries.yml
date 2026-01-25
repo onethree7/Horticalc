@@ -5,6 +5,9 @@ on:
     types: [published]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 env:
   PYTHON_VERSION: "3.11"
 
@@ -45,18 +48,32 @@ jobs:
           Compress-Archive -Path dist\\horticalc -DestinationPath horticalc-${{ runner.os }}.zip
         shell: powershell
 
-      - name: Upload build artifact
+      - name: Upload build artifact (Linux)
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: horticalc-${{ runner.os }}
           path: |
             horticalc-${{ runner.os }}.tar.gz
+
+      - name: Upload build artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: horticalc-${{ runner.os }}
+          path: |
             horticalc-${{ runner.os }}.zip
 
-      - name: Upload release assets
-        if: github.event_name == 'release'
+      - name: Upload release assets (Linux)
+        if: github.event_name == 'release' && runner.os == 'Linux'
         uses: softprops/action-gh-release@v2
         with:
           files: |
             horticalc-${{ runner.os }}.tar.gz
+
+      - name: Upload release assets (Windows)
+        if: github.event_name == 'release' && runner.os == 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
             horticalc-${{ runner.os }}.zip

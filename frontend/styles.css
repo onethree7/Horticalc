@@ -90,6 +90,31 @@ button:hover {
   background: #3f73ff;
 }
 
+.btn--outline {
+  background: transparent;
+  border: 1px solid #2b3543;
+  color: #d6deea;
+  border-radius: var(--radius-1);
+}
+
+.btn--outline:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.btn--outline-primary {
+  border-color: #5f83ff;
+  color: #b9c8ff;
+}
+
+.btn--outline-primary:hover {
+  background: rgba(95, 131, 255, 0.14);
+}
+
+.btn--icon {
+  padding: var(--space-2);
+  min-width: 1.6rem;
+}
+
 main {
   padding: var(--space-4);
   display: flex;

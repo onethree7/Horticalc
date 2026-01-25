@@ -76,3 +76,12 @@ def test_normalize_water_profile_converts_alkalinity_to_hco3() -> None:
     expected_hco3_from_kh = (4.0 * 17.848) * mm["HCO3"] / (mm["CaCO3"] / 2.0)
 
     assert normalized["HCO3"] == pytest.approx(expected_hco3_from_caco3 + expected_hco3_from_kh, rel=0, abs=1e-12)
+
+
+def test_normalize_water_profile_converts_co3_to_hco3() -> None:
+    mm = load_molar_masses()
+    normalized = normalize_water_profile(mm, {"CO3": 30.0})
+
+    expected_hco3 = 30.0 * mm["HCO3"] / mm["CO3"]
+
+    assert normalized["HCO3"] == pytest.approx(expected_hco3, rel=0, abs=1e-12)

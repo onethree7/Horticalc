@@ -200,52 +200,9 @@ const oxideIntegerKeys = new Set([
 const oxideTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "SiO2"]);
 const carbonateHelperKeys = new Set(["CO3", "CaCO3", "KH"]);
 const waterHelperKeys = new Set(["S", ...carbonateHelperKeys]);
-// THE ONLY ALLOWED HARDCODED CONVERSION FOR UI OUTSIDE OF CORE.
+// Water normalization is handled by the backend.
 function applyWaterHelpers(values) {
-  const updatedKeys = new Set();
-  if (!values || typeof values !== "object") {
-    return updatedKeys;
-  }
-
-  const mm = (key) => getMolarMass(key) || null;
-  const hco3FromCo3 = (mgPerL) => {
-    const mmCo3 = mm("CO3");
-    const mmHco3 = mm("HCO3");
-    return mgPerL && mmCo3 && mmHco3 ? (mgPerL * mmHco3) / mmCo3 : 0;
-  };
-  const hco3FromCaco3 = (mgPerL) => {
-    const mmCaco3 = mm("CaCO3");
-    const mmHco3 = mm("HCO3");
-    return mgPerL && mmCaco3 && mmHco3 ? (mgPerL * mmHco3) / (mmCaco3 / 2) : 0;
-  };
-  const hco3FromKh = (dkh) => (dkh ? hco3FromCaco3(dkh * 17.848) : 0);
-  const so4FromS = (mgPerL) => {
-    const mmSo4 = mm("SO4");
-    const mmS = mm("S");
-    return mgPerL && mmSo4 && mmS ? (mgPerL * mmSo4) / mmS : 0;
-  };
-
-  const helperHco3 = hco3FromCo3(values.CO3) + hco3FromCaco3(values.CaCO3) + hco3FromKh(values.KH);
-  if (helperHco3 > 0) {
-    values.HCO3 = helperHco3;
-    values.CO3 = 0;
-    values.CaCO3 = 0;
-    values.KH = 0;
-    updatedKeys.add("HCO3");
-    updatedKeys.add("CO3");
-    updatedKeys.add("CaCO3");
-    updatedKeys.add("KH");
-  }
-
-  const so4Value = so4FromS(values.S || 0);
-  if (so4Value > 0) {
-    values.SO4 = so4Value;
-    values.S = 0;
-    updatedKeys.add("SO4");
-    updatedKeys.add("S");
-  }
-
-  return updatedKeys;
+  return new Set();
 }
 const summaryColumnOrder = [
   { oxide: "N_total", element: "N_total", oxideHeaderLabel: "N-Σ", ionHeaderLabel: "N-Σ" },
@@ -1580,9 +1537,7 @@ function formatOxideValue(key, value) {
 }
 
 function buildWaterPayloadForApi(rawValues) {
-  const values = { ...rawValues };
-  applyWaterHelpers(values, getMolarMass);
-  return values;
+  return { ...rawValues };
 }
 
 function waterElementsForDisplay(elements) {
@@ -1911,7 +1866,6 @@ function applyWaterProfile(profile) {
   waterFieldDefinitions.forEach((field) => {
     waterValues[field.key] = Number(mg[field.key]) || 0;
   });
-  applyWaterHelpers(waterValues, getMolarMass);
 
   waterProfileNameInput.value = profile.name || "";
   osmosisPercentInput.value = profile.osmosis_percent ?? 0;
@@ -2076,7 +2030,6 @@ async function init() {
     waterFieldDefinitions.forEach((field) => {
       waterValues[field.key] = Number(savedSolution.water_values?.[field.key]) || 0;
     });
-    applyWaterHelpers(waterValues, getMolarMass);
     renderWaterTable();
     applyRecipe({ fertilizers: savedSolution.fertilizers || [] });
     if (!hasStoredAllowed) {

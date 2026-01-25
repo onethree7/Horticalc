@@ -72,6 +72,21 @@ horticalc solve recipes/solve_golden.yml --pretty
 
 ---
 
+## Build/Packaging (PyInstaller)
+
+Installiert die Build-Abhängigkeiten und erstellt ein lokales Binary über die vorhandene
+PyInstaller-Spec:
+
+```bash
+python -m pip install -r requirements.txt
+python -m pip install -e .
+horticalc-build
+```
+
+Das Ergebnis liegt anschließend unter `dist/horticalc/` (z. B. `dist/horticalc/horticalc`).
+
+---
+
 ## GUI + API (Web UI)
 
 Die GUI ist ein statisches Frontend unter `frontend/` und spricht eine FastAPI unter `api/` an.
@@ -238,4 +253,3 @@ Optional können zusätzliche Kennzahlen aktiviert werden. Diese gelten als expe
 ```bash
 python -m pytest -q
 ```
-

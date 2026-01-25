@@ -170,16 +170,10 @@ main {
   min-width: max-content;
 }
 
-.summary .nutrient-grid--summary {
-  font-size: var(--text-xs);
-}
-
 .summary .nutrient-grid--summary th,
 .summary .nutrient-grid--summary td {
   padding: var(--space-1) var(--space-2);
-  line-height: 1.15;
-  overflow: visible;
-  text-overflow: clip;
+  line-height: 1.1;
 }
 
 .summary .nutrient-grid--summary col {

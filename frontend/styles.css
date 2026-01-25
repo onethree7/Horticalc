@@ -566,41 +566,6 @@ main {
   text-align: center;
 }
 
-.summary-metric-card.npk-ratio-card {
-  align-items: stretch;
-  text-align: left;
-}
-
-.summary-metric-card.npk-ratio-card .metric-label {
-  text-align: left;
-}
-
-.ratio-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2) var(--space-4);
-  font-size: var(--text-sm);
-}
-
-.ratio-item {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.ratio-label {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.ratio-value {
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
-}
-
 .summary-metric-card.ec-metric {
   align-items: center;
   text-align: center;

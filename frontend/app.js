@@ -94,28 +94,7 @@ let fertilizerEditorTable;
 let fertilizerEditorCompKeys = [];
 let summaryView = "ion";
 let ionNitrogenExpanded = false;
-
-const fertilizerEditorPreferredKeys = [
-  "NO3",
-  "NH4",
-  "UREA",
-  "P2O5",
-  "K2O",
-  "CaO",
-  "MgO",
-  "SO4",
-  "Fe",
-  "Mn",
-  "Cu",
-  "Zn",
-  "B",
-  "Mo",
-  "SiO2",
-  "Na2O",
-  "Cl",
-  "CO3",
-  "HCO3",
-];
+let fertilizerEditorPreferredKeys = [];
 
 const solverTargetDefinitions = [
   { key: "N_total", label: "N_total" },
@@ -1687,6 +1666,20 @@ function fetchFertilizers() {
   return fetchJson(`${apiBase()}/fertilizers`, "Fehler beim Laden der Dünger-Liste");
 }
 
+async function fetchFertilizerCompKeys() {
+  const data = await fetchJson(
+    `${apiBase()}/schema/fertilizer-comp-keys`,
+    "Fehler beim Laden der Dünger-Schema"
+  );
+  if (Array.isArray(data)) {
+    return data;
+  }
+  if (Array.isArray(data?.keys)) {
+    return data.keys;
+  }
+  return [];
+}
+
 function fetchMolarMasses() {
   return fetchJson(`${apiBase()}/molar-masses`, "Fehler beim Laden der Molmassen");
 }
@@ -2022,6 +2015,12 @@ function restoreSolverAllowedFromStorage() {
 
 async function init() {
   let hasStoredAllowed = false;
+  try {
+    fertilizerEditorPreferredKeys = await fetchFertilizerCompKeys();
+  } catch (error) {
+    reportError(error, "Fehler beim Laden der Dünger-Schema");
+    fertilizerEditorPreferredKeys = [];
+  }
   try {
     fertilizerOptions = await fetchFertilizers();
   } catch (error) {

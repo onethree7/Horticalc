@@ -1,23 +1,29 @@
 from __future__ import annotations
 
-import re
+import importlib.util
+import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.append(str(ROOT / "src"))
 
-def _load_preferred_keys() -> list[str]:
-    app_js = Path("frontend/app.js").read_text(encoding="utf-8")
-    match = re.search(
-        r"const\s+fertilizerEditorPreferredKeys\s*=\s*\[(.*?)\];",
-        app_js,
-        re.DOTALL,
-    )
-    assert match, "fertilizerEditorPreferredKeys array not found in frontend/app.js"
-    entries = re.findall(r'"([^"]+)"', match.group(1))
-    return entries
+from fastapi.testclient import TestClient
+
+from horticalc.core import COMP_COLS
+
+spec = importlib.util.spec_from_file_location("api_app", ROOT / "api" / "app.py")
+api_app = importlib.util.module_from_spec(spec)
+assert spec and spec.loader
+spec.loader.exec_module(api_app)
 
 
 def test_fertilizer_editor_n_form_order() -> None:
-    keys = _load_preferred_keys()
+    client = TestClient(api_app.app)
+    response = client.get("/schema/fertilizer-comp-keys")
+    assert response.status_code == 200
+    data = response.json()
+    keys = data["keys"] if isinstance(data, dict) else data
+    assert keys == COMP_COLS
     no3_index = keys.index("NO3")
     nh4_index = keys.index("NH4")
     urea_index = keys.index("UREA")

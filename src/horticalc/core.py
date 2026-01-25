@@ -17,7 +17,7 @@ from .sluijsmann import compute_sluijsmann
 
 COMP_COLS: List[str] = [
     # N forms (as element N fraction in fertilizers)
-    "NH4", "NO3", "UREA",
+    "NO3", "NH4", "UREA",
     # oxides
     "P2O5", "K2O", "CaO", "MgO", "Na2O",
     # anions / other

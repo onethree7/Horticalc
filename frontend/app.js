@@ -129,10 +129,7 @@ const solverTargetBaseValues = Object.fromEntries(
 const calculatorBaseAmounts = [0];
 let solverTargetScaleFactor = 1.0;
 let calculatorScaleFactor = 1.0;
-const SOLVER_TARGET_SCALE_UP = 1.05;
-const SOLVER_TARGET_SCALE_DOWN = 0.95;
-const CALCULATOR_SCALE_UP = SOLVER_TARGET_SCALE_UP;
-const CALCULATOR_SCALE_DOWN = SOLVER_TARGET_SCALE_DOWN;
+const SCALE_STEP = 0.1;
 const solverAllowedFertilizers = [];
 const solverFixedGrams = {};
 const saveAllowedFertilizersDebounced = debounce(() => {
@@ -489,6 +486,10 @@ function roundScaledValue(value) {
   return Math.round(value * 1000) / 1000;
 }
 
+function roundScaleFactor(value) {
+  return Math.round(value * 100) / 100;
+}
+
 function updateScaleDisplay(displayEl, factor) {
   if (displayEl) {
     displayEl.textContent = `${factor.toFixed(2)}x`;
@@ -504,7 +505,7 @@ function applyScaleFactor({
   render,
   displayEl,
 }) {
-  const factor = Math.max(0, nextFactor);
+  const factor = Math.max(0, roundScaleFactor(nextFactor));
   setFactor(factor);
   definitions.forEach((definition) => {
     const baseValue = getBaseValue(definition) || 0;
@@ -2205,25 +2206,25 @@ if (solverAllowedFromRecipeButton) {
 
 if (solverTargetScaleDownButton) {
   solverTargetScaleDownButton.addEventListener("click", () => {
-    applySolverTargetScaleFactor(solverTargetScaleFactor * SOLVER_TARGET_SCALE_DOWN);
+    applySolverTargetScaleFactor(solverTargetScaleFactor - SCALE_STEP);
   });
 }
 
 if (solverTargetScaleUpButton) {
   solverTargetScaleUpButton.addEventListener("click", () => {
-    applySolverTargetScaleFactor(solverTargetScaleFactor * SOLVER_TARGET_SCALE_UP);
+    applySolverTargetScaleFactor(solverTargetScaleFactor + SCALE_STEP);
   });
 }
 
 if (calculatorScaleDownButton) {
   calculatorScaleDownButton.addEventListener("click", () => {
-    applyCalculatorScaleFactor(calculatorScaleFactor * CALCULATOR_SCALE_DOWN);
+    applyCalculatorScaleFactor(calculatorScaleFactor - SCALE_STEP);
   });
 }
 
 if (calculatorScaleUpButton) {
   calculatorScaleUpButton.addEventListener("click", () => {
-    applyCalculatorScaleFactor(calculatorScaleFactor * CALCULATOR_SCALE_UP);
+    applyCalculatorScaleFactor(calculatorScaleFactor + SCALE_STEP);
   });
 }
 

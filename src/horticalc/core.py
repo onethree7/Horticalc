@@ -12,6 +12,7 @@ from .data_io import (
     load_water_profile_data,
     repo_root,
 )
+from .schema import WATER_PROFILE_KEYS
 from .sluijsmann import compute_sluijsmann
 
 
@@ -43,26 +44,6 @@ OXIDE_FORM_COLS: List[str] = [
     "CO3",
     "HCO3",
     "SiO2",
-]
-
-WATER_PROFILE_KEYS: List[str] = [
-    "NH4",
-    "NO3",
-    "P2O5",
-    "K2O",
-    "CaO",
-    "MgO",
-    "Na2O",
-    "SO4",
-    "Cl",
-    "SiO2",
-    "HCO3",
-    "Fe",
-    "Mn",
-    "Cu",
-    "Zn",
-    "B",
-    "Mo",
 ]
 
 OXIDE_ELEMENT_FORMS: tuple[str, ...] = ("P2O5", "K2O", "CaO", "MgO", "Na2O")

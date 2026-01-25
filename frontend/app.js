@@ -159,32 +159,8 @@ const saveAllowedFertilizersDebounced = debounce(() => {
   lsSet(LAST_FERTILIZERS_ALLOWED_KEY, solverAllowedFertilizers);
 }, 200);
 
-const waterFieldDefinitions = [
-  { key: "NH4", label: "Ammonium in NH4" },
-  { key: "NO3", label: "Nitrat in NO3" },
-  { key: "PO4", label: "Phosphat in PO4" },
-  { key: "P", label: "Phosphor in P" },
-  { key: "K", label: "Kalium in K" },
-  { key: "Ca", label: "Calcium in Ca" },
-  { key: "Mg", label: "Magnesium in Mg" },
-  { key: "Na", label: "Natrium in Na" },
-  { key: "SO4", label: "Sulfat in SO4" },
-  { key: "S", label: "Schwefel in S" },
-  { key: "Fe", label: "Eisen in Fe" },
-  { key: "Mn", label: "Mangan in Mn" },
-  { key: "Cu", label: "Kupfer in Cu" },
-  { key: "Zn", label: "Zink in Zn" },
-  { key: "B", label: "Bor in B" },
-  { key: "Mo", label: "Molybdän in Mo" },
-  { key: "Cl", label: "Chlor in Cl" },
-  { key: "HCO3", label: "Carbonate in HCO3" },
-  { key: "CO3", label: "Carbonat in CO3" },
-  { key: "CaCO3", label: "Gesamtcarbonathärte in CaCO3" },
-  { key: "KH", label: "Carbonathärte in °KH" },
-  { key: "SiO2", label: "Silicium in SiO2" },
-];
-
-const waterValues = Object.fromEntries(waterFieldDefinitions.map((field) => [field.key, 0]));
+let waterFieldDefinitions = [];
+let waterValues = {};
 const numberFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 3,
   maximumFractionDigits: 3,
@@ -208,6 +184,7 @@ const nutrientIntegerFormatter = new Intl.NumberFormat("en-US", {
 const LAST_FERTILIZERS_ALLOWED_KEY = "last_fertilizers_allowed";
 const LAST_SOLUTION_CALCULATED_KEY = "last_solution_calculated";
 const SUMMARY_VIEW_KEY = "horticalc.summary_view";
+const WATER_SCHEMA_STORAGE_KEY = "horticalc.water_schema";
 const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
 const nutrientTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "Si"]);
 const oxideIntegerKeys = new Set([
@@ -319,6 +296,26 @@ function debounce(fn, ms) {
     window.clearTimeout(timer);
     timer = window.setTimeout(() => fn(...args), ms);
   };
+}
+
+function setWaterSchema(schemaFields) {
+  const normalized = Array.isArray(schemaFields) ? schemaFields : [];
+  waterFieldDefinitions = normalized
+    .map((field) => {
+      const key = String(field?.key || "").trim();
+      if (!key) {
+        return null;
+      }
+      const label = field?.label ? String(field.label) : key;
+      return { key, label };
+    })
+    .filter(Boolean);
+
+  const nextValues = {};
+  waterFieldDefinitions.forEach((field) => {
+    nextValues[field.key] = Number(waterValues[field.key]) || 0;
+  });
+  waterValues = nextValues;
 }
 
 function parseDecimalInput(raw) {
@@ -1691,6 +1688,10 @@ function fetchMolarMasses() {
   return fetchJson(`${apiBase()}/molar-masses`, "Fehler beim Laden der Molmassen");
 }
 
+function fetchWaterProfileSchema() {
+  return fetchJson(`${apiBase()}/schema/water-profile`, "Fehler beim Laden des Wasserprofil-Schemas");
+}
+
 function fetchWaterProfiles() {
   return fetchJson(`${apiBase()}/water-profiles`, "Fehler beim Laden der Wasserprofile");
 }
@@ -2040,6 +2041,20 @@ async function init() {
   } catch (error) {
     reportError(error, "Fehler beim Laden der Molmassen");
     molarMasses = {};
+  }
+
+  try {
+    const schema = await fetchWaterProfileSchema();
+    setWaterSchema(schema);
+    lsSet(WATER_SCHEMA_STORAGE_KEY, schema);
+  } catch (error) {
+    const cachedSchema = lsGet(WATER_SCHEMA_STORAGE_KEY, []);
+    if (Array.isArray(cachedSchema) && cachedSchema.length > 0) {
+      setWaterSchema(cachedSchema);
+    } else {
+      reportError(error, "Fehler beim Laden des Wasserprofil-Schemas");
+      setWaterSchema([]);
+    }
   }
 
   try {

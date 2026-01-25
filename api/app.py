@@ -24,6 +24,7 @@ from horticalc.data_io import (
     save_recipe,
     save_water_profile,
 )
+from horticalc.schema import WATER_PROFILE_INPUT_KEYS, water_profile_schema
 from horticalc.solver import solve_recipe_data
 
 
@@ -132,35 +133,7 @@ class RecipePayload(BaseModel):
     osmosis_percent: float | None = 0
 
 
-ALLOWED_WATER_KEYS = {
-    "NH4",
-    "NO3",
-    "PO4",
-    "P",
-    "SO4",
-    "S",
-    "K",
-    "Ca",
-    "Mg",
-    "Na",
-    "Cl",
-    "HCO3",
-    "CO3",
-    "CaCO3",
-    "KH",
-    "Fe",
-    "Mn",
-    "Cu",
-    "Zn",
-    "B",
-    "Mo",
-    "SiO2",
-    "P2O5",
-    "K2O",
-    "CaO",
-    "MgO",
-    "Na2O",
-}
+ALLOWED_WATER_KEYS = set(WATER_PROFILE_INPUT_KEYS)
 
 ALLOWED_TARGET_KEYS = {
     "N_total",
@@ -204,6 +177,11 @@ def normalized_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float])
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/schema/water-profile")
+def water_profile_schema_endpoint() -> List[dict]:
+    return water_profile_schema()
 
 
 @app.get("/fertilizers")

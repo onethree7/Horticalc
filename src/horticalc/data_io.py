@@ -26,6 +26,15 @@ def _is_number_field(field: str) -> bool:
     return field.strip().rstrip(".").casefold() == "nr"
 
 
+def _load_yaml(path: Path) -> dict:
+    with path.open("r", encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
+def _float_mapping(data: dict) -> Dict[str, float]:
+    return {str(k): float(v) for k, v in data.items()}
+
+
 def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
     if csv_path is None:
         csv_path = repo_root() / "data" / "fertilizers.csv"
@@ -106,27 +115,24 @@ def save_fertilizers(
 def load_molar_masses(path: Path | None = None) -> Dict[str, float]:
     if path is None:
         path = repo_root() / "data" / "molar_masses.yml"
-    with path.open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
-    return {str(k): float(v) for k, v in data.items()}
+    data = _load_yaml(path)
+    return _float_mapping(data)
 
 
 def load_water_profile(path: Path) -> Dict[str, float]:
-    with path.open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
+    data = _load_yaml(path)
     # schema: {name, source, mg_per_l:{...}}
     mp = data.get("mg_per_l") or {}
-    return {str(k): float(v) for k, v in mp.items()}
+    return _float_mapping(mp)
 
 
 def load_water_profile_data(path: Path) -> dict:
-    with path.open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
-    mp = data.get("mg_per_l") or {}
+    data = _load_yaml(path)
+    mp = _float_mapping(data.get("mg_per_l") or {})
     return {
         "name": data.get("name") or path.stem,
         "source": data.get("source") or "",
-        "mg_per_l": {str(k): float(v) for k, v in mp.items()},
+        "mg_per_l": mp,
         "osmosis_percent": float(data.get("osmosis_percent") or 0),
     }
 
@@ -149,19 +155,16 @@ def save_water_profile(
 
 
 def load_recipe(path: Path) -> dict:
-    with path.open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
-    return data
+    return _load_yaml(path)
 
 
 def load_nutrient_solution_data(path: Path) -> dict:
-    with path.open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
-    targets = data.get("targets_mg_per_l") or {}
+    data = _load_yaml(path)
+    targets = _float_mapping(data.get("targets_mg_per_l") or {})
     return {
         "name": data.get("name") or path.stem,
         "source": data.get("source") or "",
-        "targets_mg_per_l": {str(k): float(v) for k, v in targets.items()},
+        "targets_mg_per_l": targets,
     }
 
 

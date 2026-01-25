@@ -208,8 +208,44 @@ main {
   hyphens: auto;
 }
 
+.nutrient-grid--summary .row-label--ion {
+  font-size: 1em;
+}
+
 .nutrient-grid--summary thead th:first-child {
   text-align: left;
+}
+
+.nutrient-grid--summary th.has-expander {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+
+.nutrient-grid--summary .column-expander {
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.9em;
+  line-height: 1;
+}
+
+.nutrient-grid--summary .column-expander:hover,
+.nutrient-grid--summary .column-expander:focus-visible {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.nutrient-grid--summary .ion-n-extra {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9em;
+}
+
+.nutrient-grid--summary.is-n-collapsed .ion-n-extra,
+.nutrient-grid--summary.is-n-collapsed col.ion-n-extra {
+  display: none;
 }
 
 

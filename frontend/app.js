@@ -93,6 +93,7 @@ let fertilizerEditorFilter = "";
 let fertilizerEditorTable;
 let fertilizerEditorCompKeys = [];
 let summaryView = "ion";
+let ionNitrogenExpanded = false;
 
 const fertilizerEditorPreferredKeys = [
   "NO3",
@@ -268,7 +269,7 @@ function applyWaterHelpers(values) {
   return updatedKeys;
 }
 const summaryColumnOrder = [
-  { oxide: "N_total", element: "N_total", oxideHeaderLabel: "N_total", ionHeaderLabel: "N_total" },
+  { oxide: "N_total", element: "N_total", oxideHeaderLabel: "N-Σ", ionHeaderLabel: "N-Σ" },
   { oxide: "P2O5", element: "P", oxideHeaderLabel: "P2O5", ionHeaderLabel: "P" },
   { oxide: "K2O", element: "K", oxideHeaderLabel: "K2O", ionHeaderLabel: "K" },
   { oxide: "CaO", element: "Ca", oxideHeaderLabel: "CaO", ionHeaderLabel: "Ca" },
@@ -286,6 +287,7 @@ const summaryColumnOrder = [
   { oxide: "HCO3", element: "HCO3", oxideHeaderLabel: "HCO3", ionHeaderLabel: "HCO3" },
 ];
 const summaryLabelWidth = "12rem";
+const ION_NITROGEN_EXPANDED_KEY = "horticalc.ion_n_expanded";
 
 function apiBase() {
   return apiBaseInput.value.replace(/\/$/, "");
@@ -1300,15 +1302,33 @@ function renderIonBalanceCompact(container, entries) {
   container.appendChild(table);
 }
 
-function buildSummaryColgroup() {
+function buildSummaryColumns(extraColumns = []) {
+  const columns = [];
+  summaryColumnOrder.forEach((column) => {
+    columns.push({ type: "base", column });
+    if (column.element === "N_total" && extraColumns.length) {
+      extraColumns.forEach((extra) => {
+        columns.push({ type: "extra", column: extra });
+      });
+    }
+  });
+  return columns;
+}
+
+function buildSummaryColgroup(summaryColumns) {
   const colgroup = document.createElement("colgroup");
   const labelCol = document.createElement("col");
   labelCol.classList.add("col-row-label");
   labelCol.style.width = summaryLabelWidth;
   colgroup.appendChild(labelCol);
-  summaryColumnOrder.forEach((column) => {
+  summaryColumns.forEach((columnGroup) => {
     const col = document.createElement("col");
-    col.classList.add(`col-${normalizeColumnKey(column.oxide)}`);
+    if (columnGroup.type === "extra") {
+      const key = columnGroup.column.key;
+      col.classList.add(`col-${normalizeColumnKey(key)}`, "ion-n-extra");
+    } else {
+      col.classList.add(`col-${normalizeColumnKey(columnGroup.column.oxide)}`);
+    }
     colgroup.appendChild(col);
   });
   return colgroup;
@@ -1322,19 +1342,42 @@ function renderSummaryTable({
   valueMap,
   valueKey,
   formatter,
+  extraColumns = [],
+  extraFormatter,
 }) {
   table.innerHTML = "";
-  table.appendChild(buildSummaryColgroup());
+  const summaryColumns = buildSummaryColumns(extraColumns);
+  table.appendChild(buildSummaryColgroup(summaryColumns));
 
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
   const spacer = document.createElement("th");
   spacer.textContent = "";
   headerRow.appendChild(spacer);
-  summaryColumnOrder.forEach((column) => {
+  summaryColumns.forEach((columnGroup) => {
     const th = document.createElement("th");
-    th.textContent = headerLabels(column);
-    th.classList.add(`col-${normalizeColumnKey(column.oxide)}`);
+    if (columnGroup.type === "extra") {
+      const key = columnGroup.column.key;
+      th.textContent = columnGroup.column.label;
+      th.classList.add(`col-${normalizeColumnKey(key)}`, "ion-n-extra");
+    } else {
+      const column = columnGroup.column;
+      const label = document.createElement("span");
+      label.textContent = headerLabels(column);
+      th.appendChild(label);
+      th.classList.add(`col-${normalizeColumnKey(column.oxide)}`);
+      if (column.element === "N_total" && extraColumns.length) {
+        th.classList.add("has-expander");
+        const toggleButton = document.createElement("button");
+        toggleButton.type = "button";
+        toggleButton.classList.add("column-expander");
+        toggleButton.dataset.ionNToggle = "true";
+        toggleButton.setAttribute("aria-label", "N-Details umschalten");
+        toggleButton.setAttribute("aria-expanded", ionNitrogenExpanded ? "true" : "false");
+        toggleButton.textContent = ionNitrogenExpanded ? "‹" : "›";
+        th.appendChild(toggleButton);
+      }
+    }
     headerRow.appendChild(th);
   });
   thead.appendChild(headerRow);
@@ -1351,7 +1394,20 @@ function renderSummaryTable({
   labelCell.scope = "row";
   tr.appendChild(labelCell);
 
-  summaryColumnOrder.forEach((column) => {
+  summaryColumns.forEach((columnGroup) => {
+    if (columnGroup.type === "extra") {
+      const key = columnGroup.column.key;
+      const rawValue = valueMap.get(key);
+      const formatted = extraFormatter
+        ? extraFormatter(key, Number(rawValue))
+        : formatter({ element: key }, Number(rawValue));
+      const extraCell = document.createElement("td");
+      extraCell.textContent = formatted;
+      extraCell.classList.add(`col-${normalizeColumnKey(key)}`, "ion-n-extra");
+      tr.appendChild(extraCell);
+      return;
+    }
+    const column = columnGroup.column;
     const rawValue = valueMap.get(valueKey(column));
     const td = document.createElement("td");
     const formatted = formatter(column, Number(rawValue));
@@ -1399,6 +1455,11 @@ function renderIonSummaryTable(table, elements) {
   if (ionSummaryBadge) {
     ionSummaryBadge.textContent = "mg/L";
   }
+  const nitrogenColumns = [
+    { key: "N_NO3", label: "NO3" },
+    { key: "N_NH4", label: "NH4" },
+    { key: "N_UREA", label: "UREA" },
+  ];
   renderSummaryTable({
     table,
     headerLabels: (column) => column.ionHeaderLabel,
@@ -1407,7 +1468,22 @@ function renderIonSummaryTable(table, elements) {
     rowLabelClass: "row-label--ion",
     valueMap: elementMap,
     formatter: (column, value) => formatNutrientValue(column.element, value),
+    extraColumns: nitrogenColumns,
+    extraFormatter: (key, value) => formatNutrientValue(key, value),
   });
+  table.classList.toggle("is-n-expanded", ionNitrogenExpanded);
+  table.classList.toggle("is-n-collapsed", !ionNitrogenExpanded);
+  const toggleButton = table.querySelector("[data-ion-n-toggle]");
+  if (toggleButton) {
+    toggleButton.addEventListener("click", () => {
+      ionNitrogenExpanded = !ionNitrogenExpanded;
+      lsSet(ION_NITROGEN_EXPANDED_KEY, ionNitrogenExpanded);
+      table.classList.toggle("is-n-expanded", ionNitrogenExpanded);
+      table.classList.toggle("is-n-collapsed", !ionNitrogenExpanded);
+      toggleButton.textContent = ionNitrogenExpanded ? "‹" : "›";
+      toggleButton.setAttribute("aria-expanded", ionNitrogenExpanded ? "true" : "false");
+    });
+  }
 }
 
 function setSummaryView(nextView) {
@@ -2266,6 +2342,7 @@ waterUnitToggle.addEventListener("change", (event) => {
 });
 
 summaryView = lsGet(SUMMARY_VIEW_KEY, "ion");
+ionNitrogenExpanded = lsGet(ION_NITROGEN_EXPANDED_KEY, false);
 setSummaryView(summaryView);
 
 initializeFertilizerTables();

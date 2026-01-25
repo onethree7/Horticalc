@@ -67,6 +67,7 @@ def test_singleton_supplier_pass_reduces_overshoot() -> None:
         max_regress_pp=0.25,
         macro_regress_pp=0.25,
         priority_groups=[],
+        skip_keys=None,
         recompute_achieved_fn=recompute_achieved_fn,
     )
 
@@ -95,6 +96,7 @@ def test_singleton_supplier_pass_rolls_back_on_regression() -> None:
         max_regress_pp=0.0,
         macro_regress_pp=0.0,
         priority_groups=[],
+        skip_keys=None,
         recompute_achieved_fn=recompute_achieved_fn,
     )
 

@@ -170,6 +170,10 @@ Typical toggles:
   - `macro_priority_enabled`
   - `priority_groups`, `priority_group_weights`
   - `macro_regress_pp`
+- N-governor + N-form priority (optional):
+  - `n_total_governor_enabled` (keep `N_total` in the objective and penalize only overshoot)
+  - `n_total_governor_weight` (overshoot-only weight multiplier for `N_total`)
+  - `n_form_priority_weights` (per-form multipliers like `{"N_NO3": 3.0, "N_UREA": 2.0, "N_NH4": 1.0}`)
 
 ## Verification
 

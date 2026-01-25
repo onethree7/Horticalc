@@ -79,7 +79,7 @@ def _normalize_targets(targets: Dict[str, float]) -> Dict[str, float]:
     return cleaned
 
 
-def _objective_keys(targets: Dict[str, float]) -> List[str]:
+def _objective_keys(targets: Dict[str, float], *, allow_n_total_with_forms: bool = False) -> List[str]:
     keys = []
     for key, val in targets.items():
         if val == 0:
@@ -87,7 +87,11 @@ def _objective_keys(targets: Dict[str, float]) -> List[str]:
         if key.upper() in IGNORED_TARGETS:
             continue
         keys.append(key)
-    if "N_total" in keys and any(k in keys for k in ("N_NH4", "N_NO3", "N_UREA")):
+    if (
+        not allow_n_total_with_forms
+        and "N_total" in keys
+        and any(k in keys for k in ("N_NH4", "N_NO3", "N_UREA"))
+    ):
         keys = [key for key in keys if key != "N_total"]
     return keys
 
@@ -145,6 +149,7 @@ def _nnls_weighted_irls(
     *,
     scales: np.ndarray,
     priority_factors: np.ndarray | None,
+    overshoot_only_weights: np.ndarray | None,
     overshoot_penalty: float,
     max_outer_iter: int,
     tol: float,
@@ -155,12 +160,15 @@ def _nnls_weighted_irls(
     if priority_factors is None:
         priority_factors = np.ones_like(scales)
     base_w = priority_factors / np.maximum(scales, tol)
+    overshoot_only = overshoot_only_weights
+    if overshoot_only is None:
+        overshoot_only = np.zeros_like(base_w)
     A_weighted = A * base_w[:, None]
     b_weighted = b * base_w
     x = _nnls(A_weighted, b_weighted, tol=tol)
     for _ in range(max_outer_iter - 1):
         r = A @ x - b
-        w = base_w * (1.0 + overshoot_penalty * (r > 0))
+        w = base_w * (1.0 + overshoot_penalty * (r > 0)) + overshoot_only * (r > 0)
         A_weighted = A * w[:, None]
         b_weighted = b * w
         x_new = _nnls(A_weighted, b_weighted, tol=tol)
@@ -214,6 +222,9 @@ def _solve_weights(
     macro_priority_enabled: bool = True,
     priority_groups: List[List[str]] | None = None,
     priority_group_weights: List[float] | None = None,
+    n_form_priority_weights: Dict[str, float] | None = None,
+    n_total_governor_enabled: bool = False,
+    n_total_governor_weight: float = 1.0,
     overshoot_penalty: float = 1.0,
     irls_max_outer_iter: int = 4,
     scale_eps_mg_per_l: float = 1.0,
@@ -237,11 +248,29 @@ def _solve_weights(
             priority_groups=priority_groups or [],
             priority_group_weights=priority_group_weights or [],
         )
+    base_priority = priority_factors
+    if base_priority is None:
+        base_priority = np.ones(len(objective_keys), dtype=float)
+    if n_form_priority_weights:
+        for idx, key in enumerate(objective_keys):
+            if key in n_form_priority_weights:
+                base_priority[idx] *= max(0.0, float(n_form_priority_weights[key]))
+    overshoot_only_weights = None
+    if n_total_governor_enabled:
+        overshoot_only_weights = np.zeros(len(objective_keys), dtype=float)
+        for idx, key in enumerate(objective_keys):
+            if key == "N_total":
+                scale = max(scales[idx], 1e-12)
+                overshoot_only_weights[idx] = (base_priority[idx] / scale) * max(
+                    0.0, float(n_total_governor_weight)
+                )
+                base_priority[idx] = 0.0
     return _nnls_weighted_irls(
         A_var,
         b,
         scales=scales,
-        priority_factors=priority_factors,
+        priority_factors=base_priority,
+        overshoot_only_weights=overshoot_only_weights,
         overshoot_penalty=overshoot_penalty,
         max_outer_iter=irls_max_outer_iter,
         tol=1e-10,
@@ -303,10 +332,14 @@ def _singleton_supplier_pass(
     max_regress_pp: float,
     macro_regress_pp: float,
     priority_groups: List[List[str]],
+    skip_keys: set[str] | None,
     recompute_achieved_fn: callable,
 ) -> np.ndarray:
     adjusted = x_full.copy()
+    skip = skip_keys or set()
     for row, key in enumerate(objective_keys):
+        if key in skip:
+            continue
         contrib_row = A[row, :] * adjusted
         sum_row = float(np.sum(contrib_row))
         if sum_row <= 0:
@@ -399,6 +432,9 @@ def solve_recipe_data(
     singleton_max_regress_pp = float(solver_config.get("singleton_max_regress_pp", 0.25))
     macro_priority_enabled = bool(solver_config.get("macro_priority_enabled", True))
     macro_regress_pp = float(solver_config.get("macro_regress_pp", 0.25))
+    n_total_governor_enabled = bool(solver_config.get("n_total_governor_enabled", False))
+    n_total_governor_weight = float(solver_config.get("n_total_governor_weight", 1.0))
+    n_form_priority_weights = solver_config.get("n_form_priority_weights") or {}
     default_priority_groups = [
         ["N_NO3", "N_NH4", "N_UREA", "N_total"],
         ["K"],
@@ -421,7 +457,7 @@ def solve_recipe_data(
         raise ValueError("priority_groups and priority_group_weights must have the same length")
     if not macro_priority_enabled:
         priority_groups = []
-    objective_keys = _objective_keys(target_raw)
+    objective_keys = _objective_keys(target_raw, allow_n_total_with_forms=n_total_governor_enabled)
     if not objective_keys:
         raise ValueError("No solvable targets defined (S/SO4/Na/Cl are ignored).")
 
@@ -467,6 +503,9 @@ def solve_recipe_data(
         macro_priority_enabled=macro_priority_enabled,
         priority_groups=priority_groups,
         priority_group_weights=priority_group_weights,
+        n_form_priority_weights=n_form_priority_weights,
+        n_total_governor_enabled=n_total_governor_enabled,
+        n_total_governor_weight=n_total_governor_weight,
         overshoot_penalty=overshoot_penalty,
         irls_max_outer_iter=irls_max_outer_iter,
         scale_eps_mg_per_l=scale_eps_mg_per_l,
@@ -505,7 +544,7 @@ def solve_recipe_data(
 
     x_full = build_full_weights(solve_weights)
     fertilizers_out, achieved_elements, full_recipe = build_solution_for_weights(x_full)
-    if relative_weighting:
+    if relative_weighting and not (n_total_governor_enabled or n_form_priority_weights):
         solve_weights_unweighted = _solve_weights(A, b, fixed_weights, variable_mask)
         x_full_unweighted = build_full_weights(solve_weights_unweighted)
         ferts_unweighted, achieved_unweighted, recipe_unweighted = build_solution_for_weights(x_full_unweighted)
@@ -528,6 +567,7 @@ def solve_recipe_data(
             full_recipe = recipe_unweighted
 
     if singleton_supplier_enabled:
+        singleton_skip_keys = {"N_total"} if n_total_governor_enabled else None
 
         def recompute_achieved_fn(new_x_full: np.ndarray) -> Dict[str, float]:
             updated_fertilizers = []
@@ -562,6 +602,7 @@ def solve_recipe_data(
             max_regress_pp=singleton_max_regress_pp,
             macro_regress_pp=macro_regress_pp,
             priority_groups=priority_groups,
+            skip_keys=singleton_skip_keys,
             recompute_achieved_fn=recompute_achieved_fn,
         )
         if np.any(np.abs(x_full_updated - x_full) > 1e-12):

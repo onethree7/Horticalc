@@ -17,7 +17,6 @@ const waterSection = document.querySelector("#waterSection");
 const npkAllPctValue = document.querySelector("#npkAllPct");
 const npkPNormValue = document.querySelector("#npkPNorm");
 const npkNpkPctValue = document.querySelector("#npkNpkPct");
-const npkRatioGrid = document.querySelector("#npkRatioGrid");
 const ec18Value = document.querySelector("#ec18Value");
 const ec25Value = document.querySelector("#ec25Value");
 const ecWater18Value = document.querySelector("#ecWater18Value");
@@ -73,16 +72,6 @@ const fertEditorLoadButton = document.querySelector("#fertEditorLoad");
 const fertEditorSaveButton = document.querySelector("#fertEditorSave");
 
 const CALC_LITERS = 10.0;
-const npkRatioKeys = [
-  "N:K",
-  "CaO:K2O",
-  "MgO:CaO",
-  "Na2O:MgO",
-  "SO4:P2O5",
-  "P2O5:K2O",
-  "Fe:MgO",
-  "CO3:SiO2",
-];
 
 let fertilizerOptions = [];
 const selectedFertilizers = [{ name: "", form: "", weight: "" }];
@@ -1009,40 +998,6 @@ function renderSolverResults(data) {
   });
 }
 
-function renderNpkRatioGrid(container, ratios) {
-  if (!container) {
-    return;
-  }
-  container.innerHTML = "";
-  const ratioValues = ratios || {};
-  npkRatioKeys.forEach((key) => {
-    const rawValue = ratioValues[key] ? String(ratioValues[key]) : "-";
-    let label = key;
-    let value = rawValue;
-    if (rawValue !== "-" && rawValue.includes("=")) {
-      const [splitLabel, splitValue] = rawValue.split("=");
-      if (splitLabel && splitValue) {
-        label = splitLabel;
-        value = splitValue;
-      }
-    }
-
-    const row = document.createElement("div");
-    row.className = "ratio-item";
-
-    const labelSpan = document.createElement("span");
-    labelSpan.className = "ratio-label";
-    labelSpan.textContent = label;
-
-    const valueSpan = document.createElement("span");
-    valueSpan.className = "ratio-value";
-    valueSpan.textContent = value;
-
-    row.append(labelSpan, valueSpan);
-    container.append(row);
-  });
-}
-
 function renderSelectionTable() {
   renderTableRows(fertilizerSelectTable, selectedFertilizers.length, (i) => {
     const row = document.createElement("tr");
@@ -1880,7 +1835,6 @@ function renderCalculation(data) {
   npkAllPctValue.textContent = npkMetrics.npk_all_pct || "-";
   npkPNormValue.textContent = npkMetrics.npk_p_norm || "-";
   npkNpkPctValue.textContent = npkMetrics.npk_npk_pct || "-";
-  renderNpkRatioGrid(npkRatioGrid, npkMetrics.npk_ratios);
 
   const ec = data.ec || {};
   renderEcPair(ec.ec_mS_per_cm || {}, ec18Value, ec25Value);
@@ -2462,5 +2416,4 @@ updateCalculatorScaleDisplay();
 renderSolverTargetsTable();
 setMode("calculator");
 updateSolverResultActions();
-renderNpkRatioGrid(npkRatioGrid, {});
 init();

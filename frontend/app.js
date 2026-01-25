@@ -421,12 +421,12 @@ function updateModeToggleUI() {
 
 const profileConfigs = {
   calculator: {
-    title: "Recipe",
-    hint: "Recipe lokal speichern/laden. Solver-Rezepte sind unter Nutrient Solution gespeichert.",
+    title: "Düngerrezept",
+    hint: "Düngerrezept lokal speichern/laden. Zielprofile werden unter Zielprofil gespeichert.",
   },
   solver: {
-    title: "Nutrient Solution",
-    hint: "Nutrient Solution lokal speichern/laden.",
+    title: "Zielprofil",
+    hint: "Zielprofil lokal speichern/laden.",
   },
 };
 
@@ -2325,7 +2325,7 @@ saveSolverAsRecipeButton.addEventListener("click", async () => {
     return;
   }
   if (!lastSolveResult) {
-    reportError(null, "Bitte zuerst eine Solver Recipe berechnen.");
+    reportError(null, "Bitte zuerst ein Zielprofil berechnen.");
     return;
   }
   try {
@@ -2340,7 +2340,7 @@ saveSolverAsRecipeButton.addEventListener("click", async () => {
 
 applySolverToCalculatorButton.addEventListener("click", async () => {
   if (!lastSolveResult) {
-    reportError(null, "Bitte zuerst eine Solver Recipe berechnen.");
+    reportError(null, "Bitte zuerst ein Zielprofil berechnen.");
     return;
   }
   const solverLitersRaw = Number(solverLitersInput.value);

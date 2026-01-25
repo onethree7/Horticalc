@@ -22,11 +22,11 @@
         <div class="mode-toggle segmented" role="tablist" aria-label="Modus-Auswahl">
           <label class="segmented-btn">
             <input type="radio" name="modeToggle" value="calculator" checked />
-            Rezept
+            Düngerrezept
           </label>
           <label class="segmented-btn">
             <input type="radio" name="modeToggle" value="solver" />
-            Solver Recipe
+            Zielprofil-Rechner
           </label>
           <label class="segmented-btn">
             <input type="radio" name="modeToggle" value="fertilizers" />
@@ -89,8 +89,8 @@
       </section>
 
       <section class="block" id="profileSection">
-        <h2 id="profileSectionTitle">Recipe</h2>
-        <p class="hint" id="profileSectionHint">Profile lokal speichern/laden.</p>
+        <h2 id="profileSectionTitle">Düngerrezept</h2>
+        <p class="hint" id="profileSectionHint">Düngerrezept lokal speichern/laden.</p>
         <div class="water-controls">
           <div class="water-control-group">
             <label for="profileSelect">Profil auswählen</label>
@@ -109,7 +109,7 @@
           </div>
         </div>
         <div class="actions is-hidden" id="solverProfileActions">
-          <button id="saveSolverAsRecipe" class="btn btn--outline" type="button">Als Recipe speichern</button>
+          <button id="saveSolverAsRecipe" class="btn btn--outline" type="button">Als Düngerrezept speichern</button>
           <label class="toggle">
             <input id="applyScaleToCalcLiters" type="checkbox" checked />
             <span>Beim Übernehmen auf 10L-Rechner skalieren</span>
@@ -235,7 +235,7 @@
 
       <div class="mode-panel is-hidden" id="solverMode">
         <section class="block">
-          <h2>Solver Recipe</h2>
+          <h2>Zielprofil-Rechner</h2>
           <p class="hint">Zielwerte, erlaubte Dünger und fixe Grammangaben definieren.</p>
           <div class="solver-settings">
             <label>

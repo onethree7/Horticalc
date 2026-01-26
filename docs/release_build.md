@@ -241,7 +241,7 @@ dist/
    * Build Windows + Linux onedir artifacts.
    * Run smoke tests on the packaged binary with `HORTICALC_NO_BROWSER=1` to avoid opening a browser in CI.
    * Upload artifacts to the workflow run.
-   * Attach the artifacts to a GitHub Release for the tag.
+   * Attach the artifacts to a GitHub Release for the tag (requires workflow `contents: write` permission).
 
 ### CI smoke test behavior (packaged binary)
 

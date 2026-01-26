@@ -5,6 +5,7 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 ## Build & Packaging
 - **Linux build baseline runner version:** DEFAULT — `ubuntu-22.04`.
 - **Packaging mode:** DEFAULT — PyInstaller **onedir** (not onefile).
+- **Windows tzdata bundling:** DEFAULT — include `tzdata` via PyInstaller hidden import to satisfy `zoneinfo` on Windows.
 
 ## Runtime & Networking
 - **Bind address:** DEFAULT — `127.0.0.1` only.

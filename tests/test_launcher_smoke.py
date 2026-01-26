@@ -8,9 +8,8 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
-from horticalc.data_io import repo_root
 from horticalc.launcher import fail_fast, lockfile_path, read_lockfile, write_lockfile
-from horticalc.paths import app_root
+from horticalc.paths import app_root, repo_root
 
 
 def test_app_root_matches_repo_root_in_dev() -> None:

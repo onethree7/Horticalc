@@ -29,6 +29,7 @@ from horticalc.data_io import (
     save_recipe,
     save_water_profile,
 )
+from horticalc.paths import app_root
 from horticalc.solver import solve_recipe_data
 
 
@@ -37,7 +38,7 @@ app = FastAPI(title="Horticalc API", version="0.1.0")
 
 FERTILIZERS = load_fertilizers()
 MOLAR_MASSES = load_molar_masses()
-FRONTEND_DIR = repo_root() / "frontend"
+FRONTEND_DIR = app_root() / "frontend"
 WATER_PROFILES_DIR = repo_root() / "data" / "water_profiles"
 NUTRIENT_SOLUTIONS_DIR = repo_root() / "data" / "nutrient_solutions"
 DEFAULT_RECIPE_PATH = repo_root() / "recipes" / "default.yml"

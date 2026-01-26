@@ -5,7 +5,7 @@
 Exactly as specified in `docs/AGENTS.md`, the runtime model is:
 
 1. A single launcher executable starts a local HTTP server bound to `127.0.0.1`.
-2. The backend serves the static frontend from the same origin at `/` and serves the API under the same server.
+2. The backend serves the static frontend from the same origin at `/` and serves static assets under a stable path (root).
 3. The launcher waits until `/health` returns OK.
 4. The launcher opens the system default browser to `http://127.0.0.1:<port>/`.
 5. All persistent data and logs live inside the extracted app folder (portable-only). If the app is already running, open the browser and do not start a second server.
@@ -57,7 +57,7 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
 * `docs/release_build.md` (update with new single-origin dev run commands).
 
 **Acceptance criteria:**
-* Running the backend and opening `http://127.0.0.1:<port>/` loads the UI assets.
+* Running the backend and opening `http://127.0.0.1:<port>/` loads the UI assets (CSS/JS from the same origin).
 * UI calls API successfully with relative URLs (same origin; no CORS).
 * No separate frontend server is required in release mode.
 

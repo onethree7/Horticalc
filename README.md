@@ -96,7 +96,7 @@ python -m uvicorn api.app:app --host 127.0.0.1 --port 8000
 ```bash
 python -m http.server 5173 --directory frontend
 ```
-  - Frontend-URL: `http://127.0.0.1:5173/` (API Base URL im UI auf `http://127.0.0.1:8000` setzen)
+  - Frontend-URL: `http://127.0.0.1:5173/` (API Base URL im UI setzen, Standard ist gleiche Herkunft)
 
 API (Auszug, relevant für GUI):
 - `GET /health` – Healthcheck

@@ -267,7 +267,11 @@ const summaryLabelWidth = "12rem";
 const ION_NITROGEN_EXPANDED_KEY = "horticalc.ion_n_expanded";
 
 function apiBase() {
-  return apiBaseInput.value.replace(/\/$/, "");
+  const raw = apiBaseInput.value.trim();
+  if (!raw) {
+    return "";
+  }
+  return raw.replace(/\/$/, "");
 }
 
 function lsGet(key, fallback) {

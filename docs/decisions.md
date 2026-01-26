@@ -12,7 +12,7 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 - **Lockfile path/name:** DEFAULT — `AppRoot/user/horticalc.lock.json`.
 
 ## UI Routing
-- **SPA fallback needed?:** DEFAULT — **No** (no client-side routing detected in `frontend/`).
+- **SPA fallback needed?:** UNDECIDED — verify during Task 1 (frontend currently has no client-side routing).
 
 ## Data & Persistence
 - **AppRoot definition:** DEFAULT — packaged executable directory; in dev, repo root.

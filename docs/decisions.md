@@ -23,3 +23,4 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 - **Release trigger:** DEFAULT — tags matching `v*` plus manual workflow dispatch.
 - **CI runner OSes:** DEFAULT — `ubuntu-22.04` and `windows-latest`.
 - **CI Python version:** DEFAULT — `3.11.9`.
+- **Release workflow permissions:** DEFAULT — `contents: write` for attaching assets to GitHub Releases.

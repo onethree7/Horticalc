@@ -257,6 +257,8 @@ Scope:
 - Trigger on tags `v*` to upload release assets.
 - Also allow manual workflow dispatch.
 - Include minimal smoke tests in CI (import test + CLI version/health).
+Hotfix:
+- **[DONE.]** Add workflow permissions for release asset uploads (`contents: write`).
 
 Required doc updates:
 - `docs/release_build.md`: “How to cut a release” steps.

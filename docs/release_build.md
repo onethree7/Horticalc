@@ -162,6 +162,31 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
 * `docs/release_build.md` (exact build commands and artifact layout).
 * `requirements.txt` (if PyInstaller is added as a build dependency).
 
+**Build prerequisites (Windows + Linux):**
+* Python **3.10+** (recommend 3.11.x) with `pip`.
+* Install build dependencies from repo root:
+  * `python -m pip install -r requirements.txt`
+  * `python -m pip install pyinstaller`
+
+**Build commands (exact):**
+* Windows (PowerShell):
+  * `.\scripts\packaging\build_windows.ps1`
+* Linux (bash):
+  * `./scripts/packaging/build_linux.sh`
+
+**Expected dist layout (exact):**
+```
+dist/
+└── Horticalc/               (Windows) or horticalc/ (Linux)
+    ├── Horticalc.exe        (Windows) or horticalc (Linux)
+    ├── _internal/
+    ├── frontend/
+    ├── data/
+    ├── recipes/
+    ├── user/                (created at runtime)
+    └── logs/                (created at runtime)
+```
+
 **Acceptance criteria:**
 * Dist folder can be zipped/tarred and run from any writable path.
 * Running packaged binary opens browser and UI loads.
@@ -171,8 +196,12 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
 * Assets are missing from dist or require an external server.
 
 **Verification commands (exact) + success:**
-* `python -m PyInstaller --noconfirm --onedir <spec-or-entry>`
-  * Success: `dist/` contains the expected AppRoot layout, and running the binary opens the UI.
+* Windows: `.\scripts\packaging\build_windows.ps1`
+  * Success: `dist/Horticalc/` contains the AppRoot layout with `frontend/`, `data/`, and `recipes/` alongside `Horticalc.exe`.
+  * Success: Running `dist\\Horticalc\\Horticalc.exe` from a writable folder opens the browser and the UI works.
+* Linux: `./scripts/packaging/build_linux.sh`
+  * Success: `dist/horticalc/` contains the AppRoot layout with `frontend/`, `data/`, and `recipes/` alongside `horticalc`.
+  * Success: Running `./dist/horticalc/horticalc` from a writable folder opens the browser and the UI works.
 
 ---
 

@@ -17,8 +17,6 @@ from typing import Any
 
 import uvicorn
 
-from api.app import app
-
 from .paths import app_root, logs_dir, user_dir
 
 
@@ -99,7 +97,7 @@ def fail_fast(message: str, log_file: Path | None = None) -> None:
             ctypes.windll.user32.MessageBoxW(0, message, "Horticalc", 0x10)
         except Exception:
             logging.exception("Failed to display Windows message box.")
-    raise SystemExit(1)
+    sys.exit(1)
 
 
 def find_free_port() -> int | None:
@@ -191,6 +189,8 @@ def main() -> None:
     logger = logging.getLogger("horticalc.launcher")
     logger.info("AppRoot resolved to %s", root)
 
+    from api.app import app
+
     lock_path = lockfile_path(root)
     lock_data = read_lockfile(lock_path)
     if lock_data and health_ok(lock_data["port"]):
@@ -204,7 +204,8 @@ def main() -> None:
 
     port = find_free_port()
     if port is None:
-        fail_fast("No free port found in the 8000–8100 range.", log_file)
+        fail_fast("No free port found in the 8000-8100 range.", log_file)
+        return
 
     config = uvicorn.Config(
         app,
@@ -238,11 +239,13 @@ def main() -> None:
                 server_thread.join(timeout=5)
                 remove_lockfile(lock_path)
                 fail_fast(error_holder.get("message", "Server failed to start."), log_file)
+                return
             if ready_event.is_set():
                 break
             if not server_thread.is_alive():
                 remove_lockfile(lock_path)
                 fail_fast("Server stopped unexpectedly. See the log file for details.", log_file)
+                return
             time.sleep(0.1)
 
         server_thread.join()

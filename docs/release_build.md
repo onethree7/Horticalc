@@ -17,6 +17,16 @@ Exactly as specified in `docs/AGENTS.md`, the runtime model is:
 * **Fail-fast:** If AppRoot is not writable, exit immediately with a clear, user-facing message, e.g.:
   * “Extract to a writable folder (e.g. Desktop/Downloads). Do not run from Program Files.”
 
+## Repository hygiene (no hidden Unicode control characters)
+
+To avoid hidden/bidirectional Unicode control characters (category `Cf`) in source and docs, we enforce a repo-wide scan for text files (`.py`, `.md`, `.html`, `.js`, `.css`, `.toml`, `.yml/.yaml`).
+
+**Verification commands (exact) + success:**
+* `python scripts/check_unicode_controls.py`
+  * Success: exit code 0 with “No Unicode control characters found.”
+* `python -m pytest -q`
+  * Success: the unicode-control guard test passes.
+
 ## Target release folder layout (AppRoot/*)
 
 ```

@@ -205,6 +205,7 @@ Scope:
 - Ensure fail-fast always exits with non-zero status and callers return immediately.
 - Remove hidden/bidirectional Unicode characters from launcher and tests.
 - Keep the launcher behavior otherwise unchanged.
+- [DONE.] Add repo-wide guard against hidden/bidirectional Unicode control characters and verify listed files are clean.
 
 ### Task 3 — Portable-only data policy
 Scope:

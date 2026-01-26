@@ -91,6 +91,9 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
 * A second launch does not spawn a duplicate server (lockfile policy).
 * Fail-fast if AppRoot is not writable (for logs/user data).
 
+**Dev launcher (one command):**
+* `python -m horticalc.launcher`
+
 **Stop conditions:**
 * Any path depends on CWD; must anchor to AppRoot.
 
@@ -99,6 +102,7 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
   * Success: server starts on `127.0.0.1`, `/health` becomes OK, then the browser opens to the UI.
 * `python -m horticalc.launcher` (run again)
   * Success: no second server process; browser opens to existing server.
+  * Notes: logs are written to `AppRoot/logs/launcher.log`, and the lockfile lives at `AppRoot/user/horticalc.lock.json`.
 
 ---
 

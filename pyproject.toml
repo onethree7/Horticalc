@@ -10,6 +10,7 @@ dependencies = [
 
 [project.scripts]
 horticalc = "horticalc.__main__:main"
+horticalc-launcher = "horticalc.launcher:main"
 
 [build-system]
 requires = ["setuptools>=68"]

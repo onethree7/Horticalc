@@ -179,7 +179,7 @@ Acceptance:
 STOP if:
 - Unclear where FastAPI app is defined; report findings instead of guessing.
 
-### Task 2 — Launcher (start server → wait → open browser)
+### Task 2 — Launcher (start server → wait → open browser) [DONE.]
 Scope:
 - Add a GUI launcher entrypoint (new console_script or module entry).
 - Implements: bind 127.0.0.1, port selection, lockfile policy, /health wait, browser open, portable logs.

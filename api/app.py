@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi import Request
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 import yaml
@@ -33,16 +33,11 @@ from horticalc.solver import solve_recipe_data
 
 
 app = FastAPI(title="Horticalc API", version="0.1.0")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 
 FERTILIZERS = load_fertilizers()
 MOLAR_MASSES = load_molar_masses()
+FRONTEND_DIR = repo_root() / "frontend"
 WATER_PROFILES_DIR = repo_root() / "data" / "water_profiles"
 NUTRIENT_SOLUTIONS_DIR = repo_root() / "data" / "nutrient_solutions"
 DEFAULT_RECIPE_PATH = repo_root() / "recipes" / "default.yml"
@@ -571,7 +566,10 @@ def solve(payload: SolveRequest) -> SolveResponse:
     return SolveResponse(**result.to_dict())
 
 
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
+
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)

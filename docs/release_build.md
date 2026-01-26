@@ -68,6 +68,7 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
 **Verification commands (exact) + success:**
 * `python -m uvicorn api.app:app --host 127.0.0.1 --port 8000`
   * Success: visiting `http://127.0.0.1:8000/` loads the UI and API calls succeed with relative URLs.
+  * Legacy/dev split (optional): run `python -m http.server 5173 --directory frontend` and set the UI API Base URL to `http://127.0.0.1:8000`.
 
 ---
 

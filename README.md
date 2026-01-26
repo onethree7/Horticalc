@@ -74,21 +74,29 @@ horticalc solve recipes/solve_golden.yml --pretty
 
 ## GUI + API (Web UI)
 
-Die GUI ist ein statisches Frontend unter `frontend/` und spricht eine FastAPI unter `api/` an.
+Die GUI ist ein statisches Frontend unter `frontend/`, das von der FastAPI unter `api/` direkt
+mit ausgeliefert wird (same-origin).
 
-- Backend starten:
+- Backend starten (UI + API):
 ```bash
-python -m uvicorn api.app:app --host 0.0.0.0 --port 8000
-```
-- Frontend starten:
-```bash
-python -m http.server 5173 --directory frontend
+python -m uvicorn api.app:app --host 127.0.0.1 --port 8000
 ```
 
 URLs:
+- UI + API: `http://127.0.0.1:8000/`
 - API Health: `http://127.0.0.1:8000/health`
-- Frontend: `http://127.0.0.1:5173/`
 - API Doku: `http://127.0.0.1:8000/docs`
+
+Optional/Legacy (getrennter Frontend-Server für Entwicklung):
+- Backend:
+```bash
+python -m uvicorn api.app:app --host 127.0.0.1 --port 8000
+```
+- Frontend:
+```bash
+python -m http.server 5173 --directory frontend
+```
+  - Frontend-URL: `http://127.0.0.1:5173/` (API Base URL im UI auf `http://127.0.0.1:8000` setzen)
 
 API (Auszug, relevant für GUI):
 - `GET /health` – Healthcheck
@@ -238,4 +246,3 @@ Optional können zusätzliche Kennzahlen aktiviert werden. Diese gelten als expe
 ```bash
 python -m pytest -q
 ```
-

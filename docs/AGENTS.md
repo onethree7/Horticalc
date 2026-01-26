@@ -158,7 +158,7 @@ Progress tracking update:
 STOP if:
 - FastAPI app entrypoint cannot be identified.
 
-### Task 1 — Single-origin serving (Backend serves frontend)
+### Task 1 — Single-origin serving (Backend serves frontend) [DONE.]
 Scope:
 - FastAPI serves static frontend at `/` and assets under a stable path.
 - Add SPA fallback (serve `index.html` for unknown non-API paths) if the frontend uses client-side routing.

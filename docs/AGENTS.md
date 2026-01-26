@@ -48,7 +48,7 @@ All writes MUST be relative to the extracted release folder (“AppRoot”).
 
 ### 1.5 Progress tracking is mandatory
 Every implemented change must update:
-- `AGENTS.md` (this file): mark completed items as **[ERL.]** while preserving text.
+- `AGENTS.md` (this file): mark completed items as **[DONE.]** while preserving text.
 - `docs/release_build.md`: reflect the latest implemented reality (commands, paths, verification).
 - `docs/decisions.md`: if a decision is made or changed, record it explicitly.
 
@@ -153,7 +153,7 @@ Output must include:
 - “verification commands” for each later task.
 
 Progress tracking update:
-- Mark Task 0 as **[ERL.]** in AGENTS.md once docs exist and are coherent.
+- Mark Task 0 as **[DONE.]** in AGENTS.md once docs exist and are coherent.
 
 STOP if:
 - FastAPI app entrypoint cannot be identified.
@@ -169,7 +169,7 @@ Required doc updates:
 - Update README dev instructions accordingly.
 
 Progress tracking update:
-- In AGENTS.md, mark Task 1 section as **[ERL.]** and keep the text.
+- In AGENTS.md, mark Task 1 section as **[DONE.]** and keep the text.
 
 Acceptance:
 - Running backend locally and opening `http://127.0.0.1:<port>/` loads the UI assets.
@@ -190,7 +190,7 @@ Required doc updates:
 - Update `docs/decisions.md`: confirm chosen port range and lockfile name/location.
 
 Progress tracking update:
-- Mark Task 2 as **[ERL.]** in AGENTS.md after acceptance tests pass.
+- Mark Task 2 as **[DONE.]** in AGENTS.md after acceptance tests pass.
 
 Acceptance:
 - One command starts everything in dev and opens browser after readiness.
@@ -211,7 +211,7 @@ Required doc updates:
 - `docs/release_build.md`: explicitly describe “defaults vs user copies”, first-run behavior, and failure modes.
 
 Progress tracking update:
-- Mark Task 3 as **[ERL.]** in AGENTS.md after persistence test passes.
+- Mark Task 3 as **[DONE.]** in AGENTS.md after persistence test passes.
 
 Acceptance:
 - Edits (e.g. fertilizers) persist across restart and stay inside extracted folder.
@@ -231,7 +231,7 @@ Required doc updates:
 - `docs/release_build.md`: exact build commands for Win/Linux, exact artifact layout.
 
 Progress tracking update:
-- Mark Task 4 as **[ERL.]** in AGENTS.md when packaged artifacts pass smoke tests.
+- Mark Task 4 as **[DONE.]** in AGENTS.md when packaged artifacts pass smoke tests.
 
 Acceptance:
 - Dist folder can be zipped/tarred and run from any writable path.
@@ -253,7 +253,7 @@ Required doc updates:
 - `docs/decisions.md`: record runner OS versions.
 
 Progress tracking update:
-- Mark Task 5 as **[ERL.]** in AGENTS.md after a successful tag build.
+- Mark Task 5 as **[DONE.]** in AGENTS.md after a successful tag build.
 
 Acceptance:
 - Workflow produces two downloadable artifacts that start and open browser.
@@ -281,7 +281,7 @@ For every task, output (in PR description or final response):
 
 ### 7.3 Update progress trackers at the end of every task
 Each completed task MUST:
-- Update `AGENTS.md`: mark the task as **[ERL.]** (do not delete text).
+- Update `AGENTS.md`: mark the task as **[DONE.]** (do not delete text).
 - Update `docs/release_build.md`: reflect reality (commands, paths, behavior).
 - Update `docs/decisions.md`: record any decision taken.
 

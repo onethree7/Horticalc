@@ -25,6 +25,12 @@ HEALTH_ENDPOINT = "/health"
 HEALTH_TIMEOUT_SECONDS = 30.0
 LOCKFILE_NAME = "horticalc.lock.json"
 LOG_FILENAME = "launcher.log"
+NO_BROWSER_ENV = "HORTICALC_NO_BROWSER"
+
+
+def _env_flag(name: str) -> bool:
+    value = os.getenv(name, "")
+    return value.strip().lower() in {"1", "true", "yes"}
 
 
 def lockfile_path(root: Path) -> Path:
@@ -160,6 +166,26 @@ def open_browser_when_ready(
     error_event.set()
 
 
+def wait_for_health(
+    port: int,
+    timeout_seconds: float,
+    ready_event: threading.Event,
+    error_event: threading.Event,
+    error_holder: dict[str, str],
+) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        if health_ok(port):
+            ready_event.set()
+            return
+        time.sleep(0.5)
+    error_holder["message"] = (
+        "Server failed to become healthy within 30 seconds. "
+        "See the log file for details."
+    )
+    error_event.set()
+
+
 def main() -> None:
     root = app_root()
     try:
@@ -173,6 +199,7 @@ def main() -> None:
     log_file = setup_logging(logs_path)
     logger = logging.getLogger("horticalc.launcher")
     logger.info("AppRoot resolved to %s", root)
+    no_browser = _env_flag(NO_BROWSER_ENV)
 
     from api.app import app
 
@@ -180,7 +207,11 @@ def main() -> None:
     lock_data = read_lockfile(lock_path)
     if lock_data and health_ok(lock_data["port"]):
         url = f"http://127.0.0.1:{lock_data['port']}/"
-        logger.info("Existing server detected on port %s; opening browser.", lock_data["port"])
+        logger.info("Existing server detected on port %s.", lock_data["port"])
+        if no_browser:
+            logger.info("%s is set; skipping browser launch.", NO_BROWSER_ENV)
+            return
+        logger.info("Opening browser for existing server.")
         webbrowser.open(url)
         return
     if lock_path.exists():
@@ -209,13 +240,17 @@ def main() -> None:
     ready_event = threading.Event()
     error_event = threading.Event()
     error_holder: dict[str, str] = {}
-    browser_thread = threading.Thread(
-        target=open_browser_when_ready,
-        args=(port, HEALTH_TIMEOUT_SECONDS, ready_event, error_event, error_holder),
-        name="browser-launcher",
-        daemon=True,
-    )
-    browser_thread.start()
+    if no_browser:
+        logger.info("%s is set; waiting for /health without launching a browser.", NO_BROWSER_ENV)
+        wait_for_health(port, HEALTH_TIMEOUT_SECONDS, ready_event, error_event, error_holder)
+    else:
+        browser_thread = threading.Thread(
+            target=open_browser_when_ready,
+            args=(port, HEALTH_TIMEOUT_SECONDS, ready_event, error_event, error_holder),
+            name="browser-launcher",
+            daemon=True,
+        )
+        browser_thread.start()
 
     try:
         while True:

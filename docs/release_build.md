@@ -211,7 +211,7 @@ dist/
 * Add workflow to build Windows+Linux artifacts (matrix).
 * Trigger on tags `v*` to upload release assets.
 * Also allow manual workflow dispatch.
-* Include minimal smoke tests in CI (import test + CLI version/health).
+* Include smoke tests in CI against the packaged binary.
 
 **Files to touch (based on repo inspection):**
 * `.github/workflows/` (add release workflow).
@@ -229,3 +229,23 @@ dist/
 **Verification commands (exact) + success:**
 * `python -m PyInstaller --noconfirm --onedir <spec-or-entry>`
   * Success: local artifacts build without errors (mirrors CI build).
+
+### How to cut a release
+
+1) Create a release tag locally:
+   * `git tag vX.Y.Z`
+2) Push the tag:
+   * `git push origin vX.Y.Z`
+3) GitHub Actions will:
+   * Build Windows + Linux onedir artifacts.
+   * Run smoke tests on the packaged binary with `HORTICALC_NO_BROWSER=1` to avoid opening a browser in CI.
+   * Upload artifacts to the workflow run.
+   * Attach the artifacts to a GitHub Release for the tag.
+
+### CI smoke test behavior (packaged binary)
+
+The release workflow runs a smoke test against the packaged binary (not Python) to prove:
+* The binary starts with `HORTICALC_NO_BROWSER=1`.
+* The launcher writes the lockfile at `AppRoot/user/horticalc.lock.json`.
+* `/health` responds with HTTP 200 from the port in the lockfile.
+* `AppRoot/frontend/index.html`, `AppRoot/data/`, `AppRoot/recipes/`, and `AppRoot/logs/` exist.

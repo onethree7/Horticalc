@@ -20,3 +20,5 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 
 ## CI/Release
 - **Release trigger:** DEFAULT — tags matching `v*` plus manual workflow dispatch.
+- **CI runner OSes:** DEFAULT — `ubuntu-22.04` and `windows-latest`.
+- **CI Python version:** DEFAULT — `3.11.9`.

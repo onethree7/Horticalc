@@ -1,0 +1,170 @@
+name: Release Builds
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux
+            app_dir: dist/horticalc
+            bin_path: dist/horticalc/horticalc
+            archive_ext: tar.gz
+          - os: windows-latest
+            platform: windows
+            app_dir: dist/Horticalc
+            bin_path: dist/Horticalc/Horticalc.exe
+            archive_ext: zip
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.9"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
+
+      - name: Build package (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          chmod +x scripts/packaging/build_linux.sh
+          ./scripts/packaging/build_linux.sh
+
+      - name: Build package (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          ./scripts/packaging/build_windows.ps1
+
+      - name: Smoke test packaged binary
+        shell: bash
+        env:
+          BIN_PATH: ${{ matrix.bin_path }}
+          APP_ROOT: ${{ matrix.app_dir }}
+          HORTICALC_NO_BROWSER: "1"
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+          import time
+          import urllib.request
+          from pathlib import Path
+
+          app_root = Path(os.environ["APP_ROOT"]).resolve()
+          bin_path = Path(os.environ["BIN_PATH"]).resolve()
+
+          if not bin_path.exists():
+              raise SystemExit(f"Packaged binary not found: {bin_path}")
+
+          env = os.environ.copy()
+          env["HORTICALC_NO_BROWSER"] = "1"
+
+          proc = subprocess.Popen([str(bin_path)], cwd=str(app_root), env=env)
+          try:
+              lockfile = app_root / "user" / "horticalc.lock.json"
+              deadline = time.time() + 30
+              while time.time() < deadline and not lockfile.exists():
+                  time.sleep(0.5)
+              if not lockfile.exists():
+                  raise SystemExit(f"Lockfile was not created: {lockfile}")
+
+              data = json.loads(lockfile.read_text(encoding="utf-8"))
+              port = data.get("port")
+              if not isinstance(port, int):
+                  raise SystemExit("Lockfile missing integer port")
+
+              required_paths = [
+                  app_root / "frontend",
+                  app_root / "frontend" / "index.html",
+                  app_root / "data",
+                  app_root / "recipes",
+              ]
+              for path in required_paths:
+                  if not path.exists():
+                      raise SystemExit(f"Missing expected path: {path}")
+
+              logs_dir = app_root / "logs"
+              deadline = time.time() + 30
+              while time.time() < deadline and not logs_dir.exists():
+                  time.sleep(0.5)
+              if not logs_dir.exists():
+                  raise SystemExit(f"Logs directory was not created: {logs_dir}")
+
+              health_url = f"http://127.0.0.1:{port}/health"
+              deadline = time.time() + 30
+              while time.time() < deadline:
+                  try:
+                      with urllib.request.urlopen(health_url, timeout=1) as response:
+                          if 200 <= response.status < 300:
+                              break
+                  except Exception:
+                      pass
+                  time.sleep(0.5)
+              else:
+                  raise SystemExit(f"Health check failed: {health_url}")
+          finally:
+              proc.terminate()
+              try:
+                  proc.wait(timeout=10)
+              except subprocess.TimeoutExpired:
+                  proc.kill()
+                  proc.wait(timeout=10)
+          PY
+
+      - name: Compute artifact metadata
+        id: vars
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" == v* ]]; then
+            version="${GITHUB_REF_NAME}"
+          else
+            version="$(git rev-parse --short HEAD)"
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "artifact_base=horticalc-${version}-${{ matrix.platform }}" >> "$GITHUB_OUTPUT"
+
+      - name: Package artifact (Linux)
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          archive="${{ steps.vars.outputs.artifact_base }}.${{ matrix.archive_ext }}"
+          tar -czf "${archive}" -C dist horticalc
+          echo "ARCHIVE_PATH=${archive}" >> "$GITHUB_ENV"
+
+      - name: Package artifact (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $archive = "${{ steps.vars.outputs.artifact_base }}.${{ matrix.archive_ext }}"
+          Compress-Archive -Path "${{ matrix.app_dir }}" -DestinationPath $archive
+          "ARCHIVE_PATH=$archive" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.vars.outputs.artifact_base }}
+          path: ${{ env.ARCHIVE_PATH }}
+          if-no-files-found: error
+
+      - name: Upload release assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ARCHIVE_PATH }}

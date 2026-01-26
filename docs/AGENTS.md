@@ -206,6 +206,7 @@ Scope:
 - Remove hidden/bidirectional Unicode characters from launcher and tests.
 - Keep the launcher behavior otherwise unchanged.
 - [DONE.] Add repo-wide guard against hidden/bidirectional Unicode control characters and verify listed files are clean.
+- **[DONE.]** Use absolute imports in the frozen launcher entrypoint and write the lockfile before optional browser startup (packaging smoke-test fix).
 
 ### Task 3 — Portable-only data policy [DONE.]
 Scope:

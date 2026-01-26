@@ -14,6 +14,7 @@ project_root = Path(project_root_env).resolve() if project_root_env else Path.cw
 app_name = "Horticalc" if sys.platform == "win32" else "horticalc"
 entry_script = project_root / "src" / "horticalc" / "launcher.py"
 show_console = sys.platform != "win32"
+hidden_imports = ["tzdata"] if sys.platform == "win32" else []
 
 
 a = Analysis(
@@ -21,7 +22,7 @@ a = Analysis(
     pathex=[str(project_root), str(project_root / "src")],
     binaries=[],
     datas=[],
-    hiddenimports=[],
+    hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

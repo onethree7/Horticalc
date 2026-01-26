@@ -167,6 +167,7 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
 * Install build dependencies from repo root:
   * `python -m pip install -r requirements.txt`
   * `python -m pip install pyinstaller`
+* Windows note: the PyInstaller spec includes `tzdata` as a hidden import to avoid `zoneinfo` crashes and CI warnings on Windows.
 
 **Build commands (exact):**
 * Windows (PowerShell):

@@ -17,7 +17,7 @@ from typing import Any
 
 import uvicorn
 
-from .paths import PORTABLE_WRITE_ERROR, app_root, ensure_portable_layout, logs_dir
+from horticalc.paths import PORTABLE_WRITE_ERROR, app_root, ensure_portable_layout, logs_dir
 
 
 PORT_RANGE = range(8000, 8101)
@@ -232,10 +232,10 @@ def main() -> None:
     )
     server = uvicorn.Server(config)
 
-    server_thread = threading.Thread(target=server.run, name="uvicorn-server", daemon=True)
-    server_thread.start()
     write_lockfile(lock_path, port)
     atexit.register(remove_lockfile, lock_path)
+    server_thread = threading.Thread(target=server.run, name="uvicorn-server", daemon=True)
+    server_thread.start()
 
     ready_event = threading.Event()
     error_event = threading.Event()

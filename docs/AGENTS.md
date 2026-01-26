@@ -207,7 +207,7 @@ Scope:
 - Keep the launcher behavior otherwise unchanged.
 - [DONE.] Add repo-wide guard against hidden/bidirectional Unicode control characters and verify listed files are clean.
 
-### Task 3 — Portable-only data policy
+### Task 3 — Portable-only data policy [DONE.]
 Scope:
 - Ensure all writes go to `AppRoot/user/`.
 - Implement first-run copy from shipped defaults to user editable copies.

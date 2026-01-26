@@ -7,6 +7,7 @@ from typing import Dict
 
 import yaml
 
+from . import paths
 
 @dataclass(frozen=True)
 class Fertilizer:
@@ -15,11 +16,6 @@ class Fertilizer:
     weight_factor: float
     # composition fractions (mass fraction, e.g. 0.14 = 14%)
     comp: Dict[str, float]
-
-
-def repo_root() -> Path:
-    # this file lives in .../src/horticalc/data_io.py
-    return Path(__file__).resolve().parents[2]
 
 
 def _is_number_field(field: str) -> bool:
@@ -37,7 +33,7 @@ def _float_mapping(data: dict) -> Dict[str, float]:
 
 def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
     if csv_path is None:
-        csv_path = repo_root() / "data" / "fertilizers.csv"
+        csv_path = paths.ensure_portable_layout().fertilizers
 
     ferts: Dict[str, Fertilizer] = {}
     with csv_path.open("r", encoding="utf-8", newline="") as f:
@@ -74,7 +70,8 @@ def save_fertilizers(
     csv_path: Path | None = None,
 ) -> None:
     if csv_path is None:
-        csv_path = repo_root() / "data" / "fertilizers.csv"
+        csv_path = paths.user_fertilizers_path()
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
 
     header: list[str] | None = None
     if csv_path.exists():
@@ -114,7 +111,7 @@ def save_fertilizers(
 
 def load_molar_masses(path: Path | None = None) -> Dict[str, float]:
     if path is None:
-        path = repo_root() / "data" / "molar_masses.yml"
+        path = paths.app_root() / "data" / "molar_masses.yml"
     data = _load_yaml(path)
     return _float_mapping(data)
 

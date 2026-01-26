@@ -10,8 +10,8 @@ from .data_io import (
     load_molar_masses,
     load_recipe,
     load_water_profile_data,
-    repo_root,
 )
+from .paths import repo_root
 from .sluijsmann import compute_sluijsmann
 
 

@@ -19,8 +19,8 @@ from .data_io import (
     load_molar_masses,
     load_recipe,
     load_water_profile_data,
-    repo_root,
 )
+from .paths import repo_root
 
 
 IGNORED_TARGETS = {"S", "SO4", "NA", "CL"}

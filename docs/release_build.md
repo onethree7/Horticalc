@@ -44,7 +44,11 @@ AppRoot/
 
 * On first run, ensure `AppRoot/user/` exists.
 * If `AppRoot/user/fertilizers.csv` is missing, copy from `AppRoot/data/fertilizers.csv`.
-* Apply the same pattern for other editable defaults (water profiles, nutrient solutions, recipes) if/when they become user-editable.
+* Copy shipped, editable defaults into user space on first run:
+  * `AppRoot/data/water_profiles/*.yml` → `AppRoot/user/water_profiles/`
+  * `AppRoot/data/nutrient_solutions/*.yml` → `AppRoot/user/nutrient_solutions/`
+  * `AppRoot/recipes/*.yml` → `AppRoot/user/recipes/`
+* API reads and writes only from `AppRoot/user/` after the copy, so shipped defaults remain read-only.
 
 ---
 
@@ -139,8 +143,10 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
 * Any code introduces OS user dirs.
 
 **Verification commands (exact) + success:**
-* `python -m horticalc.launcher`
-  * Success: on first run, defaults are copied into `AppRoot/user/`, edits persist, and files remain inside AppRoot.
+* `PYTHONPATH=src python -m uvicorn api.app:app --host 127.0.0.1 --port 8000`
+  * Success: first run creates `AppRoot/user/` and copies defaults when missing; edits persist in `AppRoot/user/`.
+* `python -m pytest -q`
+  * Success: all tests pass (including portable copy/paths coverage).
 
 ---
 

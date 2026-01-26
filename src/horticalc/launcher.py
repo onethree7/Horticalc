@@ -17,7 +17,7 @@ from typing import Any
 
 import uvicorn
 
-from .paths import app_root, logs_dir, user_dir
+from .paths import PORTABLE_WRITE_ERROR, app_root, ensure_portable_layout, logs_dir
 
 
 PORT_RANGE = range(8000, 8101)
@@ -29,23 +29,6 @@ LOG_FILENAME = "launcher.log"
 
 def lockfile_path(root: Path) -> Path:
     return root / "user" / LOCKFILE_NAME
-
-
-def ensure_app_root_writable(root: Path) -> tuple[Path, Path]:
-    logs = logs_dir(root)
-    user = user_dir(root)
-    try:
-        logs.mkdir(parents=True, exist_ok=True)
-        user.mkdir(parents=True, exist_ok=True)
-        test_file = logs / ".write_test"
-        test_file.write_text("ok", encoding="utf-8")
-        test_file.unlink(missing_ok=True)
-    except OSError as exc:
-        raise RuntimeError(
-            "Extract to a writable folder (e.g. Desktop/Downloads). "
-            "Do not run from Program Files."
-        ) from exc
-    return logs, user
 
 
 def _logging_config(log_file: Path) -> dict[str, Any]:
@@ -180,9 +163,11 @@ def open_browser_when_ready(
 def main() -> None:
     root = app_root()
     try:
-        logs_path, _ = ensure_app_root_writable(root)
+        ensure_portable_layout(root)
+        logs_path = logs_dir(root)
     except RuntimeError as exc:
-        fail_fast(str(exc))
+        message = str(exc) or PORTABLE_WRITE_ERROR
+        fail_fast(message)
         return
 
     log_file = setup_logging(logs_path)

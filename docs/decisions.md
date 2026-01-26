@@ -8,8 +8,8 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 
 ## Runtime & Networking
 - **Bind address:** DEFAULT — `127.0.0.1` only.
-- **Port policy:** DEFAULT — fixed-range scan on `127.0.0.1` (suggested range `8000–8100`).
-- **Lockfile path/name:** DEFAULT — `AppRoot/user/horticalc.lock.json`.
+- **Port policy:** DEFAULT — fixed-range scan on `127.0.0.1` (suggested range `8000–8100`). Confirmed in Task 2.
+- **Lockfile path/name:** DEFAULT — `AppRoot/user/horticalc.lock.json`. Confirmed in Task 2.
 
 ## UI Routing
 - **SPA fallback needed?:** UNDECIDED — verify during Task 1 (frontend currently has no client-side routing).

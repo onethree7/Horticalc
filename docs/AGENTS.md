@@ -200,6 +200,12 @@ Acceptance:
 STOP if:
 - Any path depends on CWD; must anchor to AppRoot.
 
+### Task 2 Hotfix — Launcher fail-fast and cleanup [DONE.]
+Scope:
+- Ensure fail-fast always exits with non-zero status and callers return immediately.
+- Remove hidden/bidirectional Unicode characters from launcher and tests.
+- Keep the launcher behavior otherwise unchanged.
+
 ### Task 3 — Portable-only data policy
 Scope:
 - Ensure all writes go to `AppRoot/user/`.

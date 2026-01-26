@@ -228,7 +228,7 @@ STOP if:
 - Any code writes outside AppRoot.
 - Any code introduces OS user dirs.
 
-### Task 4 — PyInstaller onedir packaging
+### Task 4 — PyInstaller onedir packaging **[DONE.]**
 Scope:
 - Add packaging spec/scripts and short packaging docs.
 - Ensure dist includes shipped asset directories `frontend/`, `data/`, `recipes/`.

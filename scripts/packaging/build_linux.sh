@@ -4,6 +4,9 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 spec_path="$repo_root/scripts/packaging/horticalc.spec"
 
+cd "$repo_root"
+export HORTICALC_PROJECT_ROOT="$repo_root"
+
 python -m PyInstaller --noconfirm --clean "$spec_path"
 
 dist_root="$repo_root/dist"
@@ -19,4 +22,17 @@ for dir in frontend data recipes; do
   dest="$app_root/$dir"
   rm -rf "$dest"
   cp -a "$src" "$dest"
+done
+
+binary_path="$app_root/horticalc"
+if [[ ! -x "$binary_path" ]]; then
+  echo "Expected packaged binary not found or not executable: $binary_path" >&2
+  exit 1
+fi
+
+for dir in frontend data recipes; do
+  if [[ ! -d "$app_root/$dir" ]]; then
+    echo "Expected packaged asset directory not found: $app_root/$dir" >&2
+    exit 1
+  fi
 done

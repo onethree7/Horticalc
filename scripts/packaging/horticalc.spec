@@ -2,10 +2,15 @@
 from __future__ import annotations
 
 import sys
+import os
 from pathlib import Path
 
 
-project_root = Path(__file__).resolve().parents[2]
+# PyInstaller exec() does not guarantee __file__ in CI; resolve root via env/cwd.
+project_root_env = os.environ.get("HORTICALC_PROJECT_ROOT") or os.environ.get(
+    "GITHUB_WORKSPACE"
+)
+project_root = Path(project_root_env).resolve() if project_root_env else Path.cwd().resolve()
 app_name = "Horticalc" if sys.platform == "win32" else "horticalc"
 entry_script = project_root / "src" / "horticalc" / "launcher.py"
 show_console = sys.platform != "win32"

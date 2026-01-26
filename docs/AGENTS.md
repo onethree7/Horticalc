@@ -233,6 +233,8 @@ Scope:
 - Add packaging spec/scripts and short packaging docs.
 - Ensure dist includes shipped asset directories `frontend/`, `data/`, `recipes/`.
 - Ensure Windows build is double-click friendly.
+Hotfix note:
+- **[DONE.]** Packaging determinism fix: PyInstaller spec resolves repo root via env/cwd (no `__file__`), and build scripts export `HORTICALC_PROJECT_ROOT` with post-build smoke checks.
 
 Required doc updates:
 - `docs/release_build.md`: exact build commands for Win/Linux, exact artifact layout.

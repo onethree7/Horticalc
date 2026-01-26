@@ -142,7 +142,7 @@ Codex must not silently choose.
 Codex must implement in small, reviewable PRs. Use this order.
 Each task must update the progress trackers (AGENTS.md + docs) before completion.
 
-### Task 0 — Docs only (NO code)
+### Task 0 — Docs only (NO code) [DONE.]
 Create/overwrite:
 - `docs/release_build.md`: open guide for implementing Option A in this repo (concept + steps + verification).
 - `docs/decisions.md`: decisions checklist with defaults (port policy, lockfile, linux baseline).

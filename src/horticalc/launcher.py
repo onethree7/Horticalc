@@ -192,7 +192,10 @@ def _close_window(window: Any, logger: logging.Logger, webview_module: Any) -> N
 def open_webview(url: str, logger: logging.Logger) -> None:
     import webview
 
+    gui_backend = "edgechromium" if sys.platform == "win32" else None
     window = webview.create_window("Horticalc", url)
+    if gui_backend:
+        logger.info("Using pywebview GUI backend: %s", gui_backend)
 
     def _on_closed() -> None:
         logger.info("Webview window closed.")
@@ -209,7 +212,10 @@ def open_webview(url: str, logger: logging.Logger) -> None:
     for sig in (signal.SIGINT, signal.SIGTERM):
         signal.signal(sig, _handle_signal)
 
-    webview.start()
+    if gui_backend:
+        webview.start(gui=gui_backend)
+    else:
+        webview.start()
 
 
 def main() -> None:

@@ -7,7 +7,7 @@ Exactly as specified in `docs/AGENTS.md`, the runtime model is:
 1. A single launcher executable starts a local HTTP server bound to `127.0.0.1`.
 2. The backend serves the static frontend from the same origin at `/` and serves static assets under a stable path (root).
 3. The launcher waits until `/health` returns OK.
-4. The launcher opens an embedded webview window to `http://127.0.0.1:<port>/` and shuts down the server when the window closes.
+4. The launcher opens an embedded webview window to `http://127.0.0.1:<port>/` and shuts down the server when the window closes. On Windows, the launcher forces the Edge Chromium backend (requires the Edge WebView2 runtime).
 5. All persistent data and logs live inside the extracted app folder (portable-only). If the app is already running, open the UI window and do not start a second server.
 
 ## Portable-only policy (AppRoot-only writes)
@@ -168,7 +168,7 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
   * `python -m pip install -r requirements.txt`
   * `python -m pip install pyinstaller`
 * Windows note: the PyInstaller spec includes `tzdata` as a hidden import to avoid `zoneinfo` crashes and CI warnings on Windows.
-* UI note: the packaged app uses `pywebview` (Edge WebView2 on Windows, GTK/WebKit on Linux), so ensure the target OS has the corresponding runtime available.
+* UI note: the packaged app uses `pywebview`. Windows builds explicitly force the Edge Chromium backend, which requires the Edge WebView2 runtime. Linux uses GTK/WebKit, so ensure the target OS has the corresponding runtime available.
 
 **Build commands (exact):**
 * Windows (PowerShell):

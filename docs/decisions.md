@@ -12,6 +12,7 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 - **Port policy:** DEFAULT — bind with `port=0` so the OS selects a free port. Confirmed in embedded UI launcher.
 - **Lockfile path/name:** DEFAULT — `AppRoot/user/horticalc.lock.json`. Confirmed in Task 2.
 - **Embedded UI window:** DEFAULT — `pywebview` (Edge WebView2 on Windows, GTK/WebKit on Linux).
+- **Windows webview backend:** DEFAULT — force `edgechromium` backend; requires the Edge WebView2 runtime.
 
 ## UI Routing
 - **SPA fallback needed?:** UNDECIDED — verify during Task 1 (frontend currently has no client-side routing).

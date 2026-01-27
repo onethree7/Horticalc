@@ -16,7 +16,7 @@ Goal: A user can run Horticalc as a portable app from an extracted folder (no in
    - the static frontend (HTML/CSS/JS) at `/` (and SPA fallback as needed)
    - the API under `/api/...` (or existing routes, but avoid conflicts)
 3) The launcher waits until the server is ready (`/health` returns OK).
-4) The launcher opens an embedded webview window to `http://127.0.0.1:<port>/`.
+4) The launcher opens an embedded webview window to `http://127.0.0.1:<port>/` (Windows forces the Edge Chromium backend; Edge WebView2 runtime required).
 5) All persistent data and logs are written into the extracted app folder (portable-only).
 6) On re-launch: no duplicate server. If already running, just open the UI window.
 

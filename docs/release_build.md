@@ -7,8 +7,9 @@ Exactly as specified in `docs/AGENTS.md`, the runtime model is:
 1. A single launcher executable starts a local HTTP server bound to `127.0.0.1`.
 2. The backend serves the static frontend from the same origin at `/` and serves static assets under a stable path (root).
 3. The launcher waits until `/health` returns OK.
-4. The launcher opens the system default browser to `http://127.0.0.1:<port>/`.
-5. All persistent data and logs live inside the extracted app folder (portable-only). If the app is already running, open the browser and do not start a second server.
+4. The launcher opens a Chromium-based app window (no URL bar) to `http://127.0.0.1:<port>/` when available, or falls back to the system default browser.
+5. Closing the app window stops the server (within 1–2 seconds, hard timeout 5 seconds). If the app is already running, open the browser and do not start a second server.
+6. All persistent data and logs live inside the extracted app folder (portable-only).
 
 ## Portable-only policy (AppRoot-only writes)
 
@@ -90,7 +91,7 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
 
 **Scope boundary (exact):**
 * Add a GUI launcher entrypoint (new console_script or module entry).
-* Implements: bind `127.0.0.1`, port selection, lockfile policy, `/health` wait, browser open, portable logs.
+* Implements: bind `127.0.0.1`, port selection, lockfile policy, `/health` wait, app-window browser open, portable logs.
 * Implement “already running” behavior: if server running, open browser only.
 
 **Files to touch (based on repo inspection):**
@@ -104,9 +105,14 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
 * One command starts everything in dev and opens the browser after `/health` is OK.
 * A second launch does not spawn a duplicate server (lockfile policy).
 * Fail-fast if AppRoot is not writable (for logs/user data).
+* Closing the app window stops the server within 1–2 seconds (hard timeout 5 seconds).
 
 **Dev launcher (one command):**
 * `python -m horticalc.launcher`
+
+**Browser app-window behavior:**
+* The launcher prefers Chromium-based browsers (Edge/Chrome/Chromium) in app mode with a unique profile dir at `AppRoot/user/browser_profiles/`.
+* If no supported browser is found, it falls back to the system default browser and stops the server after a 5-second grace period unless `HORTICALC_KEEP_SERVER=1` is set.
 
 **Stop conditions:**
 * Any path depends on CWD; must anchor to AppRoot.

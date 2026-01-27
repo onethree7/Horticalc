@@ -274,6 +274,12 @@ Acceptance:
 STOP if:
 - Workflow uses unpinned assumptions that break reproducibility without documenting it.
 
+### Task 6 — Launcher app-window lifecycle (Chromium app mode) [DONE.]
+Scope:
+- Prefer Chromium-based browsers in app-window mode with a per-launch profile under `AppRoot/user/browser_profiles/`.
+- Close the app window to stop the server within 1–2 seconds (hard timeout 5 seconds).
+- Provide a safe fallback to the system default browser with a short grace period unless `HORTICALC_KEEP_SERVER=1` is set.
+
 ## 7) Task execution rules (how Codex should work)
 
 ### 7.1 Always start with inspection

@@ -40,6 +40,10 @@ from horticalc.solver import solve_recipe_data
 app = FastAPI(title="Horticalc API", version="0.1.0")
 
 
+def create_app() -> FastAPI:
+    return app
+
+
 FERTILIZERS: Dict[str, Fertilizer] = {}
 MOLAR_MASSES: Dict[str, float] = {}
 FRONTEND_DIR = app_root() / "frontend"

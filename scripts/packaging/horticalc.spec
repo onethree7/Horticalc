@@ -14,7 +14,10 @@ project_root = Path(project_root_env).resolve() if project_root_env else Path.cw
 app_name = "Horticalc" if sys.platform == "win32" else "horticalc"
 entry_script = project_root / "src" / "horticalc" / "launcher.py"
 show_console = sys.platform != "win32"
-hidden_imports = ["tzdata"] if sys.platform == "win32" else []
+if sys.platform == "win32":
+    hidden_imports = ["tzdata", "webview", "webview.platforms.edgechromium"]
+else:
+    hidden_imports = ["webview", "webview.platforms.gtk"]
 
 
 a = Analysis(

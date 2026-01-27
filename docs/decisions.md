@@ -9,8 +9,9 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 
 ## Runtime & Networking
 - **Bind address:** DEFAULT — `127.0.0.1` only.
-- **Port policy:** DEFAULT — fixed-range scan on `127.0.0.1` (suggested range `8000–8100`). Confirmed in Task 2.
+- **Port policy:** DEFAULT — bind with `port=0` so the OS selects a free port. Confirmed in embedded UI launcher.
 - **Lockfile path/name:** DEFAULT — `AppRoot/user/horticalc.lock.json`. Confirmed in Task 2.
+- **Embedded UI window:** DEFAULT — `pywebview` (Edge WebView2 on Windows, GTK/WebKit on Linux).
 
 ## UI Routing
 - **SPA fallback needed?:** UNDECIDED — verify during Task 1 (frontend currently has no client-side routing).

@@ -11,6 +11,7 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 - **Bind address:** DEFAULT — `127.0.0.1` only.
 - **Port policy:** DEFAULT — fixed-range scan on `127.0.0.1` (suggested range `8000–8100`). Confirmed in Task 2.
 - **Lockfile path/name:** DEFAULT — `AppRoot/user/horticalc.lock.json`. Confirmed in Task 2.
+- **App-window browser policy:** DEFAULT — prefer Chromium-based browsers (Edge/Chrome/Chromium) launched in app mode with `AppRoot/user/browser_profiles/` profiles; fallback to system default browser with a short grace period unless `HORTICALC_KEEP_SERVER=1` is set.
 
 ## UI Routing
 - **SPA fallback needed?:** UNDECIDED — verify during Task 1 (frontend currently has no client-side routing).

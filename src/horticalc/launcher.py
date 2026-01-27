@@ -5,6 +5,7 @@ import json
 import logging
 import logging.config
 import os
+import shutil
 import socket
 import sys
 import threading
@@ -15,6 +16,7 @@ import webbrowser
 from pathlib import Path
 from typing import Any
 
+import subprocess
 import uvicorn
 
 from horticalc.paths import PORTABLE_WRITE_ERROR, app_root, ensure_portable_layout, logs_dir
@@ -26,6 +28,32 @@ HEALTH_TIMEOUT_SECONDS = 30.0
 LOCKFILE_NAME = "horticalc.lock.json"
 LOG_FILENAME = "launcher.log"
 NO_BROWSER_ENV = "HORTICALC_NO_BROWSER"
+KEEP_SERVER_ENV = "HORTICALC_KEEP_SERVER"
+FALLBACK_GRACE_SECONDS = 5.0
+PROFILE_DIR_NAME = "browser_profiles"
+
+WINDOWS_BROWSER_CANDIDATES = (
+    "msedge.exe",
+    "chrome.exe",
+    "chromium.exe",
+)
+LINUX_BROWSER_CANDIDATES = (
+    "microsoft-edge",
+    "google-chrome",
+    "chromium",
+    "chromium-browser",
+)
+WINDOWS_BROWSER_LOCATIONS = (
+    ("PROGRAMFILES", "Microsoft", "Edge", "Application", "msedge.exe"),
+    ("PROGRAMFILES(X86)", "Microsoft", "Edge", "Application", "msedge.exe"),
+    ("LOCALAPPDATA", "Microsoft", "Edge", "Application", "msedge.exe"),
+    ("PROGRAMFILES", "Google", "Chrome", "Application", "chrome.exe"),
+    ("PROGRAMFILES(X86)", "Google", "Chrome", "Application", "chrome.exe"),
+    ("LOCALAPPDATA", "Google", "Chrome", "Application", "chrome.exe"),
+    ("PROGRAMFILES", "Chromium", "Application", "chrome.exe"),
+    ("PROGRAMFILES(X86)", "Chromium", "Application", "chrome.exe"),
+    ("LOCALAPPDATA", "Chromium", "Application", "chrome.exe"),
+)
 
 
 def _env_flag(name: str) -> bool:
@@ -144,46 +172,97 @@ def remove_lockfile(path: Path) -> None:
         logging.exception("Failed to remove lockfile: %s", path)
 
 
-def open_browser_when_ready(
-    port: int,
-    timeout_seconds: float,
-    ready_event: threading.Event,
-    error_event: threading.Event,
-    error_holder: dict[str, str],
-) -> None:
-    deadline = time.monotonic() + timeout_seconds
-    while time.monotonic() < deadline:
-        if health_ok(port):
-            url = f"http://127.0.0.1:{port}/"
-            webbrowser.open(url)
-            ready_event.set()
-            return
-        time.sleep(0.5)
-    error_holder["message"] = (
-        "Server failed to become healthy within 30 seconds. "
-        "See the log file for details."
-    )
-    error_event.set()
-
-
 def wait_for_health(
     port: int,
     timeout_seconds: float,
-    ready_event: threading.Event,
-    error_event: threading.Event,
-    error_holder: dict[str, str],
-) -> None:
+    server_thread: threading.Thread,
+) -> tuple[bool, str | None]:
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
         if health_ok(port):
-            ready_event.set()
-            return
+            return True, None
+        if not server_thread.is_alive():
+            return False, "Server stopped unexpectedly. See the log file for details."
         time.sleep(0.5)
-    error_holder["message"] = (
+    return False, (
         "Server failed to become healthy within 30 seconds. "
         "See the log file for details."
     )
-    error_event.set()
+
+
+def find_browser_executable() -> Path | None:
+    if os.name == "nt":
+        for candidate in WINDOWS_BROWSER_CANDIDATES:
+            found = shutil.which(candidate)
+            if found:
+                return Path(found)
+        for env_name, *parts in WINDOWS_BROWSER_LOCATIONS:
+            base = os.environ.get(env_name)
+            if not base:
+                continue
+            candidate = Path(base, *parts)
+            if candidate.exists():
+                return candidate
+        return None
+    for candidate in LINUX_BROWSER_CANDIDATES:
+        found = shutil.which(candidate)
+        if found:
+            return Path(found)
+    return None
+
+
+def create_profile_dir(root: Path) -> Path:
+    profile_root = root / "user" / PROFILE_DIR_NAME
+    profile_root.mkdir(parents=True, exist_ok=True)
+    suffix = f"{os.getpid()}-{int(time.time())}"
+    profile_dir = profile_root / f"profile-{suffix}"
+    profile_dir.mkdir(parents=True, exist_ok=True)
+    return profile_dir
+
+
+def launch_app_window(url: str, profile_dir: Path, logger: logging.Logger) -> subprocess.Popen | None:
+    browser = find_browser_executable()
+    if not browser:
+        return None
+    args = [
+        str(browser),
+        f"--app={url}",
+        "--new-window",
+        f"--user-data-dir={profile_dir}",
+        "--no-first-run",
+        "--no-default-browser-check",
+    ]
+    creationflags = 0
+    if os.name == "nt":
+        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
+    try:
+        return subprocess.Popen(
+            args,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=creationflags,
+        )
+    except OSError:
+        logger.exception("Failed to launch browser app window.")
+        return None
+
+
+def cleanup_profile_dir(profile_dir: Path) -> None:
+    try:
+        shutil.rmtree(profile_dir, ignore_errors=True)
+    except OSError:
+        logging.exception("Failed to remove browser profile dir: %s", profile_dir)
+
+
+def stop_server(
+    server: uvicorn.Server,
+    server_thread: threading.Thread,
+    lock_path: Path,
+    timeout_seconds: float = 5.0,
+) -> None:
+    server.should_exit = True
+    server_thread.join(timeout=timeout_seconds)
+    remove_lockfile(lock_path)
 
 
 def main() -> None:
@@ -200,6 +279,7 @@ def main() -> None:
     logger = logging.getLogger("horticalc.launcher")
     logger.info("AppRoot resolved to %s", root)
     no_browser = _env_flag(NO_BROWSER_ENV)
+    keep_server = _env_flag(KEEP_SERVER_ENV)
 
     from api.app import app
 
@@ -212,7 +292,14 @@ def main() -> None:
             logger.info("%s is set; skipping browser launch.", NO_BROWSER_ENV)
             return
         logger.info("Opening browser for existing server.")
-        webbrowser.open(url)
+        browser = find_browser_executable()
+        if browser:
+            profile_dir = create_profile_dir(root)
+            if launch_app_window(url, profile_dir, logger) is None:
+                cleanup_profile_dir(profile_dir)
+                webbrowser.open(url)
+        else:
+            webbrowser.open(url)
         return
     if lock_path.exists():
         logger.info("Stale lockfile detected; removing %s.", lock_path)
@@ -237,43 +324,48 @@ def main() -> None:
     server_thread = threading.Thread(target=server.run, name="uvicorn-server", daemon=True)
     server_thread.start()
 
-    ready_event = threading.Event()
-    error_event = threading.Event()
-    error_holder: dict[str, str] = {}
-    if no_browser:
-        logger.info("%s is set; waiting for /health without launching a browser.", NO_BROWSER_ENV)
-        wait_for_health(port, HEALTH_TIMEOUT_SECONDS, ready_event, error_event, error_holder)
-    else:
-        browser_thread = threading.Thread(
-            target=open_browser_when_ready,
-            args=(port, HEALTH_TIMEOUT_SECONDS, ready_event, error_event, error_holder),
-            name="browser-launcher",
-            daemon=True,
-        )
-        browser_thread.start()
-
     try:
-        while True:
-            if error_event.is_set():
-                server.should_exit = True
-                server_thread.join(timeout=5)
-                remove_lockfile(lock_path)
-                fail_fast(error_holder.get("message", "Server failed to start."), log_file)
+        if no_browser:
+            logger.info("%s is set; waiting for /health without launching a browser.", NO_BROWSER_ENV)
+            healthy, error_message = wait_for_health(port, HEALTH_TIMEOUT_SECONDS, server_thread)
+            if not healthy:
+                stop_server(server, server_thread, lock_path)
+                fail_fast(error_message or "Server failed to start.", log_file)
                 return
-            if ready_event.is_set():
-                break
-            if not server_thread.is_alive():
-                remove_lockfile(lock_path)
-                fail_fast("Server stopped unexpectedly. See the log file for details.", log_file)
-                return
-            time.sleep(0.1)
+            server_thread.join()
+            return
 
-        server_thread.join()
+        healthy, error_message = wait_for_health(port, HEALTH_TIMEOUT_SECONDS, server_thread)
+        if not healthy:
+            stop_server(server, server_thread, lock_path)
+            fail_fast(error_message or "Server failed to start.", log_file)
+            return
+
+        url = f"http://127.0.0.1:{port}/"
+        profile_dir = create_profile_dir(root)
+        browser_proc = launch_app_window(url, profile_dir, logger)
+        if browser_proc is None:
+            cleanup_profile_dir(profile_dir)
+            logger.warning("No supported Chromium-based browser found; falling back to system default.")
+            webbrowser.open(url)
+            if keep_server:
+                logger.info("%s is set; keeping server running.", KEEP_SERVER_ENV)
+                server_thread.join()
+                return
+            logger.info("Stopping server after fallback grace period of %.1f seconds.", FALLBACK_GRACE_SECONDS)
+            time.sleep(FALLBACK_GRACE_SECONDS)
+            stop_server(server, server_thread, lock_path)
+            return
+
+        try:
+            browser_proc.wait()
+        finally:
+            cleanup_profile_dir(profile_dir)
+
+        stop_server(server, server_thread, lock_path)
     except KeyboardInterrupt:
         logger.info("Shutdown requested.")
-        server.should_exit = True
-        server_thread.join(timeout=5)
-        remove_lockfile(lock_path)
+        stop_server(server, server_thread, lock_path)
 
 
 if __name__ == "__main__":

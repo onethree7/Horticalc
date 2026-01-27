@@ -6,8 +6,8 @@ Follow it strictly. If anything is unclear: STOP and report findings; do not gue
 ## 0) What we are building (Option A, fully defined here)
 
 Goal: A user can run Horticalc as a portable app from an extracted folder (no installation).
-- Windows: double-click `Horticalc.exe` → a browser opens automatically → the UI works.
-- Linux: run `./horticalc` (optionally double-click via `.desktop`) → browser opens → UI works.
+- Windows: double-click `Horticalc.exe` → an embedded UI window opens → the UI works.
+- Linux: run `./horticalc` (optionally double-click via `.desktop`) → an embedded UI window opens → the UI works.
 - The user must not need to understand backend/frontend/server.
 
 **Runtime model (Option A):**
@@ -16,12 +16,12 @@ Goal: A user can run Horticalc as a portable app from an extracted folder (no in
    - the static frontend (HTML/CSS/JS) at `/` (and SPA fallback as needed)
    - the API under `/api/...` (or existing routes, but avoid conflicts)
 3) The launcher waits until the server is ready (`/health` returns OK).
-4) The launcher opens the system default browser to `http://127.0.0.1:<port>/`.
+4) The launcher opens an embedded webview window to `http://127.0.0.1:<port>/`.
 5) All persistent data and logs are written into the extracted app folder (portable-only).
-6) On re-launch: no duplicate server. If already running, just open the browser.
+6) On re-launch: no duplicate server. If already running, just open the UI window.
 
 **Non-goals:**
-- No embedded WebView / Electron.
+- No Electron.
 - No system/user directories for storage.
 - No second frontend server process (no separate `python -m http.server` for release).
 
@@ -99,21 +99,21 @@ On first run:
 
 ### 4.3 Port selection (robust)
 Default policy:
-- Try a fixed range (e.g. 8000–8100) on `127.0.0.1` and pick the first free port.
+- Bind to `127.0.0.1` with `port=0` (OS chooses a free port).
 - Record chosen port in a lockfile in AppRoot (see below).
 
 ### 4.4 Single-instance / lockfile policy (recommended)
 Create `AppRoot/user/horticalc.lock.json` (or similar) containing:
 - pid, port, start timestamp
 On startup:
-- If lock exists and `/health` responds: do NOT start a second server; just open the browser.
+- If lock exists and `/health` responds: do NOT start a second server; just open the UI window.
 - If lock exists but server not reachable: treat as stale; remove lock and start normally.
 
 ### 4.5 Readiness check (must not race)
 Launcher must:
 - start server
 - poll `/health` until success or timeout
-- only then open browser
+- only then open the UI window
 - on timeout: print/log actionable error (including log file path)
 
 ### 4.6 Logging (portable)
@@ -179,21 +179,21 @@ Acceptance:
 STOP if:
 - Unclear where FastAPI app is defined; report findings instead of guessing.
 
-### Task 2 — Launcher (start server → wait → open browser) [DONE.]
+### Task 2 — Launcher (start server → wait → open UI window) [DONE.]
 Scope:
 - Add a GUI launcher entrypoint (new console_script or module entry).
-- Implements: bind 127.0.0.1, port selection, lockfile policy, /health wait, browser open, portable logs.
-- Implement “already running” behavior: if server running, open browser only.
+- Implements: bind 127.0.0.1, port selection, lockfile policy, /health wait, webview open, portable logs.
+- Implement “already running” behavior: if server running, open UI window only.
 
 Required doc updates:
 - Update `docs/release_build.md`: “How to run launcher in dev”, “lockfile behavior”, “log location”.
-- Update `docs/decisions.md`: confirm chosen port range and lockfile name/location.
+- Update `docs/decisions.md`: confirm port policy and lockfile name/location.
 
 Progress tracking update:
 - Mark Task 2 as **[DONE.]** in AGENTS.md after acceptance tests pass.
 
 Acceptance:
-- One command starts everything in dev and opens browser after readiness.
+- One command starts everything in dev and opens the embedded UI window after readiness.
 - Second start does not spawn duplicate server (lockfile policy).
 - Fail-fast if AppRoot not writable (because logs/user/ must be writable).
 
@@ -206,7 +206,7 @@ Scope:
 - Remove hidden/bidirectional Unicode characters from launcher and tests.
 - Keep the launcher behavior otherwise unchanged.
 - [DONE.] Add repo-wide guard against hidden/bidirectional Unicode control characters and verify listed files are clean.
-- **[DONE.]** Use absolute imports in the frozen launcher entrypoint and write the lockfile before optional browser startup (packaging smoke-test fix).
+- **[DONE.]** Use absolute imports in the frozen launcher entrypoint and write the lockfile before optional UI window startup (packaging smoke-test fix).
 
 ### Task 3 — Portable-only data policy [DONE.]
 Scope:
@@ -245,7 +245,7 @@ Progress tracking update:
 
 Acceptance:
 - Dist folder can be zipped/tarred and run from any writable path.
-- Running packaged binary opens browser and UI loads.
+- Running packaged binary opens the embedded UI window and the UI loads.
 
 STOP if:
 - Onefile is chosen without explicit maintainer approval (default is onedir).
@@ -266,11 +266,25 @@ Progress tracking update:
 - Mark Task 5 as **[DONE.]** in AGENTS.md after a successful tag build.
 
 Acceptance:
-- Workflow produces two downloadable artifacts that start and open browser.
+- Workflow produces two downloadable artifacts that start and open the embedded UI window.
 - Artifact names include version tag.
 
 STOP if:
 - Workflow uses unpinned assumptions that break reproducibility without documenting it.
+
+### Task 6 — Embedded UI window + clean shutdown [DONE.]
+Scope:
+- Replace system browser launch with an embedded `pywebview` window.
+- On window close (or SIGTERM/SIGINT), shut down the local server and exit.
+- Default to an OS-assigned free port (`port=0`) while keeping the lockfile policy.
+
+Required doc updates:
+- `docs/release_build.md`: document embedded window behavior and shutdown.
+- `docs/decisions.md`: record embedded UI and port policy.
+
+Acceptance:
+- Launching the packaged app shows a dedicated UI window (no URL bar).
+- Closing the window stops the server process cleanly (no orphan server).
 
 ## 7) Task execution rules (how Codex should work)
 
@@ -312,7 +326,7 @@ Before marking any task complete, verify:
 - AppRoot is independent of CWD.
 - All writes are inside AppRoot (user/ logs/).
 - Server binds only to 127.0.0.1.
-- Browser opens only after /health OK.
+- UI window opens only after /health OK.
 - UI loads assets and API works from same origin.
 - Restart does not lose edits (portable persistence works).
 

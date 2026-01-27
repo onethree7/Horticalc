@@ -7,8 +7,8 @@ Exactly as specified in `docs/AGENTS.md`, the runtime model is:
 1. A single launcher executable starts a local HTTP server bound to `127.0.0.1`.
 2. The backend serves the static frontend from the same origin at `/` and serves static assets under a stable path (root).
 3. The launcher waits until `/health` returns OK.
-4. The launcher opens the system default browser to `http://127.0.0.1:<port>/`.
-5. All persistent data and logs live inside the extracted app folder (portable-only). If the app is already running, open the browser and do not start a second server.
+4. The launcher opens an embedded webview window to `http://127.0.0.1:<port>/` and shuts down the server when the window closes.
+5. All persistent data and logs live inside the extracted app folder (portable-only). If the app is already running, open the UI window and do not start a second server.
 
 ## Portable-only policy (AppRoot-only writes)
 
@@ -86,22 +86,22 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
 
 ---
 
-## Task 2 — Launcher (start server → wait → open browser)
+## Task 2 — Launcher (start server → wait → open UI window)
 
 **Scope boundary (exact):**
 * Add a GUI launcher entrypoint (new console_script or module entry).
-* Implements: bind `127.0.0.1`, port selection, lockfile policy, `/health` wait, browser open, portable logs.
-* Implement “already running” behavior: if server running, open browser only.
+* Implements: bind `127.0.0.1`, port selection, lockfile policy, `/health` wait, embedded UI window, portable logs.
+* Implement “already running” behavior: if server running, open UI window only.
 
 **Files to touch (based on repo inspection):**
 * `pyproject.toml` (add launcher entrypoint).
 * `src/horticalc/` (add launcher module; e.g. `src/horticalc/launcher.py`).
 * `api/app.py` (if an app factory or programmatic server hook is required).
 * `docs/release_build.md` (document dev run + lockfile behavior).
-* `docs/decisions.md` (record port range + lockfile path/name decisions).
+* `docs/decisions.md` (record port policy + lockfile path/name decisions).
 
 **Acceptance criteria:**
-* One command starts everything in dev and opens the browser after `/health` is OK.
+* One command starts everything in dev and opens the embedded UI window after `/health` is OK.
 * A second launch does not spawn a duplicate server (lockfile policy).
 * Fail-fast if AppRoot is not writable (for logs/user data).
 
@@ -113,10 +113,10 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
 
 **Verification commands (exact) + success:**
 * `python -m horticalc.launcher`
-  * Success: server starts on `127.0.0.1`, `/health` becomes OK, then the browser opens to the UI.
+  * Success: server starts on `127.0.0.1`, `/health` becomes OK, then the embedded UI window opens to the UI.
 * `python -m horticalc.launcher` (run again)
-  * Success: no second server process; browser opens to existing server.
-  * Notes: logs are written to `AppRoot/logs/launcher.log`, and the lockfile lives at `AppRoot/user/horticalc.lock.json`.
+  * Success: no second server process; the embedded UI window opens to the existing server.
+  * Notes: logs are written to `AppRoot/logs/launcher.log`, the port is OS-assigned (`port=0`) and recorded in `AppRoot/user/horticalc.lock.json`.
 
 ---
 
@@ -168,6 +168,7 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
   * `python -m pip install -r requirements.txt`
   * `python -m pip install pyinstaller`
 * Windows note: the PyInstaller spec includes `tzdata` as a hidden import to avoid `zoneinfo` crashes and CI warnings on Windows.
+* UI note: the packaged app uses `pywebview` (Edge WebView2 on Windows, GTK/WebKit on Linux), so ensure the target OS has the corresponding runtime available.
 
 **Build commands (exact):**
 * Windows (PowerShell):
@@ -190,7 +191,7 @@ dist/
 
 **Acceptance criteria:**
 * Dist folder can be zipped/tarred and run from any writable path.
-* Running packaged binary opens browser and UI loads.
+* Running packaged binary opens the embedded UI window and the UI loads.
 
 **Stop conditions:**
 * Onefile is chosen without explicit maintainer approval.
@@ -199,10 +200,10 @@ dist/
 **Verification commands (exact) + success:**
 * Windows: `.\scripts\packaging\build_windows.ps1`
   * Success: `dist/Horticalc/` contains the AppRoot layout with `frontend/`, `data/`, and `recipes/` alongside `Horticalc.exe`.
-  * Success: Running `dist\\Horticalc\\Horticalc.exe` from a writable folder opens the browser and the UI works.
+  * Success: Running `dist\\Horticalc\\Horticalc.exe` from a writable folder opens the embedded UI window and the UI works.
 * Linux: `./scripts/packaging/build_linux.sh`
   * Success: `dist/horticalc/` contains the AppRoot layout with `frontend/`, `data/`, and `recipes/` alongside `horticalc`.
-  * Success: Running `./dist/horticalc/horticalc` from a writable folder opens the browser and the UI works.
+  * Success: Running `./dist/horticalc/horticalc` from a writable folder opens the embedded UI window and the UI works.
 
 ---
 
@@ -221,7 +222,7 @@ dist/
 * `scripts/` (optional: add CI smoke-test helper script).
 
 **Acceptance criteria:**
-* Workflow produces two downloadable artifacts that start and open the browser.
+* Workflow produces two downloadable artifacts that start and open the embedded UI window.
 * Artifact names include the version tag.
 
 **Stop conditions:**
@@ -239,7 +240,7 @@ dist/
    * `git push origin vX.Y.Z`
 3) GitHub Actions will:
    * Build Windows + Linux onedir artifacts.
-   * Run smoke tests on the packaged binary with `HORTICALC_NO_BROWSER=1` to avoid opening a browser in CI.
+   * Run smoke tests on the packaged binary with `HORTICALC_NO_BROWSER=1` to avoid opening a UI window in CI.
    * Upload artifacts to the workflow run.
    * Attach the artifacts to a GitHub Release for the tag (requires workflow `contents: write` permission).
 

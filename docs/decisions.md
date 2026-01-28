@@ -34,3 +34,4 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 - 2026-02-01: Centralized request payload parsing and filename sanitization helpers in `api/app.py` (no behavior change).
 - 2026-02-02: Code hygiene cleanup (launcher browser lookup, health timeout message, request parsing, and minor simplifications).
 - 2026-02-03: Aligned fertilizer selection and calculator table column widths with the PR74 layout for consistent UI alignment.
+- 2026-02-04: Removed duplicate `UREA` entry from `data/molar_masses.yml`.

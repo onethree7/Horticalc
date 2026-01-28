@@ -292,8 +292,14 @@ main {
 }
 
 
-.grid--fertilizer .col-index {
-  width: 5ch;
+#fertilizerSelectTable.grid--fertilizer,
+#calculatorTable.grid--fertilizer {
+  table-layout: auto;
+}
+
+#fertilizerSelectTable.grid--fertilizer .col-index,
+#calculatorTable.grid--fertilizer .col-index {
+  width: min-content;
 }
 
 .grid--fertilizer .col-name {
@@ -321,6 +327,14 @@ main {
   text-align: center;
   padding-left: var(--space-2);
   padding-right: var(--space-2);
+}
+
+#fertilizerSelectTable.grid--fertilizer th:first-child,
+#fertilizerSelectTable.grid--fertilizer td:first-child,
+#calculatorTable.grid--fertilizer th:first-child,
+#calculatorTable.grid--fertilizer td:first-child {
+  padding-left: 1px;
+  padding-right: 1px;
 }
 
 .grid select,

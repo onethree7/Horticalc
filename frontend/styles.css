@@ -15,6 +15,7 @@
   --content-max-width: 1200px;
   --col-width-wide: 5.5rem;
   --col-width-standard: 4.6rem;
+  --fertilizer-index-ch: 1;
   background-color: #10141b;
   color: #e8edf2;
 }
@@ -294,6 +295,10 @@ main {
 
 .grid--fertilizer .col-index {
   width: 5ch;
+}
+
+.grid--fertilizer-compact-index .col-index {
+  width: calc(var(--fertilizer-index-ch) * 1ch + var(--space-4));
 }
 
 .grid--fertilizer .col-name {

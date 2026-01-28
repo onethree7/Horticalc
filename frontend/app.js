@@ -361,10 +361,16 @@ function createTable({ id, className, colgroupClasses, headerCells }) {
   return { table, tbody };
 }
 
+function updateFertilizerIndexWidth() {
+  const maxIndex = Math.max(selectedFertilizers.length, 1);
+  const digits = String(maxIndex).length;
+  document.documentElement.style.setProperty("--fertilizer-index-ch", `${digits}`);
+}
+
 function initializeFertilizerTables() {
   const selectTable = createTable({
     id: "fertilizerSelectTable",
-    className: "grid grid--form grid--fertilizer",
+    className: "grid grid--form grid--fertilizer grid--fertilizer-compact-index",
     colgroupClasses: ["col-index", "col-name", "col-form", "col-weight"],
     headerCells: [
       { label: "#" },
@@ -378,7 +384,7 @@ function initializeFertilizerTables() {
 
   const calculator = createTable({
     id: "calculatorTable",
-    className: "grid grid--form grid--fertilizer",
+    className: "grid grid--form grid--fertilizer grid--fertilizer-compact-index",
     colgroupClasses: ["col-index", "col-name", "col-form", "col-amount"],
     headerCells: [
       { label: "#" },
@@ -1003,6 +1009,7 @@ function renderSolverResults(data) {
 }
 
 function renderSelectionTable() {
+  updateFertilizerIndexWidth();
   renderTableRows(fertilizerSelectTable, selectedFertilizers.length, (i) => {
     const row = document.createElement("tr");
 
@@ -1036,6 +1043,7 @@ function renderSelectionTable() {
 }
 
 function renderCalculatorTable() {
+  updateFertilizerIndexWidth();
   renderTableRows(calculatorTable, selectedFertilizers.length, (i) => {
     const row = document.createElement("tr");
     if (calculatorBaseAmounts[i] === undefined) {

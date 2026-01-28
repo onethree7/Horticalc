@@ -520,7 +520,7 @@ def compute_solution(
     )
     ec_water = compute_ec(water_ions_mmol)
     fertilizer_only_forms = dict(forms_mg_l)
-    fertilizer_water_forms: Dict[str, float] = {k: 0.0 for k in OXIDE_FORM_COLS}
+    fertilizer_water_forms: Dict[str, float] = {}
     fert_elements, fert_oxides, fert_ions_mmol, fert_ions_meq, fert_ion_balance = _compute_solution_state(
         mm,
         fertilizer_only_forms,

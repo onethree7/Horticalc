@@ -208,8 +208,8 @@ def normalized_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float])
 
 async def _parse_request_payload(request: Request) -> dict:
     content_type = (request.headers.get("content-type") or "").lower()
-    raw_body = await request.body()
     if "yaml" in content_type:
+        raw_body = await request.body()
         return yaml.safe_load(raw_body.decode("utf-8")) or {}
     return await request.json()
 

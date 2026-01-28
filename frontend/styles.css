@@ -750,7 +750,7 @@ main {
 }
 
 .compact-table-wrap--balance {
-  overflow-x: visible;
+  overflow-x: auto;
 }
 
 .compact-label {
@@ -761,17 +761,20 @@ main {
 }
 
 .compact-ion-table {
-  width: 100%;
-  table-layout: fixed;
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
   border-collapse: collapse;
 }
 
 .compact-ion-label-col {
   width: 5rem;
+  min-width: 5rem;
 }
 
 .compact-ion-value-col {
   width: calc((100% - 5rem) / var(--ion-cols, 1));
+  min-width: 7rem;
 }
 
 .compact-ion-table th,
@@ -792,8 +795,9 @@ main {
 }
 
 .compact-balance-table {
-  width: 100%;
-  table-layout: fixed;
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
   border-collapse: collapse;
 }
 

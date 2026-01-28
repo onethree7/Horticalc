@@ -206,6 +206,18 @@ def normalized_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float])
     return augment_water_profile_with_elements(mm, normalized)
 
 
+async def _parse_request_payload(request: Request) -> dict:
+    content_type = (request.headers.get("content-type") or "").lower()
+    raw_body = await request.body()
+    if "yaml" in content_type:
+        return yaml.safe_load(raw_body.decode("utf-8")) or {}
+    return await request.json()
+
+
+def _safe_filename(name: str) -> str:
+    return "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in name).strip("_")
+
+
 def _require_path(getter: Callable[[], Path | None], name: str) -> Path:
     _ensure_initialized()
     path = getter()
@@ -349,12 +361,7 @@ def nutrient_solution(solution_name: str) -> dict:
 @app.post("/water-profiles")
 @app.put("/water-profiles")
 async def save_profile(request: Request) -> dict:
-    content_type = (request.headers.get("content-type") or "").lower()
-    raw_body = await request.body()
-    if "yaml" in content_type:
-        payload = yaml.safe_load(raw_body.decode("utf-8")) or {}
-    else:
-        payload = await request.json()
+    payload = await _parse_request_payload(request)
 
     profile = WaterProfilePayload(**payload)
     name = profile.name.strip()
@@ -380,7 +387,7 @@ async def save_profile(request: Request) -> dict:
     if not 0 <= osmosis_percent <= 100:
         raise HTTPException(status_code=400, detail="osmosis_percent must be between 0 and 100")
 
-    safe_name = "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in name).strip("_")
+    safe_name = _safe_filename(name)
     if not safe_name:
         raise HTTPException(status_code=400, detail="Profile name results in empty filename")
 
@@ -400,12 +407,7 @@ async def save_profile(request: Request) -> dict:
 @app.post("/nutrient-solutions")
 @app.put("/nutrient-solutions")
 async def save_nutrient_solution_profile(request: Request) -> dict:
-    content_type = (request.headers.get("content-type") or "").lower()
-    raw_body = await request.body()
-    if "yaml" in content_type:
-        payload = yaml.safe_load(raw_body.decode("utf-8")) or {}
-    else:
-        payload = await request.json()
+    payload = await _parse_request_payload(request)
 
     solution = NutrientSolutionPayload(**payload)
     name = solution.name.strip()
@@ -421,7 +423,7 @@ async def save_nutrient_solution_profile(request: Request) -> dict:
         except (TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=f"Invalid value for {key}") from exc
 
-    safe_name = "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in name).strip("_")
+    safe_name = _safe_filename(name)
     if not safe_name:
         raise HTTPException(status_code=400, detail="Nutrient Solution name results in empty filename")
 
@@ -485,19 +487,14 @@ def recipe(recipe_name: str) -> dict:
 @app.post("/recipes")
 @app.put("/recipes")
 async def save_recipe_profile(request: Request) -> dict:
-    content_type = (request.headers.get("content-type") or "").lower()
-    raw_body = await request.body()
-    if "yaml" in content_type:
-        payload = yaml.safe_load(raw_body.decode("utf-8")) or {}
-    else:
-        payload = await request.json()
+    payload = await _parse_request_payload(request)
 
     recipe = RecipePayload(**payload)
     name = recipe.name.strip()
     if not name:
         raise HTTPException(status_code=400, detail="Recipe name is required")
 
-    safe_name = "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in name).strip("_")
+    safe_name = _safe_filename(name)
     if not safe_name:
         raise HTTPException(status_code=400, detail="Recipe name results in empty filename")
 

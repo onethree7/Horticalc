@@ -293,7 +293,7 @@ main {
 
 
 .grid--fertilizer .col-index {
-  width: 5ch;
+  width: 2ch;
 }
 
 .grid--fertilizer .col-name {
@@ -301,19 +301,19 @@ main {
 }
 
 .grid--fertilizer .col-form {
-  width: 7ch;
-}
-
-.grid--fertilizer .col-amount {
-  width: 7rem;
+  width: 8rem;
 }
 
 .grid--fertilizer .col-weight {
-  width: 6ch;
+  width: 7rem;
 }
 
 .grid--fertilizer .col-nutrient {
   width: 6ch;
+}
+
+.grid--fertilizer .col-amount {
+  width: 7rem;
 }
 
 .grid--form th:first-child,
@@ -387,7 +387,7 @@ main {
 #fertilizerEditorTable th:nth-child(2),
 #fertilizerEditorTable td:nth-child(2) {
   position: sticky;
-  left: 5ch;
+  left: 2ch;
   z-index: 7;
   background-clip: padding-box;
 }
@@ -395,7 +395,7 @@ main {
 #fertilizerEditorTable th:nth-child(3),
 #fertilizerEditorTable td:nth-child(3) {
   position: sticky;
-  left: calc(5ch + 18rem);
+  left: calc(2ch + 18rem);
   z-index: 7;
   background-clip: padding-box;
 }
@@ -403,7 +403,7 @@ main {
 #fertilizerEditorTable th:nth-child(4),
 #fertilizerEditorTable td:nth-child(4) {
   position: sticky;
-  left: calc(5ch + 18rem + 7ch);
+  left: calc(2ch + 18rem + 8rem);
   z-index: 7;
   background-clip: padding-box;
 }

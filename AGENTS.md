@@ -283,6 +283,7 @@ Scope:
 - Prefer Chromium-based browsers in app-window mode with a per-launch profile under `AppRoot/user/browser_profiles/`.
 - Close the app window to stop the server within 1–2 seconds (hard timeout 5 seconds).
 - Provide a safe fallback to the system default browser with a short grace period unless `HORTICALC_KEEP_SERVER=1` is set.
+- Maintenance: browser profile cleanup relies on `shutil.rmtree(..., ignore_errors=True)` (no try/except).
 
 ## 7) Task execution rules (how Codex should work)
 

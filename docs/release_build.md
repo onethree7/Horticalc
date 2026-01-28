@@ -11,6 +11,13 @@ Exactly as specified in `docs/AGENTS.md`, the runtime model is:
 5. Closing the app window stops the server (within 1–2 seconds, hard timeout 5 seconds). If the app is already running, open the browser and do not start a second server.
 6. All persistent data and logs live inside the extracted app folder (portable-only).
 
+## Current status (validated)
+
+* ✅ Portable onedir binaries run on Windows and Linux from extracted folders.
+* ✅ CI/CD workflow builds Windows + Linux artifacts and publishes release assets.
+* ✅ Linux runtime verified on Debian/Ubuntu when a Chromium-based browser is installed (e.g., `chromium`, `google-chrome`, or `microsoft-edge`).
+  * If Chromium is not available, the launcher falls back to the system default browser. If this fallback is an issue on certain distributions, note the requirement in the README and ship with the current behavior unchanged.
+
 ## Portable-only policy (AppRoot-only writes)
 
 * **Portable-only writes:** All runtime writes must stay inside the extracted release folder (“AppRoot”).
@@ -113,6 +120,7 @@ Each task below mirrors the scope and boundaries from `docs/AGENTS.md`. **Do not
 **Browser app-window behavior:**
 * The launcher prefers Chromium-based browsers (Edge/Chrome/Chromium) in app mode with a unique profile dir at `AppRoot/user/browser_profiles/`.
 * If no supported browser is found, it falls back to the system default browser and stops the server after a 5-second grace period unless `HORTICALC_KEEP_SERVER=1` is set.
+* Linux note: Debian/Ubuntu users may need to install Chromium (`sudo apt install chromium`) for the preferred app-window behavior.
 
 **Stop conditions:**
 * Any path depends on CWD; must anchor to AppRoot.

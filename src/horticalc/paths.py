@@ -95,11 +95,10 @@ def _atomic_copy(source: Path, destination: Path) -> None:
             pass
 
 
-def _copy_if_missing(source: Path, destination: Path) -> bool:
+def _copy_if_missing(source: Path, destination: Path) -> None:
     if destination.exists():
-        return False
+        return
     _atomic_copy(source, destination)
-    return True
 
 
 def _ensure_writable_dir(path: Path) -> None:

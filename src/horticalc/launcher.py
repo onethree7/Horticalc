@@ -185,7 +185,7 @@ def wait_for_health(
             return False, "Server stopped unexpectedly. See the log file for details."
         time.sleep(0.5)
     return False, (
-        "Server failed to become healthy within 30 seconds. "
+        f"Server failed to become healthy within {timeout_seconds:.0f} seconds. "
         "See the log file for details."
     )
 
@@ -220,8 +220,12 @@ def create_profile_dir(root: Path) -> Path:
     return profile_dir
 
 
-def launch_app_window(url: str, profile_dir: Path, logger: logging.Logger) -> subprocess.Popen | None:
-    browser = find_browser_executable()
+def launch_app_window(
+    url: str,
+    profile_dir: Path,
+    logger: logging.Logger,
+    browser: Path | None = None,
+) -> subprocess.Popen | None:
     if not browser:
         return None
     args = [
@@ -292,7 +296,7 @@ def main() -> None:
         browser = find_browser_executable()
         if browser:
             profile_dir = create_profile_dir(root)
-            if launch_app_window(url, profile_dir, logger) is None:
+            if launch_app_window(url, profile_dir, logger, browser) is None:
                 cleanup_profile_dir(profile_dir)
                 webbrowser.open(url)
         else:
@@ -339,8 +343,9 @@ def main() -> None:
             return
 
         url = f"http://127.0.0.1:{port}/"
+        browser = find_browser_executable()
         profile_dir = create_profile_dir(root)
-        browser_proc = launch_app_window(url, profile_dir, logger)
+        browser_proc = launch_app_window(url, profile_dir, logger, browser)
         if browser_proc is None:
             cleanup_profile_dir(profile_dir)
             logger.warning("No supported Chromium-based browser found; falling back to system default.")

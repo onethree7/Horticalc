@@ -32,3 +32,4 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 ## Maintenance log (non-decision updates)
 - 2026-01-28: Removed unused `load_water_profile` helper from `src/horticalc/data_io.py`.
 - 2026-02-01: Centralized request payload parsing and filename sanitization helpers in `api/app.py` (no behavior change).
+- 2026-02-02: Code hygiene cleanup (launcher browser lookup, health timeout message, request parsing, and minor simplifications).

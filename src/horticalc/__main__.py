@@ -8,11 +8,9 @@ from .core import run_recipe, solve_recipe
 
 
 def main(argv: list[str] | None = None) -> None:
-    args_list = list(argv) if argv is not None else None
-    if args_list is None:
-        import sys
+    import sys
 
-        args_list = sys.argv[1:]
+    args_list = list(argv) if argv is not None else sys.argv[1:]
 
     if args_list and args_list[0] == "solve":
         parser = argparse.ArgumentParser(

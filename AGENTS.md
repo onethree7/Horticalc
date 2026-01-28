@@ -330,5 +330,6 @@ Before marking any task complete, verify:
 
 ## Maintenance log
 - 2026-01-28: Removed unused `load_water_profile` helper from `src/horticalc/data_io.py`.
+- 2026-02-01: Centralized request payload parsing and filename sanitization helpers in `api/app.py` (no behavior change).
 
 End of AGENTS.md

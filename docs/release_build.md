@@ -21,6 +21,7 @@ Exactly as specified in `docs/AGENTS.md`, the runtime model is:
 ## Maintenance notes
 
 * 2026-01-28: Removed unused `load_water_profile` helper from `src/horticalc/data_io.py` (no runtime behavior change).
+* 2026-02-01: Centralized request payload parsing and filename sanitization helpers in `api/app.py` (no runtime behavior change).
 
 ## Portable-only policy (AppRoot-only writes)
 

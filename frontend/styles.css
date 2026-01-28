@@ -293,7 +293,7 @@ main {
 
 
 .grid--fertilizer .col-index {
-  width: 5ch;
+  width: 2ch;
 }
 
 .grid--fertilizer .col-name {
@@ -321,6 +321,12 @@ main {
   text-align: center;
   padding-left: var(--space-2);
   padding-right: var(--space-2);
+}
+
+.grid--fertilizer th:first-child,
+.grid--fertilizer td:first-child {
+  padding-left: 1px;
+  padding-right: 1px;
 }
 
 .grid select,

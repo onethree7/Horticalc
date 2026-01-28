@@ -328,4 +328,7 @@ Before marking any task complete, verify:
 - UI loads assets and API works from same origin.
 - Restart does not lose edits (portable persistence works).
 
+## Maintenance log
+- **[DONE.]** Refactored API request payload parsing and safe filename handling to reduce duplication (no behavior change).
+
 End of AGENTS.md

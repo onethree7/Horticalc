@@ -27,3 +27,6 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 - **CI runner OSes:** DEFAULT — `ubuntu-22.04` and `windows-latest`.
 - **CI Python version:** DEFAULT — `3.11.9`.
 - **Release workflow permissions:** DEFAULT — `contents: write` for attaching assets to GitHub Releases.
+
+## Maintenance notes (no new decisions)
+- Centralized API request payload parsing and filename sanitization helpers in `api/app.py` to reduce duplication without changing behavior.

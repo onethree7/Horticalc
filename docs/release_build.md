@@ -18,6 +18,10 @@ Exactly as specified in `docs/AGENTS.md`, the runtime model is:
 * ✅ Linux runtime verified on Debian/Ubuntu when a Chromium-based browser is installed (e.g., `chromium`, `google-chrome`, or `microsoft-edge`).
   * If Chromium is not available, the launcher falls back to the system default browser. If this fallback is an issue on certain distributions, note the requirement in the README and ship with the current behavior unchanged.
 
+## Maintenance notes
+
+* 2026-01-28: Removed unused `load_water_profile` helper from `src/horticalc/data_io.py` (no runtime behavior change).
+
 ## Portable-only policy (AppRoot-only writes)
 
 * **Portable-only writes:** All runtime writes must stay inside the extracted release folder (“AppRoot”).

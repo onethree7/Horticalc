@@ -27,3 +27,6 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 - **CI runner OSes:** DEFAULT — `ubuntu-22.04` and `windows-latest`.
 - **CI Python version:** DEFAULT — `3.11.9`.
 - **Release workflow permissions:** DEFAULT — `contents: write` for attaching assets to GitHub Releases.
+
+## Maintenance log (non-decision updates)
+- 2026-01-28: Removed unused `load_water_profile` helper from `src/horticalc/data_io.py`.

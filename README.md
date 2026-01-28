@@ -111,6 +111,19 @@ Hinweis: Details zur GUI (Layout/Bedienung) stehen zusätzlich in `docs/GUI.MD`.
 
 ---
 
+## Portable Desktop App (Windows + Linux)
+
+Für die Portable-Builds (Windows/Linux) gilt:
+
+- **Windows:** `Horticalc.exe` im entpackten Ordner starten.
+- **Linux:** `./horticalc` im entpackten Ordner starten.
+- **Chromium-Empfehlung (Linux):** Für App-Window-Modus wird ein Chromium-basierter Browser benötigt (z. B. `chromium`, `google-chrome`, `microsoft-edge`). Ohne Chromium wird auf den Standardbrowser zurückgefallen.
+- **Daten & Logs:** Alle Schreibvorgänge bleiben im entpackten App-Ordner (`user/`, `logs/`).
+
+Details zu Build/Release stehen in `docs/release_build.md`.
+
+---
+
 ## Eingaben und Einheiten
 
 Damit Solver, Rechner und GUI konsistent bleiben, gelten folgende Konventionen:

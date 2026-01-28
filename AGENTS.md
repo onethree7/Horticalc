@@ -236,6 +236,8 @@ Scope:
 - Ensure Windows build is double-click friendly.
 Hotfix note:
 - **[DONE.]** Packaging determinism fix: PyInstaller spec resolves repo root via env/cwd (no `__file__`), and build scripts export `HORTICALC_PROJECT_ROOT` with post-build smoke checks.
+Status:
+- **[DONE.]** Windows + Linux onedir artifacts have been built and verified to run from extracted folders.
 
 Required doc updates:
 - `docs/release_build.md`: exact build commands for Win/Linux, exact artifact layout.
@@ -270,6 +272,8 @@ Progress tracking update:
 Acceptance:
 - Workflow produces two downloadable artifacts that start and open browser.
 - Artifact names include version tag.
+Status:
+- **[DONE.]** CI workflow builds and release artifacts for Windows + Linux are confirmed working.
 
 STOP if:
 - Workflow uses unpinned assumptions that break reproducibility without documenting it.

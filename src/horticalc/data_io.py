@@ -116,13 +116,6 @@ def load_molar_masses(path: Path | None = None) -> Dict[str, float]:
     return _float_mapping(data)
 
 
-def load_water_profile(path: Path) -> Dict[str, float]:
-    data = _load_yaml(path)
-    # schema: {name, source, mg_per_l:{...}}
-    mp = data.get("mg_per_l") or {}
-    return _float_mapping(mp)
-
-
 def load_water_profile_data(path: Path) -> dict:
     data = _load_yaml(path)
     mp = _float_mapping(data.get("mg_per_l") or {})

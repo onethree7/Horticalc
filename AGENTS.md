@@ -328,4 +328,7 @@ Before marking any task complete, verify:
 - UI loads assets and API works from same origin.
 - Restart does not lose edits (portable persistence works).
 
+## Maintenance log
+- 2026-01-28: Removed unused `load_water_profile` helper from `src/horticalc/data_io.py`.
+
 End of AGENTS.md

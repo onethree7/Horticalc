@@ -11,5 +11,5 @@ start "Horticalc Frontend" .\.venv\Scripts\python -m http.server 5173 --director
 
 echo.
 echo [Horticalc] API:      http://127.0.0.1:8000/health
-echo [Horticalc] Frontend: http://127.0.0.1:5173/
+echo [Horticalc] Frontend: http://127.0.0.1:8000/
 echo.

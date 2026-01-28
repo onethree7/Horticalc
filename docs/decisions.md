@@ -12,6 +12,7 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 - **Port policy:** DEFAULT — fixed-range scan on `127.0.0.1` (suggested range `8000–8100`). Confirmed in Task 2.
 - **Lockfile path/name:** DEFAULT — `AppRoot/user/horticalc.lock.json`. Confirmed in Task 2.
 - **App-window browser policy:** DEFAULT — prefer Chromium-based browsers (Edge/Chrome/Chromium) launched in app mode with `AppRoot/user/browser_profiles/` profiles; fallback to system default browser with a short grace period unless `HORTICALC_KEEP_SERVER=1` is set.
+- **Browser profile cleanup:** DEFAULT — remove per-launch profile directories via `shutil.rmtree(..., ignore_errors=True)` without try/except.
 - **Linux browser requirement (runtime):** DEFAULT — for best UX, a Chromium-based browser should be installed; fallback uses the system default browser.
 - **Linux runtime validation:** DEFAULT — validated on Debian/Ubuntu; other distros expected to work if Chromium is installed.
 

@@ -248,10 +248,7 @@ def launch_app_window(url: str, profile_dir: Path, logger: logging.Logger) -> su
 
 
 def cleanup_profile_dir(profile_dir: Path) -> None:
-    try:
-        shutil.rmtree(profile_dir, ignore_errors=True)
-    except OSError:
-        logging.exception("Failed to remove browser profile dir: %s", profile_dir)
+    shutil.rmtree(profile_dir, ignore_errors=True)
 
 
 def stop_server(

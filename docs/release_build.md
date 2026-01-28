@@ -10,6 +10,7 @@ Exactly as specified in `docs/AGENTS.md`, the runtime model is:
 4. The launcher opens a Chromium-based app window (no URL bar) to `http://127.0.0.1:<port>/` when available, or falls back to the system default browser.
 5. Closing the app window stops the server (within 1–2 seconds, hard timeout 5 seconds). If the app is already running, open the browser and do not start a second server.
 6. All persistent data and logs live inside the extracted app folder (portable-only).
+7. Per-launch browser profile directories are cleaned up with `shutil.rmtree(..., ignore_errors=True)`.
 
 ## Current status (validated)
 

@@ -6,10 +6,10 @@ if not exist ".venv\\Scripts\\python.exe" (
   exit /b 1
 )
 
-start "Horticalc API" .\.venv\Scripts\python -m uvicorn api.app:app --host 0.0.0.0 --port 8000
-start "Horticalc Frontend" .\.venv\Scripts\python -m http.server 5173 --directory frontend
+start "Horticalc API" .\.venv\Scripts\python -m uvicorn api.app:app --host 127.0.0.1 --port 8000
 
 echo.
-echo [Horticalc] API:      http://127.0.0.1:8000/health
 echo [Horticalc] Frontend: http://127.0.0.1:8000/
+echo [Horticalc] API:      http://127.0.0.1:8000/
+echo [Horticalc] Health:   http://127.0.0.1:8000/health
 echo.

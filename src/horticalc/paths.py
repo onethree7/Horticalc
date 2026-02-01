@@ -77,6 +77,38 @@ def shipped_nutrient_solutions_dir(root: Path | None = None) -> Path:
     return shipped_data_dir(root) / "nutrient_solutions"
 
 
+def resolve_recipe_path(value: str | Path, root: Path | None = None) -> Path:
+    base = root or app_root()
+    candidate = Path(value).expanduser()
+    if candidate.is_absolute():
+        return candidate.resolve()
+    if candidate.exists():
+        return candidate.resolve()
+    if candidate.suffix != ".yml":
+        candidate = candidate.with_suffix(".yml")
+    for folder in (user_recipes_dir(base), shipped_recipes_dir(base)):
+        resolved = folder / candidate
+        if resolved.exists():
+            return resolved.resolve()
+    return (shipped_recipes_dir(base) / candidate).resolve()
+
+
+def resolve_water_profile_path(value: str | Path, root: Path | None = None) -> Path:
+    base = root or app_root()
+    candidate = Path(value).expanduser()
+    if candidate.is_absolute():
+        return candidate.resolve()
+    if candidate.exists():
+        return candidate.resolve()
+    if candidate.suffix != ".yml":
+        candidate = candidate.with_suffix(".yml")
+    for folder in (user_water_profiles_dir(base), shipped_water_profiles_dir(base)):
+        resolved = folder / candidate
+        if resolved.exists():
+            return resolved.resolve()
+    return (shipped_water_profiles_dir(base) / candidate).resolve()
+
+
 def _atomic_copy(source: Path, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(

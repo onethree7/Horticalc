@@ -11,7 +11,7 @@ from .data_io import (
     load_recipe,
     load_water_profile_data,
 )
-from .paths import repo_root
+from .paths import resolve_water_profile_path
 from .sluijsmann import compute_sluijsmann
 
 
@@ -564,14 +564,19 @@ def compute_solution(
     )
 
 
-def run_recipe(recipe_path: Path) -> dict:
+def run_recipe(recipe_path: Path, water_profile_path: Path | None = None) -> dict:
     recipe = load_recipe(recipe_path)
     ferts = load_fertilizers()
     mm = load_molar_masses()
 
-    wp_name = str(recipe.get("water_profile") or "default")
-    wp_path = repo_root() / "data" / "water_profiles" / f"{wp_name}.yml"
-    water_profile = load_water_profile_data(wp_path)
+    water_profile_value = recipe.get("water_profile")
+    if water_profile_path is not None:
+        water_profile = load_water_profile_data(water_profile_path)
+    elif isinstance(water_profile_value, dict):
+        water_profile = water_profile_value
+    else:
+        wp_name = str(water_profile_value or "default")
+        water_profile = load_water_profile_data(resolve_water_profile_path(wp_name))
     osmosis_percent = float(recipe.get("osmosis_percent", water_profile.get("osmosis_percent", 0.0)))
     water = water_profile.get("mg_per_l") or {}
 
@@ -579,8 +584,8 @@ def run_recipe(recipe_path: Path) -> dict:
     return res.to_dict()
 
 
-def solve_recipe(recipe_path: Path) -> dict:
+def solve_recipe(recipe_path: Path, water_profile_path: Path | None = None) -> dict:
     from .solver import solve_recipe as run_solver
 
-    result = run_solver(recipe_path)
+    result = run_solver(recipe_path, water_profile_path=water_profile_path)
     return result.to_dict()

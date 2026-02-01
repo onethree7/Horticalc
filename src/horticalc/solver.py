@@ -20,7 +20,7 @@ from .data_io import (
     load_recipe,
     load_water_profile_data,
 )
-from .paths import repo_root
+from .paths import resolve_water_profile_path
 
 
 IGNORED_TARGETS = {"S", "SO4", "NA", "CL"}
@@ -397,16 +397,21 @@ def _singleton_supplier_pass(
     return adjusted
 
 
-def _resolve_water_profile(recipe: dict, water_profile_data: dict | None) -> dict:
+def _resolve_water_profile(
+    recipe: dict,
+    water_profile_data: dict | None,
+    water_profile_path: Path | None,
+) -> dict:
     if water_profile_data is not None:
         return water_profile_data
+    if water_profile_path is not None:
+        return load_water_profile_data(water_profile_path)
     water_profile_value = recipe.get("water_profile")
     if isinstance(water_profile_value, dict):
         return water_profile_value
     if not water_profile_value:
         water_profile_value = "default"
-    wp_path = repo_root() / "data" / "water_profiles" / f"{water_profile_value}.yml"
-    return load_water_profile_data(wp_path)
+    return load_water_profile_data(resolve_water_profile_path(str(water_profile_value)))
 
 
 def solve_recipe_data(
@@ -415,12 +420,13 @@ def solve_recipe_data(
     ferts: Dict[str, Fertilizer] | None = None,
     mm: Dict[str, float] | None = None,
     water_profile_data: dict | None = None,
+    water_profile_path: Path | None = None,
 ) -> SolveResult:
     fertilizers = ferts or load_fertilizers()
     molar_masses = mm or load_molar_masses()
 
     liters = float(recipe.get("liters") or 10.0)
-    water_profile = _resolve_water_profile(recipe, water_profile_data)
+    water_profile = _resolve_water_profile(recipe, water_profile_data, water_profile_path)
     osmosis_percent = float(recipe.get("osmosis_percent", water_profile.get("osmosis_percent", 0.0)))
     # compute_solution() applies osmosis_mix; do not pre-mix here.
     water_mg_l = water_profile.get("mg_per_l") or {}
@@ -650,6 +656,6 @@ def solve_recipe_data(
     )
 
 
-def solve_recipe(recipe_path: Path) -> SolveResult:
+def solve_recipe(recipe_path: Path, water_profile_path: Path | None = None) -> SolveResult:
     recipe = load_recipe(recipe_path)
-    return solve_recipe_data(recipe)
+    return solve_recipe_data(recipe, water_profile_path=water_profile_path)

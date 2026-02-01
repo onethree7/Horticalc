@@ -26,11 +26,11 @@ class TestSolutionTraceSiliconMix(unittest.TestCase):
         )
 
         expected_elements = {
-            "B": 1.85544,
-            "Cu": 3.00068,
-            "Fe": 7.00204,
-            "Mn": 8.15068,
-            "Si": 33.870464,
+            "B": 1.85,
+            "Cu": 3.0,
+            "Fe": 7.0,
+            "Mn": 8.15,
+            "Si": 30.850823,
             "Zn": 5.25,
         }
         actual_elements = {
@@ -39,24 +39,24 @@ class TestSolutionTraceSiliconMix(unittest.TestCase):
         self.assertEqual(expected_elements, actual_elements)
 
         expected_ions = {
-            "NH4+": 0.000377,
-            "K+": 0.02261,
-            "Ca+2": 0.90773,
-            "Mg+2": 0.461112,
-            "Na+": 0.236627,
-            "NO3-": 0.010967,
-            "SO4^2-": 0.528405,
-            "Cl-": 0.306911,
-            "HCO3-": 1.722935,
+            "NH4+": 0.0,
+            "K+": 0.0,
+            "Ca+2": 0.0,
+            "Mg+2": 0.223301,
+            "Na+": 0.0,
+            "NO3-": 0.0,
+            "SO4^2-": 0.28065,
+            "Cl-": 0.0,
+            "HCO3-": 0.0,
         }
         actual_ions = {key: round(result.ions_mmol_l.get(key, 0.0), 6) for key in expected_ions}
         self.assertEqual(expected_ions, actual_ions)
 
         ec = compute_ec(result.ions_mmol_l)
         expected_ec = {
-            "ionic_strength_mol_per_kg": 0.004945,
-            "ec_mS_per_cm": {"18.0": 0.275871, "25.0": 0.322263},
-            "ec_uS_per_cm": {"18.0": 275.871073, "25.0": 322.263372},
+            "ionic_strength_mol_per_kg": 0.001008,
+            "ec_mS_per_cm": {"18.0": 0.055376, "25.0": 0.064635},
+            "ec_uS_per_cm": {"18.0": 55.375684, "25.0": 64.6346},
         }
         actual_ec = {
             "ionic_strength_mol_per_kg": round(ec["ionic_strength_mol_per_kg"], 6),

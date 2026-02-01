@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .core import run_recipe, solve_recipe
+from .paths import resolve_recipe_path, resolve_water_profile_path
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -19,7 +20,18 @@ def main(argv: list[str] | None = None) -> None:
         )
         parser.add_argument(
             "recipe",
+            nargs="?",
             help="Path to a Solver Recipe (YAML), e.g. recipes/solve_golden.yml",
+        )
+        parser.add_argument(
+            "--load-recipe",
+            help="Optional: Recipe-Datei explizit laden (überschreibt positional)",
+            default=None,
+        )
+        parser.add_argument(
+            "--load-water",
+            help="Optional: Wasserprofil-Datei (z.B. 65936.yml oder Pfad)",
+            default=None,
         )
         parser.add_argument(
             "--out",
@@ -32,8 +44,14 @@ def main(argv: list[str] | None = None) -> None:
             action="store_true",
         )
         args = parser.parse_args(args_list[1:])
-        recipe_path = Path(args.recipe).expanduser().resolve()
-        result = solve_recipe(recipe_path)
+        recipe_arg = args.load_recipe or args.recipe
+        if not recipe_arg:
+            parser.error("Recipe fehlt: positional oder --load-recipe angeben.")
+        recipe_path = resolve_recipe_path(recipe_arg)
+        water_profile_path = None
+        if args.load_water:
+            water_profile_path = resolve_water_profile_path(args.load_water)
+        result = solve_recipe(recipe_path, water_profile_path=water_profile_path)
     else:
         parser = argparse.ArgumentParser(
             prog="horticalc",
@@ -41,7 +59,18 @@ def main(argv: list[str] | None = None) -> None:
         )
         parser.add_argument(
             "recipe",
+            nargs="?",
             help="Path to a Recipe (YAML), e.g. recipes/golden.yml",
+        )
+        parser.add_argument(
+            "--load-recipe",
+            help="Optional: Recipe-Datei explizit laden (überschreibt positional)",
+            default=None,
+        )
+        parser.add_argument(
+            "--load-water",
+            help="Optional: Wasserprofil-Datei (z.B. 65936.yml oder Pfad)",
+            default=None,
         )
         parser.add_argument(
             "--out",
@@ -54,8 +83,14 @@ def main(argv: list[str] | None = None) -> None:
             action="store_true",
         )
         args = parser.parse_args(args_list)
-        recipe_path = Path(args.recipe).expanduser().resolve()
-        result = run_recipe(recipe_path)
+        recipe_arg = args.load_recipe or args.recipe
+        if not recipe_arg:
+            parser.error("Recipe fehlt: positional oder --load-recipe angeben.")
+        recipe_path = resolve_recipe_path(recipe_arg)
+        water_profile_path = None
+        if args.load_water:
+            water_profile_path = resolve_water_profile_path(args.load_water)
+        result = run_recipe(recipe_path, water_profile_path=water_profile_path)
 
     if args.pretty:
         text = json.dumps(result, indent=2, ensure_ascii=False)

@@ -1,0 +1,10 @@
+name: Athena Pro Heavy - Bloom (W1-7) - 10L
+liters: 10.0
+water_profile: default
+phosphate_species: H2PO4
+urea_as_nh4: false
+fertilizers:
+- name: Athena Pro Core 14-0-0
+  grams: 10.6
+- name: Athena Pro Bloom 0-12-24
+  grams: 17.8

@@ -1,0 +1,8 @@
+name: Athena Pro Heavy - Flush - 10L
+liters: 10.0
+water_profile: default
+phosphate_species: H2PO4
+urea_as_nh4: false
+fertilizers:
+- name: Athena Pro Core 14-0-0
+  grams: 4.0

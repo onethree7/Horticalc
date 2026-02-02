@@ -2,8 +2,8 @@ name: Saloner Bernstein Cannabis NPK Target Optimization
 source: User provided dataset
 targets_mg_per_l:
   N_total: 160.0
-  N_NH4: 0.0
-  N_NO3: 160.0
+  N_NH4: 32.0
+  N_NO3: 128.0
   N_UREA: 0.0
   P: 30.0
   K: 100.0

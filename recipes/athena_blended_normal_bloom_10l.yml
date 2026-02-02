@@ -1,0 +1,14 @@
+name: Athena Blended Normal - Bloom (Flower W5) - 10L
+liters: 10.0
+water_profile: default
+phosphate_species: H2PO4
+urea_as_nh4: false
+fertilizers:
+- name: Athena CaMg
+  grams: 7.0
+- name: Athena Bloom A
+  grams: 18.0
+- name: Athena Bloom B
+  grams: 18.0
+- name: Athena PK
+  grams: 18.0

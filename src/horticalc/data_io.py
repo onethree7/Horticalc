@@ -18,7 +18,9 @@ class Fertilizer:
     comp: Dict[str, float]
 
 
-def _is_number_field(field: str) -> bool:
+def _is_number_field(field: str | None) -> bool:
+    if field is None:
+        return False
     return field.strip().rstrip(".").casefold() == "nr"
 
 
@@ -47,6 +49,8 @@ def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
 
             comp: Dict[str, float] = {}
             for k, v in row.items():
+                if k is None:
+                    continue
                 if _is_number_field(k) or k in ("Düngername", "Form", "Gewicht"):
                     continue
                 if v is None or str(v).strip() == "":

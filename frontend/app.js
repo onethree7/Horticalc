@@ -1083,7 +1083,7 @@ function renderWaterTable() {
     const input = document.createElement("input");
     input.type = "number";
     input.min = "0";
-    input.step = waterUnit === "mol_l" && field.key !== "KH" ? "0.0001" : "0.01";
+    input.step = waterUnit === "mol_l" && field.key !== "KH" ? "0.001" : "0.01";
     const rawValue = waterValues[field.key] || 0;
     const displayValue = waterUnit === "mol_l" ? mgToMol(field.key, rawValue) : rawValue;
     input.value = formatWaterDisplayValue(displayValue);
@@ -1182,7 +1182,7 @@ function mgToMol(key, value) {
   if (!mm) {
     return value;
   }
-  return value / 1000 / mm;
+  return value / mm;
 }
 
 function molToMg(key, value) {
@@ -1196,14 +1196,14 @@ function molToMg(key, value) {
   if (!mm) {
     return value;
   }
-  return value * 1000 * mm;
+  return value * mm;
 }
 
 function unitLabelForKey(key) {
   if (key === "KH") {
     return "°dKH";
   }
-  return waterUnit === "mol_l" ? "mol/L" : "mg/L";
+  return waterUnit === "mol_l" ? "mmol/L" : "mg/L";
 }
 
 function scheduleRecalculate() {
@@ -1439,7 +1439,7 @@ function renderSummaryTable({
 function renderWaterSummaryTable(table, waterElements) {
   const waterMap = new Map(Object.entries(waterElements || {}));
   if (waterSummaryBadge) {
-    waterSummaryBadge.textContent = waterUnit === "mol_l" ? "mol/L" : "mg/L";
+    waterSummaryBadge.textContent = waterUnit === "mol_l" ? "mmol/L" : "mg/L";
   }
   renderSummaryTable({
     table,
@@ -1611,7 +1611,7 @@ function waterElementsForDisplay(elements) {
       molKey = "N";
     }
     const molarMass = mm(molKey);
-    converted[key] = molarMass ? value / 1000 / molarMass : value;
+    converted[key] = molarMass ? value / molarMass : value;
   });
   return converted;
 }

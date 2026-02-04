@@ -20,7 +20,7 @@ Der Fokus liegt auf den vorhandenen Bereichen, Datenflüssen und UI‑Elementen.
 - **Profile auswählen**, **Laden**, **Reset Default**.
 - **Profilname speichern** (Profil als YAML über API speichern).
 - **Osmoseanteil (%)** zur Verdünnung.
-- **Einheiten‑Toggle** (mg/L ↔ mol/L Darstellung/Eingabe).
+- **Einheiten‑Toggle** (mg/L ↔ mmol/L Darstellung/Eingabe).
 - Tabelle **Parameter/Wert/Einheit** für alle Wasser‑Parameter (NH4, NO3, PO4, K, Ca,
   Mg, Na, SO4, Spurenelemente, Cl, HCO3/CO3, CaCO3, KH, SiO2).
 

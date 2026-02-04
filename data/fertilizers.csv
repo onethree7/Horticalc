@@ -161,7 +161,8 @@ Nr.,Düngername,Form,Gewicht,NH4,NO3,P2O5,K2O,CaO,MgO,Na2O,SO4,Fe,Mn,Cu,Zn,B,Mo,
 160,Athena Bloom B,Flüssig,1.0,0.002,0.005,0.06,0.05,0,0.0155876404,0,0.0389456729,0,0,0.00005,0,0,0,0,0,0,0,0,Quelle (Label): https://www.htgsupply.com/wp-content/uploads/2024/10/BLOOM-B_5G_LABEL.pdf | Abgeleitet aus: Monopotassium Phosphate; Potassium Nitrate; Copper EDTA; Magnesium Sulfate; Monoammonium Phosphate
 161,Athena CaMg,Flüssig,1.0,0,0.02,0,0,0.0293831279,0.0182408558,0,0,0.0006,0,0,0,0,0,0,0,0,0,0,Quelle (Label): https://www.htgsupply.com/wp-content/uploads/2024/10/CALMAG_5G_LABEL.pdf | Abgeleitet aus: Calcium Ammonium Nitrate; Calcium Chloride; Magnesium Nitrate; Iron EDTA
 162,Athena PK,Flüssig,1.15,0.0,0.0,0.045,0.05,0.0,0.009,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"Label: PK_32oz-back.pdf (P2O5 4.5%, K2O 5.0%, MgO 0.90%, density 1.15kg/L)"
-163,Athena Cleanse,Flüssig,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,Additiv (keine Nährstoffe; Dosierung in mL)
+163,Athena Cleanse,Flüssig,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,Quelle: Blended Programm (Nährwerte nicht angegeben)
+164,Athena Fade,Flüssig,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,Quelle: Blended Programm (Nährwerte nicht angegeben)
 ,,,,,,,,,,,,,,,,,,,,0.0,,,
 ,,,,,,,,,,,,,,,,,,,,0.0,,,
 ,,,,,,,,,,,,,,,,,,,,0.0,,,

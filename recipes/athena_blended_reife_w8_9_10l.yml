@@ -1,0 +1,12 @@
+name: Athena Blended - Reife W8-9 - 10L
+liters: 10.0
+water_profile: default
+phosphate_species: H2PO4
+urea_as_nh4: false
+fertilizers:
+- name: Athena PK
+  grams: 36.8
+- name: Athena Fade
+  grams: 32.0
+- name: Athena Cleanse
+  grams: 5.0

@@ -1,0 +1,12 @@
+name: Athena Pro - Reifephase - 10L (Cleanse 5-13 mL)
+liters: 10.0
+water_profile: default
+phosphate_species: H2PO4
+urea_as_nh4: false
+fertilizers:
+- name: Athena Pro Bloom 0-12-24
+  grams: 20.3
+- name: Athena Pro Fade (Finisher)
+  grams: 51.0
+- name: Athena Cleanse
+  grams: 5.0

@@ -202,6 +202,39 @@ def _row_priority_factors(
     return weights
 
 
+def _build_base_priority(
+    objective_keys: List[str],
+    *,
+    macro_priority_enabled: bool,
+    priority_groups: List[List[str]],
+    priority_group_weights: List[float],
+    n_form_priority_weights: Dict[str, float],
+) -> np.ndarray:
+    priority_factors = None
+    if macro_priority_enabled:
+        priority_factors = _row_priority_factors(
+            objective_keys,
+            priority_groups=priority_groups,
+            priority_group_weights=priority_group_weights,
+        )
+    base_priority = priority_factors
+    if base_priority is None:
+        base_priority = np.ones(len(objective_keys), dtype=float)
+    for idx, key in enumerate(objective_keys):
+        if key in n_form_priority_weights:
+            base_priority[idx] *= max(0.0, float(n_form_priority_weights[key]))
+    n_total_priority = None
+    for idx, key in enumerate(objective_keys):
+        if key == "N_total":
+            n_total_priority = base_priority[idx]
+            break
+    if n_total_priority is not None:
+        for idx, key in enumerate(objective_keys):
+            if key in ("N_NO3", "N_NH4", "N_UREA"):
+                base_priority[idx] = min(base_priority[idx], n_total_priority)
+    return base_priority
+
+
 def _build_matrix(
     fertilizers: List[Fertilizer],
     mm: Dict[str, float],
@@ -234,6 +267,8 @@ def _solve_weights(
     overshoot_penalty: float = 1.0,
     irls_max_outer_iter: int = 4,
     scale_eps_mg_per_l: float = 1.0,
+    row_scales_override: np.ndarray | None = None,
+    row_priority_factors_override: np.ndarray | None = None,
 ) -> np.ndarray:
     if A.size == 0:
         return np.array([])
@@ -246,30 +281,20 @@ def _solve_weights(
         return _nnls(A_var, b)
     if objective_keys is None or targets_raw is None:
         raise ValueError("objective_keys and targets_raw are required when relative_weighting is enabled")
-    scales = _build_row_scales(objective_keys, targets_raw, b, eps_mg_per_l=scale_eps_mg_per_l)
-    priority_factors = None
-    if macro_priority_enabled:
-        priority_factors = _row_priority_factors(
+    if row_scales_override is None:
+        scales = _build_row_scales(objective_keys, targets_raw, b, eps_mg_per_l=scale_eps_mg_per_l)
+    else:
+        scales = row_scales_override
+    if row_priority_factors_override is None:
+        base_priority = _build_base_priority(
             objective_keys,
+            macro_priority_enabled=macro_priority_enabled,
             priority_groups=priority_groups or [],
             priority_group_weights=priority_group_weights or [],
+            n_form_priority_weights=n_form_priority_weights or {},
         )
-    base_priority = priority_factors
-    if base_priority is None:
-        base_priority = np.ones(len(objective_keys), dtype=float)
-    if n_form_priority_weights:
-        for idx, key in enumerate(objective_keys):
-            if key in n_form_priority_weights:
-                base_priority[idx] *= max(0.0, float(n_form_priority_weights[key]))
-    n_total_priority = None
-    for idx, key in enumerate(objective_keys):
-        if key == "N_total":
-            n_total_priority = base_priority[idx]
-            break
-    if n_total_priority is not None:
-        for idx, key in enumerate(objective_keys):
-            if key in ("N_NO3", "N_NH4", "N_UREA"):
-                base_priority[idx] = min(base_priority[idx], n_total_priority)
+    else:
+        base_priority = row_priority_factors_override
     overshoot_only_weights = None
     if n_total_governor_enabled:
         overshoot_only_weights = np.zeros(len(objective_keys), dtype=float)
@@ -331,6 +356,38 @@ def _score_by_priority_groups(
             max_error = max(max_error, abs((achieved_val - target) / target * 100.0))
         scores.append(max_error)
     return tuple(scores)
+
+
+def _build_stage_groups(
+    objective_keys: List[str],
+    priority_groups: List[List[str]],
+) -> List[List[str]]:
+    filtered_groups: list[list[str]] = []
+    grouped_keys: set[str] = set()
+    for group in priority_groups:
+        filtered = [key for key in group if key in objective_keys]
+        if filtered:
+            filtered_groups.append(filtered)
+            grouped_keys.update(filtered)
+    other_keys = [key for key in objective_keys if key not in grouped_keys]
+    if other_keys:
+        filtered_groups.append(other_keys)
+    if not filtered_groups:
+        filtered_groups = [objective_keys]
+    return filtered_groups
+
+
+def _stage_regression_budget(
+    *,
+    target_value: float,
+    achieved_value: float,
+    regression_pp: float,
+    regression_mg_l: float,
+) -> float:
+    base = abs(target_value) if target_value != 0 else abs(achieved_value)
+    pct_budget = base * regression_pp / 100.0 if regression_pp > 0 else 0.0
+    budget = max(regression_mg_l, pct_budget)
+    return max(budget, 1e-6)
 
 
 def _singleton_supplier_pass(
@@ -444,6 +501,9 @@ def solve_recipe_data(
     singleton_supplier_enabled = bool(solver_config.get("singleton_supplier_enabled", True))
     singleton_share_threshold = float(solver_config.get("singleton_share_threshold", 0.85))
     singleton_max_regress_pp = float(solver_config.get("singleton_max_regress_pp", 0.25))
+    stage_optimization_enabled = bool(solver_config.get("stage_optimization_enabled", True))
+    stage_regression_pp = float(solver_config.get("stage_regression_pp", 1.0))
+    stage_regression_mg_l = float(solver_config.get("stage_regression_mg_l", 1.0))
     macro_priority_enabled = bool(solver_config.get("macro_priority_enabled", True))
     macro_regress_pp = float(solver_config.get("macro_regress_pp", 0.25))
     n_total_governor_enabled = bool(solver_config.get("n_total_governor_enabled", False))
@@ -507,23 +567,9 @@ def solve_recipe_data(
 
     b = np.array([target_raw.get(key, 0.0) - water_elements.get(key, 0.0) for key in objective_keys], dtype=float)
     A = _build_matrix(allowed, molar_masses, objective_keys, liters)
-    solve_weights = _solve_weights(
-        A,
-        b,
-        fixed_weights,
-        variable_mask,
-        relative_weighting=relative_weighting,
-        objective_keys=objective_keys,
-        targets_raw=target_raw,
-        macro_priority_enabled=macro_priority_enabled,
-        priority_groups=priority_groups,
-        priority_group_weights=priority_group_weights,
-        n_form_priority_weights=n_form_priority_weights,
-        n_total_governor_enabled=n_total_governor_enabled,
-        n_total_governor_weight=n_total_governor_weight,
-        overshoot_penalty=overshoot_penalty,
-        irls_max_outer_iter=irls_max_outer_iter,
-        scale_eps_mg_per_l=scale_eps_mg_per_l,
+    key_to_index = {key: idx for idx, key in enumerate(objective_keys)}
+    stage_groups = (
+        _build_stage_groups(objective_keys, priority_groups) if stage_optimization_enabled else [objective_keys]
     )
 
     def build_full_weights(solved: np.ndarray) -> np.ndarray:
@@ -557,12 +603,161 @@ def solve_recipe_data(
         )
         return ferts_out, achieved_solution.elements_mg_l, recipe_payload
 
-    x_full = build_full_weights(solve_weights)
-    fertilizers_out, achieved_elements, full_recipe = build_solution_for_weights(x_full)
+    def solve_with_stages(
+        *,
+        use_relative_weighting: bool,
+    ) -> tuple[np.ndarray, list[dict[str, float]], dict[str, float], dict]:
+        prev_achieved: dict[str, float] | None = None
+        prev_stage_keys: list[str] = []
+        latest_recipe: dict[str, float] | dict = {}
+        latest_fertilizers: list[dict[str, float]] = []
+        x_full_local = np.zeros(len(allowed), dtype=float)
+
+        for stage_group in stage_groups:
+            stage_key_set = set(prev_stage_keys) | set(stage_group)
+            stage_keys = [key for key in objective_keys if key in stage_key_set]
+            row_indices = [key_to_index[key] for key in stage_keys]
+            A_stage = A[row_indices, :]
+            b_stage = b[row_indices]
+            A_aug = A_stage
+            b_aug = b_stage
+            objective_keys_aug = stage_keys
+            row_scales_override = None
+            row_priority_override = None
+            if (
+                prev_achieved is not None
+                and prev_stage_keys
+                and (stage_regression_pp > 0 or stage_regression_mg_l > 0)
+            ):
+                anchor_row_indices = [key_to_index[key] for key in prev_stage_keys]
+                A_anchor = A[anchor_row_indices, :]
+                prev_fert_contrib = {
+                    key: float(prev_achieved.get(key, 0.0)) - float(water_elements.get(key, 0.0))
+                    for key in prev_stage_keys
+                }
+                b_anchor = np.array([prev_fert_contrib[key] for key in prev_stage_keys], dtype=float)
+                A_aug = np.vstack([A_stage, A_anchor])
+                b_aug = np.concatenate([b_stage, b_anchor])
+                objective_keys_aug = stage_keys + [f"__stage_anchor__{key}" for key in prev_stage_keys]
+                if use_relative_weighting:
+                    stage_scales = _build_row_scales(
+                        stage_keys, target_raw, b_stage, eps_mg_per_l=scale_eps_mg_per_l
+                    )
+                    base_priority_stage = _build_base_priority(
+                        stage_keys,
+                        macro_priority_enabled=macro_priority_enabled,
+                        priority_groups=priority_groups,
+                        priority_group_weights=priority_group_weights,
+                        n_form_priority_weights=n_form_priority_weights,
+                    )
+                    anchor_scales = np.array(
+                        [
+                            _stage_regression_budget(
+                                target_value=float(target_raw.get(key, 0.0)),
+                                achieved_value=float(prev_achieved.get(key, 0.0)),
+                                regression_pp=stage_regression_pp,
+                                regression_mg_l=stage_regression_mg_l,
+                            )
+                            for key in prev_stage_keys
+                        ],
+                        dtype=float,
+                    )
+                    row_scales_override = np.concatenate([stage_scales, anchor_scales])
+                    row_priority_override = np.concatenate(
+                        [base_priority_stage, np.ones(len(prev_stage_keys), dtype=float)]
+                    )
+
+            solved_weights = _solve_weights(
+                A_aug,
+                b_aug,
+                fixed_weights,
+                variable_mask,
+                relative_weighting=use_relative_weighting,
+                objective_keys=objective_keys_aug,
+                targets_raw=target_raw,
+                macro_priority_enabled=macro_priority_enabled,
+                priority_groups=priority_groups,
+                priority_group_weights=priority_group_weights,
+                n_form_priority_weights=None if row_priority_override is not None else n_form_priority_weights,
+                n_total_governor_enabled=n_total_governor_enabled,
+                n_total_governor_weight=n_total_governor_weight,
+                overshoot_penalty=overshoot_penalty,
+                irls_max_outer_iter=irls_max_outer_iter,
+                scale_eps_mg_per_l=scale_eps_mg_per_l,
+                row_scales_override=row_scales_override,
+                row_priority_factors_override=row_priority_override,
+            )
+            x_full_local = build_full_weights(solved_weights)
+            latest_fertilizers, achieved_elements_local, latest_recipe = build_solution_for_weights(x_full_local)
+
+            if singleton_supplier_enabled:
+                singleton_skip_keys = {"N_total"} if n_total_governor_enabled else None
+
+                def recompute_achieved_fn(new_x_full: np.ndarray) -> Dict[str, float]:
+                    updated_fertilizers = []
+                    for idx, fert in enumerate(allowed):
+                        grams = float(new_x_full[idx])
+                        if grams > 0:
+                            updated_fertilizers.append({"name": fert.name, "grams": grams})
+                    updated_recipe = {
+                        "liters": liters,
+                        "fertilizers": updated_fertilizers,
+                        "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
+                        "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
+                    }
+                    updated_solution = compute_solution(
+                        updated_recipe,
+                        fertilizers,
+                        molar_masses,
+                        water_mg_l,
+                        osmosis_percent=osmosis_percent,
+                    )
+                    return updated_solution.elements_mg_l
+
+                x_full_updated = _singleton_supplier_pass(
+                    A=A_stage,
+                    x_full=x_full_local,
+                    variable_mask_full=variable_mask,
+                    objective_keys=stage_keys,
+                    targets_raw=target_raw,
+                    achieved_elements=achieved_elements_local,
+                    liters=liters,
+                    share_threshold=singleton_share_threshold,
+                    max_regress_pp=singleton_max_regress_pp,
+                    macro_regress_pp=macro_regress_pp,
+                    priority_groups=priority_groups,
+                    skip_keys=singleton_skip_keys,
+                    recompute_achieved_fn=recompute_achieved_fn,
+                )
+                if np.any(np.abs(x_full_updated - x_full_local) > 1e-12):
+                    x_full_local = x_full_updated
+                    latest_fertilizers = []
+                    for idx, fert in enumerate(allowed):
+                        grams = float(x_full_local[idx])
+                        if grams > 0:
+                            latest_fertilizers.append({"name": fert.name, "grams": grams})
+                    latest_recipe["fertilizers"] = latest_fertilizers
+                    achieved_solution = compute_solution(
+                        latest_recipe,
+                        fertilizers,
+                        molar_masses,
+                        water_mg_l,
+                        osmosis_percent=osmosis_percent,
+                    )
+                    achieved_elements_local = achieved_solution.elements_mg_l
+
+            prev_achieved = achieved_elements_local
+            prev_stage_keys = stage_keys
+
+        return x_full_local, latest_fertilizers, prev_achieved or {}, latest_recipe
+
+    x_full, fertilizers_out, achieved_elements, full_recipe = solve_with_stages(
+        use_relative_weighting=relative_weighting
+    )
     if relative_weighting and not (n_total_governor_enabled or n_form_priority_weights):
-        solve_weights_unweighted = _solve_weights(A, b, fixed_weights, variable_mask)
-        x_full_unweighted = build_full_weights(solve_weights_unweighted)
-        ferts_unweighted, achieved_unweighted, recipe_unweighted = build_solution_for_weights(x_full_unweighted)
+        x_full_unweighted, ferts_unweighted, achieved_unweighted, recipe_unweighted = solve_with_stages(
+            use_relative_weighting=False
+        )
         weighted_score = _score_by_priority_groups(
             objective_keys,
             target_raw,
@@ -580,62 +775,6 @@ def solve_recipe_data(
             fertilizers_out = ferts_unweighted
             achieved_elements = achieved_unweighted
             full_recipe = recipe_unweighted
-
-    if singleton_supplier_enabled:
-        singleton_skip_keys = {"N_total"} if n_total_governor_enabled else None
-
-        def recompute_achieved_fn(new_x_full: np.ndarray) -> Dict[str, float]:
-            updated_fertilizers = []
-            for idx, fert in enumerate(allowed):
-                grams = float(new_x_full[idx])
-                if grams > 0:
-                    updated_fertilizers.append({"name": fert.name, "grams": grams})
-            updated_recipe = {
-                "liters": liters,
-                "fertilizers": updated_fertilizers,
-                "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
-                "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
-            }
-            updated_solution = compute_solution(
-                updated_recipe,
-                fertilizers,
-                molar_masses,
-                water_mg_l,
-                osmosis_percent=osmosis_percent,
-            )
-            return updated_solution.elements_mg_l
-
-        x_full_updated = _singleton_supplier_pass(
-            A=A,
-            x_full=x_full,
-            variable_mask_full=variable_mask,
-            objective_keys=objective_keys,
-            targets_raw=target_raw,
-            achieved_elements=achieved_elements,
-            liters=liters,
-            share_threshold=singleton_share_threshold,
-            max_regress_pp=singleton_max_regress_pp,
-            macro_regress_pp=macro_regress_pp,
-            priority_groups=priority_groups,
-            skip_keys=singleton_skip_keys,
-            recompute_achieved_fn=recompute_achieved_fn,
-        )
-        if np.any(np.abs(x_full_updated - x_full) > 1e-12):
-            x_full = x_full_updated
-            fertilizers_out = []
-            for idx, fert in enumerate(allowed):
-                grams = float(x_full[idx])
-                if grams > 0:
-                    fertilizers_out.append({"name": fert.name, "grams": grams})
-            full_recipe["fertilizers"] = fertilizers_out
-            achieved = compute_solution(
-                full_recipe,
-                fertilizers,
-                molar_masses,
-                water_mg_l,
-                osmosis_percent=osmosis_percent,
-            )
-            achieved_elements = achieved.elements_mg_l
 
     errors_mg_l = {}
     errors_percent = {}

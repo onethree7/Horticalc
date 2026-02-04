@@ -139,6 +139,23 @@ If the solver computes both a weighted and an unweighted candidate, it uses a le
 
 The same scoring can be used for post-pass accept/rollback decisions (see below).
 
+## Multi-stage optimization with regression budgets
+
+To avoid “hardcoding” any specific nutrient while still honoring macro-first intent, the solver can
+run a **staged (lexicographic) optimization**:
+
+1) Stage 1 solves the highest-priority group (e.g., `N_total`, then N-forms, `K`, `P`, `Ca`, `Mg`).
+2) Each subsequent stage adds the next priority group, **while anchoring all previously solved
+   groups** to stay within a configurable **regression budget** of their achieved values.
+3) The final stage includes all remaining objectives (“other” keys).
+
+Anchors are implemented as additional soft rows that target the **previous stage’s achieved
+mg/L**, with row scales derived from the regression budgets. This keeps earlier groups stable while
+allowing later groups to improve without introducing any nutrient-specific hard rules.
+
+The same singleton-supplier post-pass runs at the end of each stage when enabled so that
+dominant-fertilizer overshoots can be corrected before later stages refine lower-priority nutrients.
+
 ## Singleton-supplier post-pass (optional)
 
 Even with a good fit, the solver can produce “avoidable” overshoots when a single fertilizer supplies almost all of an element.
@@ -182,6 +199,10 @@ Typical toggles:
 - `singleton_supplier_enabled`: enable singleton post-pass
 - `singleton_share_threshold`: dominant-supplier threshold
 - `singleton_max_regress_pp`: rollback tolerance in percent points
+- staged optimization (optional):
+  - `stage_optimization_enabled`: enable multi-stage solving (default `true`)
+  - `stage_regression_pp`: max regression from a prior stage as percent of target (default `1.0`)
+  - `stage_regression_mg_l`: absolute mg/L regression budget per stage (default `1.0`)
 - macro priority (if implemented):
   - `macro_priority_enabled`
   - `priority_groups`, `priority_group_weights`

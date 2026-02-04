@@ -139,6 +139,22 @@ If the solver computes both a weighted and an unweighted candidate, it uses a le
 
 The same scoring can be used for post-pass accept/rollback decisions (see below).
 
+## Multi-stage optimization with regression budgets
+
+To avoid nutrient-specific hardcoding while preserving macro-first intent, the solver can run in
+**staged (lexicographic) mode**:
+
+1) Solve the first priority group.
+2) Add the next priority group and re-solve.
+3) Continue until all priority groups are included, finishing with an “other” group
+   (any objective elements not named in a priority group).
+
+Between stages, the solver **caps regression** of previously solved groups using a bounded budget.
+If a lower-priority improvement would regress an earlier group beyond the budget, the solver blends
+back toward the previous stage solution until the regression stays within limits. This lets
+co-supplied nutrients improve without permanently blocking each other, while keeping the highest
+priority objectives stable.
+
 ## Singleton-supplier post-pass (optional)
 
 Even with a good fit, the solver can produce “avoidable” overshoots when a single fertilizer supplies almost all of an element.
@@ -186,6 +202,10 @@ Typical toggles:
   - `macro_priority_enabled`
   - `priority_groups`, `priority_group_weights`
   - `macro_regress_pp`
+- staged optimization:
+  - `stage_optimization_enabled` (default `true`)
+  - `stage_regression_pp` (default `5.0`, percent points of target per stage)
+  - `stage_regression_mg_l` (default `5.0`, absolute mg/L per stage)
 - N-governor + N-form priority (optional):
   - `n_total_governor_enabled` (keep `N_total` in the objective and penalize only overshoot)
   - `n_total_governor_weight` (overshoot-only weight multiplier for `N_total`)

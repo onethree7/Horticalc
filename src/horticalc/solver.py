@@ -333,6 +333,71 @@ def _score_by_priority_groups(
     return tuple(scores)
 
 
+def _build_stage_groups(
+    objective_keys: List[str],
+    priority_groups: List[List[str]],
+) -> List[List[str]]:
+    if not priority_groups:
+        return [list(objective_keys)]
+    grouped_keys = {key for group in priority_groups for key in group}
+    other_keys = [key for key in objective_keys if key not in grouped_keys]
+    stage_groups: List[List[str]] = []
+    for group in priority_groups:
+        stage_group = [key for key in group if key in objective_keys]
+        if stage_group:
+            stage_groups.append(stage_group)
+    if other_keys:
+        stage_groups.append(other_keys)
+    return stage_groups
+
+
+def _stage_regression_budget_mg_l(
+    target: float,
+    *,
+    stage_regression_pp: float,
+    stage_regression_mg_l: float,
+) -> float:
+    budget_percent = abs(float(target)) * max(0.0, stage_regression_pp) / 100.0
+    return max(budget_percent, max(0.0, stage_regression_mg_l))
+
+
+def _apply_stage_regression_budget(
+    prev_x: np.ndarray,
+    prev_achieved: Dict[str, float],
+    new_x: np.ndarray,
+    new_achieved: Dict[str, float],
+    prev_keys: List[str],
+    targets_raw: Dict[str, float],
+    *,
+    stage_regression_pp: float,
+    stage_regression_mg_l: float,
+) -> tuple[np.ndarray, float]:
+    if not prev_keys:
+        return new_x, 1.0
+    if stage_regression_pp <= 0 and stage_regression_mg_l <= 0:
+        return new_x, 1.0
+    t_max = 1.0
+    for key in prev_keys:
+        prev_val = float(prev_achieved.get(key, 0.0))
+        new_val = float(new_achieved.get(key, 0.0))
+        delta = new_val - prev_val
+        if delta == 0:
+            continue
+        budget = _stage_regression_budget_mg_l(
+            targets_raw.get(key, 0.0),
+            stage_regression_pp=stage_regression_pp,
+            stage_regression_mg_l=stage_regression_mg_l,
+        )
+        if budget <= 0:
+            continue
+        if abs(delta) > budget:
+            t_max = min(t_max, budget / abs(delta))
+    if t_max >= 1.0:
+        return new_x, 1.0
+    blended = prev_x + t_max * (new_x - prev_x)
+    return blended, t_max
+
+
 def _singleton_supplier_pass(
     *,
     A: np.ndarray,
@@ -446,6 +511,9 @@ def solve_recipe_data(
     singleton_max_regress_pp = float(solver_config.get("singleton_max_regress_pp", 0.25))
     macro_priority_enabled = bool(solver_config.get("macro_priority_enabled", True))
     macro_regress_pp = float(solver_config.get("macro_regress_pp", 0.25))
+    stage_optimization_enabled = bool(solver_config.get("stage_optimization_enabled", True))
+    stage_regression_pp = float(solver_config.get("stage_regression_pp", 5.0))
+    stage_regression_mg_l = float(solver_config.get("stage_regression_mg_l", 5.0))
     n_total_governor_enabled = bool(solver_config.get("n_total_governor_enabled", False))
     n_total_governor_weight = float(solver_config.get("n_total_governor_weight", 1.0))
     n_form_priority_weights = solver_config.get("n_form_priority_weights") or {}
@@ -507,24 +575,6 @@ def solve_recipe_data(
 
     b = np.array([target_raw.get(key, 0.0) - water_elements.get(key, 0.0) for key in objective_keys], dtype=float)
     A = _build_matrix(allowed, molar_masses, objective_keys, liters)
-    solve_weights = _solve_weights(
-        A,
-        b,
-        fixed_weights,
-        variable_mask,
-        relative_weighting=relative_weighting,
-        objective_keys=objective_keys,
-        targets_raw=target_raw,
-        macro_priority_enabled=macro_priority_enabled,
-        priority_groups=priority_groups,
-        priority_group_weights=priority_group_weights,
-        n_form_priority_weights=n_form_priority_weights,
-        n_total_governor_enabled=n_total_governor_enabled,
-        n_total_governor_weight=n_total_governor_weight,
-        overshoot_penalty=overshoot_penalty,
-        irls_max_outer_iter=irls_max_outer_iter,
-        scale_eps_mg_per_l=scale_eps_mg_per_l,
-    )
 
     def build_full_weights(solved: np.ndarray) -> np.ndarray:
         combined = fixed_weights.copy()
@@ -557,29 +607,93 @@ def solve_recipe_data(
         )
         return ferts_out, achieved_solution.elements_mg_l, recipe_payload
 
-    x_full = build_full_weights(solve_weights)
-    fertilizers_out, achieved_elements, full_recipe = build_solution_for_weights(x_full)
-    if relative_weighting and not (n_total_governor_enabled or n_form_priority_weights):
-        solve_weights_unweighted = _solve_weights(A, b, fixed_weights, variable_mask)
-        x_full_unweighted = build_full_weights(solve_weights_unweighted)
-        ferts_unweighted, achieved_unweighted, recipe_unweighted = build_solution_for_weights(x_full_unweighted)
-        weighted_score = _score_by_priority_groups(
-            objective_keys,
-            target_raw,
-            achieved_elements,
+    key_to_index = {key: idx for idx, key in enumerate(objective_keys)}
+
+    def solve_for_keys(stage_keys: List[str]) -> tuple[np.ndarray, list[dict[str, float]], dict[str, float], dict]:
+        stage_indices = [key_to_index[key] for key in stage_keys]
+        A_stage = A[stage_indices, :]
+        b_stage = b[stage_indices]
+        solve_weights = _solve_weights(
+            A_stage,
+            b_stage,
+            fixed_weights,
+            variable_mask,
+            relative_weighting=relative_weighting,
+            objective_keys=stage_keys,
+            targets_raw=target_raw,
+            macro_priority_enabled=macro_priority_enabled,
             priority_groups=priority_groups,
+            priority_group_weights=priority_group_weights,
+            n_form_priority_weights=n_form_priority_weights,
+            n_total_governor_enabled=n_total_governor_enabled,
+            n_total_governor_weight=n_total_governor_weight,
+            overshoot_penalty=overshoot_penalty,
+            irls_max_outer_iter=irls_max_outer_iter,
+            scale_eps_mg_per_l=scale_eps_mg_per_l,
         )
-        unweighted_score = _score_by_priority_groups(
-            objective_keys,
-            target_raw,
-            achieved_unweighted,
-            priority_groups=priority_groups,
-        )
-        if unweighted_score < weighted_score:
-            x_full = x_full_unweighted
-            fertilizers_out = ferts_unweighted
-            achieved_elements = achieved_unweighted
-            full_recipe = recipe_unweighted
+        x_full_stage = build_full_weights(solve_weights)
+        fertilizers_out, achieved_elements, full_recipe = build_solution_for_weights(x_full_stage)
+        if relative_weighting and not (n_total_governor_enabled or n_form_priority_weights):
+            solve_weights_unweighted = _solve_weights(A_stage, b_stage, fixed_weights, variable_mask)
+            x_full_unweighted = build_full_weights(solve_weights_unweighted)
+            ferts_unweighted, achieved_unweighted, recipe_unweighted = build_solution_for_weights(x_full_unweighted)
+            weighted_score = _score_by_priority_groups(
+                stage_keys,
+                target_raw,
+                achieved_elements,
+                priority_groups=priority_groups,
+            )
+            unweighted_score = _score_by_priority_groups(
+                stage_keys,
+                target_raw,
+                achieved_unweighted,
+                priority_groups=priority_groups,
+            )
+            if unweighted_score < weighted_score:
+                x_full_stage = x_full_unweighted
+                fertilizers_out = ferts_unweighted
+                achieved_elements = achieved_unweighted
+                full_recipe = recipe_unweighted
+        return x_full_stage, fertilizers_out, achieved_elements, full_recipe
+
+    stage_groups = (
+        _build_stage_groups(objective_keys, priority_groups) if stage_optimization_enabled else [objective_keys]
+    )
+    x_full = np.zeros_like(fixed_weights)
+    fertilizers_out: list[dict[str, float]] = []
+    achieved_elements: dict[str, float] = {}
+    full_recipe: dict[str, float] = {}
+    prev_x_full: np.ndarray | None = None
+    prev_achieved: dict[str, float] | None = None
+    prev_keys: List[str] = []
+
+    for stage_idx, stage_group in enumerate(stage_groups):
+        stage_key_set = {key for group in stage_groups[: stage_idx + 1] for key in group}
+        stage_keys = [key for key in objective_keys if key in stage_key_set]
+        if not stage_keys:
+            continue
+        x_full_candidate, ferts_candidate, achieved_candidate, recipe_candidate = solve_for_keys(stage_keys)
+        if prev_x_full is not None and prev_achieved is not None:
+            adjusted_x, blend_factor = _apply_stage_regression_budget(
+                prev_x_full,
+                prev_achieved,
+                x_full_candidate,
+                achieved_candidate,
+                prev_keys,
+                target_raw,
+                stage_regression_pp=stage_regression_pp,
+                stage_regression_mg_l=stage_regression_mg_l,
+            )
+            if blend_factor < 1.0:
+                x_full_candidate = adjusted_x
+                ferts_candidate, achieved_candidate, recipe_candidate = build_solution_for_weights(x_full_candidate)
+        x_full = x_full_candidate
+        fertilizers_out = ferts_candidate
+        achieved_elements = achieved_candidate
+        full_recipe = recipe_candidate
+        prev_x_full = x_full_candidate
+        prev_achieved = achieved_candidate
+        prev_keys = stage_keys
 
     if singleton_supplier_enabled:
         singleton_skip_keys = {"N_total"} if n_total_governor_enabled else None

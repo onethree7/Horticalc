@@ -405,6 +405,9 @@ def _singleton_supplier_pass(
     priority_groups: List[List[str]],
     skip_keys: set[str] | None,
     recompute_achieved_fn: callable,
+    mode: str = "overshoot",
+    use_potential_share: bool = False,
+    regression_guard: callable | None = None,
 ) -> np.ndarray:
     adjusted = x_full.copy()
     skip = skip_keys or set()
@@ -413,24 +416,45 @@ def _singleton_supplier_pass(
             continue
         contrib_row = A[row, :] * adjusted
         sum_row = float(np.sum(contrib_row))
-        if sum_row <= 0:
+        potential_row = np.clip(A[row, :], 0.0, None)
+        sum_potential = float(np.sum(potential_row))
+        if sum_potential <= 0:
             continue
-        j_star = int(np.argmax(contrib_row))
-        share = contrib_row[j_star] / sum_row
+        if use_potential_share or sum_row <= 0:
+            base_row = potential_row
+            share_denominator = sum_potential
+        else:
+            base_row = contrib_row
+            share_denominator = sum_row
+        j_star = int(np.argmax(base_row))
+        share = base_row[j_star] / share_denominator if share_denominator > 0 else 0.0
         if share < share_threshold:
             continue
         if not variable_mask_full[j_star]:
             continue
         if A[row, j_star] <= 0:
             continue
-        overshoot_mg_l = float(achieved_elements.get(key, 0.0) - targets_raw.get(key, 0.0))
-        if overshoot_mg_l <= 0:
-            continue
-        delta_g = overshoot_mg_l / A[row, j_star]
-        if delta_g <= 0:
-            continue
-        proposed = adjusted.copy()
-        proposed[j_star] = max(0.0, adjusted[j_star] - delta_g)
+        target_value = float(targets_raw.get(key, 0.0))
+        achieved_value = float(achieved_elements.get(key, 0.0))
+        delta_mg_l = achieved_value - target_value
+        if mode == "overshoot":
+            if delta_mg_l <= 0:
+                continue
+            delta_g = delta_mg_l / A[row, j_star]
+            if delta_g <= 0:
+                continue
+            proposed = adjusted.copy()
+            proposed[j_star] = max(0.0, adjusted[j_star] - delta_g)
+        elif mode == "underfill":
+            if delta_mg_l >= 0:
+                continue
+            delta_g = (-delta_mg_l) / A[row, j_star]
+            if delta_g <= 0:
+                continue
+            proposed = adjusted.copy()
+            proposed[j_star] = adjusted[j_star] + delta_g
+        else:
+            raise ValueError(f"Unknown singleton supplier mode: {mode}")
         achieved_new = recompute_achieved_fn(proposed)
         old_score = _score_by_priority_groups(
             objective_keys,
@@ -444,11 +468,13 @@ def _singleton_supplier_pass(
             achieved_new,
             priority_groups=priority_groups,
         )
-        if (
-            achieved_new.get(key, 0.0) <= achieved_elements.get(key, 0.0)
-            and new_score[0] <= old_score[0] + macro_regress_pp
-            and new_score[-1] <= old_score[-1] + max_regress_pp
-        ):
+        if regression_guard is not None and not regression_guard(achieved_new):
+            continue
+        improves = (mode == "overshoot" and achieved_new.get(key, 0.0) <= achieved_elements.get(key, 0.0)) or (
+            mode == "underfill" and achieved_new.get(key, 0.0) >= achieved_elements.get(key, 0.0)
+        )
+        regression_ok = new_score[0] <= old_score[0] + macro_regress_pp and new_score[-1] <= old_score[-1] + max_regress_pp
+        if improves and regression_ok:
             adjusted = proposed
             achieved_elements = achieved_new
     return adjusted
@@ -501,9 +527,14 @@ def solve_recipe_data(
     singleton_supplier_enabled = bool(solver_config.get("singleton_supplier_enabled", True))
     singleton_share_threshold = float(solver_config.get("singleton_share_threshold", 0.85))
     singleton_max_regress_pp = float(solver_config.get("singleton_max_regress_pp", 0.25))
+    singleton_underfill_enabled = bool(solver_config.get("singleton_underfill_enabled", True))
+    singleton_underfill_share_threshold = float(
+        solver_config.get("singleton_underfill_share_threshold", singleton_share_threshold)
+    )
+    singleton_underfill_max_iter = int(solver_config.get("singleton_underfill_max_iter", 2))
     stage_optimization_enabled = bool(solver_config.get("stage_optimization_enabled", True))
-    stage_regression_pp = float(solver_config.get("stage_regression_pp", 1.0))
-    stage_regression_mg_l = float(solver_config.get("stage_regression_mg_l", 1.0))
+    stage_regression_pp = float(solver_config.get("stage_regression_pp", 5.0))
+    stage_regression_mg_l = float(solver_config.get("stage_regression_mg_l", 2.0))
     macro_priority_enabled = bool(solver_config.get("macro_priority_enabled", True))
     macro_regress_pp = float(solver_config.get("macro_regress_pp", 0.25))
     n_total_governor_enabled = bool(solver_config.get("n_total_governor_enabled", False))
@@ -690,30 +721,37 @@ def solve_recipe_data(
             x_full_local = build_full_weights(solved_weights)
             latest_fertilizers, achieved_elements_local, latest_recipe = build_solution_for_weights(x_full_local)
 
-            if singleton_supplier_enabled:
-                singleton_skip_keys = {"N_total"} if n_total_governor_enabled else None
+            singleton_skip_keys = {"N_total"} if n_total_governor_enabled else None
 
-                def recompute_achieved_fn(new_x_full: np.ndarray) -> Dict[str, float]:
-                    updated_fertilizers = []
-                    for idx, fert in enumerate(allowed):
-                        grams = float(new_x_full[idx])
-                        if grams > 0:
-                            updated_fertilizers.append({"name": fert.name, "grams": grams})
-                    updated_recipe = {
-                        "liters": liters,
-                        "fertilizers": updated_fertilizers,
-                        "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
-                        "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
-                    }
-                    updated_solution = compute_solution(
-                        updated_recipe,
-                        fertilizers,
-                        molar_masses,
-                        water_mg_l,
-                        osmosis_percent=osmosis_percent,
-                    )
-                    return updated_solution.elements_mg_l
+            def recompute_achieved_fn(new_x_full: np.ndarray) -> Dict[str, float]:
+                updated_fertilizers = []
+                for idx, fert in enumerate(allowed):
+                    grams = float(new_x_full[idx])
+                    if grams > 0:
+                        updated_fertilizers.append({"name": fert.name, "grams": grams})
+                updated_recipe = {
+                    "liters": liters,
+                    "fertilizers": updated_fertilizers,
+                    "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
+                    "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
+                }
+                updated_solution = compute_solution(
+                    updated_recipe,
+                    fertilizers,
+                    molar_masses,
+                    water_mg_l,
+                    osmosis_percent=osmosis_percent,
+                )
+                return updated_solution.elements_mg_l
 
+            def apply_singleton_pass(
+                *,
+                mode: str,
+                share_threshold: float,
+                use_potential_share: bool,
+                regression_guard: callable | None = None,
+            ) -> bool:
+                nonlocal x_full_local, latest_fertilizers, achieved_elements_local, latest_recipe
                 x_full_updated = _singleton_supplier_pass(
                     A=A_stage,
                     x_full=x_full_local,
@@ -722,29 +760,69 @@ def solve_recipe_data(
                     targets_raw=target_raw,
                     achieved_elements=achieved_elements_local,
                     liters=liters,
-                    share_threshold=singleton_share_threshold,
+                    share_threshold=share_threshold,
                     max_regress_pp=singleton_max_regress_pp,
                     macro_regress_pp=macro_regress_pp,
                     priority_groups=priority_groups,
                     skip_keys=singleton_skip_keys,
                     recompute_achieved_fn=recompute_achieved_fn,
+                    mode=mode,
+                    use_potential_share=use_potential_share,
+                    regression_guard=regression_guard,
                 )
-                if np.any(np.abs(x_full_updated - x_full_local) > 1e-12):
-                    x_full_local = x_full_updated
-                    latest_fertilizers = []
-                    for idx, fert in enumerate(allowed):
-                        grams = float(x_full_local[idx])
-                        if grams > 0:
-                            latest_fertilizers.append({"name": fert.name, "grams": grams})
-                    latest_recipe["fertilizers"] = latest_fertilizers
-                    achieved_solution = compute_solution(
-                        latest_recipe,
-                        fertilizers,
-                        molar_masses,
-                        water_mg_l,
-                        osmosis_percent=osmosis_percent,
-                    )
-                    achieved_elements_local = achieved_solution.elements_mg_l
+                if not np.any(np.abs(x_full_updated - x_full_local) > 1e-12):
+                    return False
+                x_full_local = x_full_updated
+                latest_fertilizers = []
+                for idx, fert in enumerate(allowed):
+                    grams = float(x_full_local[idx])
+                    if grams > 0:
+                        latest_fertilizers.append({"name": fert.name, "grams": grams})
+                latest_recipe["fertilizers"] = latest_fertilizers
+                achieved_solution = compute_solution(
+                    latest_recipe,
+                    fertilizers,
+                    molar_masses,
+                    water_mg_l,
+                    osmosis_percent=osmosis_percent,
+                )
+                achieved_elements_local = achieved_solution.elements_mg_l
+                return True
+
+            if singleton_supplier_enabled:
+                apply_singleton_pass(
+                    mode="overshoot",
+                    share_threshold=singleton_share_threshold,
+                    use_potential_share=False,
+                )
+
+            if singleton_underfill_enabled:
+                regression_guard = None
+                if prev_achieved is not None and prev_stage_keys:
+                    budgets = {
+                        key: _stage_regression_budget(
+                            target_value=float(target_raw.get(key, 0.0)),
+                            achieved_value=float(prev_achieved.get(key, 0.0)),
+                            regression_pp=stage_regression_pp,
+                            regression_mg_l=stage_regression_mg_l,
+                        )
+                        for key in prev_stage_keys
+                    }
+
+                    def regression_guard(new_achieved: Dict[str, float]) -> bool:
+                        for guard_key, budget in budgets.items():
+                            if abs(new_achieved.get(guard_key, 0.0) - prev_achieved.get(guard_key, 0.0)) > budget:
+                                return False
+                        return True
+
+                for _ in range(max(1, singleton_underfill_max_iter)):
+                    if not apply_singleton_pass(
+                        mode="underfill",
+                        share_threshold=singleton_underfill_share_threshold,
+                        use_potential_share=True,
+                        regression_guard=regression_guard,
+                    ):
+                        break
 
             prev_achieved = achieved_elements_local
             prev_stage_keys = stage_keys

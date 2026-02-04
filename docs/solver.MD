@@ -153,8 +153,9 @@ Anchors are implemented as additional soft rows that target the **previous stage
 mg/L**, with row scales derived from the regression budgets. This keeps earlier groups stable while
 allowing later groups to improve without introducing any nutrient-specific hard rules.
 
-The same singleton-supplier post-pass runs at the end of each stage when enabled so that
-dominant-fertilizer overshoots can be corrected before later stages refine lower-priority nutrients.
+Singleton-supplier post-passes can run at the end of each stage so that dominant-fertilizer
+overshoots are corrected (and underfills can be topped up) before later stages refine
+lower-priority nutrients.
 
 ## Singleton-supplier post-pass (optional)
 
@@ -199,10 +200,14 @@ Typical toggles:
 - `singleton_supplier_enabled`: enable singleton post-pass
 - `singleton_share_threshold`: dominant-supplier threshold
 - `singleton_max_regress_pp`: rollback tolerance in percent points
+- singleton underfill top-up (optional):
+  - `singleton_underfill_enabled`: allow dominant-supplier underfill top-ups (default `true`)
+  - `singleton_underfill_share_threshold`: dominant-supplier threshold for underfill (default = share threshold)
+  - `singleton_underfill_max_iter`: iteration cap for underfill top-ups per stage (default `2`)
 - staged optimization (optional):
   - `stage_optimization_enabled`: enable multi-stage solving (default `true`)
-  - `stage_regression_pp`: max regression from a prior stage as percent of target (default `1.0`)
-  - `stage_regression_mg_l`: absolute mg/L regression budget per stage (default `1.0`)
+  - `stage_regression_pp`: max regression from a prior stage as percent of target (default `5.0`)
+  - `stage_regression_mg_l`: absolute mg/L regression budget per stage (default `2.0`)
 - macro priority (if implemented):
   - `macro_priority_enabled`
   - `priority_groups`, `priority_group_weights`

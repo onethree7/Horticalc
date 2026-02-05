@@ -317,21 +317,6 @@ def _solve_weights(
     )
 
 
-def _max_abs_percent_error(
-    objective_keys: List[str],
-    targets_raw: Dict[str, float],
-    achieved_elements: Dict[str, float],
-) -> float:
-    max_error = 0.0
-    for key in objective_keys:
-        target = float(targets_raw.get(key, 0.0))
-        if target == 0:
-            continue
-        achieved_val = float(achieved_elements.get(key, 0.0))
-        max_error = max(max_error, abs((achieved_val - target) / target * 100.0))
-    return max_error
-
-
 def _score_by_priority_groups(
     objective_keys: List[str],
     targets_raw: Dict[str, float],
@@ -480,6 +465,27 @@ def _singleton_supplier_pass(
     return adjusted
 
 
+def _build_solution_payload(
+    *,
+    weights: np.ndarray,
+    allowed: List[Fertilizer],
+    liters: float,
+    recipe: dict,
+) -> tuple[list[dict[str, float]], dict]:
+    ferts_out: list[dict[str, float]] = []
+    for idx, fert in enumerate(allowed):
+        grams = float(weights[idx])
+        if grams > 0:
+            ferts_out.append({"name": fert.name, "grams": grams})
+    recipe_payload = {
+        "liters": liters,
+        "fertilizers": ferts_out,
+        "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
+        "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
+    }
+    return ferts_out, recipe_payload
+
+
 def _resolve_water_profile(
     recipe: dict,
     water_profile_data: dict | None,
@@ -614,17 +620,12 @@ def solve_recipe_data(
         return combined
 
     def build_solution_for_weights(weights: np.ndarray) -> tuple[list[dict[str, float]], dict[str, float], dict]:
-        ferts_out: list[dict[str, float]] = []
-        for idx, fert in enumerate(allowed):
-            grams = float(weights[idx])
-            if grams > 0:
-                ferts_out.append({"name": fert.name, "grams": grams})
-        recipe_payload = {
-            "liters": liters,
-            "fertilizers": ferts_out,
-            "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
-            "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
-        }
+        ferts_out, recipe_payload = _build_solution_payload(
+            weights=weights,
+            allowed=allowed,
+            liters=liters,
+            recipe=recipe,
+        )
         achieved_solution = compute_solution(
             recipe_payload,
             fertilizers,
@@ -724,17 +725,12 @@ def solve_recipe_data(
             singleton_skip_keys = {"N_total"} if n_total_governor_enabled else None
 
             def recompute_achieved_fn(new_x_full: np.ndarray) -> Dict[str, float]:
-                updated_fertilizers = []
-                for idx, fert in enumerate(allowed):
-                    grams = float(new_x_full[idx])
-                    if grams > 0:
-                        updated_fertilizers.append({"name": fert.name, "grams": grams})
-                updated_recipe = {
-                    "liters": liters,
-                    "fertilizers": updated_fertilizers,
-                    "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
-                    "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
-                }
+                _, updated_recipe = _build_solution_payload(
+                    weights=new_x_full,
+                    allowed=allowed,
+                    liters=liters,
+                    recipe=recipe,
+                )
                 updated_solution = compute_solution(
                     updated_recipe,
                     fertilizers,
@@ -773,12 +769,13 @@ def solve_recipe_data(
                 if not np.any(np.abs(x_full_updated - x_full_local) > 1e-12):
                     return False
                 x_full_local = x_full_updated
-                latest_fertilizers = []
-                for idx, fert in enumerate(allowed):
-                    grams = float(x_full_local[idx])
-                    if grams > 0:
-                        latest_fertilizers.append({"name": fert.name, "grams": grams})
-                latest_recipe["fertilizers"] = latest_fertilizers
+                latest_fertilizers, latest_recipe_payload = _build_solution_payload(
+                    weights=x_full_local,
+                    allowed=allowed,
+                    liters=liters,
+                    recipe=recipe,
+                )
+                latest_recipe["fertilizers"] = latest_recipe_payload["fertilizers"]
                 achieved_solution = compute_solution(
                     latest_recipe,
                     fertilizers,

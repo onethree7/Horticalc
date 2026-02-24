@@ -142,6 +142,10 @@ main {
   font-size: var(--text-sm);
 }
 
+.hint.error {
+  color: #ff8f8f;
+}
+
 .table-wrap {
   overflow-x: auto;
 }

@@ -32,6 +32,8 @@ const saveProfileButton = document.querySelector("#saveProfile");
 const solverProfileActions = document.querySelector("#solverProfileActions");
 const saveSolverAsRecipeButton = document.querySelector("#saveSolverAsRecipe");
 const applySolverToCalculatorButton = document.querySelector("#applySolverToCalculator");
+const copySolverResultsButton = document.querySelector("#copySolverResults");
+const copySolverResultsStatus = document.querySelector("#copySolverResultsStatus");
 const applyScaleToCalcLiters = document.querySelector("#applyScaleToCalcLiters");
 const calculatorScaleDownButton = document.querySelector("#calculatorScaleDown");
 const calculatorScaleUpButton = document.querySelector("#calculatorScaleUp");
@@ -83,6 +85,8 @@ let nutrientSolutions = [];
 let waterUnit = "mg_l";
 let lastCalculation = null;
 let lastSolveResult = null;
+let lastSolverCalculation = null;
+let copySolverStatusTimer = null;
 let recalculateTimer = null;
 let fertilizerSelectTable;
 let calculatorTable;
@@ -918,7 +922,11 @@ function renderSolverFixedTable() {
 
 function renderSolverResults(data) {
   lastSolveResult = data || null;
+  if (!data) {
+    lastSolverCalculation = null;
+  }
   updateSolverResultActions();
+  setCopySolverStatus("");
   solverFertilizersTable.innerHTML = "";
   solverTargetsResultsTable.innerHTML = "";
 
@@ -946,9 +954,6 @@ function renderSolverResults(data) {
   const achieved = data?.achieved_elements_mg_per_l || {};
   const errors = data?.errors_mg_per_l || {};
   const errorsPercent = data?.errors_percent || {};
-  const keys = data?.objective_elements?.length
-    ? data.objective_elements
-    : Object.keys(targets);
   const nitrogenKeys = ["N_total", "N_NO3", "N_NH4", "N_UREA"];
   const labelMap = {
     N_total: "N-Σ",
@@ -956,10 +961,7 @@ function renderSolverResults(data) {
     N_NH4: "NH4",
     N_UREA: "UREA",
   };
-  const displayKeys = [
-    ...nitrogenKeys,
-    ...keys.filter((key) => !nitrogenKeys.includes(key)),
-  ];
+  const displayKeys = buildSolverDisplayKeys(data);
 
   displayKeys.forEach((key) => {
     const row = document.createElement("tr");
@@ -1167,6 +1169,128 @@ function formatNumber(value, formatter = numberFormatter) {
 function reportError(error, fallbackMessage = "Unbekannter Fehler") {
   const message = error?.message || fallbackMessage;
   alert(message);
+}
+
+function setCopySolverStatus(message = "", isError = false) {
+  if (!copySolverResultsStatus) {
+    return;
+  }
+  copySolverResultsStatus.textContent = message;
+  copySolverResultsStatus.classList.toggle("error", isError);
+  if (copySolverStatusTimer) {
+    clearTimeout(copySolverStatusTimer);
+    copySolverStatusTimer = null;
+  }
+  if (message) {
+    copySolverStatusTimer = setTimeout(() => {
+      copySolverResultsStatus.textContent = "";
+      copySolverResultsStatus.classList.remove("error");
+      copySolverStatusTimer = null;
+    }, 2000);
+  }
+}
+
+async function copyToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  const success = document.execCommand("copy");
+  document.body.removeChild(textarea);
+  if (!success) {
+    throw new Error("Kopieren nicht unterstützt");
+  }
+  return true;
+}
+
+function buildSolverDisplayKeys(data) {
+  const targets = data?.targets_mg_per_l || {};
+  const keys = Array.isArray(data?.objective_elements) && data.objective_elements.length
+    ? data.objective_elements
+    : Object.keys(targets);
+  const nitrogenKeys = ["N_total", "N_NO3", "N_NH4", "N_UREA"];
+  return [
+    ...nitrogenKeys,
+    ...keys.filter((key) => !nitrogenKeys.includes(key)),
+  ];
+}
+
+function formatSolverResultsForClipboard() {
+  if (!lastSolveResult) {
+    return "";
+  }
+  const lines = [];
+  lines.push("Dünger\tGramm");
+  const fertilizers = Array.isArray(lastSolveResult.fertilizers) ? lastSolveResult.fertilizers : [];
+  fertilizers.forEach((fert) => {
+    lines.push(`${fert.name}\t${formatNumber(Number(fert.grams), nutrientFormatter)}`);
+  });
+
+  const npk = lastSolverCalculation?.npk_metrics || {};
+  const ec = lastSolverCalculation?.ec?.ec_mS_per_cm || {};
+  const waterEc = lastSolverCalculation?.ec_water?.ec_mS_per_cm || {};
+
+  lines.push("");
+  lines.push(`NPK GESAMT %: ${npk.npk_all_pct || "-"}`);
+  lines.push(`NPK P-Norm: ${npk.npk_p_norm || "-"}`);
+  lines.push(`NPK Verhältnis (%): ${npk.npk_npk_pct || "-"}`);
+
+  lines.push("");
+  lines.push("EC (mS/cm)");
+  lines.push(`25°C Lösung: ${formatNumber(Number(ec["25.0"]))}`);
+  lines.push(`25°C Wasser: ${formatNumber(Number(waterEc["25.0"]))}`);
+  lines.push(`18°C Lösung: ${formatNumber(Number(ec["18.0"]))}`);
+  lines.push(`18°C Wasser: ${formatNumber(Number(waterEc["18.0"]))}`);
+
+  lines.push("");
+  lines.push("Ionen (mg/L)");
+  const achieved = lastSolveResult.achieved_elements_mg_per_l || {};
+  const labelMap = { N_total: "N-Σ", N_NO3: "NO3", N_NH4: "NH4", N_UREA: "UREA" };
+  buildSolverDisplayKeys(lastSolveResult).forEach((key) => {
+    lines.push(`${labelMap[key] || key} ${formatNumber(Number(achieved[key] ?? 0), nutrientFormatter)}`);
+  });
+
+  return lines.join("\n");
+}
+
+async function calculateSolverResultMetrics(solveData) {
+  const fertilizers = Array.isArray(solveData?.fertilizers) ? solveData.fertilizers : [];
+  if (!fertilizers.length) {
+    return null;
+  }
+  const payload = {
+    liters: Number(solveData?.liters) || Number(solverLitersInput.value) || CALC_LITERS,
+    fertilizers: fertilizers.map((fert) => ({
+      name: fert.name,
+      grams: Number(fert.grams) || 0,
+    })),
+    water_mg_l: buildWaterPayloadForApi(waterValues),
+    osmosis_percent: Number(osmosisPercentInput.value) || 0,
+    urea_as_nh4: solverUreaToggle.checked,
+    phosphate_species: solverPhosphateSelect.value,
+  };
+
+  const response = await fetch(`${apiBase()}/calculate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || "Berechnung der Solver-Metriken fehlgeschlagen");
+  }
+
+  return response.json();
 }
 
 function getMolarMass(key) {
@@ -1908,6 +2032,9 @@ function updateSolverResultActions() {
   const hasResult = !!(lastSolveResult && lastSolveResult.fertilizers && lastSolveResult.fertilizers.length);
   saveSolverAsRecipeButton.disabled = !hasResult;
   applySolverToCalculatorButton.disabled = !hasResult;
+  if (copySolverResultsButton) {
+    copySolverResultsButton.disabled = !hasResult;
+  }
 }
 
 function collectSelectedFertilizerNames() {
@@ -2276,10 +2403,37 @@ solveButton.addEventListener("click", async () => {
   try {
     const data = await solveRecipe();
     renderSolverResults(data);
+    try {
+      lastSolverCalculation = await calculateSolverResultMetrics(data);
+    } catch (metricError) {
+      lastSolverCalculation = null;
+      reportError(metricError, "Solver berechnet, aber NPK/EC konnten nicht aktualisiert werden");
+    }
   } catch (error) {
     reportError(error, "Solver fehlgeschlagen");
   }
 });
+
+if (copySolverResultsButton) {
+  copySolverResultsButton.addEventListener("click", async () => {
+    if (!lastSolveResult) {
+      reportError(null, "Bitte zuerst ein Zielprofil berechnen.");
+      return;
+    }
+    const exportText = formatSolverResultsForClipboard();
+    if (!exportText) {
+      reportError(null, "Keine Solver-Ergebnisse zum Kopieren verfügbar.");
+      return;
+    }
+    try {
+      await copyToClipboard(exportText);
+      setCopySolverStatus("Kopiert");
+    } catch (error) {
+      setCopySolverStatus("Kopieren fehlgeschlagen", true);
+      reportError(error, "Kopieren fehlgeschlagen");
+    }
+  });
+}
 
 const applyRecipeProfile = async (recipe, context = "") => {
   solverAllowedContext = normalizeSolverAllowedContext(context || recipe?.filename || recipe?.name);

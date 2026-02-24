@@ -131,6 +131,7 @@ class RecipePayload(BaseModel):
     name: str
     liters: float = Field(default=10.0, gt=0)
     fertilizers: List[FertilizerEntry] = Field(default_factory=list)
+    fertilizers_allowed: List[str] = Field(default_factory=list)
     urea_as_nh4: bool = False
     phosphate_species: str = Field(default="H2PO4")
     water_profile: Optional[str] = None
@@ -502,6 +503,7 @@ async def save_recipe_profile(request: Request) -> dict:
         "name": name,
         "liters": recipe.liters,
         "fertilizers": [entry.dict() for entry in recipe.fertilizers],
+        "fertilizers_allowed": [str(name) for name in recipe.fertilizers_allowed if str(name).strip()],
         "urea_as_nh4": recipe.urea_as_nh4,
         "phosphate_species": recipe.phosphate_species,
     }

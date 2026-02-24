@@ -131,9 +131,10 @@ let solverTargetScaleFactor = 1.0;
 let calculatorScaleFactor = 1.0;
 const SCALE_STEP = 0.05;
 const solverAllowedFertilizers = [];
+let solverAllowedContext = "global";
 const solverFixedGrams = {};
 const saveAllowedFertilizersDebounced = debounce(() => {
-  lsSet(LAST_FERTILIZERS_ALLOWED_KEY, solverAllowedFertilizers);
+  persistSolverAllowedToStorage();
 }, 200);
 
 const waterFieldDefinitions = [
@@ -183,6 +184,7 @@ const nutrientIntegerFormatter = new Intl.NumberFormat("en-US", {
   useGrouping: false,
 });
 const LAST_FERTILIZERS_ALLOWED_KEY = "last_fertilizers_allowed";
+const LAST_FERTILIZERS_ALLOWED_CONTEXT_KEY_PREFIX = "last_fertilizers_allowed_context";
 const LAST_SOLUTION_CALCULATED_KEY = "last_solution_calculated";
 const SUMMARY_VIEW_KEY = "horticalc.summary_view";
 const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
@@ -1935,7 +1937,24 @@ function updateSolverAllowedFertilizers(names, mode = "merge") {
   pruneSolverFixedGrams();
   renderSolverAllowedOptions();
   renderSolverFixedTable();
-  lsSet(LAST_FERTILIZERS_ALLOWED_KEY, solverAllowedFertilizers);
+  persistSolverAllowedToStorage();
+}
+
+function normalizeSolverAllowedContext(context) {
+  if (typeof context !== "string") {
+    return "global";
+  }
+  const trimmed = context.trim();
+  return trimmed || "global";
+}
+
+function solverAllowedStorageKey(context = solverAllowedContext) {
+  const normalized = normalizeSolverAllowedContext(context);
+  return `${LAST_FERTILIZERS_ALLOWED_CONTEXT_KEY_PREFIX}:${normalized}`;
+}
+
+function persistSolverAllowedToStorage(context = solverAllowedContext) {
+  lsSet(solverAllowedStorageKey(context), solverAllowedFertilizers);
 }
 
 function syncSolverAllowedWithSelection(mode = "merge") {
@@ -1999,6 +2018,7 @@ function buildRecipePayload(name, fertilizers, liters, ureaAsNh4, phosphateSpeci
     name,
     liters,
     fertilizers,
+    fertilizers_allowed: solverAllowedFertilizers,
     urea_as_nh4: ureaAsNh4,
     phosphate_species: phosphateSpecies,
   };
@@ -2040,8 +2060,12 @@ function buildSolutionSnapshot() {
   };
 }
 
-function restoreSolverAllowedFromStorage() {
-  const allowed = lsGet(LAST_FERTILIZERS_ALLOWED_KEY, null);
+function restoreSolverAllowedFromStorage(context = solverAllowedContext) {
+  const normalizedContext = normalizeSolverAllowedContext(context);
+  const contextKey = solverAllowedStorageKey(normalizedContext);
+  const storedContextAllowed = lsGet(contextKey, null);
+  const legacyAllowed = lsGet(LAST_FERTILIZERS_ALLOWED_KEY, null);
+  const allowed = Array.isArray(storedContextAllowed) ? storedContextAllowed : legacyAllowed;
   if (!Array.isArray(allowed)) {
     return false;
   }
@@ -2049,6 +2073,9 @@ function restoreSolverAllowedFromStorage() {
   const filtered = allowed.filter((name) => options.has(name));
   solverAllowedFertilizers.length = 0;
   solverAllowedFertilizers.push(...filtered);
+  if (!Array.isArray(storedContextAllowed) && Array.isArray(legacyAllowed)) {
+    lsSet(contextKey, filtered);
+  }
   renderSolverAllowedOptions();
   renderSolverFixedTable();
   return true;
@@ -2246,8 +2273,15 @@ solveButton.addEventListener("click", async () => {
   }
 });
 
-const applyRecipeProfile = async (recipe) => {
+const applyRecipeProfile = async (recipe, context = "") => {
+  solverAllowedContext = normalizeSolverAllowedContext(context || recipe?.filename || recipe?.name);
   applyRecipe(recipe);
+  if (!restoreSolverAllowedFromStorage(solverAllowedContext)) {
+    const recipeAllowed = Array.isArray(recipe?.fertilizers_allowed)
+      ? recipe.fertilizers_allowed
+      : collectSelectedFertilizerNames();
+    updateSolverAllowedFertilizers(recipeAllowed, "replace");
+  }
   if (recipe.water_profile) {
     const filename = recipe.water_profile.endsWith(".yml")
       ? recipe.water_profile
@@ -2276,7 +2310,7 @@ loadProfileButton.addEventListener("click", async () => {
       profileNameInput.value = solution.name || "";
     } else {
       const recipe = await fetchRecipeData(selection);
-      await applyRecipeProfile(recipe);
+      await applyRecipeProfile(recipe, selection);
     }
   } catch (error) {
     reportError(error, "Fehler beim Laden des Profils");
@@ -2289,7 +2323,7 @@ resetProfileButton.addEventListener("click", async () => {
       resetSolverTargets();
     } else {
       const recipe = await fetchDefaultRecipe();
-      await applyRecipeProfile(recipe);
+      await applyRecipeProfile(recipe, "default.yml");
     }
   } catch (error) {
     reportError(error, "Reset fehlgeschlagen");

@@ -97,6 +97,13 @@ def main(argv: list[str] | None = None) -> None:
     else:
         text = json.dumps(result, ensure_ascii=False)
 
+    if args_list and args_list[0] == "solve":
+        diagnostics = result.get("diagnostics") if isinstance(result, dict) else None
+        if isinstance(diagnostics, dict):
+            summary = str(diagnostics.get("summary") or "").strip()
+            if summary:
+                print(f"diagnostics: {summary}", file=sys.stderr)
+
     print(text)
 
     if args.out:

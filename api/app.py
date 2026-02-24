@@ -97,6 +97,7 @@ class SolveRequest(BaseModel):
     fixed_grams: Dict[str, float] = Field(default_factory=dict)
     urea_as_nh4: bool = False
     phosphate_species: str = Field(default="H2PO4")
+    solver_config: Dict[str, Any] = Field(default_factory=dict)
 
 
 class SolveFertilizerEntry(BaseModel):
@@ -112,6 +113,7 @@ class SolveResponse(BaseModel):
     achieved_elements_mg_per_l: Dict[str, float]
     errors_mg_per_l: Dict[str, float]
     errors_percent: Dict[str, float]
+    diagnostics: Dict[str, Any]
 
 
 class WaterProfilePayload(BaseModel):
@@ -596,6 +598,7 @@ def solve(payload: SolveRequest) -> SolveResponse:
         "fixed_grams": payload.fixed_grams,
         "urea_as_nh4": payload.urea_as_nh4,
         "phosphate_species": payload.phosphate_species,
+        "solver_config": payload.solver_config,
     }
 
     try:

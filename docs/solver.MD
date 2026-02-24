@@ -230,3 +230,50 @@ Success: all tests pass.
 - Ensure output keys are unchanged.
 - Ensure ignored targets (`S`, `SO4`, `Na`, `Cl`) remain excluded from the fit but present in reporting.
 - Validate macro fit and trace fit trade-offs are acceptable for your fertilizer set.
+
+
+## Nitrogen objective modes
+
+The solver supports explicit nitrogen objective selection via `solver_config.n_objective_mode`:
+
+- `total_only` (default): keep only `N_total` in objective rows; drop `N_NO3`, `N_NH4`, `N_UREA`.
+- `forms_only`: keep `N_NO3`, `N_NH4`, `N_UREA`; drop `N_total`.
+- `combined`: keep `N_total` and all non-zero N-form targets.
+
+This mode is deterministic and applied before stage optimization.
+
+## N-split diagnostics
+
+Solve results include `diagnostics` with nitrogen governance flags:
+
+- `n_split_conflict`
+- `co_delivery_pressure_P`
+- `co_delivery_pressure_Ca`
+- `n_form_infeasible_with_basis`
+- `dominant_n_fertilizers`
+- `n_failsafe_triggered`
+- `summary`
+
+Thresholds are configurable via `solver_config`:
+
+- `n_diag_total_match_tol_pp`
+- `n_diag_form_error_tol_pp`
+- `n_diag_macro_pressure_tol_pp`
+- `n_diag_basis_infeasible_tol_pp`
+
+## Two-pass nitrogen failsafe
+
+When enabled (`n_failsafe_enabled: true`) and `n_objective_mode: combined`, the solver can run one deterministic fallback pass:
+
+1. Solve in `combined` mode.
+2. If macro error exceeds `n_failsafe_macro_error_cap_pp`, re-solve once with fallback `n_objective_mode: total_only`.
+3. Compare candidates with `_score_by_priority_groups()` and keep the better macro-stability candidate.
+
+The process is deterministic (single extra pass, no recursion) and exposes activation via `diagnostics.n_failsafe_triggered`.
+
+## Backward compatibility
+
+- No solver dependency changes.
+- NNLS engine and weighting methods are unchanged.
+- API solve response remains additive with new `diagnostics` field.
+- Default nitrogen objective mode is conservative (`total_only`) for stable operation.

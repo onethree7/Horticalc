@@ -184,7 +184,8 @@ const nutrientIntegerFormatter = new Intl.NumberFormat("en-US", {
   useGrouping: false,
 });
 const LAST_FERTILIZERS_ALLOWED_KEY = "last_fertilizers_allowed";
-const LAST_FERTILIZERS_ALLOWED_CONTEXT_KEY_PREFIX = "last_fertilizers_allowed_context";
+const LAST_FERTILIZERS_ALLOWED_CONTEXT_KEY_PREFIX = "last_fertilizers_allowed::";
+const LAST_FERTILIZERS_ALLOWED_CONTEXT_LEGACY_KEY_PREFIX = "last_fertilizers_allowed_context:";
 const LAST_SOLUTION_CALCULATED_KEY = "last_solution_calculated";
 const SUMMARY_VIEW_KEY = "horticalc.summary_view";
 const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
@@ -1950,7 +1951,7 @@ function normalizeSolverAllowedContext(context) {
 
 function solverAllowedStorageKey(context = solverAllowedContext) {
   const normalized = normalizeSolverAllowedContext(context);
-  return `${LAST_FERTILIZERS_ALLOWED_CONTEXT_KEY_PREFIX}:${normalized}`;
+  return `${LAST_FERTILIZERS_ALLOWED_CONTEXT_KEY_PREFIX}${normalized}`;
 }
 
 function persistSolverAllowedToStorage(context = solverAllowedContext) {
@@ -2063,9 +2064,15 @@ function buildSolutionSnapshot() {
 function restoreSolverAllowedFromStorage(context = solverAllowedContext) {
   const normalizedContext = normalizeSolverAllowedContext(context);
   const contextKey = solverAllowedStorageKey(normalizedContext);
+  const legacyContextKey = `${LAST_FERTILIZERS_ALLOWED_CONTEXT_LEGACY_KEY_PREFIX}${normalizedContext}`;
   const storedContextAllowed = lsGet(contextKey, null);
+  const storedLegacyContextAllowed = lsGet(legacyContextKey, null);
   const legacyAllowed = lsGet(LAST_FERTILIZERS_ALLOWED_KEY, null);
-  const allowed = Array.isArray(storedContextAllowed) ? storedContextAllowed : legacyAllowed;
+  const allowed = Array.isArray(storedContextAllowed)
+    ? storedContextAllowed
+    : Array.isArray(storedLegacyContextAllowed)
+      ? storedLegacyContextAllowed
+      : legacyAllowed;
   if (!Array.isArray(allowed)) {
     return false;
   }
@@ -2073,7 +2080,7 @@ function restoreSolverAllowedFromStorage(context = solverAllowedContext) {
   const filtered = allowed.filter((name) => options.has(name));
   solverAllowedFertilizers.length = 0;
   solverAllowedFertilizers.push(...filtered);
-  if (!Array.isArray(storedContextAllowed) && Array.isArray(legacyAllowed)) {
+  if (!Array.isArray(storedContextAllowed)) {
     lsSet(contextKey, filtered);
   }
   renderSolverAllowedOptions();
@@ -2096,6 +2103,7 @@ async function init() {
     fertilizerOptions = [];
   }
   setFertilizerEditorData(fertilizerOptions);
+  solverAllowedContext = normalizeSolverAllowedContext();
   hasStoredAllowed = restoreSolverAllowedFromStorage();
   if (!hasStoredAllowed) {
     renderSolverAllowedOptions();
@@ -2229,7 +2237,7 @@ solverAllowedFertilizersSelect.addEventListener("change", () => {
 
 if (solverAllowedFromRecipeButton) {
   solverAllowedFromRecipeButton.addEventListener("click", () => {
-    syncSolverAllowedWithSelection("replace");
+    syncSolverAllowedWithSelection("merge");
   });
 }
 
@@ -2276,7 +2284,8 @@ solveButton.addEventListener("click", async () => {
 const applyRecipeProfile = async (recipe, context = "") => {
   solverAllowedContext = normalizeSolverAllowedContext(context || recipe?.filename || recipe?.name);
   applyRecipe(recipe);
-  if (!restoreSolverAllowedFromStorage(solverAllowedContext)) {
+  const hasStoredAllowed = restoreSolverAllowedFromStorage(solverAllowedContext);
+  if (!hasStoredAllowed) {
     const recipeAllowed = Array.isArray(recipe?.fertilizers_allowed)
       ? recipe.fertilizers_allowed
       : collectSelectedFertilizerNames();
@@ -2309,6 +2318,7 @@ loadProfileButton.addEventListener("click", async () => {
       applyNutrientSolution(solution);
       profileNameInput.value = solution.name || "";
     } else {
+      solverAllowedContext = normalizeSolverAllowedContext(selection);
       const recipe = await fetchRecipeData(selection);
       await applyRecipeProfile(recipe, selection);
     }

@@ -8,6 +8,27 @@ from .core import run_recipe, solve_recipe
 from .paths import resolve_recipe_path, resolve_water_profile_path
 
 
+def _solve_diag_summary(payload: dict) -> str | None:
+    diagnostics = payload.get("diagnostics") or {}
+    if not isinstance(diagnostics, dict):
+        return None
+    active = []
+    for key in (
+        "n_split_conflict",
+        "n_form_infeasible_with_basis",
+        "co_delivery_pressure_P",
+        "co_delivery_pressure_Ca",
+        "n_failsafe_triggered",
+    ):
+        if diagnostics.get(key):
+            active.append(key)
+    if not active:
+        return None
+    dominant = diagnostics.get("dominant_n_fertilizers") or []
+    dominant_text = f" dominant_n={','.join(dominant)}" if dominant else ""
+    return f"[solve diagnostics] {';'.join(active)}{dominant_text}"
+
+
 def main(argv: list[str] | None = None) -> None:
     import sys
 
@@ -98,6 +119,12 @@ def main(argv: list[str] | None = None) -> None:
         text = json.dumps(result, ensure_ascii=False)
 
     print(text)
+
+    if args_list and args_list[0] == "solve":
+        result_payload = result if isinstance(result, dict) else result.to_dict()
+        summary = _solve_diag_summary(result_payload)
+        if summary:
+            print(summary, file=sys.stderr)
 
     if args.out:
         out_path = Path(args.out).expanduser().resolve()

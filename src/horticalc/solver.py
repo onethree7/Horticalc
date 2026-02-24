@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List, Literal
 
 import numpy as np
 
@@ -35,6 +35,7 @@ class SolveResult:
     achieved_elements_mg_l: Dict[str, float]
     errors_mg_l: Dict[str, float]
     errors_percent: Dict[str, float]
+    diagnostics: Dict[str, Any]
 
     def to_dict(self) -> dict:
         return {
@@ -45,6 +46,7 @@ class SolveResult:
             "achieved_elements_mg_per_l": self.achieved_elements_mg_l,
             "errors_mg_per_l": self.errors_mg_l,
             "errors_percent": self.errors_percent,
+            "diagnostics": self.diagnostics,
         }
 
 
@@ -100,6 +102,19 @@ def _objective_keys(targets: Dict[str, float], *, allow_n_total_with_forms: bool
     ):
         keys = [key for key in keys if key != "N_total"]
     return keys
+
+
+def _apply_n_objective_mode(
+    objective_keys: List[str],
+    mode: Literal["total_only", "forms_only", "combined"],
+) -> List[str]:
+    if mode == "combined":
+        return list(objective_keys)
+    if mode == "total_only":
+        return [key for key in objective_keys if key not in ("N_NO3", "N_NH4", "N_UREA")]
+    if mode == "forms_only":
+        return [key for key in objective_keys if key != "N_total"]
+    raise ValueError(f"Unknown n_objective_mode: {mode}")
 
 
 def _fertilizer_element_contrib_per_g(fert: Fertilizer, mm: Dict[str, float]) -> Dict[str, float]:
@@ -546,6 +561,14 @@ def solve_recipe_data(
     n_total_governor_enabled = bool(solver_config.get("n_total_governor_enabled", False))
     n_total_governor_weight = float(solver_config.get("n_total_governor_weight", 1.0))
     n_form_priority_weights = solver_config.get("n_form_priority_weights") or {}
+    n_objective_mode = str(solver_config.get("n_objective_mode", "total_only"))
+    if n_objective_mode not in {"total_only", "forms_only", "combined"}:
+        raise ValueError("n_objective_mode must be one of: total_only, forms_only, combined")
+    n_failsafe_enabled = bool(solver_config.get("n_failsafe_enabled", True))
+    n_failsafe_macro_error_cap_pp = float(solver_config.get("n_failsafe_macro_error_cap_pp", 25.0))
+    n_diag_form_residual_tol_pp = float(solver_config.get("n_diag_form_residual_tol_pp", 15.0))
+    n_diag_total_residual_tol_pp = float(solver_config.get("n_diag_total_residual_tol_pp", 5.0))
+    n_diag_macro_pressure_threshold_pp = float(solver_config.get("n_diag_macro_pressure_threshold_pp", 25.0))
     default_priority_groups = [
         ["N_total"],
         ["N_NO3", "N_NH4", "N_UREA"],
@@ -569,7 +592,8 @@ def solve_recipe_data(
         raise ValueError("priority_groups and priority_group_weights must have the same length")
     if not macro_priority_enabled:
         priority_groups = []
-    objective_keys = _objective_keys(target_raw, allow_n_total_with_forms=True)
+    base_objective_keys = _objective_keys(target_raw, allow_n_total_with_forms=True)
+    objective_keys = _apply_n_objective_mode(base_objective_keys, n_objective_mode)
     if not objective_keys:
         raise ValueError("No solvable targets defined (S/SO4/Na/Cl are ignored).")
 
@@ -851,6 +875,72 @@ def solve_recipe_data(
             achieved_elements = achieved_unweighted
             full_recipe = recipe_unweighted
 
+    macro_keys = ["P", "K", "Ca", "Mg"]
+    diagnostics: Dict[str, Any] = {
+        "n_split_conflict": False,
+        "co_delivery_pressure_P": False,
+        "co_delivery_pressure_Ca": False,
+        "n_form_infeasible_with_basis": False,
+        "dominant_n_fertilizers": [],
+        "n_failsafe_triggered": False,
+    }
+
+    def _percent_error(key: str, achieved_map: Dict[str, float]) -> float:
+        target_value = float(target_raw.get(key, 0.0))
+        if target_value == 0:
+            return 0.0
+        achieved_value = float(achieved_map.get(key, 0.0))
+        return abs((achieved_value - target_value) / target_value * 100.0)
+
+    if n_failsafe_enabled and n_objective_mode == "combined":
+        macro_errors = [_percent_error(key, achieved_elements) for key in macro_keys if key in target_raw and target_raw[key] > 0]
+        macro_max_error = max(macro_errors) if macro_errors else 0.0
+        if macro_max_error > n_failsafe_macro_error_cap_pp:
+            fallback_objective_keys = _apply_n_objective_mode(base_objective_keys, "total_only")
+            original_objective_keys = objective_keys
+            original_b = b
+            original_A = A
+            original_key_to_index = key_to_index
+            original_stage_groups = stage_groups
+
+            objective_keys = fallback_objective_keys
+            key_to_index = {key: idx for idx, key in enumerate(objective_keys)}
+            b = np.array([target_raw.get(key, 0.0) - water_elements.get(key, 0.0) for key in objective_keys], dtype=float)
+            A = _build_matrix(allowed, molar_masses, objective_keys, liters)
+            stage_groups = _build_stage_groups(objective_keys, priority_groups) if stage_optimization_enabled else [objective_keys]
+            _, fb_fertilizers_out, fb_achieved_elements, fb_full_recipe = solve_with_stages(use_relative_weighting=relative_weighting)
+
+            objective_keys = original_objective_keys
+            b = original_b
+            A = original_A
+            key_to_index = original_key_to_index
+            stage_groups = original_stage_groups
+
+            combined_score = _score_by_priority_groups(
+                original_objective_keys,
+                target_raw,
+                achieved_elements,
+                priority_groups=priority_groups,
+            )
+            fallback_score = _score_by_priority_groups(
+                objective_keys,
+                target_raw,
+                fb_achieved_elements,
+                priority_groups=priority_groups,
+            )
+            fallback_macro_error = max(
+                [_percent_error(key, fb_achieved_elements) for key in macro_keys if key in target_raw and target_raw[key] > 0]
+                or [0.0]
+            )
+            if fallback_macro_error < macro_max_error or fallback_score < combined_score:
+                fertilizers_out = fb_fertilizers_out
+                achieved_elements = fb_achieved_elements
+                full_recipe = fb_full_recipe
+                objective_keys = fallback_objective_keys
+                b = np.array([target_raw.get(key, 0.0) - water_elements.get(key, 0.0) for key in objective_keys], dtype=float)
+                A = _build_matrix(allowed, molar_masses, objective_keys, liters)
+                diagnostics["n_failsafe_triggered"] = True
+
     errors_mg_l = {}
     errors_percent = {}
     for key in objective_keys:
@@ -858,6 +948,27 @@ def solve_recipe_data(
         achieved_val = achieved_elements.get(key, 0.0)
         errors_mg_l[key] = achieved_val - target
         errors_percent[key] = 0.0 if target == 0 else (achieved_val - target) / target * 100.0
+
+    n_form_keys = [key for key in ("N_NO3", "N_NH4", "N_UREA") if key in target_raw and float(target_raw.get(key, 0.0)) > 0.0]
+    has_n_total_target = float(target_raw.get("N_total", 0.0)) > 0.0
+    if n_form_keys:
+        max_form_error = max([_percent_error(key, achieved_elements) for key in n_form_keys] or [0.0])
+        total_error = _percent_error("N_total", achieved_elements) if has_n_total_target else 0.0
+        diagnostics["n_split_conflict"] = bool(has_n_total_target and total_error <= n_diag_total_residual_tol_pp and max_form_error > n_diag_form_residual_tol_pp)
+        diagnostics["n_form_infeasible_with_basis"] = bool(max_form_error > n_diag_form_residual_tol_pp)
+
+    diagnostics["co_delivery_pressure_P"] = bool(_percent_error("P", achieved_elements) > n_diag_macro_pressure_threshold_pp)
+    diagnostics["co_delivery_pressure_Ca"] = bool(_percent_error("Ca", achieved_elements) > n_diag_macro_pressure_threshold_pp)
+
+    n_row_indices = [idx for idx, key in enumerate(objective_keys) if key in ("N_total", "N_NO3", "N_NH4", "N_UREA")]
+    dominant_n_fertilizers: List[str] = []
+    if n_row_indices and len(allowed):
+        n_col_contrib = np.sum(np.clip(A[n_row_indices, :], 0.0, None), axis=0)
+        denom = float(np.sum(n_col_contrib))
+        if denom > 0:
+            shares = n_col_contrib / denom
+            dominant_n_fertilizers = [allowed[idx].name for idx, share in enumerate(shares) if share >= 0.25]
+    diagnostics["dominant_n_fertilizers"] = dominant_n_fertilizers
 
     return SolveResult(
         liters=liters,
@@ -867,6 +978,7 @@ def solve_recipe_data(
         achieved_elements_mg_l=achieved_elements,
         errors_mg_l=errors_mg_l,
         errors_percent=errors_percent,
+        diagnostics=diagnostics,
     )
 
 

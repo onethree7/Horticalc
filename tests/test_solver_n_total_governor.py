@@ -28,7 +28,7 @@ def test_objective_includes_n_total_with_forms() -> None:
         "liters": 1.0,
         "targets": {"N_total": 10.0, "N_NO3": 10.0},
         "fertilizers_allowed": ["NO3-only"],
-        "solver_config": {"relative_weighting": True, "n_total_governor_enabled": False},
+        "solver_config": {"relative_weighting": True, "n_total_governor_enabled": False, "n_objective_mode": "combined"},
     }
 
     result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)

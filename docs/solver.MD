@@ -46,7 +46,11 @@ Some targets are excluded from the optimization objective (but still computed an
 
 Rationale: these are frequently “forced” by the fertilizer set (especially sulfate) and are better treated as a reporting dimension or a later constraint layer rather than a hard fit objective.
 
-Additionally, if `N_total` is present together with any of `N_NO3`, `N_NH4`, or `N_UREA`, `N_total` is excluded from the fit to avoid double counting nitrogen.
+Nitrogen objective membership is controlled by `solver_config.n_objective_mode` (see configuration):
+
+- `total_only` (default): optimize only `N_total` and drop `N_NO3`/`N_NH4`/`N_UREA` from objective rows.
+- `forms_only`: optimize `N_NO3`/`N_NH4`/`N_UREA` and drop `N_total` from objective rows.
+- `combined`: optimize `N_total` together with form keys.
 
 ## Linear model (A-matrix)
 
@@ -187,6 +191,48 @@ The solver is designed to be deterministic:
 
 This enables reliable regression testing and golden-file comparisons.
 
+## Nitrogen objective modes
+
+The solver supports explicit nitrogen objective governance through `n_objective_mode`:
+
+- `total_only` (default): robust mode for coupled fertilizer bases; keeps total N control and avoids over-specifying form rows.
+- `forms_only`: use when explicit NH4/NO3/UREA split is the primary objective.
+- `combined`: keeps both total-N and forms in objective rows and can create stronger coupling pressure.
+
+Mode selection is deterministic and applied before matrix/stage construction, so all downstream passes (weighting, staged solve, singleton pass) operate on one consistent objective set.
+
+## N-split diagnostics
+
+Solve responses include a structured `diagnostics` object with nitrogen pressure indicators:
+
+- `n_split_conflict`: true when `N_total` stays within configured tolerance while form residuals exceed tolerance.
+- `n_form_infeasible_with_basis`: true when form errors exceed configured tolerance with the current fertilizer basis.
+- `co_delivery_pressure_P` / `co_delivery_pressure_Ca`: true when macro percent errors exceed configured pressure threshold.
+- `dominant_n_fertilizers`: fertilizers that contribute a dominant share of nitrogen objective rows.
+- `n_failsafe_triggered`: true when two-pass failsafe selected fallback solution.
+
+Tuning knobs:
+
+- `n_diag_form_residual_tol_pp` (default `15.0`)
+- `n_diag_total_residual_tol_pp` (default `5.0`)
+- `n_diag_macro_pressure_threshold_pp` (default `25.0`)
+
+## Two-pass nitrogen fail-safe
+
+When `n_objective_mode: combined`, optional fail-safe protection can run one deterministic fallback pass:
+
+1. Solve with the configured (combined) objective.
+2. If macro percent error (`P`,`K`,`Ca`,`Mg`) exceeds `n_failsafe_macro_error_cap_pp`, run one fallback solve in `total_only` mode.
+3. Compare solutions deterministically (priority-group score + macro error).
+4. Select fallback only when it improves macro stability/score.
+
+Controls:
+
+- `n_failsafe_enabled` (default `true`)
+- `n_failsafe_macro_error_cap_pp` (default `25.0`)
+
+The fail-safe runs at most once, has no recursion, and preserves deterministic outputs.
+
 ## Configuration (solver_config)
 
 Recipes may supply `solver_config` to tune behavior (names may vary depending on implementation):
@@ -212,9 +258,14 @@ Typical toggles:
   - `macro_priority_enabled`
   - `priority_groups`, `priority_group_weights`
   - `macro_regress_pp`
-- N-governor + N-form priority (optional):
-  - `n_total_governor_enabled` (keep `N_total` in the objective and penalize only overshoot)
-  - `n_total_governor_weight` (overshoot-only weight multiplier for `N_total`)
+- Nitrogen objective governance:
+  - `n_objective_mode`: `total_only` | `forms_only` | `combined` (default `total_only`)
+  - `n_failsafe_enabled`: enable one fallback pass for combined mode (default `true`)
+  - `n_failsafe_macro_error_cap_pp`: macro error threshold for fallback (default `25.0`)
+  - `n_diag_form_residual_tol_pp`, `n_diag_total_residual_tol_pp`, `n_diag_macro_pressure_threshold_pp`: diagnostics thresholds
+- N-governor + N-form priority (optional, applied within selected objective mode):
+  - `n_total_governor_enabled`
+  - `n_total_governor_weight`
   - `n_form_priority_weights` (per-form multipliers like `{"N_NO3": 3.0, "N_UREA": 2.0, "N_NH4": 1.0}`)
 
 ## Verification
@@ -230,3 +281,10 @@ Success: all tests pass.
 - Ensure output keys are unchanged.
 - Ensure ignored targets (`S`, `SO4`, `Na`, `Cl`) remain excluded from the fit but present in reporting.
 - Validate macro fit and trace fit trade-offs are acceptable for your fertilizer set.
+
+
+## Backward compatibility
+
+- Default behavior is now conservative nitrogen optimization (`n_objective_mode: total_only`).
+- Existing recipes can restore previous behavior explicitly with `n_objective_mode: combined`.
+- Output schema is backward compatible with additive extension: `diagnostics` is added to solve responses.

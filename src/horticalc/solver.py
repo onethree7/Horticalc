@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List, Literal
 
 import numpy as np
 
@@ -35,6 +35,7 @@ class SolveResult:
     achieved_elements_mg_l: Dict[str, float]
     errors_mg_l: Dict[str, float]
     errors_percent: Dict[str, float]
+    diagnostics: Dict[str, Any]
 
     def to_dict(self) -> dict:
         return {
@@ -45,6 +46,7 @@ class SolveResult:
             "achieved_elements_mg_per_l": self.achieved_elements_mg_l,
             "errors_mg_per_l": self.errors_mg_l,
             "errors_percent": self.errors_percent,
+            "diagnostics": self.diagnostics,
         }
 
 
@@ -85,7 +87,7 @@ def _normalize_targets(targets: Dict[str, float]) -> Dict[str, float]:
     return cleaned
 
 
-def _objective_keys(targets: Dict[str, float], *, allow_n_total_with_forms: bool = True) -> List[str]:
+def _objective_keys(targets: Dict[str, float]) -> List[str]:
     keys = []
     for key, val in targets.items():
         if val == 0:
@@ -93,13 +95,22 @@ def _objective_keys(targets: Dict[str, float], *, allow_n_total_with_forms: bool
         if key.upper() in IGNORED_TARGETS:
             continue
         keys.append(key)
-    if (
-        not allow_n_total_with_forms
-        and "N_total" in keys
-        and any(k in keys for k in ("N_NH4", "N_NO3", "N_UREA"))
-    ):
-        keys = [key for key in keys if key != "N_total"]
     return keys
+
+
+def _apply_n_objective_mode(
+    objective_keys: List[str],
+    *,
+    mode: Literal["total_only", "forms_only", "combined"],
+) -> List[str]:
+    form_keys = {"N_NO3", "N_NH4", "N_UREA"}
+    if mode == "total_only":
+        return [key for key in objective_keys if key not in form_keys]
+    if mode == "forms_only":
+        return [key for key in objective_keys if key != "N_total"]
+    if mode == "combined":
+        return list(objective_keys)
+    raise ValueError(f"Invalid n_objective_mode: {mode}")
 
 
 def _fertilizer_element_contrib_per_g(fert: Fertilizer, mm: Dict[str, float]) -> Dict[str, float]:
@@ -375,6 +386,107 @@ def _stage_regression_budget(
     return max(budget, 1e-6)
 
 
+def _max_percent_error_for_keys(
+    keys: List[str],
+    targets_raw: Dict[str, float],
+    achieved_elements: Dict[str, float],
+) -> float:
+    max_error = 0.0
+    for key in keys:
+        target = float(targets_raw.get(key, 0.0))
+        if target == 0:
+            continue
+        achieved_val = float(achieved_elements.get(key, 0.0))
+        max_error = max(max_error, abs((achieved_val - target) / target * 100.0))
+    return max_error
+
+
+def _build_n_diagnostics(
+    *,
+    objective_keys: List[str],
+    targets_raw: Dict[str, float],
+    achieved_elements: Dict[str, float],
+    A: np.ndarray,
+    x_full: np.ndarray,
+    allowed: List[Fertilizer],
+    n_form_infeasible_tol_pp: float,
+    n_split_conflict_tol_pp: float,
+    n_total_match_tol_pp: float,
+    n_co_delivery_macro_threshold_pp: float,
+) -> Dict[str, Any]:
+    n_form_keys = [key for key in ("N_NO3", "N_NH4", "N_UREA") if float(targets_raw.get(key, 0.0)) > 0.0]
+    macro_keys = [key for key in ("P", "K", "Ca", "Mg") if float(targets_raw.get(key, 0.0)) > 0.0]
+
+    n_total_target = float(targets_raw.get("N_total", 0.0))
+    n_total_achieved = float(achieved_elements.get("N_total", 0.0))
+    n_total_error_pp = (
+        abs((n_total_achieved - n_total_target) / n_total_target * 100.0) if n_total_target > 0 else float("inf")
+    )
+
+    form_error_pp = _max_percent_error_for_keys(n_form_keys, targets_raw, achieved_elements)
+    macro_error_pp = _max_percent_error_for_keys(macro_keys, targets_raw, achieved_elements)
+
+    n_split_conflict = (
+        bool(n_form_keys)
+        and n_total_target > 0
+        and n_total_error_pp <= n_total_match_tol_pp
+        and form_error_pp > n_split_conflict_tol_pp
+    )
+
+    n_form_rows = [idx for idx, key in enumerate(objective_keys) if key in n_form_keys]
+    n_form_infeasible_with_basis = False
+    if n_form_rows:
+        row_keys = [objective_keys[idx] for idx in n_form_rows]
+        A_forms = A[n_form_rows, :]
+        b_forms = np.array([float(targets_raw.get(key, 0.0)) for key in row_keys], dtype=float)
+        x_forms = _nnls(A_forms, b_forms)
+        achieved_forms = A_forms @ x_forms
+        for idx, key in enumerate(row_keys):
+            target = float(targets_raw.get(key, 0.0))
+            if target <= 0:
+                continue
+            err_pp = abs((achieved_forms[idx] - target) / target * 100.0)
+            if err_pp > n_form_infeasible_tol_pp:
+                n_form_infeasible_with_basis = True
+                break
+
+    dominant_n_fertilizers: list[str] = []
+    n_total_row_idx = next((idx for idx, key in enumerate(objective_keys) if key == "N_total"), None)
+    if n_total_row_idx is not None:
+        n_contrib = np.clip(A[n_total_row_idx, :] * x_full, 0.0, None)
+    else:
+        form_indices = [idx for idx, key in enumerate(objective_keys) if key in ("N_NO3", "N_NH4", "N_UREA")]
+        if form_indices:
+            n_contrib = np.clip(np.sum(A[form_indices, :], axis=0) * x_full, 0.0, None)
+        else:
+            n_contrib = np.array([])
+    if n_contrib.size:
+        total_n_contrib = float(np.sum(n_contrib))
+        if total_n_contrib > 0:
+            ranking = sorted(
+                [(idx, float(val) / total_n_contrib) for idx, val in enumerate(n_contrib) if val > 0],
+                key=lambda item: item[1],
+                reverse=True,
+            )
+            for idx, share in ranking[:3]:
+                if share >= 0.1:
+                    dominant_n_fertilizers.append(allowed[idx].name)
+
+    p_error_pp = _max_percent_error_for_keys(["P"] if "P" in macro_keys else [], targets_raw, achieved_elements)
+    ca_error_pp = _max_percent_error_for_keys(["Ca"] if "Ca" in macro_keys else [], targets_raw, achieved_elements)
+    co_delivery_pressure_p = "P" in macro_keys and p_error_pp > n_co_delivery_macro_threshold_pp
+    co_delivery_pressure_ca = "Ca" in macro_keys and ca_error_pp > n_co_delivery_macro_threshold_pp
+
+    return {
+        "n_split_conflict": n_split_conflict,
+        "co_delivery_pressure_P": co_delivery_pressure_p,
+        "co_delivery_pressure_Ca": co_delivery_pressure_ca,
+        "n_form_infeasible_with_basis": n_form_infeasible_with_basis,
+        "dominant_n_fertilizers": dominant_n_fertilizers,
+        "n_failsafe_triggered": False,
+    }
+
+
 def _singleton_supplier_pass(
     *,
     A: np.ndarray,
@@ -546,6 +658,13 @@ def solve_recipe_data(
     n_total_governor_enabled = bool(solver_config.get("n_total_governor_enabled", False))
     n_total_governor_weight = float(solver_config.get("n_total_governor_weight", 1.0))
     n_form_priority_weights = solver_config.get("n_form_priority_weights") or {}
+    n_objective_mode = str(solver_config.get("n_objective_mode", "total_only"))
+    n_failsafe_enabled = bool(solver_config.get("n_failsafe_enabled", True))
+    n_failsafe_macro_error_cap_pp = float(solver_config.get("n_failsafe_macro_error_cap_pp", 25.0))
+    n_split_conflict_tol_pp = float(solver_config.get("n_split_conflict_tol_pp", 15.0))
+    n_total_match_tol_pp = float(solver_config.get("n_total_match_tol_pp", 5.0))
+    n_form_infeasible_tol_pp = float(solver_config.get("n_form_infeasible_tol_pp", 20.0))
+    n_co_delivery_macro_threshold_pp = float(solver_config.get("n_co_delivery_macro_threshold_pp", 25.0))
     default_priority_groups = [
         ["N_total"],
         ["N_NO3", "N_NH4", "N_UREA"],
@@ -569,7 +688,11 @@ def solve_recipe_data(
         raise ValueError("priority_groups and priority_group_weights must have the same length")
     if not macro_priority_enabled:
         priority_groups = []
-    objective_keys = _objective_keys(target_raw, allow_n_total_with_forms=True)
+    objective_keys_all = _objective_keys(target_raw)
+    objective_keys = _apply_n_objective_mode(
+        objective_keys_all,
+        mode=n_objective_mode,
+    )
     if not objective_keys:
         raise ValueError("No solvable targets defined (S/SO4/Na/Cl are ignored).")
 
@@ -851,6 +974,61 @@ def solve_recipe_data(
             achieved_elements = achieved_unweighted
             full_recipe = recipe_unweighted
 
+    diagnostics = _build_n_diagnostics(
+        objective_keys=objective_keys,
+        targets_raw=target_raw,
+        achieved_elements=achieved_elements,
+        A=A,
+        x_full=x_full,
+        allowed=allowed,
+        n_form_infeasible_tol_pp=n_form_infeasible_tol_pp,
+        n_split_conflict_tol_pp=n_split_conflict_tol_pp,
+        n_total_match_tol_pp=n_total_match_tol_pp,
+        n_co_delivery_macro_threshold_pp=n_co_delivery_macro_threshold_pp,
+    )
+
+    macro_keys = [key for key in ("P", "K", "Ca", "Mg") if float(target_raw.get(key, 0.0)) > 0.0]
+    macro_error_pp = _max_percent_error_for_keys(macro_keys, target_raw, achieved_elements)
+    if (
+        n_failsafe_enabled
+        and n_objective_mode == "combined"
+        and macro_keys
+        and macro_error_pp > n_failsafe_macro_error_cap_pp
+    ):
+        fallback_recipe = dict(recipe)
+        fallback_solver_config = dict(solver_config)
+        fallback_solver_config["n_objective_mode"] = "total_only"
+        fallback_solver_config["n_failsafe_enabled"] = False
+        fallback_recipe["solver_config"] = fallback_solver_config
+        fallback_result = solve_recipe_data(
+            fallback_recipe,
+            ferts=fertilizers,
+            mm=molar_masses,
+            water_profile_data=water_profile,
+        )
+        primary_score = _score_by_priority_groups(
+            objective_keys,
+            target_raw,
+            achieved_elements,
+            priority_groups=priority_groups,
+        )
+        fallback_score = _score_by_priority_groups(
+            fallback_result.objective_elements,
+            target_raw,
+            fallback_result.achieved_elements_mg_l,
+            priority_groups=priority_groups,
+        )
+        if fallback_score < primary_score:
+            x_full = np.array([0.0] * len(allowed), dtype=float)
+            fert_map = {entry["name"]: float(entry["grams"]) for entry in fallback_result.fertilizers}
+            for idx, fert in enumerate(allowed):
+                x_full[idx] = fert_map.get(fert.name, 0.0)
+            fertilizers_out = fallback_result.fertilizers
+            achieved_elements = fallback_result.achieved_elements_mg_l
+            objective_keys = fallback_result.objective_elements
+            diagnostics = dict(fallback_result.diagnostics)
+            diagnostics["n_failsafe_triggered"] = True
+
     errors_mg_l = {}
     errors_percent = {}
     for key in objective_keys:
@@ -867,6 +1045,7 @@ def solve_recipe_data(
         achieved_elements_mg_l=achieved_elements,
         errors_mg_l=errors_mg_l,
         errors_percent=errors_percent,
+        diagnostics=diagnostics,
     )
 
 

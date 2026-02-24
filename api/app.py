@@ -112,6 +112,7 @@ class SolveResponse(BaseModel):
     achieved_elements_mg_per_l: Dict[str, float]
     errors_mg_per_l: Dict[str, float]
     errors_percent: Dict[str, float]
+    diagnostics: Dict[str, Any] = Field(default_factory=dict)
 
 
 class WaterProfilePayload(BaseModel):

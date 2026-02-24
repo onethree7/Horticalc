@@ -46,7 +46,11 @@ Some targets are excluded from the optimization objective (but still computed an
 
 Rationale: these are frequently “forced” by the fertilizer set (especially sulfate) and are better treated as a reporting dimension or a later constraint layer rather than a hard fit objective.
 
-Additionally, if `N_total` is present together with any of `N_NO3`, `N_NH4`, or `N_UREA`, `N_total` is excluded from the fit to avoid double counting nitrogen.
+Nitrogen objective behavior is controlled by `solver_config.n_objective_mode` (see below):
+
+- `total_only` (default): optimize only `N_total` and ignore N-form objectives.
+- `forms_only`: optimize `N_NO3`, `N_NH4`, `N_UREA` and ignore `N_total` objective.
+- `combined`: optimize `N_total` and N-form objectives together.
 
 ## Linear model (A-matrix)
 
@@ -176,6 +180,38 @@ The singleton-supplier pass addresses this deterministically:
 
 This improves plausibility without hard constraints and preserves determinism.
 
+
+## Nitrogen objective modes
+
+The solver now applies an explicit nitrogen objective mode before building the A-matrix objective rows:
+
+- `total_only` (default): keeps only `N_total` in the objective.
+- `forms_only`: keeps only non-zero N-form keys in the objective.
+- `combined`: keeps both `N_total` and non-zero forms in the objective.
+
+This mode is deterministic and only affects objective selection, not reporting: achieved output still includes `N_total` and all forms.
+
+## N-split diagnostics
+
+Solve responses include a `diagnostics` object with N-split governance signals:
+
+- `n_split_conflict`: `N_total` is matched while one or more N-form targets remain beyond tolerance.
+- `n_form_infeasible_with_basis`: N-form targets cannot be met with the current fertilizer basis (NNLS estimate).
+- `co_delivery_pressure_P`: P deviation crosses configured macro pressure threshold.
+- `co_delivery_pressure_Ca`: Ca deviation crosses configured macro pressure threshold.
+- `dominant_n_fertilizers`: top fertilizer names dominating nitrogen supply.
+- `n_failsafe_triggered`: indicates fallback pass activation.
+
+## Two-pass nitrogen fail-safe
+
+When `n_objective_mode=combined` and macro deviation is above cap, an optional deterministic second pass can run:
+
+1. First pass solves normally in `combined`.
+2. If macro cap is exceeded, the solver re-runs once in `total_only`.
+3. Both passes are compared via `_score_by_priority_groups`; the better score is selected.
+
+This fail-safe is deterministic, bounded (single additional solve), and does not alter NNLS internals.
+
 ## Determinism and reproducibility
 
 The solver is designed to be deterministic:
@@ -212,6 +248,14 @@ Typical toggles:
   - `macro_priority_enabled`
   - `priority_groups`, `priority_group_weights`
   - `macro_regress_pp`
+- N objective and safeguards:
+  - `n_objective_mode`: `total_only` (default), `forms_only`, `combined`
+  - `n_failsafe_enabled`: enable bounded second pass for `combined` mode (default `true`)
+  - `n_failsafe_macro_error_cap_pp`: macro % error threshold for failsafe activation (default `25.0`)
+  - `n_split_conflict_tol_pp`: threshold for N-form conflict flag (default `15.0`)
+  - `n_total_match_tol_pp`: threshold that marks N_total as matched (default `5.0`)
+  - `n_form_infeasible_tol_pp`: N-form basis infeasibility threshold (default `20.0`)
+  - `n_co_delivery_macro_threshold_pp`: macro-pressure threshold for P/Ca flags (default `25.0`)
 - N-governor + N-form priority (optional):
   - `n_total_governor_enabled` (keep `N_total` in the objective and penalize only overshoot)
   - `n_total_governor_weight` (overshoot-only weight multiplier for `N_total`)

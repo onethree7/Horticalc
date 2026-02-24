@@ -52,6 +52,15 @@ def main(argv: list[str] | None = None) -> None:
         if args.load_water:
             water_profile_path = resolve_water_profile_path(args.load_water)
         result = solve_recipe(recipe_path, water_profile_path=water_profile_path)
+        diagnostics = result.diagnostics if hasattr(result, "diagnostics") else {}
+        if diagnostics:
+            print(
+                "[solve] diagnostics "
+                f"n_split_conflict={bool(diagnostics.get('n_split_conflict', False))} "
+                f"n_form_infeasible_with_basis={bool(diagnostics.get('n_form_infeasible_with_basis', False))} "
+                f"n_failsafe_triggered={bool(diagnostics.get('n_failsafe_triggered', False))}",
+                file=sys.stderr,
+            )
     else:
         parser = argparse.ArgumentParser(
             prog="horticalc",

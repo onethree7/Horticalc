@@ -61,6 +61,8 @@ const solverTargetScaleDownButton = document.querySelector("#solverTargetScaleDo
 const solverTargetScaleUpButton = document.querySelector("#solverTargetScaleUp");
 const solverTargetScaleValue = document.querySelector("#solverTargetScaleValue");
 const solveButton = document.querySelector("#solveBtn");
+const copySolverResultsButton = document.querySelector("#copySolverResults");
+const copySolverResultsStatus = document.querySelector("#copySolverResultsStatus");
 const solverLitersInput = document.querySelector("#solverLiters");
 const solverUreaToggle = document.querySelector("#solverUreaToggle");
 const solverPhosphateSelect = document.querySelector("#solverPhosphate");
@@ -88,6 +90,7 @@ let fertilizerSelectTable;
 let calculatorTable;
 let currentProfileMode = "calculator";
 let activeMode = "calculator";
+let copySolverStatusTimer = null;
 let fertilizerEditorRows = [];
 let fertilizerEditorSelectedIndex = 0;
 let fertilizerEditorFilter = "";
@@ -1005,6 +1008,118 @@ function renderSolverResults(data) {
   });
 }
 
+function setCopySolverStatus(message) {
+  if (!copySolverResultsStatus) {
+    return;
+  }
+  copySolverResultsStatus.textContent = message;
+  if (copySolverStatusTimer) {
+    window.clearTimeout(copySolverStatusTimer);
+  }
+  copySolverStatusTimer = window.setTimeout(() => {
+    copySolverResultsStatus.textContent = "";
+    copySolverStatusTimer = null;
+  }, 2000);
+}
+
+function formatClipboardIonLabel(key) {
+  if (key === "N_total") {
+    return "N";
+  }
+  return key;
+}
+
+function buildSolverClipboardText() {
+  const fertilizers = Array.isArray(lastSolveResult?.fertilizers) ? lastSolveResult.fertilizers : [];
+  const lines = ["Dünger\tGramm"];
+
+  fertilizers.forEach((fert) => {
+    const name = fert.name || "";
+    const grams = formatNumber(Number(fert.grams), nutrientFormatter);
+    lines.push(`${name}\t${grams}`);
+  });
+
+  const calculateData = {
+    liters: Number(solverLitersInput.value) || CALC_LITERS,
+    fertilizers,
+    water_mg_l: buildWaterPayloadForApi(waterValues),
+    osmosis_percent: Number(osmosisPercentInput.value) || 0,
+  };
+
+  return calculate(calculateData).then((data) => {
+    const npkMetrics = data?.npk_metrics || {};
+    const ecValues = data?.ec?.ec_mS_per_cm || {};
+    const ionValues = data?.elements_mg_per_l || {};
+
+    lines.push("");
+    lines.push("NPK GESAMT %");
+    lines.push(`NPK Gesamt (%)\t${npkMetrics.npk_all_pct || "-"}`);
+    lines.push(`NPK P-Norm\t${npkMetrics.npk_p_norm || "-"}`);
+    lines.push(`NPK Verhältnis (%)\t${npkMetrics.npk_npk_pct || "-"}`);
+
+    lines.push("");
+    lines.push("EC (mS/cm)");
+    lines.push(`EC 25°C\t${formatNumber(Number(ecValues["25.0"]))}`);
+    lines.push(`EC 18°C\t${formatNumber(Number(ecValues["18.0"]))}`);
+
+    lines.push("");
+    lines.push("Ionen (mg/L)");
+    summaryColumnOrder.forEach((column) => {
+      const key = column.element;
+      const value = Number(ionValues[key]);
+      lines.push(`${formatClipboardIonLabel(key)}\t${formatNumber(value, nutrientFormatter)}`);
+    });
+
+    return lines.join("\n");
+  });
+}
+
+function copyTextWithFallback(text) {
+  if (navigator.clipboard?.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+
+  return new Promise((resolve, reject) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.setAttribute("readonly", "");
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      const successful = document.execCommand("copy");
+      document.body.removeChild(textArea);
+      if (!successful) {
+        reject(new Error("Kopieren fehlgeschlagen"));
+        return;
+      }
+      resolve();
+    } catch (error) {
+      document.body.removeChild(textArea);
+      reject(error);
+    }
+  });
+}
+
+async function copySolverResultsToClipboard() {
+  if (!lastSolveResult || !Array.isArray(lastSolveResult.fertilizers) || !lastSolveResult.fertilizers.length) {
+    reportError(null, "Bitte zuerst ein Zielprofil berechnen.");
+    return;
+  }
+
+  try {
+    const text = await buildSolverClipboardText();
+    await copyTextWithFallback(text);
+    setCopySolverStatus("Kopiert");
+  } catch (error) {
+    reportError(error, "Kopieren fehlgeschlagen");
+    setCopySolverStatus("Fehler beim Kopieren");
+  }
+}
+
 function renderSelectionTable() {
   renderTableRows(fertilizerSelectTable, selectedFertilizers.length, (i) => {
     const row = document.createElement("tr");
@@ -1783,8 +1898,8 @@ async function saveNutrientSolutionData(payload) {
   }
 }
 
-async function calculate() {
-  const payload = buildPayload();
+async function calculate(payloadOverride = null) {
+  const payload = payloadOverride || buildPayload();
   const response = await fetch(`${apiBase()}/calculate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1908,6 +2023,9 @@ function updateSolverResultActions() {
   const hasResult = !!(lastSolveResult && lastSolveResult.fertilizers && lastSolveResult.fertilizers.length);
   saveSolverAsRecipeButton.disabled = !hasResult;
   applySolverToCalculatorButton.disabled = !hasResult;
+  if (copySolverResultsButton) {
+    copySolverResultsButton.disabled = !hasResult;
+  }
 }
 
 function collectSelectedFertilizerNames() {
@@ -2280,6 +2398,12 @@ solveButton.addEventListener("click", async () => {
     reportError(error, "Solver fehlgeschlagen");
   }
 });
+
+if (copySolverResultsButton) {
+  copySolverResultsButton.addEventListener("click", () => {
+    copySolverResultsToClipboard();
+  });
+}
 
 const applyRecipeProfile = async (recipe, context = "") => {
   solverAllowedContext = normalizeSolverAllowedContext(context || recipe?.filename || recipe?.name);

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import numpy as np
 
@@ -24,6 +24,9 @@ from .paths import resolve_water_profile_path
 
 
 IGNORED_TARGETS = {"S", "SO4", "NA", "CL"}
+N_FORM_KEYS = ("N_NO3", "N_NH4", "N_UREA")
+N_KEYS_ALL = ("N_total",) + N_FORM_KEYS
+MACRO_KEYS = ("P", "K", "Ca", "Mg")
 
 
 @dataclass
@@ -35,6 +38,7 @@ class SolveResult:
     achieved_elements_mg_l: Dict[str, float]
     errors_mg_l: Dict[str, float]
     errors_percent: Dict[str, float]
+    diagnostics: Dict[str, Any]
 
     def to_dict(self) -> dict:
         return {
@@ -45,6 +49,7 @@ class SolveResult:
             "achieved_elements_mg_per_l": self.achieved_elements_mg_l,
             "errors_mg_per_l": self.errors_mg_l,
             "errors_percent": self.errors_percent,
+            "diagnostics": self.diagnostics,
         }
 
 
@@ -85,7 +90,7 @@ def _normalize_targets(targets: Dict[str, float]) -> Dict[str, float]:
     return cleaned
 
 
-def _objective_keys(targets: Dict[str, float], *, allow_n_total_with_forms: bool = True) -> List[str]:
+def _objective_keys(targets: Dict[str, float]) -> List[str]:
     keys = []
     for key, val in targets.items():
         if val == 0:
@@ -93,13 +98,123 @@ def _objective_keys(targets: Dict[str, float], *, allow_n_total_with_forms: bool
         if key.upper() in IGNORED_TARGETS:
             continue
         keys.append(key)
-    if (
-        not allow_n_total_with_forms
-        and "N_total" in keys
-        and any(k in keys for k in ("N_NH4", "N_NO3", "N_UREA"))
-    ):
-        keys = [key for key in keys if key != "N_total"]
     return keys
+
+
+def _apply_n_objective_mode(keys: List[str], mode: str) -> List[str]:
+    mode_normalized = str(mode or "total_only").strip().lower()
+    if mode_normalized not in {"total_only", "forms_only", "combined"}:
+        raise ValueError("n_objective_mode must be one of: total_only, forms_only, combined")
+    if mode_normalized == "total_only":
+        return [key for key in keys if key not in N_FORM_KEYS]
+    if mode_normalized == "forms_only":
+        return [key for key in keys if key != "N_total"]
+    return list(keys)
+
+
+def _percent_error(target: float, achieved: float) -> float:
+    if target == 0:
+        return 0.0
+    return abs((achieved - target) / target * 100.0)
+
+
+def _max_macro_error_percent(targets: Dict[str, float], achieved: Dict[str, float]) -> float:
+    values = []
+    for key in MACRO_KEYS:
+        target = float(targets.get(key, 0.0))
+        if target == 0:
+            continue
+        values.append(_percent_error(target, float(achieved.get(key, 0.0))))
+    return max(values) if values else 0.0
+
+
+def _n_form_basis_feasible(
+    *,
+    objective_keys: List[str],
+    targets: Dict[str, float],
+    achieved: Dict[str, float],
+    A: np.ndarray,
+) -> bool:
+    n_form_rows = [idx for idx, key in enumerate(objective_keys) if key in N_FORM_KEYS]
+    if not n_form_rows:
+        return True
+    A_n = A[n_form_rows, :]
+    if not np.any(np.abs(A_n) > 0):
+        return False
+    targets_n = np.array([float(targets.get(objective_keys[idx], 0.0)) for idx in n_form_rows], dtype=float)
+    x_n = _nnls(A_n, targets_n)
+    achieved_n = A_n @ x_n
+    for row_idx, key in enumerate([objective_keys[idx] for idx in n_form_rows]):
+        target = float(targets.get(key, 0.0))
+        if target <= 0:
+            continue
+        if _percent_error(target, float(achieved_n[row_idx])) > 10.0 and _percent_error(
+            target, float(achieved.get(key, 0.0))
+        ) > 10.0:
+            return False
+    return True
+
+
+def _build_n_diagnostics(
+    *,
+    objective_keys: List[str],
+    targets: Dict[str, float],
+    achieved: Dict[str, float],
+    errors_percent: Dict[str, float],
+    A: np.ndarray,
+    allowed: List[Fertilizer],
+    solver_config: Dict[str, Any],
+    n_failsafe_triggered: bool,
+) -> Dict[str, Any]:
+    conflict_tol_pp = float(solver_config.get("n_split_conflict_tolerance_pp", 10.0))
+    total_match_tol_pp = float(solver_config.get("n_total_match_tolerance_pp", 5.0))
+    macro_pressure_tol_pp = float(solver_config.get("n_macro_pressure_tolerance_pp", 25.0))
+    dominant_threshold = float(solver_config.get("n_dominant_share_threshold", 0.5))
+
+    n_form_keys = [key for key in N_FORM_KEYS if key in objective_keys and float(targets.get(key, 0.0)) > 0]
+    n_total_target = float(targets.get("N_total", 0.0))
+    n_total_error_pp = abs(float(errors_percent.get("N_total", 0.0))) if "N_total" in objective_keys else 0.0
+    n_forms_error_pp = [abs(float(errors_percent.get(key, 0.0))) for key in n_form_keys]
+    n_split_conflict = bool(
+        n_form_keys
+        and (n_total_target <= 0 or n_total_error_pp <= total_match_tol_pp)
+        and any(err > conflict_tol_pp for err in n_forms_error_pp)
+    )
+
+    macro_errors = {
+        key: _percent_error(float(targets.get(key, 0.0)), float(achieved.get(key, 0.0)))
+        for key in MACRO_KEYS
+        if float(targets.get(key, 0.0)) > 0
+    }
+    co_delivery_pressure_p = macro_errors.get("P", 0.0) > macro_pressure_tol_pp
+    co_delivery_pressure_ca = macro_errors.get("Ca", 0.0) > macro_pressure_tol_pp
+
+    n_form_infeasible = not _n_form_basis_feasible(
+        objective_keys=objective_keys,
+        targets=targets,
+        achieved=achieved,
+        A=A,
+    )
+
+    n_total_row = next((idx for idx, key in enumerate(objective_keys) if key == "N_total"), None)
+    dominant_n_fertilizers: list[str] = []
+    if n_total_row is not None and n_total_target > 0 and A.shape[1] == len(allowed):
+        coeffs = np.clip(A[n_total_row, :], 0.0, None)
+        total_coeff = float(np.sum(coeffs))
+        if total_coeff > 0:
+            shares = coeffs / total_coeff
+            dominant_n_fertilizers = [
+                allowed[idx].name for idx, share in enumerate(shares) if float(share) >= dominant_threshold
+            ]
+
+    return {
+        "n_split_conflict": bool(n_split_conflict),
+        "co_delivery_pressure_P": bool(co_delivery_pressure_p),
+        "co_delivery_pressure_Ca": bool(co_delivery_pressure_ca),
+        "n_form_infeasible_with_basis": bool(n_form_infeasible),
+        "dominant_n_fertilizers": dominant_n_fertilizers,
+        "n_failsafe_triggered": bool(n_failsafe_triggered),
+    }
 
 
 def _fertilizer_element_contrib_per_g(fert: Fertilizer, mm: Dict[str, float]) -> Dict[str, float]:
@@ -543,6 +658,9 @@ def solve_recipe_data(
     stage_regression_mg_l = float(solver_config.get("stage_regression_mg_l", 2.0))
     macro_priority_enabled = bool(solver_config.get("macro_priority_enabled", True))
     macro_regress_pp = float(solver_config.get("macro_regress_pp", 0.25))
+    n_objective_mode = str(solver_config.get("n_objective_mode", "total_only"))
+    n_failsafe_enabled = bool(solver_config.get("n_failsafe_enabled", True))
+    n_failsafe_macro_error_cap_pp = float(solver_config.get("n_failsafe_macro_error_cap_pp", 25.0))
     n_total_governor_enabled = bool(solver_config.get("n_total_governor_enabled", False))
     n_total_governor_weight = float(solver_config.get("n_total_governor_weight", 1.0))
     n_form_priority_weights = solver_config.get("n_form_priority_weights") or {}
@@ -569,7 +687,8 @@ def solve_recipe_data(
         raise ValueError("priority_groups and priority_group_weights must have the same length")
     if not macro_priority_enabled:
         priority_groups = []
-    objective_keys = _objective_keys(target_raw, allow_n_total_with_forms=True)
+    objective_keys_all = _objective_keys(target_raw)
+    objective_keys = _apply_n_objective_mode(objective_keys_all, n_objective_mode)
     if not objective_keys:
         raise ValueError("No solvable targets defined (S/SO4/Na/Cl are ignored).")
 
@@ -851,6 +970,39 @@ def solve_recipe_data(
             achieved_elements = achieved_unweighted
             full_recipe = recipe_unweighted
 
+    n_failsafe_triggered = False
+    if n_failsafe_enabled and n_objective_mode == "combined":
+        max_macro_error_pp = _max_macro_error_percent(target_raw, achieved_elements)
+        if max_macro_error_pp > n_failsafe_macro_error_cap_pp:
+            fallback_recipe = dict(recipe)
+            fallback_solver_config = dict(solver_config)
+            fallback_solver_config["n_objective_mode"] = "total_only"
+            fallback_solver_config["n_failsafe_enabled"] = False
+            fallback_recipe["solver_config"] = fallback_solver_config
+            fallback_result = solve_recipe_data(
+                fallback_recipe,
+                ferts=fertilizers,
+                mm=molar_masses,
+                water_profile_data=water_profile,
+            )
+            current_score = _score_by_priority_groups(
+                objective_keys,
+                target_raw,
+                achieved_elements,
+                priority_groups=priority_groups,
+            )
+            fallback_score = _score_by_priority_groups(
+                fallback_result.objective_elements,
+                target_raw,
+                fallback_result.achieved_elements_mg_l,
+                priority_groups=priority_groups,
+            )
+            if fallback_score < current_score:
+                n_failsafe_triggered = True
+                fertilizers_out = fallback_result.fertilizers
+                achieved_elements = fallback_result.achieved_elements_mg_l
+                objective_keys = fallback_result.objective_elements
+
     errors_mg_l = {}
     errors_percent = {}
     for key in objective_keys:
@@ -858,6 +1010,18 @@ def solve_recipe_data(
         achieved_val = achieved_elements.get(key, 0.0)
         errors_mg_l[key] = achieved_val - target
         errors_percent[key] = 0.0 if target == 0 else (achieved_val - target) / target * 100.0
+
+    A_final = _build_matrix(allowed, molar_masses, objective_keys, liters)
+    diagnostics = _build_n_diagnostics(
+        objective_keys=objective_keys,
+        targets=target_raw,
+        achieved=achieved_elements,
+        errors_percent=errors_percent,
+        A=A_final,
+        allowed=allowed,
+        solver_config=solver_config,
+        n_failsafe_triggered=n_failsafe_triggered,
+    )
 
     return SolveResult(
         liters=liters,
@@ -867,6 +1031,7 @@ def solve_recipe_data(
         achieved_elements_mg_l=achieved_elements,
         errors_mg_l=errors_mg_l,
         errors_percent=errors_percent,
+        diagnostics=diagnostics,
     )
 
 

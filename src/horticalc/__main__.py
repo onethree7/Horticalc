@@ -97,6 +97,22 @@ def main(argv: list[str] | None = None) -> None:
     else:
         text = json.dumps(result, ensure_ascii=False)
 
+    if args_list and args_list[0] == "solve":
+        diagnostics = result.get("diagnostics") if isinstance(result, dict) else None
+        if isinstance(diagnostics, dict):
+            flags = []
+            for key in (
+                "n_split_conflict",
+                "n_form_infeasible_with_basis",
+                "co_delivery_pressure_P",
+                "co_delivery_pressure_Ca",
+                "n_failsafe_triggered",
+            ):
+                if diagnostics.get(key):
+                    flags.append(key)
+            if flags:
+                print(f"[solve diagnostics] {';'.join(flags)}")
+
     print(text)
 
     if args.out:

@@ -46,7 +46,7 @@ Some targets are excluded from the optimization objective (but still computed an
 
 Rationale: these are frequently “forced” by the fertilizer set (especially sulfate) and are better treated as a reporting dimension or a later constraint layer rather than a hard fit objective.
 
-Additionally, if `N_total` is present together with any of `N_NO3`, `N_NH4`, or `N_UREA`, `N_total` is excluded from the fit to avoid double counting nitrogen.
+Nitrogen objective participation is controlled by `solver_config.n_objective_mode` (see below).
 
 ## Linear model (A-matrix)
 
@@ -176,6 +176,41 @@ The singleton-supplier pass addresses this deterministically:
 
 This improves plausibility without hard constraints and preserves determinism.
 
+
+## Nitrogen objective modes
+
+`solver_config.n_objective_mode` controls which N rows are in the optimization objective:
+
+- `total_only` (default): keep `N_total`; drop `N_NO3`, `N_NH4`, `N_UREA`.
+- `forms_only`: keep `N_NO3`, `N_NH4`, `N_UREA`; drop `N_total`.
+- `combined`: keep all active N keys (legacy behavior).
+
+This mode only affects optimization rows. Achieved/reporting still includes all computed N fields (`N_total`, `N_NO3`, `N_NH4`, `N_UREA`).
+
+## N-split diagnostics
+
+Solver results include `diagnostics` with structured nitrogen stability signals:
+
+- `n_split_conflict`
+- `n_form_infeasible_with_basis`
+- `co_delivery_pressure_P`
+- `co_delivery_pressure_Ca`
+- `dominant_n_fertilizers`
+- `n_failsafe_triggered`
+
+Diagnostics are derived from achieved residuals plus the existing solver matrix contributions and use deterministic thresholds from `solver_config`.
+
+## Two-pass nitrogen fail-safe
+
+When `n_objective_mode=combined`, the solver can run a deterministic single fallback pass:
+
+- Config: `n_failsafe_enabled` (default `true`)
+- Trigger: max macro error across `P`,`K`,`Ca`,`Mg` exceeds `n_failsafe_macro_error_cap_pp` (default `25.0`)
+- Fallback solve: rerun once with `n_objective_mode=total_only`
+- Selection: compare by existing priority-group scoring and keep the better macro-stable candidate
+
+No recursion and no randomness are used; at most one additional solve is performed.
+
 ## Determinism and reproducibility
 
 The solver is designed to be deterministic:
@@ -212,6 +247,15 @@ Typical toggles:
   - `macro_priority_enabled`
   - `priority_groups`, `priority_group_weights`
   - `macro_regress_pp`
+- nitrogen objective governance:
+  - `n_objective_mode`: `total_only` | `forms_only` | `combined` (default `total_only`)
+  - `n_failsafe_enabled`: enable deterministic two-pass failsafe for `combined` mode (default `true`)
+  - `n_failsafe_macro_error_cap_pp`: macro deviation trigger threshold (default `25.0`)
+  - diagnostics thresholds:
+    - `n_split_conflict_tolerance_pp` (default `10.0`)
+    - `n_total_match_tolerance_pp` (default `5.0`)
+    - `n_macro_pressure_tolerance_pp` (default `25.0`)
+    - `n_dominant_share_threshold` (default `0.5`)
 - N-governor + N-form priority (optional):
   - `n_total_governor_enabled` (keep `N_total` in the objective and penalize only overshoot)
   - `n_total_governor_weight` (overshoot-only weight multiplier for `N_total`)
@@ -230,3 +274,9 @@ Success: all tests pass.
 - Ensure output keys are unchanged.
 - Ensure ignored targets (`S`, `SO4`, `Na`, `Cl`) remain excluded from the fit but present in reporting.
 - Validate macro fit and trace fit trade-offs are acceptable for your fertilizer set.
+
+## Backward compatibility
+
+- Existing recipes continue to work without changes.
+- Default behavior is intentionally conservative (`n_objective_mode=total_only`) for stable macro outcomes.
+- Legacy `combined` behavior remains available via explicit config.

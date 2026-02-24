@@ -2120,7 +2120,6 @@ async function init() {
     applyWaterHelpers(waterValues, getMolarMass);
     renderWaterTable();
     applyRecipe({ fertilizers: savedSolution.fertilizers || [] });
-    syncSolverAllowedWithSelection("merge");
     try {
       const data = await calculate();
       renderCalculation(data);
@@ -2140,7 +2139,6 @@ async function init() {
   try {
     const recipe = await fetchDefaultRecipe();
     applyRecipe(recipe);
-    syncSolverAllowedWithSelection("merge");
     const data = await calculate();
     renderCalculation(data);
   } catch (error) {
@@ -2233,8 +2231,14 @@ if (calculatorScaleUpButton) {
 }
 
 solveButton.addEventListener("click", async () => {
+  if (!solverAllowedFertilizers.length) {
+    reportError(
+      null,
+      "Keine Solver-Dünger ausgewählt. Bitte erst über ›Aus Rezept übernehmen‹ oder die Mehrfachauswahl Dünger freigeben."
+    );
+    return;
+  }
   try {
-    syncSolverAllowedWithSelection("merge");
     const data = await solveRecipe();
     renderSolverResults(data);
   } catch (error) {
@@ -2244,7 +2248,6 @@ solveButton.addEventListener("click", async () => {
 
 const applyRecipeProfile = async (recipe) => {
   applyRecipe(recipe);
-  syncSolverAllowedWithSelection("merge");
   if (recipe.water_profile) {
     const filename = recipe.water_profile.endsWith(".yml")
       ? recipe.water_profile
@@ -2359,7 +2362,6 @@ applySolverToCalculatorButton.addEventListener("click", async () => {
     fertilizers,
   };
   applyRecipe(recipe);
-  syncSolverAllowedWithSelection("merge");
   const calculatorInput = Array.from(modeToggleInputs).find((input) => input.value === "calculator");
   if (calculatorInput) {
     calculatorInput.checked = true;

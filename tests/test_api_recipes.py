@@ -18,3 +18,23 @@ def test_recipes_filters_solver_and_default() -> None:
     assert "default.yml" not in filenames
     assert not any(name.startswith("solve_") for name in filenames)
     assert "golden.yml" in filenames
+
+
+def test_recipe_payload_persists_fertilizers_allowed() -> None:
+    client = TestClient(app)
+    payload = {
+        "name": "api_recipe_allowed_roundtrip",
+        "liters": 10,
+        "fertilizers": [{"name": "Calcinit", "grams": 1.5}],
+        "fertilizers_allowed": ["Calcinit", "Hakaphos Rot"],
+        "phosphate_species": "H2PO4",
+        "urea_as_nh4": False,
+    }
+
+    save_response = client.post("/recipes", json=payload)
+    assert save_response.status_code == 200
+
+    get_response = client.get("/recipes/api_recipe_allowed_roundtrip")
+    assert get_response.status_code == 200
+    recipe = get_response.json()
+    assert recipe.get("fertilizers_allowed") == ["Calcinit", "Hakaphos Rot"]

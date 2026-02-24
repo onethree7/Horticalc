@@ -15,16 +15,16 @@ Find non-negative fertilizer grams that best match the targets, while keeping be
 
 ## Allowed fertilizers in the UI
 
-The solver UI maintains its allowed fertilizer list in the browser (localStorage key
-`last_fertilizers_allowed`). It is **global per browser**, not per recipe/profile.
+The solver UI maintains its allowed fertilizer list in the browser per context (localStorage key
+prefix `last_fertilizers_allowed_context:`). Context is derived from the loaded recipe
+(e.g., filename/profile name), so each recipe/profile keeps its own allowed set.
 
 Current behavior:
 
-- When the UI loads, it restores the stored list and filters it to known fertilizers.
-- When a recipe is loaded (or a solver result is applied to the calculator), the recipe’s
-  fertilizers are **merged** into the allowed list so they are always included.
-- When solving, the current recipe fertilizers are merged as a safety step if the list was empty
-  or out of date.
+- When the UI loads, it restores the stored list for the current context and filters it to known fertilizers.
+- Migration path: if no context entry exists yet, the UI falls back to legacy global storage key
+  `last_fertilizers_allowed` and writes the migrated value into the context key.
+- When a recipe is loaded, the allowed list is initialized from the recipe context (not globally merged).
 - Clicking **“Allowed aus Rezept übernehmen”** replaces the allowed list with the fertilizers
   currently selected in the recipe/calculator.
 - Manual changes in the multi-select are persisted back to localStorage.

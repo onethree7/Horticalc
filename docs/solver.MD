@@ -139,6 +139,28 @@ If the solver computes both a weighted and an unweighted candidate, it uses a le
 
 The same scoring can be used for post-pass accept/rollback decisions (see below).
 
+## Post-solve candidate selection in `solve_recipe_data`
+
+After solving, `solve_recipe_data` may compare two staged candidates:
+
+- a **weighted** staged solve (relative weighting active), and
+- an **unweighted** staged solve (absolute-fit baseline).
+
+This comparison is intentionally narrow and is only performed when all of the following are true:
+
+- `relative_weighting` is enabled
+- `n_total_governor_enabled` is `false`
+- `n_form_priority_weights` is empty
+
+If any of those conditions is not met, the solver keeps the primary candidate without running this weighted-vs-unweighted tie-break.
+
+Selection uses `_score_by_priority_groups` and compares score tuples **lexicographically**:
+
+- earlier priority groups dominate later groups
+- the final `other` bucket (the trace-heavy residual set) is compared last
+
+Practical consequence: the selected solution can intentionally have a worse fit on trace-heavy `other` nutrients if that preserves better scores in earlier macro-priority groups. This behavior is by design: it protects macro targets first. To favor trace fit more strongly, adjust solver configuration (for example priority groups/weights or the features that disable this comparison path).
+
 ## Multi-stage optimization with regression budgets
 
 To avoid “hardcoding” any specific nutrient while still honoring macro-first intent, the solver can

@@ -394,6 +394,12 @@ def _singleton_supplier_pass(
     use_potential_share: bool = False,
     regression_guard: callable | None = None,
 ) -> np.ndarray:
+    def _regression_tolerances(score_len: int) -> tuple[float, ...]:
+        if score_len <= 1:
+            return (max_regress_pp,)
+        protected_group_count = max(score_len - 1, 0)
+        return tuple([macro_regress_pp] * protected_group_count + [max_regress_pp])
+
     adjusted = x_full.copy()
     skip = skip_keys or set()
     for row, key in enumerate(objective_keys):
@@ -458,7 +464,8 @@ def _singleton_supplier_pass(
         improves = (mode == "overshoot" and achieved_new.get(key, 0.0) <= achieved_elements.get(key, 0.0)) or (
             mode == "underfill" and achieved_new.get(key, 0.0) >= achieved_elements.get(key, 0.0)
         )
-        regression_ok = new_score[0] <= old_score[0] + macro_regress_pp and new_score[-1] <= old_score[-1] + max_regress_pp
+        tolerances = _regression_tolerances(len(old_score))
+        regression_ok = all(new_val <= old_val + tol for new_val, old_val, tol in zip(new_score, old_score, tolerances))
         if improves and regression_ok:
             adjusted = proposed
             achieved_elements = achieved_new

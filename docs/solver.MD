@@ -193,8 +193,12 @@ The singleton-supplier pass addresses this deterministically:
   - recompute achieved values using the core “ground truth” compute path
   - accept the change only if:
     - the overshoot is reduced (or not worsened), and
-    - overall solution quality does not regress beyond configured limits
-      (optionally macro-first via priority scoring)
+    - overall solution quality does not regress beyond configured limits, evaluated per
+      priority-score tuple entry returned by `_score_by_priority_groups()`:
+      - each configured priority group gets its own bound of `macro_regress_pp`
+      - the trailing “other keys” group gets `max_regress_pp`
+      - all tuple entries must satisfy `new_score_i <= old_score_i + tolerance_i`
+        for the candidate to be accepted
 
 This improves plausibility without hard constraints and preserves determinism.
 

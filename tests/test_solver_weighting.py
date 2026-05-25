@@ -103,6 +103,35 @@ def test_singleton_supplier_pass_rolls_back_on_regression() -> None:
     assert np.allclose(updated, x_full)
 
 
+def test_singleton_supplier_pass_rolls_back_on_intermediate_priority_group_regression() -> None:
+    A = np.array([[10.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 1.0]])
+    x_full = np.array([11.0, 1.0, 1.0])
+    targets_raw = {"K": 100.0, "P": 2.0, "Fe": 1.0}
+    achieved_elements = {"K": 110.0, "P": 2.0, "Fe": 1.0}
+
+    def recompute_achieved_fn(new_x_full: np.ndarray) -> dict:
+        _ = new_x_full
+        return {"K": 100.0, "P": 2.5, "Fe": 1.0}
+
+    updated = _singleton_supplier_pass(
+        A=A,
+        x_full=x_full,
+        variable_mask_full=np.array([True, True, True]),
+        objective_keys=["K", "P", "Fe"],
+        targets_raw=targets_raw,
+        achieved_elements=achieved_elements,
+        liters=10.0,
+        share_threshold=0.85,
+        max_regress_pp=50.0,
+        macro_regress_pp=10.0,
+        priority_groups=[["K"], ["P"]],
+        skip_keys=None,
+        recompute_achieved_fn=recompute_achieved_fn,
+    )
+
+    assert np.allclose(updated, x_full)
+
+
 def test_score_by_priority_groups_defaults_to_max_percent_error() -> None:
     objective_keys = ["K", "Fe"]
     targets_raw = {"K": 100.0, "Fe": 0.1}

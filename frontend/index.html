@@ -6,363 +6,69 @@
     <title>Horticalc GUI</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body class="compact">
-    <header class="page-header">
-      <h1>Horticalc – Nährlösung-Rechner</h1>
-      <div class="api-config">
-        <label for="apiBase">API Base URL</label>
-        <input
-          id="apiBase"
-          type="url"
-          placeholder="Local"
-          value=""
-        />
+  <body class="compact app-dark">
+    <header class="app-header">
+      <div class="brand-wrap"><h1>🌿 HORTICALC</h1><span id="apiStatusPill" class="status-pill">API getrennt</span></div>
+      <div class="recipe-controls">
+        <label for="profileSelect">Rezept</label>
+        <select id="profileSelect"></select>
+        <button id="loadProfile" class="btn btn--outline" type="button">Laden</button>
+        <button id="saveProfile" class="btn btn--outline" type="button">Speichern</button>
+        <button id="resetProfile" class="btn btn--outline" type="button">Speichern als</button>
+        <input id="profileName" type="text" placeholder="Name" />
+      </div>
+      <div class="api-config compact-config">
+        <label for="apiBase">API Base URL</label><input id="apiBase" type="url" placeholder="Local" value="" />
         <button id="reloadData" class="btn btn--outline">Dünger laden</button>
+        <button id="openFertilizerEditor" class="btn btn--outline" type="button">Dünger-Editor</button>
       </div>
     </header>
 
-    <main class="gap-3">
-      <section class="block" id="modeSection">
-        <h2>Modus</h2>
-        <div class="mode-toggle segmented" role="tablist" aria-label="Modus-Auswahl">
-          <label class="segmented-btn">
-            <input type="radio" name="modeToggle" value="calculator" checked />
-            Düngerrezept
-          </label>
-          <label class="segmented-btn">
-            <input type="radio" name="modeToggle" value="solver" />
-            Zielprofil-Rechner
-          </label>
-          <label class="segmented-btn">
-            <input type="radio" name="modeToggle" value="fertilizers" />
-            Dünger-Editor
-          </label>
-          <label class="segmented-btn">
-            <input type="radio" name="modeToggle" value="water" />
-            Wasserwerte
-          </label>
+    <main class="app-shell">
+      <aside class="wheel-sidebar block">
+        <h2>REZEPT WHEEL</h2>
+        <div id="recipeWheel" class="recipe-wheel" role="navigation" aria-label="Workflow">
+          <button data-wheel-step="water">Wasser</button>
+          <button data-wheel-step="fertilizers">Dünger</button>
+          <button data-wheel-step="solver">Zielwerte</button>
+          <button data-wheel-step="calculate">Berechnen</button>
+          <button data-wheel-step="results">Ergebnis</button>
+          <button data-wheel-step="details">Details</button>
+          <div class="wheel-center"><strong>Mein Rezept</strong><span>10 L</span></div>
         </div>
-      </section>
+        <div class="block wheel-status"><h3>Rezept-Status</h3><p id="recipeStatusText">Unvollständig</p></div>
+      </aside>
 
-      <section class="block water-section is-hidden" id="waterSection">
-        <h2>Wasserwerte</h2>
-        <div class="water-content" id="waterContent">
-          <p class="hint">Profile lokal speichern/laden und Osmose-Anteil berücksichtigen.</p>
+      <section class="content-pane">
+        <section class="block is-hidden" id="waterSection">
+          <h2>Wasser</h2><p class="hint">Wasserprofil, Osmoseanteil und Basiswerte.</p>
+          <div id="waterOverviewCards" class="overview-grid" data-panel-anchor="water"></div>
           <div class="water-controls">
-            <div class="water-control-group">
-              <label for="waterProfileSelect">Profil auswählen</label>
-              <div class="water-control-row">
-                <select id="waterProfileSelect"></select>
-                <button id="loadWaterProfile" class="btn btn--outline" type="button">Laden</button>
-                <button id="resetWaterProfile" class="btn btn--outline" type="button">Reset Default</button>
-              </div>
-            </div>
-            <div class="water-control-group">
-              <label for="waterProfileName">Profilname zum Speichern</label>
-              <div class="water-control-row">
-                <input id="waterProfileName" type="text" placeholder="z.B. stadenburdenhard" />
-                <button id="saveWaterProfile" class="btn btn--outline" type="button">Speichern</button>
-              </div>
-            </div>
-            <div class="water-control-group water-settings">
-              <div>
-                <label for="osmosisPercent">Osmoseanteil (%)</label>
-                <input id="osmosisPercent" type="number" min="0" max="100" step="1" value="0" />
-              </div>
-              <label class="toggle">
-                <input id="waterUnitToggle" type="checkbox" />
-                <span>mmol/L Eingabe & Anzeige</span>
-              </label>
-            </div>
+            <div class="water-control-group"><label for="waterProfileSelect">Profil auswählen</label><div class="water-control-row"><select id="waterProfileSelect"></select><button id="loadWaterProfile" class="btn btn--outline" type="button">Laden</button><button id="resetWaterProfile" class="btn btn--outline" type="button">Reset Default</button></div></div>
+            <div class="water-control-group"><label for="waterProfileName">Profilname zum Speichern</label><div class="water-control-row"><input id="waterProfileName" type="text" placeholder="z.B. stadenburdenhard" /><button id="saveWaterProfile" class="btn btn--outline" type="button">Speichern</button></div></div>
+            <div class="water-control-group water-settings"><div><label for="osmosisPercent">Osmoseanteil (%)</label><input id="osmosisPercent" type="number" min="0" max="100" step="1" value="0" /></div><label class="toggle"><input id="waterUnitToggle" type="checkbox" /><span>mmol/L Eingabe & Anzeige</span></label></div>
           </div>
-          <div class="table-wrap">
-            <table class="grid grid--form" id="waterValuesTable">
-              <thead>
-                <tr>
-                  <th>Parameter</th>
-                  <th>Wert</th>
-                  <th>Einheit</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- rows inserted by JS -->
-              </tbody>
-            </table>
-          </div>
-          <p class="hint">CO3 / CaCO3 / °KH / S sind Helfer: jede Eingabe überschreibt HCO3 bzw. SO4.</p>
+          <button class="btn btn--outline" data-toggle-target="#waterAdvanced" aria-expanded="false" type="button">Erweiterte Wasserwerte anzeigen</button>
+          <div id="waterAdvanced" class="is-hidden"><div class="table-wrap"><table class="grid grid--form" id="waterValuesTable"><thead><tr><th>Parameter</th><th>Wert</th><th>Einheit</th></tr></thead><tbody></tbody></table></div></div>
+        </section>
+
+        <section class="block" id="profileSection"><h2 id="profileSectionTitle">Düngerrezept</h2><p class="hint" id="profileSectionHint">Düngerrezept lokal speichern/laden.</p><div class="actions is-hidden" id="solverProfileActions"><button id="saveSolverAsRecipe" class="btn btn--outline" type="button">Als Düngerrezept speichern</button><label class="toggle"><input id="applyScaleToCalcLiters" type="checkbox" checked /><span>Beim Übernehmen auf 10L-Rechner skalieren</span></label><button id="applySolverToCalculator" class="btn btn--outline" type="button">Im Düngerrechner übernehmen</button></div></section>
+
+        <div class="mode-panel" id="calculatorMode">
+          <section class="block" data-panel-anchor="calculate"><h2>Berechnen</h2><p class="hint">Passe die Düngermengen an und berechne die Nährstoffzusammensetzung.</p><div id="calculatorCards"></div><button id="showAddFertilizer" class="btn btn--outline" type="button">+ Dünger hinzufügen</button><button id="calculateBtn" class="btn btn--outline-primary">Berechnen</button></section>
+          <section class="block" data-panel-anchor="fertilizers"><h2>Expertenauswahl Dünger</h2><div class="actions inline-actions"><button id="addFertilizerRow" class="btn btn--outline btn--icon icon-button" type="button">+</button><button id="removeFertilizerRow" class="btn btn--outline btn--icon icon-button" type="button">-</button></div><div class="table-wrap" id="fertilizerSelectTableWrap"></div></section>
+          <section class="block" data-panel-anchor="results"><div class="actions inline-actions"><button id="calculatorScaleDown" class="btn btn--outline btn--icon icon-button" type="button">-</button><button id="calculatorScaleUp" class="btn btn--outline btn--icon icon-button" type="button">+</button><span class="inline-hint">Skalierung <span id="calculatorScaleValue">1.00x</span></span></div><div class="table-wrap" id="calculatorTableWrap"></div><div id="resultCards" class="overview-grid"></div>
+            <div class="summary"><div class="summary-metrics"><div class="summary-metric-card"><div class="metric-label">NPK Gesamt (%)</div><div class="metric-value" id="npkAllPct">-</div></div><div class="summary-metric-card"><div class="metric-label">NPK P-Norm</div><div class="metric-value" id="npkPNorm">-</div></div><div class="summary-metric-card"><div class="metric-label">NPK Verhältnis (%)</div><div class="metric-value" id="npkNpkPct">-</div></div><div class="summary-metric-card"><div class="metric-label">EC25</div><div class="metric-value" id="ec25Value">-</div></div><div class="is-hidden" id="ec18Value"></div><div class="is-hidden" id="ecWater18Value"></div><div class="is-hidden" id="ecWater25Value"></div></div></div>
+          </section>
+          <section class="block" data-panel-anchor="details"><h2>Details: Oxidformen & Ionen</h2><button class="btn btn--outline" id="summaryViewToggle" type="button">Expertenansicht</button><div id="expertDetailsPanel"><div class="summary-tables"><div class="table-card summary-panel" data-summary-panel="water"><span class="table-badge" id="waterSummaryBadge">mg/L</span><table class="grid" id="waterSummaryTable"></table></div><div class="table-card summary-panel" data-summary-panel="oxide"><span class="table-badge" id="oxideSummaryBadge">mg/L (Oxid)</span><table class="grid" id="oxideSummaryTable"></table></div><div class="table-card summary-panel" data-summary-panel="ion"><span class="table-badge" id="ionSummaryBadge">mg/L</span><table class="grid" id="ionSummaryTable"></table></div></div><div id="ionMeqList"></div><div id="ionBalanceList"></div></div></section>
         </div>
+
+        <div class="mode-panel is-hidden" id="solverMode"><section class="block"><h2>Zielwerte / Solve</h2><div id="solverTargetCards" class="overview-grid"></div><div class="solver-settings"><label>Liter<input id="solverLiters" type="number" min="0.1" step="0.1" value="10" /></label><label class="toggle"><input id="solverUreaToggle" type="checkbox" /><span>Harnstoff als NH4 behandeln</span></label><label>Phosphat-Spezies<select id="solverPhosphate"><option value="H2PO4">H2PO4</option><option value="HPO4">HPO4</option></select></label></div><div class="actions inline-actions"><button id="solverTargetScaleDown" class="btn btn--outline btn--icon icon-button" type="button">-</button><button id="solverTargetScaleUp" class="btn btn--outline btn--icon icon-button" type="button">+</button><span id="solverTargetScaleValue">1.00x</span></div><table class="grid" id="solverTargetsTable"><thead><tr><th>Element</th><th>Ziel</th></tr></thead><tbody></tbody></table><select id="solverAllowedFertilizers" multiple></select><button id="solverAllowedFromRecipe" type="button">Allowed aus Rezept übernehmen</button><table class="grid" id="solverFixedTable"><thead><tr><th>Dünger</th><th>Fix (g)</th></tr></thead><tbody></tbody></table><button id="solveBtn" class="btn btn--outline-primary" type="button">Rezept lösen</button><button id="copySolverResults" class="btn btn--outline" type="button">In Zwischenablage kopieren</button><span id="copySolverResultsStatus"></span><table class="grid" id="solverFertilizersTable"><thead><tr><th>Dünger</th><th>Gramm</th></tr></thead><tbody></tbody></table><table class="grid" id="solverTargetsResultsTable"><thead><tr><th>Element</th><th>Ziel</th><th>Erreicht</th><th>Delta</th><th>Delta %</th></tr></thead><tbody></tbody></table></section></div>
+
+        <div class="mode-panel is-hidden" id="fertilizerEditorMode"><section class="block"><h2>Dünger-Editor</h2><button id="fertEditorLoad" class="btn btn--outline" type="button">Laden</button><button id="fertEditorSave" class="btn btn--outline" type="button">Speichern</button><div class="actions inline-actions"><input id="fertEditorSearch" type="text" placeholder="Suchen…" /><button id="fertEditorAddRow" class="btn btn--outline btn--icon icon-button" type="button">+</button><button id="fertEditorDeleteRow" class="btn btn--outline btn--icon icon-button" type="button">-</button></div><div class="table-wrap table-wrap--editor" id="fertilizerEditorTableWrap"></div></section></div>
       </section>
-
-      <section class="block" id="profileSection">
-        <h2 id="profileSectionTitle">Düngerrezept</h2>
-        <p class="hint" id="profileSectionHint">Düngerrezept lokal speichern/laden.</p>
-        <div class="water-controls">
-          <div class="water-control-group">
-            <label for="profileSelect">Profil auswählen</label>
-            <div class="water-control-row">
-              <select id="profileSelect"></select>
-              <button id="loadProfile" class="btn btn--outline" type="button">Laden</button>
-              <button id="resetProfile" class="btn btn--outline" type="button">Reset Default</button>
-            </div>
-          </div>
-          <div class="water-control-group">
-            <label for="profileName">Profilname zum Speichern</label>
-            <div class="water-control-row">
-              <input id="profileName" type="text" placeholder="z.B. default" />
-              <button id="saveProfile" class="btn btn--outline" type="button">Speichern</button>
-            </div>
-          </div>
-        </div>
-        <div class="actions is-hidden" id="solverProfileActions">
-          <button id="saveSolverAsRecipe" class="btn btn--outline" type="button">Als Düngerrezept speichern</button>
-          <label class="toggle">
-            <input id="applyScaleToCalcLiters" type="checkbox" checked />
-            <span>Beim Übernehmen auf 10L-Rechner skalieren</span>
-          </label>
-          <button id="applySolverToCalculator" class="btn btn--outline" type="button">Im Düngerrechner übernehmen</button>
-        </div>
-      </section>
-
-      <div class="mode-panel" id="calculatorMode">
-        <section class="block">
-          <h2>Düngemittel-Auswahl (Komponenten)</h2>
-          <div class="actions inline-actions">
-            <button id="addFertilizerRow" class="btn btn--outline btn--icon icon-button" type="button">+</button>
-            <button id="removeFertilizerRow" class="btn btn--outline btn--icon icon-button" type="button">-</button>
-            <span class="inline-hint">Wähle Dünger aus der Datenbank, das Plus fügt weitere Zeilen hinzu.</span>
-          </div>
-          <div class="table-wrap" id="fertilizerSelectTableWrap"></div>
-        </section>
-
-        <section class="block">
-          <h2>Nährlösung-Rechner</h2>
-          <p class="hint">Mengen eingeben und Berechnung starten.</p>
-          <div class="actions inline-actions">
-            <button id="calculatorScaleDown" class="btn btn--outline btn--icon icon-button" type="button">-</button>
-            <button id="calculatorScaleUp" class="btn btn--outline btn--icon icon-button" type="button">+</button>
-            <span class="inline-hint">Skalierung <span id="calculatorScaleValue">1.00x</span></span>
-          </div>
-          <div class="table-wrap" id="calculatorTableWrap"></div>
-          <div class="actions">
-            <button id="calculateBtn" class="btn btn--outline-primary">Berechnen</button>
-          </div>
-          <div class="summary">
-            <div class="summary-metrics">
-              <div class="summary-metric-card">
-                <div class="metric-label">NPK Gesamt (%)</div>
-                <div class="metric-value" id="npkAllPct">-</div>
-              </div>
-              <div class="summary-metric-card">
-                <div class="metric-label">NPK P-Norm</div>
-                <div class="metric-value" id="npkPNorm">-</div>
-              </div>
-              <div class="summary-metric-card">
-                <div class="metric-label">NPK Verhältnis (%)</div>
-                <div class="metric-value" id="npkNpkPct">-</div>
-              </div>
-              <div class="summary-metric-card ec-metric">
-                <div class="metric-card ec-card">
-                  <div class="metric-title">EC (mS/cm)</div>
-
-                  <div class="ec-lines">
-                    <div class="ec-line ec-primary">
-                      <span class="ec-temp">25&nbsp;°C</span>
-                      <span class="ec-label">Lösung</span>
-                      <span class="ec-value" id="ec25Value">—</span>
-                      <span class="ec-label">Wasser</span>
-                      <span class="ec-value muted" id="ecWater25Value">—</span>
-                    </div>
-
-                    <div class="ec-line">
-                      <span class="ec-temp">18&nbsp;°C</span>
-                      <span class="ec-label">Lösung</span>
-                      <span class="ec-value" id="ec18Value">—</span>
-                      <span class="ec-label">Wasser</span>
-                      <span class="ec-value muted" id="ecWater18Value">—</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="summary-scroll" id="summaryScroll">
-              <div class="summary-tables">
-                <div class="table-card summary-panel" data-summary-panel="water">
-                  <div class="table-card-title summary-table-title">
-                    <div class="segmented" id="summaryViewToggle" role="tablist" aria-label="Ergebnis-Ansicht">
-                      <button class="segmented-btn" type="button" role="tab" data-summary-view="water">
-                        Wasserwerte
-                      </button>
-                      <button class="segmented-btn" type="button" role="tab" data-summary-view="oxide">
-                        Raw/Oxide
-                      </button>
-                      <button class="segmented-btn" type="button" role="tab" data-summary-view="ion">
-                        Gelöste Ionen
-                      </button>
-                    </div>
-                    <span class="table-badge" id="waterSummaryBadge">mg/L</span>
-                  </div>
-                  <table class="grid grid--matrix nutrient-grid nutrient-grid--summary" id="waterSummaryTable"></table>
-                </div>
-                <div class="table-card summary-panel" data-summary-panel="oxide">
-                  <div class="table-card-title">
-                    <span class="table-badge" id="oxideSummaryBadge">mg/L (Oxid)</span>
-                  </div>
-                  <table class="grid grid--matrix nutrient-grid nutrient-grid--summary" id="oxideSummaryTable"></table>
-                </div>
-                <div class="table-card summary-panel" data-summary-panel="ion">
-                  <div class="table-card-title">
-                    <span class="table-badge" id="ionSummaryBadge">mg/L</span>
-                  </div>
-                  <table class="grid grid--matrix nutrient-grid nutrient-grid--summary" id="ionSummaryTable"></table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="block">
-          <h2>Ionenbilanz</h2>
-            <div class="data-grid">
-              <div class="table-card compact-card">
-                <div class="table-card-title">
-                  <h3>Ionen</h3>
-                  <span class="table-badge">meq/L</span>
-                </div>
-                <div class="compact-table-wrap" id="ionMeqList"></div>
-              </div>
-              <div class="table-card compact-card">
-                <h3>Bilanz</h3>
-                <div class="compact-table-wrap compact-table-wrap--balance" id="ionBalanceList"></div>
-              </div>
-            </div>
-        </section>
-      </div>
-
-      <div class="mode-panel is-hidden" id="solverMode">
-        <section class="block">
-          <h2>Zielprofil-Rechner</h2>
-          <p class="hint">Zielwerte, erlaubte Dünger und fixe Grammangaben definieren.</p>
-          <div class="solver-settings">
-            <label>
-              Liter
-              <input id="solverLiters" type="number" min="0.1" step="0.1" value="10" />
-            </label>
-            <label class="toggle">
-              <input id="solverUreaToggle" type="checkbox" />
-              <span>Harnstoff als NH4 behandeln</span>
-            </label>
-            <label>
-              Phosphat-Spezies
-              <select id="solverPhosphate">
-                <option value="H2PO4">H2PO4</option>
-                <option value="HPO4">HPO4</option>
-              </select>
-            </label>
-          </div>
-          <div class="solver-columns">
-            <div class="solver-column">
-              <h3>Zielwerte (mg/L)</h3>
-              <div class="actions inline-actions">
-                <button id="solverTargetScaleDown" class="btn btn--outline btn--icon icon-button" type="button">-</button>
-                <button id="solverTargetScaleUp" class="btn btn--outline btn--icon icon-button" type="button">+</button>
-                <span class="inline-hint">Skalierung <span id="solverTargetScaleValue">1.00x</span></span>
-              </div>
-              <div class="table-wrap">
-                <table class="grid grid--form" id="solverTargetsTable">
-                  <thead>
-                    <tr>
-                      <th>Element</th>
-                      <th>Ziel</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-            </div>
-            <div class="solver-column">
-              <h3>Erlaubte Dünger</h3>
-              <select id="solverAllowedFertilizers" multiple></select>
-              <div class="actions inline-actions">
-                <button id="solverAllowedFromRecipe" type="button">Allowed aus Rezept übernehmen</button>
-              </div>
-              <h3>Fixe Gramm</h3>
-              <div class="table-wrap">
-                <table class="grid grid--form" id="solverFixedTable">
-                  <thead>
-                    <tr>
-                      <th>Dünger</th>
-                      <th>Fix (g)</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-          <div class="actions">
-            <button id="solveBtn" class="btn btn--outline-primary" type="button">Solve</button>
-            <button id="copySolverResults" class="btn btn--outline" type="button">In Zwischenablage kopieren</button>
-            <span class="inline-hint" id="copySolverResultsStatus" aria-live="polite"></span>
-          </div>
-          <div class="solver-results">
-            <div class="table-wrap">
-              <table class="grid grid--form" id="solverFertilizersTable">
-                <thead>
-                  <tr>
-                    <th>Dünger</th>
-                    <th>Gramm</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-            <div class="table-wrap">
-              <table class="grid grid--form" id="solverTargetsResultsTable">
-                <thead>
-                  <tr>
-                    <th>Element</th>
-                    <th>Ziel</th>
-                    <th>Erreicht</th>
-                    <th>Delta</th>
-                    <th>Delta %</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <div class="mode-panel is-hidden" id="fertilizerEditorMode">
-        <section class="block">
-          <h2>Dünger-Editor</h2>
-          <p class="hint">
-            Werte als Prozent eingeben (z.B. 15 für 15%). Speicherung erfolgt als Bruch (0.15) in der CSV.
-          </p>
-          <p class="hint">Düngerliste lokal speichern/laden.</p>
-          <div class="water-controls">
-            <div class="water-control-group">
-              <label>Düngerliste</label>
-              <div class="water-control-row">
-                <button id="fertEditorLoad" class="btn btn--outline" type="button">Laden</button>
-                <button id="fertEditorSave" class="btn btn--outline" type="button">Speichern</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="actions inline-actions">
-            <input id="fertEditorSearch" type="text" placeholder="Suchen…" />
-            <button id="fertEditorAddRow" class="btn btn--outline btn--icon icon-button" type="button">+</button>
-            <button id="fertEditorDeleteRow" class="btn btn--outline btn--icon icon-button" type="button">-</button>
-          </div>
-
-          <div class="table-wrap table-wrap--editor" id="fertilizerEditorTableWrap"></div>
-        </section>
-      </div>
-
     </main>
-
+    <footer class="live-bar" id="liveResultBar">LIVE · NPK - · EC25 - · Ca/Mg - · Balance - · Letzte Berechnung -</footer>
     <script src="app.js"></script>
   </body>
 </html>

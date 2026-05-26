@@ -2591,3 +2591,37 @@ renderSolverTargetsTable();
 setMode("calculator");
 updateSolverResultActions();
 init();
+
+// Recipe wheel UI layer
+const recipeWheel = document.querySelector('#recipeWheel');
+const liveResultBar = document.querySelector('#liveResultBar');
+const apiStatusPill = document.querySelector('#apiStatusPill');
+const calculatorCards = document.querySelector('#calculatorCards');
+const resultCards = document.querySelector('#resultCards');
+const solverTargetCards = document.querySelector('#solverTargetCards');
+const waterOverviewCards = document.querySelector('#waterOverviewCards');
+
+function scrollToPanelAnchor(anchor){const el=document.querySelector(`[data-panel-anchor="${anchor}"]`);if(el){el.scrollIntoView({behavior:'smooth',block:'start'});}}
+function setActiveWheelStep(step){document.querySelectorAll('[data-wheel-step]').forEach((b)=>b.classList.toggle('active',b.dataset.wheelStep===step));}
+function openExpertDetails(){scrollToPanelAnchor('details');}
+function navigateWheelStep(step){if(step==='water'){setMode('water');}else if(step==='solver'){setMode('solver');}else if(step==='fertilizers'){setMode('calculator');scrollToPanelAnchor('fertilizers');}else if(step==='calculate'){setMode('calculator');scrollToPanelAnchor('calculate');}else if(step==='results'){setMode('calculator');scrollToPanelAnchor('results');}else if(step==='details'){setMode('calculator');openExpertDetails();}setActiveWheelStep(step);}
+function bindRecipeWheel(){if(!recipeWheel)return;recipeWheel.addEventListener('click',(e)=>{const b=e.target.closest('[data-wheel-step]');if(!b)return;navigateWheelStep(b.dataset.wheelStep);});}
+function toggleAdvancedSection(button,target){const panel=document.querySelector(target);if(!panel)return;const hidden=panel.classList.toggle('is-hidden');button.setAttribute('aria-expanded',String(!hidden));}
+function renderCalculatorCards(){if(!calculatorCards)return;calculatorCards.innerHTML='';selectedFertilizers.forEach((f,i)=>{const grams=Math.max(0,Number(fertilizerAmounts[i])||0);const card=document.createElement('div');card.className='overview-card';card.innerHTML=`<div>${f.name||'—'}</div><div><button type="button" data-act="minus">−</button><input type="number" min="0" step="0.01" value="${grams}" data-act="input"/><button type="button" data-act="plus">+</button> g</div>`;card.querySelector('[data-act="minus"]').onclick=()=>{fertilizerAmounts[i]=Math.max(0,grams-0.1);calculatorBaseAmounts[i]=fertilizerAmounts[i]/calculatorScaleFactor;renderCalculatorCards();scheduleRecalculate();};card.querySelector('[data-act="plus"]').onclick=()=>{fertilizerAmounts[i]=Math.max(0,grams+0.1);calculatorBaseAmounts[i]=fertilizerAmounts[i]/calculatorScaleFactor;renderCalculatorCards();scheduleRecalculate();};card.querySelector('[data-act="input"]').oninput=(ev)=>{const v=Math.max(0,Number(ev.target.value)||0);fertilizerAmounts[i]=v;calculatorBaseAmounts[i]=v/calculatorScaleFactor;scheduleRecalculate();};calculatorCards.appendChild(card);});}
+function renderWaterOverviewCards(){if(!waterOverviewCards)return;const keys=['NO3','Ca','Mg','Na','SO4','Cl','HCO3','KH'];waterOverviewCards.innerHTML=keys.map((k)=>`<div class="overview-card"><div>${k}</div><div class="metric-value">${formatNumber(Number(waterValues[k]||0),nutrientFormatter)}</div></div>`).join('');}
+function renderSolverTargetCards(){if(!solverTargetCards)return;const macro=['N_total','P','K','Ca','Mg','S'];solverTargetCards.innerHTML=macro.map((k)=>`<label class="overview-card">${k}<input type="number" min="0" step="0.1" data-target-key="${k}" value="${Number(solverTargetValues[k]||0)}"/></label>`).join('');solverTargetCards.querySelectorAll('input').forEach((inp)=>inp.addEventListener('input',()=>{const k=inp.dataset.targetKey;const v=Math.max(0,Number(inp.value)||0);solverTargetValues[k]=v;solverTargetBaseValues[k]=v/solverTargetScaleFactor;renderSolverTargetsTable();}));}
+function renderResultCards(data){if(!resultCards)return;const i=data?.ions_ppm||{};const cm=(Number(i.Ca)||0)/Math.max(0.001,Number(i.Mg)||1);resultCards.innerHTML=`<div class="overview-card"><div>NPK Gesamt</div><div class="metric-value">${npkAllPctValue.textContent}</div></div><div class="overview-card"><div>EC25</div><div class="metric-value">${ec25Value.textContent}</div></div><div class="overview-card"><div>Ca/Mg</div><div class="metric-value">${formatNumber(cm,nutrientFormatter)}</div></div>`;}
+function updateLiveResultBar(data){if(!liveResultBar)return;liveResultBar.textContent=`LIVE · NPK ${npkAllPctValue.textContent} · EC25 ${ec25Value.textContent} · Letzte Berechnung ${new Date().toLocaleTimeString('de-DE')}`;}
+
+const _init = init; init = async function(){await _init(); if(apiStatusPill) {apiStatusPill.textContent='API verbunden';apiStatusPill.classList.add('ok');} renderCalculatorCards(); renderWaterOverviewCards(); renderSolverTargetCards();};
+const _rSel=renderSelectionTable; renderSelectionTable=function(){_rSel();renderCalculatorCards();};
+const _rCalcT=renderCalculatorTable; renderCalculatorTable=function(){_rCalcT();renderCalculatorCards();};
+const _rW=renderWaterTable; renderWaterTable=function(){_rW();renderWaterOverviewCards();};
+const _rS=renderSolverTargetsTable; renderSolverTargetsTable=function(){_rS();renderSolverTargetCards();};
+const _rSR=renderSolverResults; renderSolverResults=function(data){_rSR(data);};
+const _rC=renderCalculation; renderCalculation=function(data){_rC(data);renderResultCards(data);updateLiveResultBar(data);};
+
+document.querySelectorAll('[data-toggle-target]').forEach((btn)=>btn.addEventListener('click',()=>toggleAdvancedSection(btn,btn.dataset.toggleTarget)));
+document.querySelector('#showAddFertilizer')?.addEventListener('click',()=>scrollToPanelAnchor('fertilizers'));
+document.querySelector('#openFertilizerEditor')?.addEventListener('click',()=>setMode('fertilizers'));
+bindRecipeWheel();

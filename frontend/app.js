@@ -72,6 +72,18 @@ const fertEditorAddRowButton = document.querySelector("#fertEditorAddRow");
 const fertEditorDeleteRowButton = document.querySelector("#fertEditorDeleteRow");
 const fertEditorLoadButton = document.querySelector("#fertEditorLoad");
 const fertEditorSaveButton = document.querySelector("#fertEditorSave");
+const recipeWheel = document.querySelector("#recipeWheel");
+const apiStatusPill = document.querySelector("#apiStatusPill");
+const openFertilizerEditorButton = document.querySelector("#openFertilizerEditor");
+const calculatorCards = document.querySelector("#calculatorCards");
+const waterOverviewCards = document.querySelector("#waterOverviewCards");
+const solverTargetCards = document.querySelector("#solverTargetCards");
+const resultCards = document.querySelector("#resultCards");
+const liveNpk = document.querySelector("#liveNpk");
+const liveEc = document.querySelector("#liveEc");
+const liveCaMg = document.querySelector("#liveCaMg");
+const liveBalance = document.querySelector("#liveBalance");
+const liveTime = document.querySelector("#liveTime");
 
 const CALC_LITERS = 10.0;
 
@@ -1338,6 +1350,14 @@ function scheduleRecalculate() {
   }, 250);
 }
 
+function toggleAdvancedSection(button, targetSelector) {
+  const target = document.querySelector(targetSelector);
+  if (!target) return;
+  const nextOpen = target.classList.contains("is-hidden");
+  target.classList.toggle("is-hidden", !nextOpen);
+  button.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+}
+
 
 function renderIonCompactList(container, entries) {
   container.innerHTML = "";
@@ -2207,6 +2227,10 @@ function restoreSolverAllowedFromStorage(context = solverAllowedContext) {
 }
 
 async function init() {
+  if (apiStatusPill) {
+    apiStatusPill.textContent = "API lädt…";
+    apiStatusPill.classList.remove("ok");
+  }
   let hasStoredAllowed = false;
   try {
     fertilizerEditorPreferredKeys = await fetchFertilizerCompKeys();
@@ -2302,6 +2326,10 @@ async function init() {
     renderIonSummaryTable(ionSummaryTable, {});
     renderSolverAllowedOptions();
     renderSolverFixedTable();
+  }
+  if (apiStatusPill) {
+    apiStatusPill.textContent = "API verbunden";
+    apiStatusPill.classList.add("ok");
   }
 }
 
@@ -2581,11 +2609,50 @@ waterUnitToggle.addEventListener("change", (event) => {
   scheduleRecalculate();
 });
 
+function scrollToPanelAnchor(anchor) {
+  const element = document.querySelector(`[data-panel-anchor="${anchor}"]`);
+  if (element) element.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function openExpertDetails() {
+  scrollToPanelAnchor("details");
+}
+function setActiveWheelStep(step) {
+  document.querySelectorAll("#recipeWheel button[data-wheel-step]").forEach((btn) => {
+    btn.classList.toggle("is-active", btn.dataset.wheelStep === step);
+  });
+}
+function navigateWheelStep(step) {
+  if (step === "water") return setMode("water");
+  if (step === "solver") return setMode("solver");
+  setMode("calculator");
+  if (step === "fertilizers") scrollToPanelAnchor("fertilizers");
+  if (step === "calculate") scrollToPanelAnchor("calculate");
+  if (step === "results") scrollToPanelAnchor("results");
+  if (step === "details") openExpertDetails();
+}
+function bindRecipeWheel() {
+  if (recipeWheel) {
+    recipeWheel.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-wheel-step]");
+      if (!button) return;
+      setActiveWheelStep(button.dataset.wheelStep);
+      navigateWheelStep(button.dataset.wheelStep);
+    });
+  }
+  document.querySelectorAll("[data-advanced-toggle]").forEach((button) => {
+    button.addEventListener("click", () => toggleAdvancedSection(button, button.dataset.advancedToggle));
+  });
+}
+
 summaryView = lsGet(SUMMARY_VIEW_KEY, "ion");
 ionNitrogenExpanded = lsGet(ION_NITROGEN_EXPANDED_KEY, false);
 setSummaryView(summaryView);
 
 initializeFertilizerTables();
+bindRecipeWheel();
+if (openFertilizerEditorButton) {
+  openFertilizerEditorButton.addEventListener("click", () => setMode("fertilizers"));
+}
 updateCalculatorScaleDisplay();
 renderSolverTargetsTable();
 setMode("calculator");

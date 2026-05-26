@@ -876,3 +876,16 @@ main {
 .solver-results .solver-n-row td:first-child {
   padding-left: 1rem;
 }
+
+body{background:#070d1a;color:#d9e4ff}
+.app-shell{display:grid;grid-template-columns:320px 1fr;gap:1rem;align-items:start}
+.wheel-sidebar{position:sticky;top:1rem;background:#111a2d;border:1px solid #2c3f63;border-radius:20px}
+.content-pane{min-width:0}
+.recipe-wheel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;position:relative}
+.recipe-wheel button{background:#13213a;border:1px solid #35507b;color:#cde2ff;padding:.6rem;border-radius:999px;cursor:pointer}
+.recipe-wheel button.is-active{background:#11b7b2;color:#001f26;border-color:#44f3df}
+.wheel-center{grid-column:1/-1;text-align:center;padding:.5rem;border:1px dashed #2f4c74;border-radius:12px}
+.live-bar{position:sticky;bottom:0;display:flex;gap:1rem;flex-wrap:wrap;background:#0b1323;border-top:1px solid #2c3f63;padding:.5rem 1rem;z-index:20}
+.block{background:#0d172a;border:1px solid #263b5f;border-radius:16px}
+.btn--outline-primary{background:#0ba8a3 !important;color:#032b33 !important;border-color:#36e2d6 !important}
+@media (max-width:960px){.app-shell{grid-template-columns:1fr}.wheel-sidebar{position:static}.recipe-wheel{grid-template-columns:repeat(3,minmax(0,1fr))}}

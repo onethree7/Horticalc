@@ -420,7 +420,93 @@ function setMode(mode) {
 }
 
 function updateModeToggleUI() {
-  modeToggleInputs.forEach((input) => {
+  
+function scrollToPanelAnchor(anchor) {
+  const target = document.querySelector(`[data-panel-anchor="${anchor}"]`);
+  if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function setActiveWheelStep(step) {
+  document.querySelectorAll('[data-wheel-step]').forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.wheelStep === step);
+  });
+}
+
+function openExpertDetails() {
+  const btn = document.querySelector('#summaryViewToggle');
+  const wrap = document.querySelector('[data-panel-anchor="details"]');
+  if (wrap && wrap.hasAttribute('hidden')) wrap.hidden = false;
+  if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function navigateWheelStep(step) {
+  if (step === 'water') {
+    setMode('water');
+  } else if (step === 'solver') {
+    setMode('solver');
+  } else {
+    setMode('calculator');
+    if (step === 'fertilizers') scrollToPanelAnchor('fertilizers');
+    if (step === 'calculate') scrollToPanelAnchor('calculate');
+    if (step === 'results') scrollToPanelAnchor('results');
+    if (step === 'details') {
+      openExpertDetails();
+      scrollToPanelAnchor('details');
+    }
+  }
+  setActiveWheelStep(step);
+}
+
+function bindRecipeWheel() {
+  document.querySelectorAll('[data-wheel-step]').forEach((btn) => {
+    btn.addEventListener('click', () => navigateWheelStep(btn.dataset.wheelStep));
+  });
+}
+
+function updateLiveResultBar(data) {
+  const set = (id, value) => {
+    const el = document.querySelector(id);
+    if (el) el.textContent = value;
+  };
+  set('#liveNpk', data?.npk_all_pct || '-');
+  set('#liveEc25', data?.ec25 != null ? numberFormatter.format(Number(data.ec25)) : '-');
+  const ca = Number(data?.elements?.Ca || 0);
+  const mg = Number(data?.elements?.Mg || 0);
+  set('#liveCaMg', mg > 0 ? (ca / mg).toFixed(2) : '-');
+  set('#liveBalance', data?.ion_balance?.status || '-');
+  const now = new Date();
+  set('#liveLastCalc', `Letzte Berechnung ${now.toLocaleTimeString('de-DE')}`);
+}
+
+function renderModernShell() {
+  const main = document.querySelector('main');
+  if (!main || document.querySelector('.app-shell')) return;
+  const shell = document.createElement('div');
+  shell.className = 'app-shell';
+  const sidebar = document.createElement('aside');
+  sidebar.className = 'wheel-sidebar block';
+  sidebar.innerHTML = `<h2>REZEPT WHEEL</h2><div class="recipe-wheel"><button type="button" data-wheel-step="water">Wasser</button><button type="button" data-wheel-step="fertilizers">Dünger</button><button type="button" data-wheel-step="solver">Zielwerte</button><button type="button" data-wheel-step="calculate">Berechnen</button><button type="button" data-wheel-step="results">Ergebnis</button><button type="button" data-wheel-step="details">Details</button><div class="wheel-center"><strong>Mein Rezept</strong><span>10 L</span></div></div><div class="status-mini"><strong>Rezept-Status</strong><p id="recipeStatusText">Unvollständig</p></div>`;
+  const content = document.createElement('section');
+  content.className = 'content-pane';
+  while (main.firstChild) content.appendChild(main.firstChild);
+  shell.append(sidebar, content);
+  main.appendChild(shell);
+  const live = document.createElement('div');
+  live.className = 'live-bar';
+  live.innerHTML = '<strong>LIVE</strong> <span>NPK <b id="liveNpk">-</b></span><span>EC25 <b id="liveEc25">-</b></span><span>Ca/Mg <b id="liveCaMg">-</b></span><span>Balance <b id="liveBalance">-</b></span><span id="liveLastCalc">Letzte Berechnung -</span>';
+  document.body.appendChild(live);
+
+  const fertilizerBlock = document.querySelector('#fertilizerSelectTableWrap')?.closest('section');
+  const calcBlock = document.querySelector('#calculatorTableWrap')?.closest('section');
+  const summary = document.querySelector('.summary');
+  const ionBlock = document.querySelector('#ionMeqList')?.closest('section');
+  if (fertilizerBlock) fertilizerBlock.dataset.panelAnchor='fertilizers';
+  if (calcBlock) calcBlock.dataset.panelAnchor='calculate';
+  if (summary) summary.dataset.panelAnchor='results';
+  if (ionBlock) ionBlock.dataset.panelAnchor='details';
+}
+
+modeToggleInputs.forEach((input) => {
     const label = input.closest("label");
     if (!label) {
       return;
@@ -2586,8 +2672,11 @@ ionNitrogenExpanded = lsGet(ION_NITROGEN_EXPANDED_KEY, false);
 setSummaryView(summaryView);
 
 initializeFertilizerTables();
+renderModernShell();
+bindRecipeWheel();
 updateCalculatorScaleDisplay();
 renderSolverTargetsTable();
 setMode("calculator");
+setActiveWheelStep("calculate");
 updateSolverResultActions();
 init();

@@ -72,6 +72,14 @@ const fertEditorAddRowButton = document.querySelector("#fertEditorAddRow");
 const fertEditorDeleteRowButton = document.querySelector("#fertEditorDeleteRow");
 const fertEditorLoadButton = document.querySelector("#fertEditorLoad");
 const fertEditorSaveButton = document.querySelector("#fertEditorSave");
+const recipeWheel = document.querySelector("#recipeWheel");
+const apiStatusPill = document.querySelector("#apiStatusPill");
+const calculatorCards = document.querySelector("#calculatorCards");
+const resultCards = document.querySelector("#resultCards");
+const nutrientStrip = document.querySelector("#nutrientStrip");
+const liveResultBar = document.querySelector("#liveResultBar");
+const waterOverviewCards = document.querySelector("#waterOverviewCards");
+const solverTargetCards = document.querySelector("#solverTargetCards");
 
 const CALC_LITERS = 10.0;
 
@@ -429,6 +437,70 @@ function updateModeToggleUI() {
   });
 }
 
+function setActiveWheelStep(step) {
+  const buttons = recipeWheel ? recipeWheel.querySelectorAll(".wheel-step") : [];
+  buttons.forEach((button) => button.classList.toggle("is-active", button.dataset.wheelStep === step));
+}
+
+function scrollToPanelAnchor(anchor) {
+  const target = document.querySelector(`[data-panel-anchor="${anchor}"]`);
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    const focusable = target.querySelector("button, input, select");
+    if (focusable) {
+      focusable.focus({ preventScroll: true });
+    }
+  }
+}
+
+function openExpertDetails() {
+  const panel = document.querySelector("#expertDetailsPanel");
+  const toggle = document.querySelector("#detailsToggle");
+  if (panel) {
+    panel.classList.remove("is-hidden");
+  }
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", "true");
+  }
+}
+
+function navigateWheelStep(step) {
+  if (step === "water") {
+    setMode("water");
+    setActiveWheelStep("water");
+    return;
+  }
+  if (step === "solver") {
+    setMode("solver");
+    setActiveWheelStep("solver");
+    return;
+  }
+  if (step === "fertilizers") {
+    setMode("calculator");
+    setActiveWheelStep("fertilizers");
+    scrollToPanelAnchor("fertilizers");
+    return;
+  }
+  if (step === "calculate") {
+    setMode("calculator");
+    setActiveWheelStep("calculate");
+    scrollToPanelAnchor("calculate");
+    return;
+  }
+  if (step === "results") {
+    setMode("calculator");
+    setActiveWheelStep("results");
+    scrollToPanelAnchor("results");
+    return;
+  }
+  if (step === "details") {
+    setMode("calculator");
+    setActiveWheelStep("details");
+    openExpertDetails();
+    scrollToPanelAnchor("details");
+  }
+}
+
 const profileConfigs = {
   calculator: {
     title: "Düngerrezept",
@@ -489,6 +561,31 @@ function renderSolverTargetsTable() {
 
     row.append(labelCell, valueCell);
     solverTargetsTable.appendChild(row);
+  });
+  renderSolverTargetCards();
+}
+
+function renderSolverTargetCards() {
+  if (!solverTargetCards) return;
+  const macro = ["N_total", "P", "K", "Ca", "Mg", "S"];
+  solverTargetCards.innerHTML = "";
+  macro.forEach((key) => {
+    const card = document.createElement("label");
+    card.className = "metric";
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "0";
+    input.step = "0.1";
+    input.value = solverTargetValues[key] || 0;
+    input.addEventListener("input", (event) => {
+      const rawValue = Math.max(0, Number(event.target.value) || 0);
+      solverTargetValues[key] = rawValue;
+      solverTargetBaseValues[key] = solverTargetScaleFactor > 0 ? roundScaledValue(rawValue / solverTargetScaleFactor) : 0;
+      renderSolverTargetsTable();
+    });
+    card.innerHTML = `<div>${key}</div><small>ppm / mg/L</small>`;
+    card.appendChild(input);
+    solverTargetCards.appendChild(card);
   });
 }
 
@@ -1151,6 +1248,7 @@ function renderSelectionTable() {
     row.append(indexCell, selectCell, formCell, weightCell);
     return row;
   });
+  renderCalculatorCards();
 }
 
 function renderCalculatorTable() {
@@ -1186,6 +1284,64 @@ function renderCalculatorTable() {
 
     row.append(indexCell, nameCell, amountCell);
     return row;
+  });
+  renderCalculatorCards();
+}
+
+function renderCalculatorCards() {
+  if (!calculatorCards) return;
+  calculatorCards.innerHTML = "";
+  selectedFertilizers.forEach((fert, i) => {
+    const row = document.createElement("div");
+    row.className = "calc-row";
+    row.innerHTML = `<span class="dot"></span><div><strong>${fert.name || "—"}</strong><div class="hint">${fert.form || ""}</div></div>`;
+    const minus = document.createElement("button");
+    minus.type = "button";
+    minus.textContent = "−";
+    minus.addEventListener("click", () => {
+      const next = Math.max(0, (Number(fertilizerAmounts[i]) || 0) - 0.1);
+      fertilizerAmounts[i] = roundScaledValue(next);
+      calculatorBaseAmounts[i] = calculatorScaleFactor > 0 ? roundScaledValue(next / calculatorScaleFactor) : 0;
+      renderCalculatorTable();
+      scheduleRecalculate();
+    });
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "0";
+    input.step = "0.01";
+    input.value = fertilizerAmounts[i] || 0;
+    input.addEventListener("input", (event) => {
+      const value = Math.max(0, Number(event.target.value) || 0);
+      fertilizerAmounts[i] = value;
+      calculatorBaseAmounts[i] = calculatorScaleFactor > 0 ? roundScaledValue(value / calculatorScaleFactor) : 0;
+      scheduleRecalculate();
+    });
+    const plus = document.createElement("button");
+    plus.type = "button";
+    plus.textContent = "+";
+    plus.addEventListener("click", () => {
+      const next = Math.max(0, (Number(fertilizerAmounts[i]) || 0) + 0.1);
+      fertilizerAmounts[i] = roundScaledValue(next);
+      calculatorBaseAmounts[i] = calculatorScaleFactor > 0 ? roundScaledValue(next / calculatorScaleFactor) : 0;
+      renderCalculatorTable();
+      scheduleRecalculate();
+    });
+    const unit = document.createElement("span");
+    unit.textContent = "g";
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "🗑";
+    remove.addEventListener("click", () => {
+      selectedFertilizers.splice(i, 1);
+      fertilizerAmounts.splice(i, 1);
+      calculatorBaseAmounts.splice(i, 1);
+      if (!selectedFertilizers.length) addFertilizerRow();
+      renderSelectionTable();
+      renderCalculatorTable();
+      scheduleRecalculate();
+    });
+    row.append(minus, input, plus, unit, remove);
+    calculatorCards.appendChild(row);
   });
 }
 
@@ -1232,6 +1388,15 @@ function renderWaterTable() {
     row.append(labelCell, valueCell, unitCell);
     waterTableBody.appendChild(row);
   });
+  renderWaterOverviewCards();
+}
+
+function renderWaterOverviewCards() {
+  if (!waterOverviewCards) return;
+  const keys = ["NO3", "Ca", "Mg", "Na", "SO4", "Cl", "HCO3", "KH"];
+  waterOverviewCards.innerHTML = keys
+    .map((key) => `<div class="metric"><div>${key}</div><strong>${formatWaterDisplayValue(waterValues[key] || 0)}</strong></div>`)
+    .join("");
 }
 
 function updateWaterInputValue(key) {
@@ -1963,6 +2128,35 @@ function renderCalculation(data) {
 
   const waterEc = data.ec_water || {};
   renderEcPair(waterEc.ec_mS_per_cm || {}, ecWater18Value, ecWater25Value);
+  renderResultCards(data);
+  updateLiveResultBar(data);
+}
+
+function renderResultCards(data) {
+  if (!resultCards || !nutrientStrip) return;
+  const npk = data?.npk_metrics || {};
+  const ec25 = Number(data?.ec?.ec_mS_per_cm?.["25.0"]);
+  const ions = data?.ion_balance || {};
+  const ratio = Number(data?.elements_mg_per_l?.Ca) / Math.max(0.001, Number(data?.elements_mg_per_l?.Mg) || 1);
+  resultCards.innerHTML = [
+    ["NPK Gesamt", npk.npk_all_pct || "-"],
+    ["EC25", Number.isFinite(ec25) ? formatNumber(ec25) : "-"],
+    ["Ca/Mg", Number.isFinite(ratio) ? ratio.toFixed(2) : "-"],
+    ["Ionenbilanz", ions.ok ? "OK" : "Prüfen"],
+  ].map((entry) => `<div class=\"metric\"><div>${entry[0]}</div><strong>${entry[1]}</strong></div>`).join("");
+  const major = ["N_total", "P", "K", "Ca", "Mg", "S"];
+  nutrientStrip.innerHTML = major.map((k) => `<div class=\"nut\"><div>${k}</div><strong>${nutrientFormatter.format(Number(data?.elements_mg_per_l?.[k]) || 0)}</strong></div>`).join("");
+}
+
+function updateLiveResultBar(data) {
+  if (!liveResultBar) return;
+  const npk = data?.npk_metrics?.npk_npk_pct || "-";
+  const ec25 = Number(data?.ec?.ec_mS_per_cm?.["25.0"]);
+  const ca = Number(data?.elements_mg_per_l?.Ca) || 0;
+  const mg = Number(data?.elements_mg_per_l?.Mg) || 0;
+  const ratio = mg > 0 ? (ca / mg).toFixed(2) : "-";
+  const balance = data?.ion_balance?.ok ? "OK" : "Warnung";
+  liveResultBar.textContent = `LIVE · NPK: ${npk} · EC25: ${Number.isFinite(ec25) ? ec25.toFixed(2) : "-"} · Ca/Mg: ${ratio} · Balance: ${balance} · Letzte Berechnung ${new Date().toLocaleTimeString("de-DE")}`;
 }
 
 function applyRecipe(recipe) {
@@ -2207,6 +2401,10 @@ function restoreSolverAllowedFromStorage(context = solverAllowedContext) {
 }
 
 async function init() {
+  if (apiStatusPill) {
+    apiStatusPill.textContent = "API wird geprüft…";
+    apiStatusPill.classList.remove("ok");
+  }
   let hasStoredAllowed = false;
   try {
     fertilizerEditorPreferredKeys = await fetchFertilizerCompKeys();
@@ -2294,6 +2492,10 @@ async function init() {
     applyRecipe(recipe);
     const data = await calculate();
     renderCalculation(data);
+    if (apiStatusPill) {
+      apiStatusPill.textContent = "API verbunden";
+      apiStatusPill.classList.add("ok");
+    }
   } catch (error) {
     renderSelectionTable();
     renderCalculatorTable();
@@ -2302,10 +2504,51 @@ async function init() {
     renderIonSummaryTable(ionSummaryTable, {});
     renderSolverAllowedOptions();
     renderSolverFixedTable();
+    if (apiStatusPill) {
+      apiStatusPill.textContent = "API nicht verbunden";
+      apiStatusPill.classList.remove("ok");
+    }
   }
 }
 
 reloadButton.addEventListener("click", init);
+if (recipeWheel) {
+  recipeWheel.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-wheel-step]");
+    if (!button) return;
+    navigateWheelStep(button.dataset.wheelStep);
+  });
+}
+const wireToggle = (buttonId, targetId) => {
+  const button = document.querySelector(buttonId);
+  const target = document.querySelector(targetId);
+  if (!button || !target) return;
+  button.addEventListener("click", () => {
+    const open = target.classList.toggle("is-hidden") === false;
+    button.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+};
+wireToggle("#expertFertilizerToggle", "#fertilizerSelectTableWrap");
+wireToggle("#detailsToggle", "#expertDetailsPanel");
+wireToggle("#waterAdvancedToggle", "#waterAdvancedSection");
+wireToggle("#solverAdvancedTargetsToggle", "#solverTargetsTableWrap");
+wireToggle("#solverFixedToggle", "#solverFixedWrap");
+const openFertilizerEditor = document.querySelector("#openFertilizerEditor");
+if (openFertilizerEditor) {
+  openFertilizerEditor.addEventListener("click", () => setMode("fertilizers"));
+}
+const addFertilizerCardButton = document.querySelector("#addFertilizerCard");
+if (addFertilizerCardButton) {
+  addFertilizerCardButton.addEventListener("click", () => {
+    const toggle = document.querySelector("#expertFertilizerToggle");
+    const panel = document.querySelector("#fertilizerSelectTableWrap");
+    if (toggle && panel) {
+      panel.classList.remove("is-hidden");
+      toggle.setAttribute("aria-expanded", "true");
+    }
+    addFertilizerRow();
+  });
+}
 addRowButton.addEventListener("click", addFertilizerRow);
 removeRowButton.addEventListener("click", removeFertilizerRow);
 calculateButton.addEventListener("click", async () => {

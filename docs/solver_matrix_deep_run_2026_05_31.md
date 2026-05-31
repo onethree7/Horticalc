@@ -210,17 +210,19 @@ For now, the benchmark is correct because it follows `result.objective_elements`
 Do not delete everything at once. The industry-grade path is staged:
 
 1. Already done in the PR branch: set the production defaults to the winning simple model and make the benchmark defaults start from the same model.
-2. Next confirmation run: rerun deep on the new defaults into a fresh folder and compare against this report.
+2. Next confirmation run: rerun a capped deep pass on the new defaults into a fresh folder and compare against this report.
 3. If the signal repeats, deprecate and remove `macro_priority_enabled` first. It is the clearest malicious detractor.
 4. After macro priority is gone, reassess `stage_optimization_enabled`. If it remains neutral or harmful, remove it too. It currently looks like complexity without independent value.
 5. Keep N mode selection, relative weighting, and singleton supplier behavior. Those are objective semantics or genuine solver mechanisms, not random heuristics.
 
 ## Recommended Next Run
 
-After merging or testing the PR branch with the data-backed defaults, run:
+After merging or testing the PR branch with the data-backed defaults, run a
+capped pass. Do not repeat the 2.6M-row run unless there is a deliberate reason.
 
 ```powershell
-python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --out-dir logs\solver_matrix\after_n_total_default
+python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --max-runs 100000 --out-dir logs\solver_matrix\after_n_total_default
+python scripts\solver_matrix_analyze.py logs\solver_matrix\after_n_total_default --baseline-dir logs\solver_matrix\dev
 ```
 
 Then compare:

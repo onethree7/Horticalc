@@ -605,6 +605,10 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
 
     aggregate = MatrixAggregate(allowed_fertilizers, top_n=args.top_n)
     seen: set[str] = set()
+    stopped_early = False
+
+    def max_runs_reached() -> bool:
+        return args.max_runs is not None and args.max_runs > 0 and aggregate.total_runs >= args.max_runs
 
     with results_csv.open("w", encoding="utf-8", newline="") as csv_handle, results_jsonl.open(
         "w", encoding="utf-8"
@@ -613,8 +617,15 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
         writer.writeheader()
 
         for profile in profiles:
+            if stopped_early:
+                break
             for subset in subsets:
+                if stopped_early:
+                    break
                 for config in configs:
+                    if max_runs_reached():
+                        stopped_early = True
+                        break
                     key = _run_key(profile.profile_id, subset, config)
                     if key in seen:
                         continue
@@ -635,7 +646,7 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
                     write_row(writer, jsonl_handle, row)
                     aggregate.update(row, subset, config)
 
-        if args.preset == "deep":
+        if args.preset == "deep" and not stopped_early:
             refinement_candidates = [
                 candidate
                 for candidates in aggregate.top_by_profile.values()
@@ -654,6 +665,9 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
                         refinement_configs
                     )
                 for config in refinement_configs:
+                    if max_runs_reached():
+                        stopped_early = True
+                        break
                     key = _run_key(profile.profile_id, subset, config)
                     if key in seen:
                         continue
@@ -673,6 +687,8 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
                     )
                     write_row(writer, jsonl_handle, row)
                     aggregate.update(row, subset, config)
+                if stopped_early:
+                    break
 
     summary = aggregate.summary()
     summary.update(
@@ -684,6 +700,8 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
             "liters": liters,
             "allowed_fertilizers": allowed_fertilizers,
             "nitrogen_objective_modes": nitrogen_modes,
+            "max_runs": args.max_runs,
+            "stopped_early": stopped_early,
             "results_csv": str(results_csv),
             "results_jsonl": str(results_jsonl),
         }
@@ -711,6 +729,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-profiles", type=int, default=None, help="Limit profiles for smoke tests.")
     parser.add_argument("--max-subsets", type=int, default=None, help="Limit fertilizer subsets for smoke tests.")
     parser.add_argument("--max-configs", type=int, default=None, help="Limit solver configs for smoke tests.")
+    parser.add_argument(
+        "--max-runs",
+        type=int,
+        default=100_000,
+        help="Stop after this many attempted solver rows. Use 0 to disable the safety cap.",
+    )
     return parser
 
 
@@ -720,6 +744,8 @@ def main(argv: list[str] | None = None) -> int:
     summary = run_matrix(args)
     best_count = len(summary["best_by_profile"])
     print(f"Solver matrix complete: {summary['total_runs']} runs, {summary['failed_runs']} failures")
+    if summary.get("stopped_early"):
+        print(f"Stopped early at --max-runs {summary['max_runs']}")
     print(f"Best profile rows: {best_count}")
     print(f"Results CSV: {summary['results_csv']}")
     print(f"Results JSONL: {summary['results_jsonl']}")

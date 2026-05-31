@@ -141,3 +141,26 @@ def test_solver_matrix_quick_smoke(tmp_path: Path, capsys: pytest.CaptureFixture
     assert summary["total_runs"] == 2
     assert summary["failed_runs"] == 0
     assert "Hoagland_Arnon_1950_Solution1_Nitrate" in summary["best_by_profile"]
+
+
+def test_solver_matrix_max_runs_stops_early(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = solver_matrix.main(
+        [
+            "--preset",
+            "quick",
+            "--profiles",
+            "Hoagland_Arnon_1950_Solution1_Nitrate",
+            "--max-runs",
+            "1",
+            "--out-dir",
+            str(tmp_path),
+        ]
+    )
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "Stopped early at --max-runs 1" in output
+
+    summary = json.loads((tmp_path / "summary.json").read_text(encoding="utf-8"))
+    assert summary["total_runs"] == 1
+    assert summary["stopped_early"] is True

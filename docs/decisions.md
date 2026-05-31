@@ -39,6 +39,7 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 - **Macro priority:** DEFAULT — keep `macro_priority_enabled=false`. Treat the feature as a deprecation/removal candidate after one more confirmation run because it was the strongest harmful boolean in the 2026-05-31 matrix.
 - **Stage optimization:** DEFAULT — keep `stage_optimization_enabled=false`. Treat as a lower-priority removal candidate if it remains neutral or harmful after macro-priority cleanup.
 - **Solver matrix scoring law:** DEFAULT — benchmark scoring must follow `result.objective_elements` from `solver.py` 1:1. The benchmark must not independently decide that report-only targets such as `HCO3`, `S`, `SO4`, `Na`, or `Cl` are optimization errors.
+- **Solver matrix run cap:** DEFAULT — cap normal matrix/deep runs at `100000` attempted rows. Use `--max-runs 0` only for deliberately uncapped research runs.
 
 ### CI/Release
 - **Release trigger:** DEFAULT — tags matching `v*` plus manual workflow dispatch.

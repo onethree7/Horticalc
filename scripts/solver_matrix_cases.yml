@@ -1,0 +1,39 @@
+water_profile: "65936"
+osmosis_percent: 66
+liters: 10.0
+
+allowed_fertilizers:
+  - Compo Fetrilon Combi 1
+  - Yara Magnitra-L Magnesiumnitrat
+  - Yara Tera CALCINIT
+  - HAIFA monokaliumphosphat MKP
+  - YaraTera KRISTALON ROT CALCIUM
+  - Agrolution Special 313 14-7-14+14CaO+TE
+  - S3 Kaliwasser 28 Be
+  - Peters Professional Combi Sol 6-18-36+3MgO+TE
+
+custom_profiles:
+  - id: saloner_bernstein_with_si_7
+    name: Saloner Bernstein Cannabis NPK Target Optimization + Si 7
+    source: User requested solver-matrix profile
+    targets_mg_per_l:
+      N_total: 160
+      N_NH4: 32
+      N_NO3: 128
+      N_UREA: 0
+      P: 30
+      K: 100
+      Ca: 119.8
+      Mg: 35.2
+      S: 0
+      SO4: 0
+      Fe: 1.67535
+      Mn: 1.09876
+      Cu: 0.0508368
+      Zn: 0.39228
+      B: 0.09729
+      Mo: 0.028785
+      Si: 7
+      Cl: 0
+      Na: 0
+      HCO3: 0

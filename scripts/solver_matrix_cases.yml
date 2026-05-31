@@ -4,13 +4,20 @@ liters: 10.0
 
 allowed_fertilizers:
   - Compo Fetrilon Combi 1
+  - Compo Hakaphos Soft16-8-22(+3) Spezial
+  - Compo Hakaphos Blau 15-10-15(+2)
   - Yara Magnitra-L Magnesiumnitrat
   - Yara Tera CALCINIT
   - HAIFA monokaliumphosphat MKP
+  - K+S EPSO Top Bittersalz 16-39
   - YaraTera KRISTALON ROT CALCIUM
   - Agrolution Special 313 14-7-14+14CaO+TE
   - S3 Kaliwasser 28 Be
   - Peters Professional Combi Sol 6-18-36+3MgO+TE
+
+nitrogen_objective_modes:
+  - n_total_only
+  - n_forms_only
 
 custom_profiles:
   - id: saloner_bernstein_with_si_7

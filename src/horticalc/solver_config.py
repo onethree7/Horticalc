@@ -21,6 +21,7 @@ SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"key": "stage_regression_mg_l", "type": "number", "default": 2.0},
     {"key": "macro_priority_enabled", "type": "boolean", "default": True},
     {"key": "macro_regress_pp", "type": "number", "default": 0.25},
+    {"key": "nitrogen_objective_mode", "type": "string", "default": "as_targets"},
     {"key": "n_total_governor_enabled", "type": "boolean", "default": False},
     {"key": "n_total_governor_weight", "type": "number", "default": 1.0},
 )
@@ -45,12 +46,19 @@ def add_solver_config_arguments(parser: argparse.ArgumentParser) -> None:
                 default=None,
                 help=f"Override solver_config.{key}",
             )
-        else:
+        elif definition["type"] in ("integer", "number"):
             value_type = int if definition["type"] == "integer" else float
             group.add_argument(
                 flag,
                 dest=key,
                 type=value_type,
+                default=None,
+                help=f"Override solver_config.{key}",
+            )
+        else:
+            group.add_argument(
+                flag,
+                dest=key,
                 default=None,
                 help=f"Override solver_config.{key}",
             )
@@ -90,6 +98,8 @@ def _coerce_solver_config_value(key: str, value: Any) -> Any:
         return int(value)
     if value_type == "number":
         return float(value)
+    if value_type == "string":
+        return str(value)
     if isinstance(value, str):
         try:
             return json.loads(value)

@@ -87,6 +87,17 @@ def test_score_solution_scores_hco3_when_solver_objective_includes_it() -> None:
     assert score["composite_score"] == 25.0
 
 
+def test_boolean_solver_configs_include_requested_nitrogen_modes() -> None:
+    configs = solver_matrix.boolean_solver_configs(["n_total_only", "n_forms_only"])
+
+    assert len(configs) == 128
+    assert {config.values["nitrogen_objective_mode"] for config in configs} == {
+        "n_total_only",
+        "n_forms_only",
+    }
+    assert all(config.name.startswith("n_mode=") for config in configs)
+
+
 def test_solver_matrix_quick_smoke(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     exit_code = solver_matrix.main(
         [

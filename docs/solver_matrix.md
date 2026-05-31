@@ -25,13 +25,19 @@ The default case file uses:
 - Liters: `10.0`
 - Fertilizers:
   - `Compo Fetrilon Combi 1`
+  - `Compo Hakaphos Soft16-8-22(+3) Spezial`
+  - `Compo Hakaphos Blau 15-10-15(+2)`
   - `Yara Magnitra-L Magnesiumnitrat`
   - `Yara Tera CALCINIT`
   - `HAIFA monokaliumphosphat MKP`
+  - `K+S EPSO Top Bittersalz 16-39`
   - `YaraTera KRISTALON ROT CALCIUM`
   - `Agrolution Special 313 14-7-14+14CaO+TE`
   - `S3 Kaliwasser 28 Be`
   - `Peters Professional Combi Sol 6-18-36+3MgO+TE`
+- Nitrogen objective modes:
+  - `n_total_only`
+  - `n_forms_only`
 
 The matrix loads all shipped nutrient solution profiles from
 `data/nutrient_solutions/*.yml` and also includes the custom profile
@@ -40,6 +46,25 @@ The matrix loads all shipped nutrient solution profiles from
 Fertilizer names must match exactly after Horticalc loads them. The script
 intentionally rejects surrounding whitespace and prints a hint if a name looks
 close to an existing fertilizer.
+
+## Nitrogen Objective Modes
+
+Nitrogen mode is solver behavior, not benchmark-only filtering. The matrix
+passes `solver_config.nitrogen_objective_mode` into `solve_recipe_data()`, and
+then scores exactly the objectives returned by the solver.
+
+Available modes:
+
+- `as_targets`: legacy/default solver behavior. Use every non-zero target key,
+  including `N_total` and any non-zero N forms that appear together.
+- `n_total_only`: make `N_total` the boss. Exclude `N_NH4`, `N_NO3`, and
+  `N_UREA` from solver objectives.
+- `n_forms_only`: solve individual N forms. Exclude `N_total`, and include
+  `N_NH4`, `N_NO3`, and `N_UREA` as objectives when they exist in the target
+  profile, even when a form target is `0`.
+
+The default case file intentionally runs `n_total_only` and `n_forms_only` so
+deep runs compare those two philosophies directly.
 
 ## Presets
 
@@ -55,7 +80,7 @@ Behavior:
 
 - Uses the full fertilizer list as one subset.
 - Runs the full boolean solver toggle grid.
-- With the default case file, this is usually `10 profiles * 1 subset * 64 configs = 640 runs`.
+- With the default case file, this is usually `10 profiles * 1 subset * 64 boolean configs * 2 N modes = 1280 runs`.
 - Writes results to `logs/solver_matrix/dev` unless `--out-dir` is provided.
 
 ### matrix
@@ -68,10 +93,10 @@ python scripts\solver_matrix.py --preset matrix --out-dir logs\solver_matrix\mat
 
 Behavior:
 
-- Tests every non-empty subset of the 8 allowed fertilizers.
-- That is `2^8 - 1 = 255` fertilizer subsets.
+- Tests every non-empty subset of the 11 allowed fertilizers.
+- That is `2^11 - 1 = 2047` fertilizer subsets.
 - Runs the full boolean solver toggle grid for each subset.
-- With the default case file, this is usually `10 profiles * 255 subsets * 64 configs = 163200 runs`.
+- With the default case file, this is usually `10 profiles * 2047 subsets * 64 boolean configs * 2 N modes = 2620160 runs`.
 - This is the main "with X, without Y/Z/A, with B" mode.
 
 ### deep
@@ -143,6 +168,18 @@ Run a reproducible deep pass:
 python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --out-dir logs\solver_matrix\deep_1337
 ```
 
+Run only one nitrogen mode:
+
+```powershell
+python scripts\solver_matrix.py --preset deep --nitrogen-modes n_total_only --seed 1337 --top-n 20
+```
+
+Run the legacy mixed target behavior explicitly:
+
+```powershell
+python scripts\solver_matrix.py --preset quick --nitrogen-modes as_targets
+```
+
 Run a small smoke pass for development:
 
 ```powershell
@@ -187,6 +224,7 @@ Important columns:
 - `profile_name`: human-readable profile name.
 - `preset`: `quick`, `matrix`, or `deep`.
 - `phase`: `base` for boolean grid runs, `refine` for deep numeric mutations.
+- `nitrogen_objective_mode`: solver N-objective mode used for this row.
 - `subset_size`: number of allowed fertilizers in this run.
 - `fertilizers_allowed`: JSON list of fertilizer names used by this run.
 - `config_name`: readable summary of changed solver toggles.

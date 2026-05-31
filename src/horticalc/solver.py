@@ -24,6 +24,8 @@ from .paths import resolve_water_profile_path
 
 
 IGNORED_TARGETS = {"S", "SO4", "NA", "CL"}
+N_FORM_KEYS = {"N_NH4", "N_NO3", "N_UREA"}
+NITROGEN_OBJECTIVE_MODES = {"as_targets", "n_total_only", "n_forms_only"}
 
 
 @dataclass
@@ -85,18 +87,31 @@ def _normalize_targets(targets: Dict[str, float]) -> Dict[str, float]:
     return cleaned
 
 
-def _objective_keys(targets: Dict[str, float], *, allow_n_total_with_forms: bool = True) -> List[str]:
+def _objective_keys(
+    targets: Dict[str, float],
+    *,
+    allow_n_total_with_forms: bool = True,
+    nitrogen_objective_mode: str = "as_targets",
+) -> List[str]:
+    if nitrogen_objective_mode not in NITROGEN_OBJECTIVE_MODES:
+        allowed = ", ".join(sorted(NITROGEN_OBJECTIVE_MODES))
+        raise ValueError(f"Unknown nitrogen_objective_mode: {nitrogen_objective_mode!r}; expected one of {allowed}")
     keys = []
     for key, val in targets.items():
-        if val == 0:
+        include_zero_n_form = nitrogen_objective_mode == "n_forms_only" and key in N_FORM_KEYS
+        if val == 0 and not include_zero_n_form:
             continue
         if key.upper() in IGNORED_TARGETS:
             continue
         keys.append(key)
+    if nitrogen_objective_mode == "n_total_only":
+        return [key for key in keys if key not in N_FORM_KEYS]
+    if nitrogen_objective_mode == "n_forms_only":
+        return [key for key in keys if key != "N_total"]
     if (
         not allow_n_total_with_forms
         and "N_total" in keys
-        and any(k in keys for k in ("N_NH4", "N_NO3", "N_UREA"))
+        and any(k in keys for k in N_FORM_KEYS)
     ):
         keys = [key for key in keys if key != "N_total"]
     return keys
@@ -550,6 +565,7 @@ def solve_recipe_data(
     stage_regression_mg_l = float(solver_config.get("stage_regression_mg_l", 2.0))
     macro_priority_enabled = bool(solver_config.get("macro_priority_enabled", True))
     macro_regress_pp = float(solver_config.get("macro_regress_pp", 0.25))
+    nitrogen_objective_mode = str(solver_config.get("nitrogen_objective_mode", "as_targets"))
     n_total_governor_enabled = bool(solver_config.get("n_total_governor_enabled", False))
     n_total_governor_weight = float(solver_config.get("n_total_governor_weight", 1.0))
     n_form_priority_weights = solver_config.get("n_form_priority_weights") or {}
@@ -576,7 +592,11 @@ def solve_recipe_data(
         raise ValueError("priority_groups and priority_group_weights must have the same length")
     if not macro_priority_enabled:
         priority_groups = []
-    objective_keys = _objective_keys(target_raw, allow_n_total_with_forms=True)
+    objective_keys = _objective_keys(
+        target_raw,
+        allow_n_total_with_forms=True,
+        nitrogen_objective_mode=nitrogen_objective_mode,
+    )
     if not objective_keys:
         raise ValueError("No solvable targets defined (S/SO4/Na/Cl are ignored).")
 

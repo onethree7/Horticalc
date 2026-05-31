@@ -288,6 +288,40 @@ def fertilizer_subsets(allowed: list[str], preset: str) -> list[tuple[str, ...]]
     return subsets
 
 
+def sample_subsets_for_cap(
+    subsets: list[tuple[str, ...]],
+    limit: int,
+    *,
+    seed: int | None = None,
+) -> list[tuple[str, ...]]:
+    if limit >= len(subsets):
+        return subsets
+    if limit <= 0:
+        raise ValueError("subset sample limit must be positive")
+    if limit == 1:
+        return [subsets[-1]]
+
+    if seed is not None:
+        rng = random.Random(seed)
+        full_subset = subsets[-1]
+        indexed = list(enumerate(subsets[:-1]))
+        sampled = rng.sample(indexed, k=limit - 1)
+        sampled.append((len(subsets) - 1, full_subset))
+        return [subset for _, subset in sorted(sampled, key=lambda item: item[0])]
+
+    last_index = len(subsets) - 1
+    positions = {
+        round(index * last_index / (limit - 1))
+        for index in range(limit)
+    }
+    while len(positions) < limit:
+        for index in range(last_index + 1):
+            positions.add(index)
+            if len(positions) == limit:
+                break
+    return [subsets[index] for index in sorted(positions)]
+
+
 def nitrogen_objective_modes(cases: dict[str, Any], override: str | None) -> list[str]:
     raw_modes: Any
     if override:
@@ -363,6 +397,17 @@ def deep_refinement_configs(base: SolverConfigCase) -> list[SolverConfigCase]:
     combo.update({"overshoot_penalty": 3.0, "scale_eps_mg_per_l": 0.1, "irls_max_outer_iter": 8})
     variants.append(SolverConfigCase(name=f"{base.name};tight_weighting_combo", values=combo))
     return variants
+
+
+def base_run_budget(args: argparse.Namespace, profiles: list[TargetProfile], configs: list[SolverConfigCase]) -> int | None:
+    if args.max_runs is None or args.max_runs <= 0:
+        return None
+    if args.preset != "deep" or not configs:
+        return args.max_runs
+    refinement_variants = len(deep_refinement_configs(configs[0]))
+    max_refinement_rows = len(profiles) * args.top_n * refinement_variants
+    refinement_reserve = min(max_refinement_rows, args.max_runs // 10)
+    return max(1, args.max_runs - refinement_reserve)
 
 
 def _run_key(profile_id: str, subset: tuple[str, ...], config: SolverConfigCase) -> str:
@@ -596,6 +641,16 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
     configs = boolean_solver_configs(nitrogen_modes)
     if args.max_configs:
         configs = configs[: args.max_configs]
+    original_subset_count = len(subsets)
+    budget = base_run_budget(args, profiles, configs)
+    sampled_subsets = False
+    if budget is not None:
+        base_grid_runs = len(profiles) * len(subsets) * len(configs)
+        if base_grid_runs > budget:
+            subset_limit = max(1, budget // max(1, len(profiles) * len(configs)))
+            if subset_limit < len(subsets):
+                subsets = sample_subsets_for_cap(subsets, subset_limit, seed=args.seed)
+                sampled_subsets = True
 
     out_dir = args.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -702,6 +757,10 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
             "nitrogen_objective_modes": nitrogen_modes,
             "max_runs": args.max_runs,
             "stopped_early": stopped_early,
+            "sampled_subsets_for_cap": sampled_subsets,
+            "original_subset_count": original_subset_count,
+            "subset_count": len(subsets),
+            "base_run_budget": budget,
             "results_csv": str(results_csv),
             "results_jsonl": str(results_jsonl),
         }
@@ -746,6 +805,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Solver matrix complete: {summary['total_runs']} runs, {summary['failed_runs']} failures")
     if summary.get("stopped_early"):
         print(f"Stopped early at --max-runs {summary['max_runs']}")
+    if summary.get("sampled_subsets_for_cap"):
+        print(
+            "Sampled fertilizer subsets for --max-runs cap: "
+            f"{summary['subset_count']} of {summary['original_subset_count']}"
+        )
     print(f"Best profile rows: {best_count}")
     print(f"Results CSV: {summary['results_csv']}")
     print(f"Results JSONL: {summary['results_jsonl']}")

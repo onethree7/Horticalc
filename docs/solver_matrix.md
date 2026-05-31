@@ -23,7 +23,10 @@ decision record.
 Large local runs are capped by default. `--max-runs` defaults to `100000` so a
 normal `matrix` or `deep` command cannot accidentally start another multi-hour
 2.6M-row run. Use `--max-runs 0` only for an intentionally uncapped research
-run.
+run. When the full base grid is larger than the cap, the runner samples
+fertilizer subsets deterministically across the subset space instead of simply
+stopping after the first rows. This keeps capped runs useful across all selected
+profiles and solver configs.
 
 ## Default Scenario
 
@@ -117,6 +120,9 @@ Behavior:
 - Runs the full boolean solver toggle grid for each subset.
 - With the default case file, the uncapped full grid is `10 profiles * 2047 subsets * 64 boolean configs * 2 N modes = 2620160 runs`.
 - By default, the CLI stops at `100000` attempted rows.
+- If the cap is smaller than the full base grid, fertilizer subsets are sampled
+  across the full subset list so the run is not biased toward the first profile
+  or first subset sizes.
 - This is the main "with X, without Y/Z/A, with B" mode.
 
 ### deep
@@ -134,6 +140,8 @@ Behavior:
 - Adds numeric mutations around those winners.
 - Uses `--seed` to make refinement ordering reproducible.
 - Stops at `--max-runs` rows. The default cap is `100000`.
+- Reserves a small part of the cap for refinement when possible, then samples
+  the base subset grid to fit the remaining budget.
 
 The deep refinement mutates numeric solver settings such as:
 
@@ -304,6 +312,8 @@ Important sections:
 - `results_jsonl`: path to the JSONL file.
 - `max_runs`: active row cap (`0` means intentionally uncapped).
 - `stopped_early`: whether the cap stopped the run before the full preset was exhausted.
+- `sampled_subsets_for_cap`: whether the base subset list was sampled to fit
+  the cap.
 
 Quickly inspect the top global configs:
 

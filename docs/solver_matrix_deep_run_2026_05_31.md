@@ -219,6 +219,8 @@ Do not delete everything at once. The industry-grade path is staged:
 
 After merging or testing the PR branch with the data-backed defaults, run a
 capped pass. Do not repeat the 2.6M-row run unless there is a deliberate reason.
+The capped runner samples fertilizer subsets across the search space instead of
+just stopping after the first rows.
 
 ```powershell
 python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --max-runs 100000 --out-dir logs\solver_matrix\after_n_total_default

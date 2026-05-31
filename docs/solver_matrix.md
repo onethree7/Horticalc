@@ -253,14 +253,20 @@ python -c "import json; s=json.load(open('logs/solver_matrix/dev/summary.json', 
 
 The matrix is a quality benchmark first, not a speed benchmark.
 
+The benchmark follows the solver 1:1. It does not independently decide which
+target keys are optimized. `composite_score`, `macro_score`, `n_form_score`,
+`micro_score`, and `other_score` only include keys returned by
+`result.objective_elements` from the solver. Any target key not present in
+`result.objective_elements` is report-only and goes to `ignored_targets`.
+
 For non-zero targets, the element score is absolute percent error:
 
 ```text
 abs((achieved - target) / target * 100)
 ```
 
-For zero targets, percent error would be meaningless, so the matrix uses an
-absolute tolerance:
+If the solver includes a zero target in `objective_elements`, percent error
+would be meaningless, so the matrix uses an absolute tolerance:
 
 ```text
 abs(achieved - target) / tolerance * 100
@@ -278,8 +284,8 @@ Element groups:
 - Macro: `N_total`, `P`, `K`, `Ca`, `Mg`, `Si`
 - N forms: `N_NH4`, `N_NO3`, `N_UREA`
 - Micro: `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`
-- Ignored/report-only: `S`, `SO4`, `Na`, `Cl`
-- Other: everything else, currently including `HCO3`
+- Ignored/report-only: any target not returned by the solver as an objective
+- Other: everything else
 
 Group scores are RMS values. The main score is:
 
@@ -297,15 +303,11 @@ Ignored/report-only targets are written to `ignored_score` and
 
 ## Important Interpretation Notes
 
-`S`, `SO4`, `Na`, and `Cl` are currently ignored as solver optimization
-targets by `src/horticalc/solver.py`. The matrix reports them, but it does not
-punish solver configs for them in the composite score.
-
-`HCO3` is not currently in that ignored set. With water profile `65936`, a
-target of `HCO3: 0` can create a large `other_score`, because the water itself
-contributes bicarbonate. If the goal is to treat alkalinity as report-only too,
-move `HCO3` into the report-only category in the matrix scoring rules or update
-the solver policy deliberately.
+The current solver skips zero-valued targets and ignores `S`, `SO4`, `Na`, and
+`Cl` as optimization objectives. The matrix mirrors that behavior because it
+uses `result.objective_elements` as the source of truth. For example, `HCO3: 0`
+is report-only today because the solver skips zero targets; if the solver later
+optimizes non-zero `HCO3`, the matrix will score it automatically.
 
 The `quick` preset cannot calculate fertilizer omission impact, because every
 run uses all allowed fertilizers. Use `matrix` or `deep` to populate meaningful

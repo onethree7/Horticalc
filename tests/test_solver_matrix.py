@@ -34,30 +34,57 @@ def test_resolve_allowed_fertilizers_rejects_whitespace_with_hint() -> None:
     assert "'Compo Fetrilon Combi 1'" in message
 
 
-def test_score_solution_handles_zero_targets_and_ignored_targets() -> None:
+def test_score_solution_follows_solver_objective_elements() -> None:
     targets = {
         "K": 0.0,
         "Fe": 1.0,
         "S": 100.0,
+        "HCO3": 0.0,
     }
     achieved = {
         "K": 2.0,
         "Fe": 1.1,
         "S": 1000.0,
+        "HCO3": 100.0,
     }
 
-    score = solver_matrix.score_solution(targets, achieved, objective_elements=["K", "Fe"])
+    score = solver_matrix.score_solution(targets, achieved, objective_elements=["Fe"])
     same_without_ignored_overshoot = solver_matrix.score_solution(
         targets,
-        {**achieved, "S": 100.0},
-        objective_elements=["K", "Fe"],
+        {**achieved, "K": 0.0, "S": 100.0, "HCO3": 0.0},
+        objective_elements=["Fe"],
     )
 
-    assert score["elements"]["K"]["error_percent"] is None
-    assert score["elements"]["K"]["score"] == 100.0
+    assert score["elements"]["K"]["category"] == "ignored"
     assert score["elements"]["S"]["category"] == "ignored"
+    assert score["elements"]["HCO3"]["category"] == "ignored"
     assert score["ignored_score"] > same_without_ignored_overshoot["ignored_score"]
     assert score["composite_score"] == same_without_ignored_overshoot["composite_score"]
+
+
+def test_score_solution_scores_zero_target_when_solver_objective_includes_it() -> None:
+    score = solver_matrix.score_solution(
+        {"K": 0.0},
+        {"K": 2.0},
+        objective_elements=["K"],
+    )
+
+    assert score["elements"]["K"]["category"] == "macro"
+    assert score["elements"]["K"]["error_percent"] is None
+    assert score["elements"]["K"]["score"] == 100.0
+    assert score["composite_score"] == 300.0
+
+
+def test_score_solution_scores_hco3_when_solver_objective_includes_it() -> None:
+    score = solver_matrix.score_solution(
+        {"HCO3": 10.0},
+        {"HCO3": 15.0},
+        objective_elements=["HCO3"],
+    )
+
+    assert score["elements"]["HCO3"]["category"] == "other"
+    assert score["elements"]["HCO3"]["score"] == 50.0
+    assert score["composite_score"] == 25.0
 
 
 def test_solver_matrix_quick_smoke(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

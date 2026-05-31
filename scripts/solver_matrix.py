@@ -161,7 +161,7 @@ def score_solution(
         target = float(target)
         achieved = float(achieved_mg_per_l.get(key, 0.0))
         abs_error = achieved - target
-        category = _target_category(key)
+        category = _target_category(key) if key in objective_set else "ignored"
         if target == 0.0:
             percent_error = None
             normalized_score = abs(abs_error) / _zero_target_tolerance(key) * 100.0

@@ -35,6 +35,7 @@ from horticalc.paths import (
     ensure_portable_layout,
 )
 from horticalc.solver import solve_recipe_data
+from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS
 
 
 app = FastAPI(title="Horticalc API", version="0.1.0")
@@ -254,6 +255,11 @@ def health() -> dict:
 @app.get("/schema/fertilizer-comp-keys")
 def fertilizer_comp_keys() -> dict:
     return {"keys": COMP_COLS}
+
+
+@app.get("/schema/solver-config")
+def solver_config_schema() -> dict:
+    return {"definitions": list(SOLVER_CONFIG_DEFINITIONS)}
 
 
 @app.get("/fertilizers")

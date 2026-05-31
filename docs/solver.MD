@@ -237,6 +237,10 @@ This enables reliable regression testing and golden-file comparisons.
 
 Recipes may supply `solver_config` to tune behavior. The GUI writes the same keys into recipe payloads, and the CLI can optionally override them for a single run.
 
+The GUI must not maintain its own independent default table. It loads solver
+config definitions from the backend schema so the frontend defaults track
+`src/horticalc/solver_config.py`.
+
 Typical toggles:
 
 - `relative_weighting`: enable relative scaling (default on)

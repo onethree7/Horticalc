@@ -28,12 +28,37 @@ def test_objective_includes_n_total_with_forms() -> None:
         "liters": 1.0,
         "targets": {"N_total": 10.0, "N_NO3": 10.0},
         "fertilizers_allowed": ["NO3-only"],
-        "solver_config": {"relative_weighting": True, "n_total_governor_enabled": False},
+        "solver_config": {
+            "relative_weighting": True,
+            "nitrogen_objective_mode": "as_targets",
+            "n_total_governor_enabled": False,
+        },
     }
 
     result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
 
     assert "N_total" in result.objective_elements
+    assert "N_NO3" in result.objective_elements
+
+
+def test_default_nitrogen_objective_mode_is_n_total_only() -> None:
+    molar_masses = load_molar_masses()
+    ferts = {
+        "NO3-only": Fertilizer(name="NO3-only", form="solid", weight_factor=1.0, comp={"NO3": 1.0}),
+    }
+    recipe = {
+        "liters": 1.0,
+        "targets": {"N_total": 10.0, "N_NO3": 10.0, "N_NH4": 0.0, "N_UREA": 0.0},
+        "fertilizers_allowed": ["NO3-only"],
+        "solver_config": {},
+    }
+
+    result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
+
+    assert "N_total" in result.objective_elements
+    assert "N_NO3" not in result.objective_elements
+    assert "N_NH4" not in result.objective_elements
+    assert "N_UREA" not in result.objective_elements
 
 
 def test_nitrogen_objective_mode_n_total_only_excludes_forms() -> None:

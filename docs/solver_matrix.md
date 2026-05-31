@@ -16,6 +16,18 @@ fertilizers matter most.
 - `logs/solver_matrix/...` receives generated output. This folder is ignored by git.
 - `tests/test_solver_matrix.py` covers the name validation, scoring rules, and CLI smoke path.
 
+See [Solver matrix deep run report 2026-05-31](solver_matrix_deep_run_2026_05_31.md)
+for the first large-run interpretation and the resulting solver-default
+decision record.
+
+Large local runs are capped by default. `--max-runs` defaults to `100000` so a
+normal `matrix` or `deep` command cannot accidentally start another multi-hour
+2.6M-row run. Use `--max-runs 0` only for an intentionally uncapped research
+run. When the full base grid is larger than the cap, the runner samples
+fertilizer subsets deterministically across the subset space instead of simply
+stopping after the first rows. This keeps capped runs useful across all selected
+profiles and solver configs.
+
 ## Default Scenario
 
 The default case file uses:
@@ -55,9 +67,9 @@ then scores exactly the objectives returned by the solver.
 
 Available modes:
 
-- `as_targets`: legacy/default solver behavior. Use every non-zero target key,
+- `as_targets`: legacy solver behavior. Use every non-zero target key,
   including `N_total` and any non-zero N forms that appear together.
-- `n_total_only`: make `N_total` the boss. Exclude `N_NH4`, `N_NO3`, and
+- `n_total_only`: current default solver behavior. Make `N_total` the boss. Exclude `N_NH4`, `N_NO3`, and
   `N_UREA` from solver objectives.
 - `n_forms_only`: solve individual N forms. Exclude `N_total`, and include
   `N_NH4`, `N_NO3`, and `N_UREA` as objectives when they exist in the target
@@ -65,6 +77,16 @@ Available modes:
 
 The default case file intentionally runs `n_total_only` and `n_forms_only` so
 deep runs compare those two philosophies directly.
+
+The current solver defaults are intentionally simple and data-backed:
+
+- `nitrogen_objective_mode: n_total_only`
+- `relative_weighting: true`
+- `macro_priority_enabled: false`
+- `stage_optimization_enabled: false`
+- `singleton_supplier_enabled: true`
+- `singleton_underfill_enabled: true`
+- `n_total_governor_enabled: false`
 
 ## Presets
 
@@ -88,7 +110,7 @@ Behavior:
 Use this when you want to test all fertilizer inclusion/exclusion combinations.
 
 ```powershell
-python scripts\solver_matrix.py --preset matrix --out-dir logs\solver_matrix\matrix_001
+python scripts\solver_matrix.py --preset matrix --max-runs 100000 --out-dir logs\solver_matrix\matrix_001
 ```
 
 Behavior:
@@ -96,7 +118,11 @@ Behavior:
 - Tests every non-empty subset of the 11 allowed fertilizers.
 - That is `2^11 - 1 = 2047` fertilizer subsets.
 - Runs the full boolean solver toggle grid for each subset.
-- With the default case file, this is usually `10 profiles * 2047 subsets * 64 boolean configs * 2 N modes = 2620160 runs`.
+- With the default case file, the uncapped full grid is `10 profiles * 2047 subsets * 64 boolean configs * 2 N modes = 2620160 runs`.
+- By default, the CLI stops at `100000` attempted rows.
+- If the cap is smaller than the full base grid, fertilizer subsets are sampled
+  across the full subset list so the run is not biased toward the first profile
+  or first subset sizes.
 - This is the main "with X, without Y/Z/A, with B" mode.
 
 ### deep
@@ -104,7 +130,7 @@ Behavior:
 Use this for the biggest solver exploration pass.
 
 ```powershell
-python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --out-dir logs\solver_matrix\deep_001
+python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --max-runs 100000 --out-dir logs\solver_matrix\deep_001
 ```
 
 Behavior:
@@ -113,6 +139,9 @@ Behavior:
 - Keeps the best `--top-n` base rows per profile.
 - Adds numeric mutations around those winners.
 - Uses `--seed` to make refinement ordering reproducible.
+- Stops at `--max-runs` rows. The default cap is `100000`.
+- Reserves a small part of the cap for refinement when possible, then samples
+  the base subset grid to fit the remaining budget.
 
 The deep refinement mutates numeric solver settings such as:
 
@@ -165,13 +194,13 @@ python scripts\solver_matrix.py --preset matrix --out-dir logs\solver_matrix\all
 Run a reproducible deep pass:
 
 ```powershell
-python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --out-dir logs\solver_matrix\deep_1337
+python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --max-runs 100000 --out-dir logs\solver_matrix\deep_1337
 ```
 
 Run only one nitrogen mode:
 
 ```powershell
-python scripts\solver_matrix.py --preset deep --nitrogen-modes n_total_only --seed 1337 --top-n 20
+python scripts\solver_matrix.py --preset deep --nitrogen-modes n_total_only --seed 1337 --top-n 20 --max-runs 100000
 ```
 
 Run the legacy mixed target behavior explicitly:
@@ -184,6 +213,13 @@ Run a small smoke pass for development:
 
 ```powershell
 python scripts\solver_matrix.py --preset quick --max-profiles 1 --max-configs 2 --out-dir logs\solver_matrix\smoke
+```
+
+Run an intentionally uncapped research pass only when you really want the
+multi-hour full grid:
+
+```powershell
+python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --max-runs 0 --out-dir logs\solver_matrix\uncapped_research
 ```
 
 Run a small subset smoke pass:
@@ -274,6 +310,10 @@ Important sections:
 - `profiles`: profile ids included in the run.
 - `results_csv`: path to the CSV file.
 - `results_jsonl`: path to the JSONL file.
+- `max_runs`: active row cap (`0` means intentionally uncapped).
+- `stopped_early`: whether the cap stopped the run before the full preset was exhausted.
+- `sampled_subsets_for_cap`: whether the base subset list was sampled to fit
+  the cap.
 
 Quickly inspect the top global configs:
 
@@ -285,6 +325,26 @@ Inspect best profile winners:
 
 ```powershell
 python -c "import json; s=json.load(open('logs/solver_matrix/dev/summary.json', encoding='utf-8')); print(*[(k, v['config_name'], v['composite_score']) for k, v in s['best_by_profile'].items()], sep='\n')"
+```
+
+## Analyze A Run
+
+Use the analysis helper after a capped or uncapped run:
+
+```powershell
+python scripts\solver_matrix_analyze.py logs\solver_matrix\deep_1337
+```
+
+It writes:
+
+- `analysis_summary.json`: structured aggregate data for follow-up tooling.
+- `analysis_report.md`: readable tables for mode comparison, feature effects,
+  best profile rows, fertilizer omission impact, and worst nutrient keys.
+
+Compare against an older run:
+
+```powershell
+python scripts\solver_matrix_analyze.py logs\solver_matrix\deep_1337 --baseline-dir "logs\solver_matrix\dev\old -hco3"
 ```
 
 ## Scoring
@@ -377,7 +437,7 @@ python scripts\solver_matrix.py --preset matrix --profiles saloner_bernstein_wit
 If one config family looks promising, run deep:
 
 ```powershell
-python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --profiles saloner_bernstein_with_si_7 --out-dir logs\solver_matrix\saloner_deep
+python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --profiles saloner_bernstein_with_si_7 --max-runs 100000 --out-dir logs\solver_matrix\saloner_deep
 ```
 
 Then compare `best_by_profile` between output folders.

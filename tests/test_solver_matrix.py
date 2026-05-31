@@ -98,6 +98,30 @@ def test_boolean_solver_configs_include_requested_nitrogen_modes() -> None:
     assert all(config.name.startswith("n_mode=") for config in configs)
 
 
+def test_boolean_solver_configs_start_with_current_simple_default() -> None:
+    first = solver_matrix.boolean_solver_configs(["n_total_only"])[0]
+
+    assert first.values == {
+        "relative_weighting": True,
+        "macro_priority_enabled": False,
+        "stage_optimization_enabled": False,
+        "singleton_supplier_enabled": True,
+        "singleton_underfill_enabled": True,
+        "n_total_governor_enabled": False,
+        "nitrogen_objective_mode": "n_total_only",
+    }
+    assert first.name == "n_mode=n_total_only"
+
+
+def test_sample_subsets_for_cap_keeps_full_subset() -> None:
+    subsets = solver_matrix.fertilizer_subsets(["A", "B", "C", "D"], "matrix")
+
+    sampled = solver_matrix.sample_subsets_for_cap(subsets, 4)
+
+    assert len(sampled) == 4
+    assert sampled[-1] == ("A", "B", "C", "D")
+
+
 def test_solver_matrix_quick_smoke(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     exit_code = solver_matrix.main(
         [
@@ -126,3 +150,56 @@ def test_solver_matrix_quick_smoke(tmp_path: Path, capsys: pytest.CaptureFixture
     assert summary["total_runs"] == 2
     assert summary["failed_runs"] == 0
     assert "Hoagland_Arnon_1950_Solution1_Nitrate" in summary["best_by_profile"]
+
+
+def test_solver_matrix_max_runs_stops_early(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = solver_matrix.main(
+        [
+            "--preset",
+            "quick",
+            "--profiles",
+            "Hoagland_Arnon_1950_Solution1_Nitrate",
+            "--max-runs",
+            "1",
+            "--out-dir",
+            str(tmp_path),
+        ]
+    )
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "Stopped early at --max-runs 1" in output
+
+    summary = json.loads((tmp_path / "summary.json").read_text(encoding="utf-8"))
+    assert summary["total_runs"] == 1
+    assert summary["stopped_early"] is True
+
+
+def test_solver_matrix_cap_samples_subsets_across_profiles(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = solver_matrix.main(
+        [
+            "--preset",
+            "matrix",
+            "--profiles",
+            "Hoagland_Arnon_1950_Solution1_Nitrate,Knop_1861_Standard",
+            "--max-configs",
+            "1",
+            "--max-runs",
+            "2",
+            "--out-dir",
+            str(tmp_path),
+        ]
+    )
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "Sampled fertilizer subsets for --max-runs cap" in output
+
+    summary = json.loads((tmp_path / "summary.json").read_text(encoding="utf-8"))
+    assert summary["total_runs"] == 2
+    assert summary["stopped_early"] is False
+    assert summary["sampled_subsets_for_cap"] is True
+    assert set(summary["best_by_profile"]) == {
+        "Hoagland_Arnon_1950_Solution1_Nitrate",
+        "Knop_1861_Standard",
+    }

@@ -38,6 +38,22 @@ Current behavior:
   - N forms contribute to `N_total` and the specific form key (`N_NO3`, `N_NH4`, `N_UREA`)
 - `weight_factor` scales a fertilizer’s effective contribution to match real dosing behavior (e.g., liquids with density / label basis differences). The solver uses the same scaling as the core “ground truth” compute path.
 
+## Nitrogen objective modes
+
+The solver supports three nitrogen objective modes through
+`solver_config.nitrogen_objective_mode`:
+
+- `as_targets`: legacy/default behavior. Use every non-zero target key, including
+  `N_total` and any non-zero N forms that appear together.
+- `n_total_only`: make `N_total` the single nitrogen objective. Exclude
+  `N_NO3`, `N_NH4`, and `N_UREA` from the objective.
+- `n_forms_only`: solve individual N forms. Exclude `N_total`, and include
+  `N_NO3`, `N_NH4`, and `N_UREA` as objectives when they are present in the
+  target profile, even if a form target is `0`.
+
+The benchmark matrix uses this same solver setting. It does not emulate N-mode
+behavior by changing targets on its own.
+
 ## Ignored targets
 
 Some targets are excluded from the optimization objective (but still computed and reported in the output):
@@ -46,7 +62,7 @@ Some targets are excluded from the optimization objective (but still computed an
 
 Rationale: these are frequently “forced” by the fertilizer set (especially sulfate) and are better treated as a reporting dimension or a later constraint layer rather than a hard fit objective.
 
-Additionally, if `N_total` is present together with any of `N_NO3`, `N_NH4`, or `N_UREA`, `N_total` is excluded from the fit to avoid double counting nitrogen.
+Nitrogen objective handling is controlled separately by `nitrogen_objective_mode`.
 
 ## Linear model (A-matrix)
 
@@ -239,6 +255,7 @@ Typical toggles:
   - `priority_groups`, `priority_group_weights`
   - `macro_regress_pp`
 - N-governor + N-form priority (optional):
+  - `nitrogen_objective_mode` (`as_targets`, `n_total_only`, or `n_forms_only`)
   - `n_total_governor_enabled` (keep `N_total` in the objective and penalize only overshoot)
   - `n_total_governor_weight` (overshoot-only weight multiplier for `N_total`)
   - `n_form_priority_weights` (per-form multipliers like `{"N_NO3": 3.0, "N_UREA": 2.0, "N_NH4": 1.0}`)
@@ -248,6 +265,7 @@ CLI overrides:
 - Use explicit switches for GUI-exposed primitives, e.g.:
   - `python -m horticalc solve recipes/solve_golden.yml --no-relative-weighting --overshoot-penalty 1.5`
   - `python -m horticalc solve recipes/solve_golden.yml --n-total-governor-enabled --n-total-governor-weight 0.05`
+  - `python -m horticalc solve recipes/solve_golden.yml --nitrogen-objective-mode n_forms_only`
 - Use `--solver-config KEY=VALUE` for advanced/structured keys, e.g.:
   - `python -m horticalc solve recipes/solve_golden.yml --solver-config n_form_priority_weights='{"N_NO3": 3.0}'`
 - Use `--solver-config-json '{"priority_groups":[["N_total"],["K"]],"priority_group_weights":[3.5,2.5]}'` to merge a JSON object into `solver_config`.

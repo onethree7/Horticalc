@@ -58,6 +58,7 @@ CSV_FIELDS = (
     "profile_name",
     "preset",
     "phase",
+    "nitrogen_objective_mode",
     "subset_size",
     "fertilizers_allowed",
     "config_name",
@@ -287,24 +288,42 @@ def fertilizer_subsets(allowed: list[str], preset: str) -> list[tuple[str, ...]]
     return subsets
 
 
-def boolean_solver_configs() -> list[SolverConfigCase]:
+def nitrogen_objective_modes(cases: dict[str, Any], override: str | None) -> list[str]:
+    raw_modes: Any
+    if override:
+        raw_modes = [mode.strip() for mode in override.split(",") if mode.strip()]
+    else:
+        raw_modes = cases.get("nitrogen_objective_modes") or ["as_targets"]
+    modes = [str(mode) for mode in raw_modes]
+    allowed = {"as_targets", "n_total_only", "n_forms_only"}
+    unknown = [mode for mode in modes if mode not in allowed]
+    if unknown:
+        raise ValueError(f"Unknown nitrogen objective mode(s): {', '.join(unknown)}")
+    if not modes:
+        raise ValueError("At least one nitrogen objective mode is required")
+    return modes
+
+
+def boolean_solver_configs(nitrogen_modes: list[str]) -> list[SolverConfigCase]:
     value_options = []
     for key in BOOLEAN_SOLVER_KEYS:
         default = BOOLEAN_DEFAULTS[key]
         value_options.append((default, not default))
 
     configs: list[SolverConfigCase] = []
-    for values in itertools.product(*value_options):
-        config = dict(zip(BOOLEAN_SOLVER_KEYS, values))
-        if config == BOOLEAN_DEFAULTS:
-            name = "default_booleans"
-        else:
-            name = ",".join(
+    for nitrogen_mode in nitrogen_modes:
+        for values in itertools.product(*value_options):
+            config = dict(zip(BOOLEAN_SOLVER_KEYS, values))
+            config["nitrogen_objective_mode"] = nitrogen_mode
+            changed_parts = [
                 f"{key}={str(value).lower()}"
                 for key, value in config.items()
-                if value != BOOLEAN_DEFAULTS[key]
-            )
-        configs.append(SolverConfigCase(name=name, values=config))
+                if key in BOOLEAN_DEFAULTS and value != BOOLEAN_DEFAULTS[key]
+            ]
+            name = f"n_mode={nitrogen_mode}"
+            if changed_parts:
+                name = f"{name}," + ",".join(changed_parts)
+            configs.append(SolverConfigCase(name=name, values=config))
     return configs
 
 
@@ -465,6 +484,7 @@ def solve_case(
         "profile_name": profile.name,
         "preset": preset,
         "phase": phase,
+        "nitrogen_objective_mode": str(config.values.get("nitrogen_objective_mode", "as_targets")),
         "subset_size": len(subset),
         "fertilizers_allowed": _json(list(subset)),
         "config_name": config.name,
@@ -572,7 +592,8 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
     if args.max_subsets:
         subsets = subsets[: args.max_subsets]
 
-    configs = boolean_solver_configs()
+    nitrogen_modes = nitrogen_objective_modes(cases, args.nitrogen_modes)
+    configs = boolean_solver_configs(nitrogen_modes)
     if args.max_configs:
         configs = configs[: args.max_configs]
 
@@ -662,6 +683,7 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
             "osmosis_percent": osmosis_percent,
             "liters": liters,
             "allowed_fertilizers": allowed_fertilizers,
+            "nitrogen_objective_modes": nitrogen_modes,
             "results_csv": str(results_csv),
             "results_jsonl": str(results_jsonl),
         }
@@ -680,6 +702,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--liters", type=float, default=None)
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--seed", type=int, default=None, help="Seed for reproducible deep refinement ordering.")
+    parser.add_argument(
+        "--nitrogen-modes",
+        default=None,
+        help="Comma-separated nitrogen objective modes: as_targets,n_total_only,n_forms_only.",
+    )
     parser.add_argument("--top-n", type=int, default=20, help="Top base rows per profile refined by deep preset.")
     parser.add_argument("--max-profiles", type=int, default=None, help="Limit profiles for smoke tests.")
     parser.add_argument("--max-subsets", type=int, default=None, help="Limit fertilizer subsets for smoke tests.")

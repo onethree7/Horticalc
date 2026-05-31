@@ -35,6 +35,8 @@ def test_solve_cli_passes_solver_config_overrides(monkeypatch, capsys, tmp_path)
             "--n-total-governor-enabled",
             "--n-total-governor-weight",
             "0.05",
+            "--nitrogen-objective-mode",
+            "n_forms_only",
             "--solver-config",
             "n_form_priority_weights={\"N_NO3\": 3.0}",
         ]
@@ -48,6 +50,7 @@ def test_solve_cli_passes_solver_config_overrides(monkeypatch, capsys, tmp_path)
         "overshoot_penalty": 1.5,
         "n_total_governor_enabled": True,
         "n_total_governor_weight": 0.05,
+        "nitrogen_objective_mode": "n_forms_only",
         "n_form_priority_weights": {"N_NO3": 3.0},
     }
 

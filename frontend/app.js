@@ -2277,9 +2277,6 @@ function applyRecipe(recipe) {
   if (recipe && recipe.liters !== undefined && recipe.liters !== null) {
     setCurrentLiters(recipe.liters, { scaleBatch: false, recalculate: false, invalidateSolver: false });
   }
-  if (recipe?.solver_config) {
-    applySolverConfig(recipe.solver_config);
-  }
   const fertilizers = Array.isArray(recipe.fertilizers) ? recipe.fertilizers : [];
   selectedFertilizers.length = 0;
   fertilizerAmounts.length = 0;
@@ -2455,7 +2452,6 @@ function buildRecipePayload(name, fertilizers, liters, ureaAsNh4, phosphateSpeci
     fertilizers_allowed: solverAllowedFertilizers,
     urea_as_nh4: ureaAsNh4,
     phosphate_species: phosphateSpecies,
-    solver_config: buildSolverConfigPayload(),
   };
   const waterProfileSelection = waterProfileSelect.value;
   if (waterProfileSelection) {
@@ -2491,7 +2487,6 @@ function buildSolutionSnapshot() {
     osmosis_percent: Number(osmosisPercentInput.value) || 0,
     water_unit: waterUnit,
     liters: currentLiters,
-    solver_config: buildSolverConfigPayload(),
     water_values: { ...waterValues },
     fertilizers,
   };
@@ -2596,7 +2591,6 @@ async function init() {
       recalculate: false,
       invalidateSolver: false,
     });
-    applySolverConfig(savedSolution.solver_config || {});
     osmosisPercentInput.value = Number(savedSolution.osmosis_percent) || 0;
     waterProfileSelect.value = savedSolution.water_profile_value || "";
     waterFieldDefinitions.forEach((field) => {

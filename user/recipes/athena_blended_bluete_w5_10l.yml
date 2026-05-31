@@ -1,0 +1,16 @@
+name: Athena Blended - Blüte W5 - 10L
+liters: 10.0
+water_profile: default
+phosphate_species: H2PO4
+urea_as_nh4: false
+fertilizers:
+- name: Athena Bloom A
+  grams: 26.0
+- name: Athena Bloom B
+  grams: 26.0
+- name: Athena PK
+  grams: 27.6
+- name: Athena CaMg
+  grams: 8.0
+- name: Athena Cleanse
+  grams: 5.0

@@ -1,68 +1,32 @@
-# GUI – Aktueller Stand der Web‑UI
+# GUI - Horticalc App Frame
 
-Dieses Dokument beschreibt die **aktuelle** GUI, wie sie im Ordner `frontend/` umgesetzt ist.
-Der Fokus liegt auf den vorhandenen Bereichen, Datenflüssen und UI‑Elementen.
+Dieses Dokument beschreibt die aktuelle Web-UI in `frontend/`. Die GUI ist eine statische Vanilla-JS-App und nutzt die bestehende FastAPI unveraendert.
 
-## 1) Kopfbereich: API‑Verbindung
+## App-Shell
 
-**Zweck:** Verbindung zur FastAPI konfigurieren und Daten neu laden.
+- Die linke Arbeitsleiste beginnt mit Horticalc-Logo und App-Titel, direkt darunter folgt das Systempanel mit API-Status, API Base URL und Daten laden.
+- Die vertikale Bereichsnavigation zeigt nur die vier echten App-Bereiche: DÜNGER-EDITOR, WASSERWERTE, RECHNER und SOLVER. Separate Buttons fuer Manuell, Ergebnis und Details sind entfernt.
+- Hauptarbeitsflaeche mit bestehenden Rechner-, Solver-, Wasser- und Editor-Panels in einem eigenen scrollbaren rechten Frame.
+- Linke Arbeitsleiste mit aktivem Bereich und Live-Ergebnis-Kacheln fuer NPK, EC18/EC25, Wasser-EC25, Wasser-EC18 und Ionenbilanz mit Summen.
+- Sehr schmale Viewports bleiben im sichtbaren Browserraum; die App erzwingt keine starre Mindestbreite.
+- Breite Ergebnis- und Ionen-Tabellen scrollen innerhalb ihres Moduls horizontal, statt die gesamte Seite seitlich aufzuziehen.
+- Das alte sichtbare Modus-Menue ist entfernt; interne Radio-Inputs bleiben versteckt, damit bestehende JS-Pfade stabil bleiben.
 
-**Inhalte:**
-- Eingabefeld **API Base URL** (`http://localhost:8000` als Default).
-- Button **„Dünger laden“** (lädt Dünger und Wasserprofile neu).
+## Workflow-Bereiche
 
-## 2) Wasserwerte (Profile + Eingabe)
+- **DÜNGER-EDITOR**: eigene Duenger laden, anlegen, suchen und Zeilen bearbeiten.
+- **WASSERWERTE**: Wasserprofile laden/speichern/resetten, Osmoseanteil setzen, mg/L oder mmol/L anzeigen und Helperwerte wie CO3, CaCO3, KH und S pflegen.
+- **RECHNER**: Rezeptprofile laden/speichern/resetten, Komponenten aus der Duengerliste waehlen, Zeilen hinzufuegen/entfernen, Gramm-Mengen bearbeiten und den bestehenden `/calculate`-Flow ausloesen. Ergebnis- und Detailtabellen bleiben innerhalb dieses Bereichs.
+- **SOLVER**: Zielwerte, Liter, Urea-as-NH4, Phosphat-Spezies, erlaubte Duenger und fixe Gramm verwalten. Dieser Weg ist in der Navigation farblich eigenstaendig hervorgehoben.
 
-**Zweck:** Wasserprofil laden/speichern und manuelle Werte pflegen.
+## Kompatibilitaet
 
-**Inhalte & Funktionen:**
-- Einklappbarer Bereich („Wasserwerte anzeigen“).
-- **Profile auswählen**, **Laden**, **Reset Default**.
-- **Profilname speichern** (Profil als YAML über API speichern).
-- **Osmoseanteil (%)** zur Verdünnung.
-- **Einheiten‑Toggle** (mg/L ↔ mmol/L Darstellung/Eingabe).
-- Tabelle **Parameter/Wert/Einheit** für alle Wasser‑Parameter (NH4, NO3, PO4, K, Ca,
-  Mg, Na, SO4, Spurenelemente, Cl, HCO3/CO3, CaCO3, KH, SiO2).
+- Backend-Vertraege bleiben unveraendert: `/calculate`, `/solve`, `/fertilizers`, `/recipes`, `/water-profiles`, `/nutrient-solutions`, `/molar-masses`.
+- Kritische IDs bleiben im DOM, unter anderem `calculatorMode`, `solverMode`, `fertilizerEditorMode`, `waterSection`, `profileSection`, `fertilizerSelectTableWrap`, `calculatorTableWrap`, `waterValuesTable`, `summaryViewToggle`, `waterSummaryTable`, `oxideSummaryTable`, `ionSummaryTable`, `ionMeqList`, `ionBalanceList`, `solverTargetsTable`, `solverAllowedFertilizers`, `solverFixedTable`, `solveBtn`, `copySolverResults`, `applySolverToCalculator` und `saveSolverAsRecipe`.
+- Neue stabile UI-Vertraege sind `data-shell-view`, `data-panel-anchor` und `data-testid`.
 
-## 3) Vorauswahl der Düngerkomponenten
+## Verifikation
 
-**Zweck:** Auswahl der Dünger aus der Datenbank.
-
-**Inhalte:**
-- Tabelle mit Spalten **#**, **Dünger (Dropdown)**, **Form**, **Gewicht**.
-- Buttons **+ / -** zum Hinzufügen/Entfernen von Zeilen.
-- Dropdowns greifen auf die geladene Dünger‑Datenbank zu.
-
-## 4) Düngercalculator
-
-**Zweck:** Eingabe der Gramm‑Mengen pro ausgewähltem Dünger und Start der Berechnung.
-
-**Inhalte:**
-- Tabelle mit **Düngername** (aus Auswahl) und **Menge (g)**.
-- Button **„Berechnen“** ruft `/calculate` auf.
-
-**Ergebnis‑Karten:**
-- **NPK Gesamt (%)**
-- **NPK P‑Norm**
-- **NPK Verhältnis (%)**
-- **EC‑Werte** für Wasser sowie Wasser + Dünger (EC18/EC25)
-
-**Zusammenfassung:**
-- Tabelle **„Oxidformen & Ionen (ppm, mg/l)“** mit Spaltenpaaren
-  (Oxid‑Deklaration + Element), inkl. Spurenelemente sowie Na2O/Na, Cl, HCO3.
-
-## 5) Ionenbilanz
-
-**Zweck:** Sichtbarkeit der Ladungsbilanz.
-
-**Inhalte:**
-- Tabelle **Ionen (meq/L)** mit Einzelwerten.
-- Tabelle **Bilanz** mit Summen/Fehlern.
-
-## Datenfluss (kurz)
-
-1. Dünger & Wasserprofile werden von der API geladen.
-2. Nutzer wählt Dünger, trägt Mengen ein und pflegt Wasserwerte.
-3. GUI sendet `fertilizers`, `liters`, `water_profile_name` oder `water_mg_l`
-   an `/calculate`.
-4. Ergebnis‑JSON befüllt NPK‑Karten, EC‑Werte, Zusammenfassung und Ionenbilanz.
+- Standardtests: `python -m pytest -q`.
+- Whitespace-Check: `git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check`.
+- Browser-Check: App unter `http://127.0.0.1:8000/` oeffnen, Console Errors pruefen und Screenshots fuer RECHNER, WASSERWERTE, SOLVER und DÜNGER-EDITOR aufnehmen.

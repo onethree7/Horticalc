@@ -1,0 +1,14 @@
+name: Athena Blended - Vegetation/Mutterpflanzen - 10L
+liters: 10.0
+water_profile: default
+phosphate_species: H2PO4
+urea_as_nh4: false
+fertilizers:
+- name: Athena Grow A
+  grams: 29.0
+- name: Athena Grow B
+  grams: 29.0
+- name: Athena CaMg
+  grams: 8.0
+- name: Athena Cleanse
+  grams: 5.0

@@ -72,6 +72,15 @@ const fertEditorAddRowButton = document.querySelector("#fertEditorAddRow");
 const fertEditorDeleteRowButton = document.querySelector("#fertEditorDeleteRow");
 const fertEditorLoadButton = document.querySelector("#fertEditorLoad");
 const fertEditorSaveButton = document.querySelector("#fertEditorSave");
+const activeShellLabel = document.querySelector("#activeShellLabel");
+const apiStatus = document.querySelector("#apiStatus");
+const liveNpk = document.querySelector("#liveNpk");
+const liveEc25 = document.querySelector("#liveEc25");
+const liveEc18 = document.querySelector("#liveEc18");
+const liveWaterEc25 = document.querySelector("#liveWaterEc25");
+const liveWaterEc18 = document.querySelector("#liveWaterEc18");
+const liveBalance = document.querySelector("#liveBalance");
+const liveLastCalc = document.querySelector("#liveLastCalc");
 
 const CALC_LITERS = 10.0;
 
@@ -99,6 +108,30 @@ let fertilizerEditorCompKeys = [];
 let summaryView = "ion";
 let ionNitrogenExpanded = false;
 let fertilizerEditorPreferredKeys = [];
+let activeShellView = "fertilizers";
+
+const shellViewConfigs = {
+  fertilizers: {
+    mode: "calculator",
+    anchor: "fertilizers",
+    label: "RECHNER",
+  },
+  water: {
+    mode: "water",
+    anchor: "water",
+    label: "WASSERWERTE",
+  },
+  solver: {
+    mode: "solver",
+    anchor: "solver",
+    label: "SOLVER",
+  },
+  editor: {
+    mode: "fertilizers",
+    anchor: "editor",
+    label: "DÜNGER-EDITOR",
+  },
+};
 
 const solverTargetDefinitions = [
   { key: "N_total", label: "N_total" },
@@ -419,6 +452,135 @@ function setMode(mode) {
   }
 }
 
+function setApiStatus(message, state = "ready") {
+  if (!apiStatus) {
+    return;
+  }
+  apiStatus.textContent = message;
+  apiStatus.dataset.state = state;
+}
+
+function syncModeRadio(mode) {
+  modeToggleInputs.forEach((input) => {
+    input.checked = input.value === mode;
+  });
+  updateModeToggleUI();
+}
+
+function setActiveShellView(view) {
+  const config = shellViewConfigs[view] || shellViewConfigs.fertilizers;
+  activeShellView = view;
+  document.querySelectorAll("[data-shell-view]").forEach((button) => {
+    const isActive = button.dataset.shellView === view;
+    button.classList.toggle("is-active", isActive);
+    if (isActive) {
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.removeAttribute("aria-current");
+    }
+  });
+  if (activeShellLabel) {
+    activeShellLabel.textContent = config.label;
+  }
+}
+
+function scrollToPanelAnchor(anchor, shouldFocus = true) {
+  const target = document.querySelector(`[data-panel-anchor="${anchor}"]`);
+  if (!target) {
+    return;
+  }
+  const scroller = target.closest(".workspace");
+  if (scroller) {
+    const scrollerTop = scroller.getBoundingClientRect().top;
+    const targetTop = target.getBoundingClientRect().top;
+    const scrollTop = scroller.scrollTop + targetTop - scrollerTop - 12;
+    scroller.scrollTo({ top: Math.max(0, scrollTop), behavior: "smooth" });
+  } else {
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  if (shouldFocus) {
+    target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
+  }
+}
+
+function showShellView(view, options = {}) {
+  const config = shellViewConfigs[view] || shellViewConfigs.fertilizers;
+  const shouldScroll = options.scroll !== false;
+  syncModeRadio(config.mode);
+  setMode(config.mode);
+  setActiveShellView(view);
+  updateLiveResultBar();
+  if (shouldScroll) {
+    window.setTimeout(() => scrollToPanelAnchor(config.anchor), 0);
+  }
+}
+
+function bindShellNavigation() {
+  document.querySelectorAll("[data-shell-view]").forEach((button) => {
+    if (button.dataset.shellBound === "true") {
+      return;
+    }
+    button.dataset.shellBound = "true";
+    button.addEventListener("click", () => {
+      showShellView(button.dataset.shellView || "fertilizers");
+    });
+  });
+}
+
+function liveText(value, fallback = "-") {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+  return String(value);
+}
+
+function liveEcText(ecValues, key) {
+  const value = Number(ecValues?.[key]);
+  return Number.isFinite(value) ? formatNumber(value) : "-";
+}
+
+function liveBalanceText(balance) {
+  const cations = Number(balance?.cations_meq_per_l);
+  const anions = Number(balance?.anions_meq_per_l);
+  const errorAbs = Number(balance?.error_percent_abs);
+  const errorSigned = Number(balance?.error_percent_signed);
+  const errorValue = Number.isFinite(errorAbs) ? errorAbs : Math.abs(errorSigned);
+  const status = Number.isFinite(errorValue) && errorValue <= 5 ? "ok" : "prüfen";
+  if (Number.isFinite(cations) && Number.isFinite(anions)) {
+    const delta = Number.isFinite(errorSigned) ? ` Δ ${errorSigned.toFixed(1)}%` : "";
+    return `Σ+ ${formatNumber(cations)} Σ− ${formatNumber(anions)}${delta} ${status}`;
+  }
+  return status;
+}
+
+function updateLiveResultBar(data = lastCalculation) {
+  if (!liveNpk || !liveEc25 || !liveEc18 || !liveWaterEc25 || !liveWaterEc18 || !liveBalance || !liveLastCalc) {
+    return;
+  }
+  if (!data) {
+    liveNpk.textContent = "-";
+    liveEc25.textContent = "-";
+    liveEc18.textContent = "-";
+    liveWaterEc25.textContent = "-";
+    liveWaterEc18.textContent = "-";
+    liveBalance.textContent = "-";
+    liveLastCalc.textContent = "Noch keine Berechnung";
+    return;
+  }
+
+  const ecValues = data.ec?.ec_mS_per_cm || {};
+  const waterEcValues = data.ec_water?.ec_mS_per_cm || {};
+  const balance = data.ion_balance || {};
+  liveNpk.textContent = liveText(data.npk_metrics?.npk_all_pct);
+  liveEc25.textContent = liveEcText(ecValues, "25.0");
+  liveEc18.textContent = liveEcText(ecValues, "18.0");
+  liveWaterEc25.textContent = liveEcText(waterEcValues, "25.0");
+  liveWaterEc18.textContent = liveEcText(waterEcValues, "18.0");
+  liveBalance.textContent = liveBalanceText(balance);
+  liveLastCalc.textContent = `Aktualisiert ${new Date().toLocaleTimeString("de-DE")}`;
+}
+
 function updateModeToggleUI() {
   modeToggleInputs.forEach((input) => {
     const label = input.closest("label");
@@ -431,12 +593,12 @@ function updateModeToggleUI() {
 
 const profileConfigs = {
   calculator: {
-    title: "Düngerrezept",
-    hint: "Düngerrezept lokal speichern/laden. Zielprofile werden unter Zielprofil gespeichert.",
+    title: "Rezeptverwaltung",
+    hint: "Rezepte lokal speichern oder laden. Solver-Zielprofile bleiben im Solver.",
   },
   solver: {
     title: "Zielprofil",
-    hint: "Zielprofil lokal speichern/laden.",
+    hint: "Zielprofile lokal speichern oder laden.",
   },
 };
 
@@ -1212,6 +1374,11 @@ function renderWaterTable() {
     input.addEventListener("input", (event) => {
       const parsed = Number(event.target.value) || 0;
       waterValues[field.key] = waterUnit === "mol_l" ? molToMg(field.key, parsed) : parsed;
+      const updatedKeys = applyWaterHelpers(waterValues, getMolarMass);
+      updatedKeys
+        .filter((key) => key !== field.key)
+        .forEach((key) => updateWaterInputValue(key));
+      scheduleRecalculate();
     });
     input.addEventListener("keydown", (event) => {
       if (event.key !== "Enter") {
@@ -1281,6 +1448,7 @@ function formatNumber(value, formatter = numberFormatter) {
 
 function reportError(error, fallbackMessage = "Unbekannter Fehler") {
   const message = error?.message || fallbackMessage;
+  setApiStatus("Prüfen", "error");
   alert(message);
 }
 
@@ -1579,7 +1747,7 @@ function renderOxideSummaryTable(table, oxides) {
     table,
     headerLabels: (column) => column.oxideHeaderLabel,
     valueKey: (column) => column.oxide,
-    rowLabel: "Raw/Oxide",
+    rowLabel: "Oxidformen",
     valueMap: oxideMap,
     formatter: (column, value) => formatOxideValue(column.oxide, value),
   });
@@ -1963,6 +2131,8 @@ function renderCalculation(data) {
 
   const waterEc = data.ec_water || {};
   renderEcPair(waterEc.ec_mS_per_cm || {}, ecWater18Value, ecWater25Value);
+  updateLiveResultBar(data);
+  setApiStatus("API bereit", "ready");
 }
 
 function applyRecipe(recipe) {
@@ -2095,6 +2265,7 @@ function applyWaterProfile(profile) {
   waterProfileNameInput.value = profile.name || "";
   osmosisPercentInput.value = profile.osmosis_percent ?? 0;
   renderWaterTable();
+  scheduleRecalculate();
 }
 
 function addFertilizerRow() {
@@ -2208,6 +2379,7 @@ function restoreSolverAllowedFromStorage(context = solverAllowedContext) {
 
 async function init() {
   let hasStoredAllowed = false;
+  setApiStatus("Lade Daten", "loading");
   try {
     fertilizerEditorPreferredKeys = await fetchFertilizerCompKeys();
   } catch (error) {
@@ -2279,6 +2451,7 @@ async function init() {
     } catch (error) {
       reportError(error, "Berechnung fehlgeschlagen");
     }
+    setApiStatus("API bereit", "ready");
     return;
   }
 
@@ -2303,6 +2476,7 @@ async function init() {
     renderSolverAllowedOptions();
     renderSolverFixedTable();
   }
+  setApiStatus("API bereit", "ready");
 }
 
 reloadButton.addEventListener("click", init);
@@ -2534,7 +2708,7 @@ applySolverToCalculatorButton.addEventListener("click", async () => {
   if (calculatorInput) {
     calculatorInput.checked = true;
   }
-  setMode("calculator");
+  showShellView("fertilizers");
   scheduleRecalculate();
 });
 
@@ -2586,8 +2760,9 @@ ionNitrogenExpanded = lsGet(ION_NITROGEN_EXPANDED_KEY, false);
 setSummaryView(summaryView);
 
 initializeFertilizerTables();
+bindShellNavigation();
 updateCalculatorScaleDisplay();
 renderSolverTargetsTable();
-setMode("calculator");
+showShellView("fertilizers", { scroll: false });
 updateSolverResultActions();
 init();

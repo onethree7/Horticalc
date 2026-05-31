@@ -1,0 +1,11 @@
+fertilizers:
+- grams: 1.5
+  name: Calcinit
+fertilizers_allowed:
+- Calcinit
+- Hakaphos Rot
+liters: 10.0
+name: api_recipe_allowed_roundtrip
+osmosis_percent: 0
+phosphate_species: H2PO4
+urea_as_nh4: false

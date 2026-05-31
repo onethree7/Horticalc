@@ -1,0 +1,23 @@
+name: default
+source: Neutral default (all values zero)
+osmosis_percent: 0
+mg_per_l:
+  NH4: 0
+  NO3: 0
+  PO4: 0
+  P: 0
+  K: 0
+  Ca: 0
+  Mg: 0
+  Na: 0
+  SO4: 0
+  S: 0
+  Fe: 0
+  Mn: 0
+  Cu: 0
+  Zn: 0
+  B: 0
+  Mo: 0
+  Cl: 0
+  HCO3: 0
+  SiO2: 0

@@ -58,6 +58,17 @@ def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
     assert "<span>2a</span>" not in content
     assert "<span>2b</span>" not in content
     assert 'data-testid="rail-api-controls"' in content
+    assert 'data-testid="rail-config-controls"' in content
+    assert 'id="configLiters"' in content
+    assert 'id="configLitersStatus"' in content
+    assert 'id="osmosisPercent"' in content
+    assert 'id="waterUnitToggle"' in content
+    assert "Solver Advanced Config" in content
+    assert 'id="solverConfigResetDefaults"' in content
+    assert 'id="solverConfigRelativeWeighting"' in content
+    assert 'id="solverConfigNTotalGovernorEnabled"' in content
+    assert 'id="solverLiters"' not in content
+    assert 'id="applyScaleToCalcLiters"' not in content
     assert "API Base URL" not in content
     assert "Daten laden" not in content
     assert 'data-testid="active-view-status"' not in content
@@ -80,7 +91,8 @@ def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
     assert "live-metric" in content
     assert "summary-metrics" not in content
     assert content.index('data-testid="rail-brand"') < content.index('data-testid="rail-api-controls"')
-    assert content.index('data-testid="rail-api-controls"') < content.index('data-testid="workflow-guide"')
+    assert content.index('data-testid="rail-api-controls"') < content.index('data-testid="rail-config-controls"')
+    assert content.index('data-testid="rail-config-controls"') < content.index('data-testid="workflow-guide"')
     assert content.index('data-testid="workflow-guide"') < content.index('data-testid="workflow-nav"')
     assert content.index('data-testid="live-bar"') < content.index('data-testid="workspace-scroll-frame"')
 
@@ -136,6 +148,11 @@ def test_app_js_shell_helpers_are_top_level_and_initialized() -> None:
         assert helper in content
 
     assert "bindShellNavigation();" in content
+    assert "function buildSolverConfigPayload()" in content
+    assert "let currentLiters = DEFAULT_LITERS;" in content
+    assert "CALC_LITERS" not in content
+    assert "solverLitersInput" not in content
+    assert "applyScaleToCalcLiters" not in content
     assert 'showShellView("fertilizers", { scroll: false });' in content
     assert "renderCalculation(data)" in content
     assert "updateLiveResultBar(data);" in content
@@ -158,6 +175,8 @@ def test_framed_shell_styles_present() -> None:
     assert ".workspace" in content
     assert "overflow-y: auto" in content
     assert ".live-bar" in content
+    assert ".rail-config" in content
+    assert ".btn--solver-primary" in content
     assert ".live-metric--npk" in content
     assert ".live-metric--ratio" in content
     assert ".live-ec" in content

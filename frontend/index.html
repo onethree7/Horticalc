@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Horticalc GUI</title>
-    <link rel="stylesheet" href="styles.css?v=app-frame8" />
+    <link rel="stylesheet" href="styles.css?v=app-frame9" />
   </head>
   <body class="compact app-body">
     <div class="sr-only" id="modeStateControls" aria-hidden="true">
@@ -45,6 +45,90 @@
             <span>System</span>
             <span class="api-status" id="apiStatus" data-testid="api-status">API bereit</span>
           </div>
+        </section>
+        <section class="rail-card rail-config" aria-label="Aktuelle Konfiguration" data-testid="rail-config-controls">
+          <div class="rail-card-heading">
+            <span>Konfiguration</span>
+            <label class="rail-config-liters" for="configLiters" id="configLitersStatus">
+              <span>NL:</span>
+              <input id="configLiters" type="number" min="0.1" step="0.1" value="10" aria-label="Liter NL" />
+              <span>L</span>
+            </label>
+          </div>
+          <details class="rail-advanced-config">
+            <summary>Solver Advanced Config</summary>
+            <button id="solverConfigResetDefaults" class="btn btn--outline rail-config-reset" type="button">Default</button>
+            <div class="rail-config-grid rail-config-grid--advanced">
+              <label class="toggle">
+                <input id="solverConfigRelativeWeighting" type="checkbox" checked />
+                <span>Relative weighting</span>
+              </label>
+              <label>
+                Overshoot penalty
+                <input id="solverConfigOvershootPenalty" type="number" min="0" step="0.1" value="1" />
+              </label>
+              <label>
+                IRLS Iterationen
+                <input id="solverConfigIrlsMaxOuterIter" type="number" min="1" step="1" value="4" />
+              </label>
+              <label>
+                Scale epsilon mg/L
+                <input id="solverConfigScaleEpsMgPerL" type="number" min="0" step="0.1" value="1" />
+              </label>
+              <label class="toggle">
+                <input id="solverConfigSingletonSupplierEnabled" type="checkbox" checked />
+                <span>Singleton overshoot pass</span>
+              </label>
+              <label>
+                Singleton share
+                <input id="solverConfigSingletonShareThreshold" type="number" min="0" max="1" step="0.01" value="0.85" />
+              </label>
+              <label>
+                Singleton max regress pp
+                <input id="solverConfigSingletonMaxRegressPp" type="number" min="0" step="0.01" value="0.25" />
+              </label>
+              <label class="toggle">
+                <input id="solverConfigSingletonUnderfillEnabled" type="checkbox" checked />
+                <span>Singleton underfill pass</span>
+              </label>
+              <label>
+                Underfill share
+                <input id="solverConfigSingletonUnderfillShareThreshold" type="number" min="0" max="1" step="0.01" value="0.85" />
+              </label>
+              <label>
+                Underfill max iter
+                <input id="solverConfigSingletonUnderfillMaxIter" type="number" min="1" step="1" value="2" />
+              </label>
+              <label class="toggle">
+                <input id="solverConfigStageOptimizationEnabled" type="checkbox" checked />
+                <span>Stage optimization</span>
+              </label>
+              <label>
+                Stage regress pp
+                <input id="solverConfigStageRegressionPp" type="number" min="0" step="0.1" value="5" />
+              </label>
+              <label>
+                Stage regress mg/L
+                <input id="solverConfigStageRegressionMgL" type="number" min="0" step="0.1" value="2" />
+              </label>
+              <label class="toggle">
+                <input id="solverConfigMacroPriorityEnabled" type="checkbox" checked />
+                <span>Macro priority</span>
+              </label>
+              <label>
+                Macro regress pp
+                <input id="solverConfigMacroRegressPp" type="number" min="0" step="0.01" value="0.25" />
+              </label>
+              <label class="toggle">
+                <input id="solverConfigNTotalGovernorEnabled" type="checkbox" />
+                <span>N-total governor</span>
+              </label>
+              <label>
+                N-governor weight
+                <input id="solverConfigNTotalGovernorWeight" type="number" min="0" step="0.01" value="1" />
+              </label>
+            </div>
+          </details>
         </section>
         <section class="rail-card rail-guide" aria-label="Ablaufplan" data-testid="workflow-guide">
           <div class="rail-card-heading">
@@ -190,10 +274,6 @@
         </div>
         <div class="actions is-hidden" id="solverProfileActions">
           <button id="saveSolverAsRecipe" class="btn btn--outline" type="button">Als Düngerrezept speichern</button>
-          <label class="toggle">
-            <input id="applyScaleToCalcLiters" type="checkbox" checked />
-            <span>Beim Übernehmen auf 10L-Rechner skalieren</span>
-          </label>
           <button id="applySolverToCalculator" class="btn btn--outline" type="button">Im Düngerrechner übernehmen</button>
         </div>
       </section>
@@ -281,10 +361,6 @@
           <h2>Zielprofil-Rechner</h2>
           <p class="hint">Zielwerte, erlaubte Dünger und fixe Grammangaben definieren.</p>
           <div class="solver-settings">
-            <label>
-              Liter
-              <input id="solverLiters" type="number" min="0.1" step="0.1" value="10" />
-            </label>
             <label class="toggle">
               <input id="solverUreaToggle" type="checkbox" />
               <span>Harnstoff als NH4 behandeln</span>
@@ -338,7 +414,7 @@
             </div>
           </div>
           <div class="actions">
-            <button id="solveBtn" class="btn btn--outline-primary" type="button">Solve</button>
+            <button id="solveBtn" class="btn btn--solver-primary" type="button">Solve</button>
             <button id="copySolverResults" class="btn btn--outline" type="button">In Zwischenablage kopieren</button>
             <span class="inline-hint" id="copySolverResultsStatus" aria-live="polite"></span>
           </div>
@@ -401,6 +477,6 @@
       </section>
     </main>
 
-    <script src="app.js?v=app-frame8"></script>
+    <script src="app.js?v=app-frame9"></script>
   </body>
 </html>

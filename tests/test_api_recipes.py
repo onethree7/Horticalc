@@ -38,3 +38,26 @@ def test_recipe_payload_persists_fertilizers_allowed() -> None:
     assert get_response.status_code == 200
     recipe = get_response.json()
     assert recipe.get("fertilizers_allowed") == ["Calcinit", "Hakaphos Rot"]
+
+
+def test_recipe_payload_persists_solver_config() -> None:
+    client = TestClient(app)
+    payload = {
+        "name": "api_recipe_solver_config_roundtrip",
+        "liters": 30,
+        "fertilizers": [{"name": "Calcinit", "grams": 4.5}],
+        "solver_config": {
+            "relative_weighting": True,
+            "overshoot_penalty": 1.5,
+            "n_total_governor_enabled": True,
+            "n_total_governor_weight": 0.05,
+        },
+    }
+
+    save_response = client.post("/recipes", json=payload)
+    assert save_response.status_code == 200
+
+    get_response = client.get("/recipes/api_recipe_solver_config_roundtrip")
+    assert get_response.status_code == 200
+    recipe = get_response.json()
+    assert recipe.get("solver_config") == payload["solver_config"]

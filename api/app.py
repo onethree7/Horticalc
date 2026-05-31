@@ -97,6 +97,7 @@ class SolveRequest(BaseModel):
     fixed_grams: Dict[str, float] = Field(default_factory=dict)
     urea_as_nh4: bool = False
     phosphate_species: str = Field(default="H2PO4")
+    solver_config: Dict[str, Any] = Field(default_factory=dict)
 
 
 class SolveFertilizerEntry(BaseModel):
@@ -136,6 +137,7 @@ class RecipePayload(BaseModel):
     phosphate_species: str = Field(default="H2PO4")
     water_profile: Optional[str] = None
     osmosis_percent: float | None = 0
+    solver_config: Dict[str, Any] = Field(default_factory=dict)
 
 
 ALLOWED_WATER_KEYS = {
@@ -507,6 +509,8 @@ async def save_recipe_profile(request: Request) -> dict:
         "urea_as_nh4": recipe.urea_as_nh4,
         "phosphate_species": recipe.phosphate_species,
     }
+    if recipe.solver_config:
+        payload_out["solver_config"] = recipe.solver_config
     if recipe.water_profile:
         payload_out["water_profile"] = recipe.water_profile
     if recipe.osmosis_percent is not None:
@@ -596,6 +600,7 @@ def solve(payload: SolveRequest) -> SolveResponse:
         "fixed_grams": payload.fixed_grams,
         "urea_as_nh4": payload.urea_as_nh4,
         "phosphate_species": payload.phosphate_species,
+        "solver_config": payload.solver_config,
     }
 
     try:

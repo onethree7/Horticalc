@@ -32,10 +32,11 @@ const saveProfileButton = document.querySelector("#saveProfile");
 const solverProfileActions = document.querySelector("#solverProfileActions");
 const saveSolverAsRecipeButton = document.querySelector("#saveSolverAsRecipe");
 const applySolverToCalculatorButton = document.querySelector("#applySolverToCalculator");
-const applyScaleToCalcLiters = document.querySelector("#applyScaleToCalcLiters");
 const calculatorScaleDownButton = document.querySelector("#calculatorScaleDown");
 const calculatorScaleUpButton = document.querySelector("#calculatorScaleUp");
 const calculatorScaleValue = document.querySelector("#calculatorScaleValue");
+const configLitersInput = document.querySelector("#configLiters");
+const configLitersStatus = document.querySelector("#configLitersStatus");
 
 const waterSummaryTable = document.querySelector("#waterSummaryTable");
 const oxideSummaryTable = document.querySelector("#oxideSummaryTable");
@@ -63,9 +64,28 @@ const solverTargetScaleValue = document.querySelector("#solverTargetScaleValue")
 const solveButton = document.querySelector("#solveBtn");
 const copySolverResultsButton = document.querySelector("#copySolverResults");
 const copySolverResultsStatus = document.querySelector("#copySolverResultsStatus");
-const solverLitersInput = document.querySelector("#solverLiters");
 const solverUreaToggle = document.querySelector("#solverUreaToggle");
 const solverPhosphateSelect = document.querySelector("#solverPhosphate");
+const solverConfigControls = {
+  relative_weighting: document.querySelector("#solverConfigRelativeWeighting"),
+  overshoot_penalty: document.querySelector("#solverConfigOvershootPenalty"),
+  irls_max_outer_iter: document.querySelector("#solverConfigIrlsMaxOuterIter"),
+  scale_eps_mg_per_l: document.querySelector("#solverConfigScaleEpsMgPerL"),
+  singleton_supplier_enabled: document.querySelector("#solverConfigSingletonSupplierEnabled"),
+  singleton_share_threshold: document.querySelector("#solverConfigSingletonShareThreshold"),
+  singleton_max_regress_pp: document.querySelector("#solverConfigSingletonMaxRegressPp"),
+  singleton_underfill_enabled: document.querySelector("#solverConfigSingletonUnderfillEnabled"),
+  singleton_underfill_share_threshold: document.querySelector("#solverConfigSingletonUnderfillShareThreshold"),
+  singleton_underfill_max_iter: document.querySelector("#solverConfigSingletonUnderfillMaxIter"),
+  stage_optimization_enabled: document.querySelector("#solverConfigStageOptimizationEnabled"),
+  stage_regression_pp: document.querySelector("#solverConfigStageRegressionPp"),
+  stage_regression_mg_l: document.querySelector("#solverConfigStageRegressionMgL"),
+  macro_priority_enabled: document.querySelector("#solverConfigMacroPriorityEnabled"),
+  macro_regress_pp: document.querySelector("#solverConfigMacroRegressPp"),
+  n_total_governor_enabled: document.querySelector("#solverConfigNTotalGovernorEnabled"),
+  n_total_governor_weight: document.querySelector("#solverConfigNTotalGovernorWeight"),
+};
+const solverConfigResetDefaultsButton = document.querySelector("#solverConfigResetDefaults");
 const fertilizerEditorTableWrap = document.querySelector("#fertilizerEditorTableWrap");
 const fertEditorSearchInput = document.querySelector("#fertEditorSearch");
 const fertEditorAddRowButton = document.querySelector("#fertEditorAddRow");
@@ -75,7 +95,7 @@ const fertEditorSaveButton = document.querySelector("#fertEditorSave");
 const apiStatus = document.querySelector("#apiStatus");
 const liveLastCalc = document.querySelector("#liveLastCalc");
 
-const CALC_LITERS = 10.0;
+const DEFAULT_LITERS = 10.0;
 
 let fertilizerOptions = [];
 const selectedFertilizers = [{ name: "", form: "", weight: "" }];
@@ -102,6 +122,7 @@ let summaryView = "ion";
 let ionNitrogenExpanded = false;
 let fertilizerEditorPreferredKeys = [];
 let activeShellView = "fertilizers";
+let currentLiters = DEFAULT_LITERS;
 
 const shellViewConfigs = {
   fertilizers: {
@@ -341,6 +362,115 @@ function parseDecimalInput(raw) {
   }
   const n = Number(s);
   return Number.isFinite(n) ? n : null;
+}
+
+const solverConfigDefinitions = [
+  { key: "relative_weighting", type: "boolean", defaultValue: true },
+  { key: "overshoot_penalty", type: "number", defaultValue: 1.0 },
+  { key: "irls_max_outer_iter", type: "integer", defaultValue: 4 },
+  { key: "scale_eps_mg_per_l", type: "number", defaultValue: 1.0 },
+  { key: "singleton_supplier_enabled", type: "boolean", defaultValue: true },
+  { key: "singleton_share_threshold", type: "number", defaultValue: 0.85 },
+  { key: "singleton_max_regress_pp", type: "number", defaultValue: 0.25 },
+  { key: "singleton_underfill_enabled", type: "boolean", defaultValue: true },
+  { key: "singleton_underfill_share_threshold", type: "number", defaultValue: 0.85 },
+  { key: "singleton_underfill_max_iter", type: "integer", defaultValue: 2 },
+  { key: "stage_optimization_enabled", type: "boolean", defaultValue: true },
+  { key: "stage_regression_pp", type: "number", defaultValue: 5.0 },
+  { key: "stage_regression_mg_l", type: "number", defaultValue: 2.0 },
+  { key: "macro_priority_enabled", type: "boolean", defaultValue: true },
+  { key: "macro_regress_pp", type: "number", defaultValue: 0.25 },
+  { key: "n_total_governor_enabled", type: "boolean", defaultValue: false },
+  { key: "n_total_governor_weight", type: "number", defaultValue: 1.0 },
+];
+
+function validLiters(value) {
+  const liters = Number(value);
+  return Number.isFinite(liters) && liters > 0 ? liters : DEFAULT_LITERS;
+}
+
+function formatLiters(value) {
+  const liters = validLiters(value);
+  return Number.isInteger(liters) ? String(liters) : String(Math.round(liters * 10) / 10);
+}
+
+function updateLitersDisplay() {
+  if (configLitersInput) {
+    configLitersInput.value = formatLiters(currentLiters);
+  }
+  if (configLitersStatus) {
+    configLitersStatus.setAttribute("aria-label", `NL: ${formatLiters(currentLiters)} L`);
+  }
+}
+
+function scaleCurrentBatch(fromLiters, toLiters) {
+  const oldLiters = validLiters(fromLiters);
+  const newLiters = validLiters(toLiters);
+  const factor = newLiters / oldLiters;
+  fertilizerAmounts.forEach((amount, index) => {
+    const scaled = roundScaledValue((Number(amount) || 0) * factor);
+    fertilizerAmounts[index] = scaled;
+    calculatorBaseAmounts[index] =
+      calculatorScaleFactor > 0 ? roundScaledValue(scaled / calculatorScaleFactor) : scaled;
+  });
+  Object.keys(solverFixedGrams).forEach((key) => {
+    solverFixedGrams[key] = roundScaledValue((Number(solverFixedGrams[key]) || 0) * factor);
+  });
+}
+
+function setCurrentLiters(value, { scaleBatch = false, recalculate = false, invalidateSolver = true } = {}) {
+  const nextLiters = validLiters(value);
+  const previousLiters = currentLiters;
+  if (scaleBatch && previousLiters > 0 && nextLiters !== previousLiters) {
+    scaleCurrentBatch(previousLiters, nextLiters);
+    renderCalculatorTable();
+    renderSolverFixedTable();
+  }
+  currentLiters = nextLiters;
+  updateLitersDisplay();
+  if (invalidateSolver) {
+    renderSolverResults(null);
+  }
+  if (recalculate) {
+    scheduleRecalculate();
+  }
+}
+
+function buildSolverConfigPayload() {
+  const config = {};
+  solverConfigDefinitions.forEach((definition) => {
+    const input = solverConfigControls[definition.key];
+    if (!input) {
+      return;
+    }
+    if (definition.type === "boolean") {
+      config[definition.key] = Boolean(input.checked);
+      return;
+    }
+    const rawValue = parseDecimalInput(input.value);
+    if (rawValue === null) {
+      return;
+    }
+    config[definition.key] = definition.type === "integer" ? Math.max(1, Math.round(rawValue)) : rawValue;
+  });
+  return config;
+}
+
+function applySolverConfig(config = {}) {
+  solverConfigDefinitions.forEach((definition) => {
+    const input = solverConfigControls[definition.key];
+    if (!input) {
+      return;
+    }
+    const value = Object.prototype.hasOwnProperty.call(config, definition.key)
+      ? config[definition.key]
+      : definition.defaultValue;
+    if (definition.type === "boolean") {
+      input.checked = Boolean(value);
+    } else {
+      input.value = String(value);
+    }
+  });
 }
 
 function createSelect(options, onChange) {
@@ -1177,7 +1307,7 @@ function buildSolverClipboardText() {
   });
 
   const calculateData = {
-    liters: Number(solverLitersInput.value) || CALC_LITERS,
+    liters: currentLiters,
     fertilizers,
     water_mg_l: buildWaterPayloadForApi(waterValues),
     osmosis_percent: Number(osmosisPercentInput.value) || 0,
@@ -1892,7 +2022,7 @@ function buildPayload() {
   const waterPayload = buildWaterPayloadForApi(waterValues);
 
   return {
-    liters: CALC_LITERS,
+    liters: currentLiters,
     fertilizers,
     water_mg_l: waterPayload,
     osmosis_percent: Number(osmosisPercentInput.value) || 0,
@@ -1916,7 +2046,7 @@ function buildSolvePayload() {
 
   const waterPayload = buildWaterPayloadForApi(waterValues);
   return {
-    liters: Number(solverLitersInput.value) || CALC_LITERS,
+    liters: currentLiters,
     targets,
     water_profile: {
       mg_per_l: waterPayload,
@@ -1926,6 +2056,7 @@ function buildSolvePayload() {
     fixed_grams: fixedGrams,
     urea_as_nh4: solverUreaToggle.checked,
     phosphate_species: solverPhosphateSelect.value,
+    solver_config: buildSolverConfigPayload(),
   };
 }
 
@@ -2111,6 +2242,12 @@ function renderCalculation(data) {
 }
 
 function applyRecipe(recipe) {
+  if (recipe && recipe.liters !== undefined && recipe.liters !== null) {
+    setCurrentLiters(recipe.liters, { scaleBatch: false, recalculate: false, invalidateSolver: false });
+  }
+  if (recipe?.solver_config) {
+    applySolverConfig(recipe.solver_config);
+  }
   const fertilizers = Array.isArray(recipe.fertilizers) ? recipe.fertilizers : [];
   selectedFertilizers.length = 0;
   fertilizerAmounts.length = 0;
@@ -2286,6 +2423,7 @@ function buildRecipePayload(name, fertilizers, liters, ureaAsNh4, phosphateSpeci
     fertilizers_allowed: solverAllowedFertilizers,
     urea_as_nh4: ureaAsNh4,
     phosphate_species: phosphateSpecies,
+    solver_config: buildSolverConfigPayload(),
   };
   const waterProfileSelection = waterProfileSelect.value;
   if (waterProfileSelection) {
@@ -2300,7 +2438,7 @@ function buildRecipePayload(name, fertilizers, liters, ureaAsNh4, phosphateSpeci
 
 function buildRecipePayloadFromSelection(name) {
   const fertilizers = buildSelectedFertilizerEntries();
-  return buildRecipePayload(name, fertilizers, CALC_LITERS, false, "H2PO4");
+  return buildRecipePayload(name, fertilizers, currentLiters, false, "H2PO4");
 }
 
 function buildRecipePayloadFromSolver(name) {
@@ -2308,7 +2446,7 @@ function buildRecipePayloadFromSolver(name) {
   return buildRecipePayload(
     name,
     fertilizers,
-    Number(solverLitersInput.value) || CALC_LITERS,
+    currentLiters,
     solverUreaToggle.checked,
     solverPhosphateSelect.value
   );
@@ -2320,6 +2458,8 @@ function buildSolutionSnapshot() {
     water_profile_value: waterProfileSelect.value || "",
     osmosis_percent: Number(osmosisPercentInput.value) || 0,
     water_unit: waterUnit,
+    liters: currentLiters,
+    solver_config: buildSolverConfigPayload(),
     water_values: { ...waterValues },
     fertilizers,
   };
@@ -2412,6 +2552,12 @@ async function init() {
   if (savedSolution) {
     waterUnit = savedSolution.water_unit === "mol_l" ? "mol_l" : "mg_l";
     waterUnitToggle.checked = waterUnit === "mol_l";
+    setCurrentLiters(savedSolution.liters || DEFAULT_LITERS, {
+      scaleBatch: false,
+      recalculate: false,
+      invalidateSolver: false,
+    });
+    applySolverConfig(savedSolution.solver_config || {});
     osmosisPercentInput.value = Number(savedSolution.osmosis_percent) || 0;
     waterProfileSelect.value = savedSolution.water_profile_value || "";
     waterFieldDefinitions.forEach((field) => {
@@ -2531,6 +2677,37 @@ if (calculatorScaleDownButton) {
 if (calculatorScaleUpButton) {
   calculatorScaleUpButton.addEventListener("click", () => {
     applyCalculatorScaleFactor(calculatorScaleFactor + SCALE_STEP);
+  });
+}
+
+if (configLitersInput) {
+  configLitersInput.addEventListener("input", (event) => {
+    const nextLiters = parseDecimalInput(event.target.value);
+    if (nextLiters === null || nextLiters <= 0) {
+      return;
+    }
+    setCurrentLiters(nextLiters, { scaleBatch: true, recalculate: true });
+  });
+  configLitersInput.addEventListener("change", () => {
+    updateLitersDisplay();
+  });
+}
+
+solverConfigDefinitions.forEach((definition) => {
+  const input = solverConfigControls[definition.key];
+  if (!input) {
+    return;
+  }
+  const eventName = definition.type === "boolean" ? "change" : "input";
+  input.addEventListener(eventName, () => {
+    renderSolverResults(null);
+  });
+});
+
+if (solverConfigResetDefaultsButton) {
+  solverConfigResetDefaultsButton.addEventListener("click", () => {
+    applySolverConfig();
+    renderSolverResults(null);
   });
 }
 
@@ -2669,15 +2846,12 @@ applySolverToCalculatorButton.addEventListener("click", async () => {
     reportError(null, "Bitte zuerst ein Zielprofil berechnen.");
     return;
   }
-  const solverLitersRaw = Number(solverLitersInput.value);
-  const solverLiters = solverLitersRaw > 0 ? solverLitersRaw : CALC_LITERS;
-  const shouldScale = applyScaleToCalcLiters ? applyScaleToCalcLiters.checked : true;
-  const factor = shouldScale ? CALC_LITERS / solverLiters : 1;
   const fertilizers = (lastSolveResult.fertilizers || []).map((fert) => ({
     name: fert.name,
-    grams: Number(fert.grams || 0) * factor,
+    grams: Number(fert.grams || 0),
   }));
   const recipe = {
+    liters: currentLiters,
     fertilizers,
   };
   applyRecipe(recipe);
@@ -2738,6 +2912,8 @@ setSummaryView(summaryView);
 
 initializeFertilizerTables();
 bindShellNavigation();
+updateLitersDisplay();
+applySolverConfig();
 updateCalculatorScaleDisplay();
 renderSolverTargetsTable();
 showShellView("fertilizers", { scroll: false });

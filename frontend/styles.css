@@ -46,6 +46,7 @@ body {
 
 .input-field,
 .api-config input,
+.rail-config input,
 .grid select,
 .grid input,
 .water-control-row select,
@@ -94,6 +95,25 @@ button:hover {
 
 .btn--outline-primary:hover {
   background: rgba(95, 131, 255, 0.14);
+}
+
+.btn--solver-primary {
+  border: 1px solid rgba(65, 231, 255, 0.74);
+  color: #f8edff;
+  background:
+    linear-gradient(145deg, rgba(92, 45, 145, 0.9), rgba(20, 73, 86, 0.84));
+  box-shadow:
+    0 0 0 2px rgba(182, 124, 255, 0.16),
+    0 0 18px rgba(65, 231, 255, 0.14);
+}
+
+.btn--solver-primary:hover,
+.btn--solver-primary:focus-visible {
+  background:
+    linear-gradient(145deg, rgba(112, 56, 170, 0.96), rgba(25, 91, 107, 0.9));
+  box-shadow:
+    0 0 0 2px rgba(182, 124, 255, 0.24),
+    0 0 24px rgba(65, 231, 255, 0.22);
 }
 
 .btn--icon {
@@ -1071,6 +1091,97 @@ html {
     rgba(12, 18, 16, 0.72);
 }
 
+.rail-config {
+  background:
+    radial-gradient(circle at 90% 8%, rgba(65, 231, 255, 0.1), transparent 34%),
+    rgba(12, 18, 16, 0.72);
+}
+
+.rail-config-liters {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 1.7rem;
+  padding: 0 var(--space-2);
+  border: 1px solid rgba(65, 231, 255, 0.42);
+  border-radius: 6px;
+  color: #dffaff;
+  background: rgba(28, 84, 95, 0.22);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.rail-config-liters input {
+  width: 3.2rem;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  appearance: textfield;
+}
+
+.rail-config-liters input::-webkit-outer-spin-button,
+.rail-config-liters input::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.rail-config-grid {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.rail-config-grid label,
+.rail-advanced-config summary {
+  color: var(--app-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.rail-config-grid label:not(.toggle) {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.rail-config input[type="number"] {
+  width: 100%;
+  min-width: 0;
+}
+
+.rail-advanced-config {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.rail-advanced-config summary {
+  cursor: pointer;
+  color: #eaf4e5;
+  text-transform: uppercase;
+}
+
+.rail-advanced-config[open] summary {
+  margin-bottom: var(--space-3);
+}
+
+.rail-config-reset {
+  width: 100%;
+  margin-bottom: var(--space-3);
+  border-color: rgba(65, 231, 255, 0.34);
+  color: #dffaff;
+}
+
+.rail-config-grid--advanced {
+  max-height: 22rem;
+  overflow-y: auto;
+  padding-right: var(--space-2);
+  scrollbar-color: #4e5d43 #11140f;
+}
+
 .rail-guide {
   background:
     radial-gradient(circle at 90% 8%, rgba(240, 166, 43, 0.12), transparent 34%),
@@ -1292,6 +1403,7 @@ html {
 
 .input-field,
 .api-config input,
+.rail-config input,
 .grid select,
 .grid input,
 .water-control-row select,
@@ -1303,6 +1415,15 @@ html {
   background: #10130f;
   border-color: #3a4334;
   color: var(--app-text);
+}
+
+.rail-config .rail-config-liters input {
+  width: 3.2rem;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
 }
 
 .table-wrap,

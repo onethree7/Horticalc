@@ -16,6 +16,10 @@ fertilizers matter most.
 - `logs/solver_matrix/...` receives generated output. This folder is ignored by git.
 - `tests/test_solver_matrix.py` covers the name validation, scoring rules, and CLI smoke path.
 
+See [Solver matrix deep run report 2026-05-31](solver_matrix_deep_run_2026_05_31.md)
+for the first large-run interpretation and the resulting solver-default
+decision record.
+
 ## Default Scenario
 
 The default case file uses:

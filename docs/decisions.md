@@ -33,6 +33,13 @@ Each decision is marked **DEFAULT** or **UNDECIDED** explicitly.
 - **AppRoot definition:** DEFAULT — packaged executable directory; in dev, repo root.
 - **First-run copy behavior:** DEFAULT — copy shipped defaults from `AppRoot/data/` to `AppRoot/user/` when user copies are missing.
 
+### Solver
+- **Default nitrogen objective mode:** DEFAULT — use `n_total_only` for normal calculator solving. Confirmed by the 2026-05-31 deep solver matrix run, where `n_total_only` won 10/10 best-profile rows.
+- **Default solver weighting:** DEFAULT — keep `relative_weighting=true`. The same deep run showed substantially worse averages when relative weighting was disabled.
+- **Macro priority:** DEFAULT — keep `macro_priority_enabled=false`. Treat the feature as a deprecation/removal candidate after one more confirmation run because it was the strongest harmful boolean in the 2026-05-31 matrix.
+- **Stage optimization:** DEFAULT — keep `stage_optimization_enabled=false`. Treat as a lower-priority removal candidate if it remains neutral or harmful after macro-priority cleanup.
+- **Solver matrix scoring law:** DEFAULT — benchmark scoring must follow `result.objective_elements` from `solver.py` 1:1. The benchmark must not independently decide that report-only targets such as `HCO3`, `S`, `SO4`, `Na`, or `Cl` are optimization errors.
+
 ### CI/Release
 - **Release trigger:** DEFAULT — tags matching `v*` plus manual workflow dispatch.
 - **CI runner OSes:** DEFAULT — `ubuntu-22.04` and `windows-latest`.

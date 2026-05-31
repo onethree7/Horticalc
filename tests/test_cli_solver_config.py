@@ -9,6 +9,16 @@ import pytest
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
 import horticalc.__main__ as cli
+from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS
+
+
+def test_solver_config_definitions_use_data_backed_defaults() -> None:
+    defaults = {definition["key"]: definition["default"] for definition in SOLVER_CONFIG_DEFINITIONS}
+
+    assert defaults["nitrogen_objective_mode"] == "n_total_only"
+    assert defaults["relative_weighting"] is True
+    assert defaults["macro_priority_enabled"] is False
+    assert defaults["stage_optimization_enabled"] is False
 
 
 def test_solve_cli_passes_solver_config_overrides(monkeypatch, capsys, tmp_path) -> None:

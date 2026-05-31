@@ -43,9 +43,9 @@ Current behavior:
 The solver supports three nitrogen objective modes through
 `solver_config.nitrogen_objective_mode`:
 
-- `as_targets`: legacy/default behavior. Use every non-zero target key, including
+- `as_targets`: legacy behavior. Use every non-zero target key, including
   `N_total` and any non-zero N forms that appear together.
-- `n_total_only`: make `N_total` the single nitrogen objective. Exclude
+- `n_total_only`: default behavior. Make `N_total` the single nitrogen objective. Exclude
   `N_NO3`, `N_NH4`, and `N_UREA` from the objective.
 - `n_forms_only`: solve individual N forms. Exclude `N_total`, and include
   `N_NO3`, `N_NH4`, and `N_UREA` as objectives when they are present in the
@@ -53,6 +53,10 @@ The solver supports three nitrogen objective modes through
 
 The benchmark matrix uses this same solver setting. It does not emulate N-mode
 behavior by changing targets on its own.
+
+The default is `n_total_only` because the deep solver matrix run over shipped
+profiles, expanded fertilizers, and both N modes selected `n_total_only` for
+every best profile row.
 
 ## Ignored targets
 
@@ -247,15 +251,15 @@ Typical toggles:
   - `singleton_underfill_share_threshold`: dominant-supplier threshold for underfill (default = share threshold)
   - `singleton_underfill_max_iter`: iteration cap for underfill top-ups per stage (default `2`)
 - staged optimization (optional):
-  - `stage_optimization_enabled`: enable multi-stage solving (default `true`)
+  - `stage_optimization_enabled`: enable multi-stage solving (default `false`)
   - `stage_regression_pp`: max regression from a prior stage as percent of target (default `5.0`)
   - `stage_regression_mg_l`: absolute mg/L regression budget per stage (default `2.0`)
 - macro priority (if implemented):
-  - `macro_priority_enabled`
+  - `macro_priority_enabled` (default `false`)
   - `priority_groups`, `priority_group_weights`
   - `macro_regress_pp`
 - N-governor + N-form priority (optional):
-  - `nitrogen_objective_mode` (`as_targets`, `n_total_only`, or `n_forms_only`)
+  - `nitrogen_objective_mode` (`n_total_only` default, plus `as_targets` and `n_forms_only`)
   - `n_total_governor_enabled` (keep `N_total` in the objective and penalize only overshoot)
   - `n_total_governor_weight` (overshoot-only weight multiplier for `N_total`)
   - `n_form_priority_weights` (per-form multipliers like `{"N_NO3": 3.0, "N_UREA": 2.0, "N_NH4": 1.0}`)

@@ -55,9 +55,9 @@ then scores exactly the objectives returned by the solver.
 
 Available modes:
 
-- `as_targets`: legacy/default solver behavior. Use every non-zero target key,
+- `as_targets`: legacy solver behavior. Use every non-zero target key,
   including `N_total` and any non-zero N forms that appear together.
-- `n_total_only`: make `N_total` the boss. Exclude `N_NH4`, `N_NO3`, and
+- `n_total_only`: current default solver behavior. Make `N_total` the boss. Exclude `N_NH4`, `N_NO3`, and
   `N_UREA` from solver objectives.
 - `n_forms_only`: solve individual N forms. Exclude `N_total`, and include
   `N_NH4`, `N_NO3`, and `N_UREA` as objectives when they exist in the target
@@ -65,6 +65,16 @@ Available modes:
 
 The default case file intentionally runs `n_total_only` and `n_forms_only` so
 deep runs compare those two philosophies directly.
+
+The current solver defaults are intentionally simple and data-backed:
+
+- `nitrogen_objective_mode: n_total_only`
+- `relative_weighting: true`
+- `macro_priority_enabled: false`
+- `stage_optimization_enabled: false`
+- `singleton_supplier_enabled: true`
+- `singleton_underfill_enabled: true`
+- `n_total_governor_enabled: false`
 
 ## Presets
 

@@ -98,6 +98,21 @@ def test_boolean_solver_configs_include_requested_nitrogen_modes() -> None:
     assert all(config.name.startswith("n_mode=") for config in configs)
 
 
+def test_boolean_solver_configs_start_with_current_simple_default() -> None:
+    first = solver_matrix.boolean_solver_configs(["n_total_only"])[0]
+
+    assert first.values == {
+        "relative_weighting": True,
+        "macro_priority_enabled": False,
+        "stage_optimization_enabled": False,
+        "singleton_supplier_enabled": True,
+        "singleton_underfill_enabled": True,
+        "n_total_governor_enabled": False,
+        "nitrogen_objective_mode": "n_total_only",
+    }
+    assert first.name == "n_mode=n_total_only"
+
+
 def test_solver_matrix_quick_smoke(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     exit_code = solver_matrix.main(
         [

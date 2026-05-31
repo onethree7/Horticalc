@@ -40,20 +40,10 @@
             <span>Hydroponic Solution Calculator and powerful Nutrient Solver.</span>
           </div>
         </div>
-        <section class="rail-card rail-api-card api-config" aria-label="API und Daten" data-testid="rail-api-controls">
+        <section class="rail-card rail-api-card api-config" aria-label="Systemstatus" data-testid="rail-api-controls">
           <div class="rail-card-heading">
             <span>System</span>
             <span class="api-status" id="apiStatus" data-testid="api-status">API bereit</span>
-          </div>
-          <label for="apiBase">API Base URL</label>
-          <input
-            id="apiBase"
-            type="url"
-            placeholder="Local"
-            value=""
-          />
-          <div class="rail-actions">
-            <button id="reloadData" class="btn btn--outline" type="button">Daten laden</button>
           </div>
         </section>
         <section class="rail-card rail-guide" aria-label="Ablaufplan" data-testid="workflow-guide">
@@ -61,10 +51,10 @@
             <span>Ablauf</span>
           </div>
           <ol class="rail-guide-list">
-            <li><strong>Erstelle oder lade eigene Dünger im <span>DÜNGER-EDITOR</span> (2).</strong></li>
-            <li><strong>Konfiguriere deine <span>WASSERWERTE</span> (1).</strong></li>
-            <li><strong>Erstelle Rezepte von Hand im <span>RECHNER</span> und erhalte NPK, Spurenelemente, Ionenbalance und mehr (3).</strong></li>
-            <li><strong>Oder definiere NPK-Ziele und erlaubte Dünger, damit der <span>SOLVER</span> die Mengen berechnet (4).</strong></li>
+            <li><strong>Erstelle oder lade eigene Dünger im <span>DÜNGER-EDITOR</span>.</strong></li>
+            <li><strong>Konfiguriere deine <span>WASSERWERTE</span>.</strong></li>
+            <li><strong>Erstelle Rezepte von Hand im <span>RECHNER</span>.</strong></li>
+            <li><strong>Oder lass den <span>SOLVER</span> für dich lösen.</strong></li>
           </ol>
         </section>
         <section class="rail-card rail-workflow" aria-label="Workflow Navigation" data-testid="workflow-nav">
@@ -86,40 +76,43 @@
             </button>
           </nav>
         </section>
-        <div class="rail-status" data-testid="active-view-status">
-          <span>Aktiver Bereich</span>
-          <strong id="activeShellLabel">RECHNER</strong>
-        </div>
         <aside class="live-bar" aria-label="Live Ergebnisse" data-testid="live-bar">
           <div class="live-bar-heading">
             <span>Live Ergebnisse</span>
             <span class="live-chip live-chip--strong">Live</span>
           </div>
-          <div class="live-tile live-tile--wide live-tile--npk">
-            <span>NPK</span>
-            <strong id="liveNpk">-</strong>
+          <div class="live-metric live-metric--npk">
+            <span>NPK Gesamt (%)</span>
+            <strong id="npkAllPct">-</strong>
           </div>
-          <div class="live-tile live-tile--ec">
-            <span>EC25</span>
-            <strong id="liveEc25">-</strong>
+          <div class="live-metric live-metric--pnorm">
+            <span>NPK P-Norm</span>
+            <strong id="npkPNorm">-</strong>
           </div>
-          <div class="live-tile live-tile--ec">
-            <span>EC18</span>
-            <strong id="liveEc18">-</strong>
+          <div class="live-metric live-metric--ratio">
+            <span>NPK Verhältnis (%)</span>
+            <strong id="npkNpkPct">-</strong>
           </div>
-          <div class="live-tile live-tile--water">
-            <span>Wasser EC25</span>
-            <strong id="liveWaterEc25">-</strong>
+          <div class="live-ec">
+            <div class="metric-title">EC (mS/cm)</div>
+            <div class="ec-lines">
+              <div class="ec-line ec-primary">
+                <span class="ec-temp">25&nbsp;°C</span>
+                <span class="ec-label">Lösung</span>
+                <span class="ec-value" id="ec25Value">—</span>
+                <span class="ec-label">Wasser</span>
+                <span class="ec-value muted" id="ecWater25Value">—</span>
+              </div>
+              <div class="ec-line">
+                <span class="ec-temp">18&nbsp;°C</span>
+                <span class="ec-label">Lösung</span>
+                <span class="ec-value" id="ec18Value">—</span>
+                <span class="ec-label">Wasser</span>
+                <span class="ec-value muted" id="ecWater18Value">—</span>
+              </div>
+            </div>
           </div>
-          <div class="live-tile live-tile--water">
-            <span>Wasser EC18</span>
-            <strong id="liveWaterEc18">-</strong>
-          </div>
-          <div class="live-tile live-tile--balance">
-            <span>Bilanz</span>
-            <strong id="liveBalance">-</strong>
-          </div>
-          <div class="live-tile live-tile--meta">
+          <div class="live-meta">
             <span id="liveLastCalc">Noch keine Berechnung</span>
           </div>
         </aside>
@@ -229,43 +222,6 @@
             <button id="calculateBtn" class="btn btn--outline-primary">Berechnen</button>
           </div>
           <div class="summary" data-panel-anchor="results" data-testid="results-panel">
-            <div class="summary-metrics">
-              <div class="summary-metric-card">
-                <div class="metric-label">NPK Gesamt (%)</div>
-                <div class="metric-value" id="npkAllPct">-</div>
-              </div>
-              <div class="summary-metric-card">
-                <div class="metric-label">NPK P-Norm</div>
-                <div class="metric-value" id="npkPNorm">-</div>
-              </div>
-              <div class="summary-metric-card">
-                <div class="metric-label">NPK Verhältnis (%)</div>
-                <div class="metric-value" id="npkNpkPct">-</div>
-              </div>
-              <div class="summary-metric-card ec-metric">
-                <div class="metric-card ec-card">
-                  <div class="metric-title">EC (mS/cm)</div>
-
-                  <div class="ec-lines">
-                    <div class="ec-line ec-primary">
-                      <span class="ec-temp">25&nbsp;°C</span>
-                      <span class="ec-label">Lösung</span>
-                      <span class="ec-value" id="ec25Value">—</span>
-                      <span class="ec-label">Wasser</span>
-                      <span class="ec-value muted" id="ecWater25Value">—</span>
-                    </div>
-
-                    <div class="ec-line">
-                      <span class="ec-temp">18&nbsp;°C</span>
-                      <span class="ec-label">Lösung</span>
-                      <span class="ec-value" id="ec18Value">—</span>
-                      <span class="ec-label">Wasser</span>
-                      <span class="ec-value muted" id="ecWater18Value">—</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
             <div class="summary-scroll" id="summaryScroll">
               <div class="summary-tables">
                 <div class="table-card summary-panel" data-summary-panel="water">

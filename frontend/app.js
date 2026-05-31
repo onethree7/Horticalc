@@ -72,14 +72,7 @@ const fertEditorAddRowButton = document.querySelector("#fertEditorAddRow");
 const fertEditorDeleteRowButton = document.querySelector("#fertEditorDeleteRow");
 const fertEditorLoadButton = document.querySelector("#fertEditorLoad");
 const fertEditorSaveButton = document.querySelector("#fertEditorSave");
-const activeShellLabel = document.querySelector("#activeShellLabel");
 const apiStatus = document.querySelector("#apiStatus");
-const liveNpk = document.querySelector("#liveNpk");
-const liveEc25 = document.querySelector("#liveEc25");
-const liveEc18 = document.querySelector("#liveEc18");
-const liveWaterEc25 = document.querySelector("#liveWaterEc25");
-const liveWaterEc18 = document.querySelector("#liveWaterEc18");
-const liveBalance = document.querySelector("#liveBalance");
 const liveLastCalc = document.querySelector("#liveLastCalc");
 
 const CALC_LITERS = 10.0;
@@ -306,7 +299,7 @@ const summaryLabelWidth = "12rem";
 const ION_NITROGEN_EXPANDED_KEY = "horticalc.ion_n_expanded";
 
 function apiBase() {
-  const raw = apiBaseInput.value.trim();
+  const raw = apiBaseInput?.value.trim() || "";
   if (!raw) {
     return "";
   }
@@ -479,9 +472,6 @@ function setActiveShellView(view) {
       button.removeAttribute("aria-current");
     }
   });
-  if (activeShellLabel) {
-    activeShellLabel.textContent = config.label;
-  }
 }
 
 function scrollToPanelAnchor(anchor, shouldFocus = true) {
@@ -528,56 +518,15 @@ function bindShellNavigation() {
   });
 }
 
-function liveText(value, fallback = "-") {
-  if (value === undefined || value === null || value === "") {
-    return fallback;
-  }
-  return String(value);
-}
-
-function liveEcText(ecValues, key) {
-  const value = Number(ecValues?.[key]);
-  return Number.isFinite(value) ? formatNumber(value) : "-";
-}
-
-function liveBalanceText(balance) {
-  const cations = Number(balance?.cations_meq_per_l);
-  const anions = Number(balance?.anions_meq_per_l);
-  const errorAbs = Number(balance?.error_percent_abs);
-  const errorSigned = Number(balance?.error_percent_signed);
-  const errorValue = Number.isFinite(errorAbs) ? errorAbs : Math.abs(errorSigned);
-  const status = Number.isFinite(errorValue) && errorValue <= 5 ? "ok" : "prüfen";
-  if (Number.isFinite(cations) && Number.isFinite(anions)) {
-    const delta = Number.isFinite(errorSigned) ? ` Δ ${errorSigned.toFixed(1)}%` : "";
-    return `Σ+ ${formatNumber(cations)} Σ− ${formatNumber(anions)}${delta} ${status}`;
-  }
-  return status;
-}
-
 function updateLiveResultBar(data = lastCalculation) {
-  if (!liveNpk || !liveEc25 || !liveEc18 || !liveWaterEc25 || !liveWaterEc18 || !liveBalance || !liveLastCalc) {
+  if (!liveLastCalc) {
     return;
   }
   if (!data) {
-    liveNpk.textContent = "-";
-    liveEc25.textContent = "-";
-    liveEc18.textContent = "-";
-    liveWaterEc25.textContent = "-";
-    liveWaterEc18.textContent = "-";
-    liveBalance.textContent = "-";
     liveLastCalc.textContent = "Noch keine Berechnung";
     return;
   }
 
-  const ecValues = data.ec?.ec_mS_per_cm || {};
-  const waterEcValues = data.ec_water?.ec_mS_per_cm || {};
-  const balance = data.ion_balance || {};
-  liveNpk.textContent = liveText(data.npk_metrics?.npk_all_pct);
-  liveEc25.textContent = liveEcText(ecValues, "25.0");
-  liveEc18.textContent = liveEcText(ecValues, "18.0");
-  liveWaterEc25.textContent = liveEcText(waterEcValues, "25.0");
-  liveWaterEc18.textContent = liveEcText(waterEcValues, "18.0");
-  liveBalance.textContent = liveBalanceText(balance);
   liveLastCalc.textContent = `Aktualisiert ${new Date().toLocaleTimeString("de-DE")}`;
 }
 
@@ -818,6 +767,14 @@ function handleEditorEnterKey(event) {
   }
 }
 
+function contentWidthCh(values, headerLabel, minimumCh = 1) {
+  const maxLength = values.reduce(
+    (longest, value) => Math.max(longest, String(value ?? "").length),
+    headerLabel.length
+  );
+  return Math.max(minimumCh, maxLength);
+}
+
 function renderFertilizerEditor() {
   if (!fertilizerEditorTableWrap) {
     return;
@@ -825,6 +782,22 @@ function renderFertilizerEditor() {
   fertilizerEditorTableWrap.innerHTML = "";
 
   fertilizerEditorCompKeys = buildFertilizerCompKeys(fertilizerEditorRows);
+  const filterValue = fertilizerEditorFilter.trim().toLowerCase();
+  const filteredRows = fertilizerEditorRows
+    .map((row, index) => ({ row, index }))
+    .filter(({ row }) => {
+      if (!filterValue) {
+        return true;
+      }
+      return row.name.toLowerCase().includes(filterValue);
+    });
+  const indexDigitCount = String(Math.max(1, filteredRows.length)).length;
+  const formWidthCh = contentWidthCh(filteredRows.map(({ row }) => row.form), "Form", 4);
+  const weightWidthCh = contentWidthCh(
+    filteredRows.map(({ row }) => row.weight_factor),
+    "Gewicht",
+    7
+  );
   const colgroupClasses = [
     "col-index",
     "col-name",
@@ -847,16 +820,18 @@ function renderFertilizerEditor() {
   });
   fertilizerEditorTableWrap.appendChild(table.table);
   fertilizerEditorTable = table.table;
-
-  const filterValue = fertilizerEditorFilter.trim().toLowerCase();
-  const filteredRows = fertilizerEditorRows
-    .map((row, index) => ({ row, index }))
-    .filter(({ row }) => {
-      if (!filterValue) {
-        return true;
-      }
-      return row.name.toLowerCase().includes(filterValue);
-    });
+  fertilizerEditorTable.style.setProperty(
+    "--fert-editor-index-width",
+    `calc(${indexDigitCount}ch + (var(--space-2) * 2))`
+  );
+  fertilizerEditorTable.style.setProperty(
+    "--fert-editor-form-width",
+    `calc(${formWidthCh + 1}ch + (var(--space-2) * 2))`
+  );
+  fertilizerEditorTable.style.setProperty(
+    "--fert-editor-weight-width",
+    `calc(${weightWidthCh + 1}ch + (var(--space-2) * 2))`
+  );
 
   if (filteredRows.length) {
     const stillVisible = filteredRows.some(({ index }) => index === fertilizerEditorSelectedIndex);
@@ -2479,7 +2454,9 @@ async function init() {
   setApiStatus("API bereit", "ready");
 }
 
-reloadButton.addEventListener("click", init);
+if (reloadButton) {
+  reloadButton.addEventListener("click", init);
+}
 addRowButton.addEventListener("click", addFertilizerRow);
 removeRowButton.addEventListener("click", removeFertilizerRow);
 calculateButton.addEventListener("click", async () => {

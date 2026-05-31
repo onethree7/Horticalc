@@ -344,6 +344,9 @@ main {
 #fertilizerEditorTable {
   border-collapse: separate;
   border-spacing: 0;
+  --fert-editor-index-width: calc(1ch + (var(--space-2) * 2));
+  --fert-editor-form-width: calc(4ch + (var(--space-2) * 2));
+  --fert-editor-weight-width: calc(7ch + (var(--space-2) * 2));
 }
 
 #fertilizerEditorTable th,
@@ -353,6 +356,18 @@ main {
 
 #fertilizerEditorTable.grid--fertilizer-editor .col-nutrient {
   width: 6ch;
+}
+
+#fertilizerEditorTable.grid--fertilizer-editor .col-index {
+  width: var(--fert-editor-index-width);
+}
+
+#fertilizerEditorTable.grid--fertilizer-editor .col-form {
+  width: var(--fert-editor-form-width);
+}
+
+#fertilizerEditorTable.grid--fertilizer-editor .col-weight {
+  width: var(--fert-editor-weight-width);
 }
 
 #fertilizerEditorTable thead th {
@@ -366,6 +381,11 @@ main {
 #fertilizerEditorTable td:nth-child(1) {
   position: sticky;
   left: 0;
+  min-width: var(--fert-editor-index-width);
+  width: var(--fert-editor-index-width);
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
   z-index: 7;
   background-clip: padding-box;
 }
@@ -373,7 +393,7 @@ main {
 #fertilizerEditorTable th:nth-child(2),
 #fertilizerEditorTable td:nth-child(2) {
   position: sticky;
-  left: 2ch;
+  left: var(--fert-editor-index-width);
   z-index: 7;
   background-clip: padding-box;
 }
@@ -381,7 +401,9 @@ main {
 #fertilizerEditorTable th:nth-child(3),
 #fertilizerEditorTable td:nth-child(3) {
   position: sticky;
-  left: calc(2ch + 18rem);
+  left: calc(var(--fert-editor-index-width) + 18rem);
+  min-width: var(--fert-editor-form-width);
+  width: var(--fert-editor-form-width);
   z-index: 7;
   background-clip: padding-box;
 }
@@ -389,7 +411,9 @@ main {
 #fertilizerEditorTable th:nth-child(4),
 #fertilizerEditorTable td:nth-child(4) {
   position: sticky;
-  left: calc(2ch + 18rem + 8rem);
+  left: calc(var(--fert-editor-index-width) + 18rem + var(--fert-editor-form-width));
+  min-width: var(--fert-editor-weight-width);
+  width: var(--fert-editor-weight-width);
   z-index: 7;
   background-clip: padding-box;
 }
@@ -1134,31 +1158,12 @@ html {
 
 .workflow-step span:last-child {
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
   font-size: var(--text-sm);
   font-weight: 700;
-  line-height: 1.1;
-}
-
-.rail-status {
-  display: grid;
-  gap: var(--space-1);
-  padding: var(--space-3);
-  border: 1px solid rgba(76, 199, 176, 0.24);
-  border-radius: 8px;
-  background: rgba(21, 38, 34, 0.42);
-}
-
-.rail-status span {
-  color: var(--app-muted);
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-}
-
-.rail-status strong {
-  color: #d7fff4;
+  line-height: 1.25;
 }
 
 .rail-card {
@@ -1176,6 +1181,7 @@ html {
 }
 
 .rail-card-heading {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1480,12 +1486,20 @@ button,
 }
 
 #fertilizerEditorTable th {
-  background: rgba(32, 44, 48, 0.96);
+  background: #202c30;
 }
 
 #fertilizerEditorTable input {
   border-color: rgba(174, 183, 166, 0.16);
-  background: rgba(10, 16, 15, 0.8);
+  background: #0a100f;
+}
+
+#fertilizerEditorTable tbody tr:nth-child(odd) td:nth-child(-n + 4) {
+  background: #141b14;
+}
+
+#fertilizerEditorTable tbody tr:nth-child(even) td:nth-child(-n + 4) {
+  background: #0e1410;
 }
 
 #fertilizerEditorTable tbody tr.is-selected {
@@ -1499,8 +1513,10 @@ button,
 }
 
 .live-bar {
+  --live-label-size: 0.72rem;
+  --live-value-size: 1.18rem;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: var(--space-3);
   min-width: 0;
   max-width: 100%;
@@ -1528,68 +1544,96 @@ button,
   text-transform: uppercase;
 }
 
-.live-tile {
+.live-metric,
+.live-ec,
+.live-meta {
   display: grid;
   gap: var(--space-1);
-  align-items: center;
-  justify-items: center;
   min-width: 0;
-  min-height: 3.4rem;
   padding: var(--space-3);
   border: 1px solid rgba(174, 183, 166, 0.14);
   border-radius: 8px;
   background:
     linear-gradient(145deg, rgba(27, 38, 36, 0.72), rgba(12, 16, 14, 0.86));
+}
+
+.live-metric {
+  align-items: center;
+  justify-items: center;
+  min-height: 3.2rem;
   text-align: center;
 }
 
-.live-tile span {
+.live-metric span,
+.live-meta span {
   min-width: 0;
   color: var(--app-muted);
-  font-size: var(--text-xs);
+  font-size: var(--live-label-size);
   line-height: 1.15;
 }
 
-.live-bar strong {
+.live-metric strong {
   min-width: 0;
   max-width: 100%;
   color: #9df068;
   overflow-wrap: anywhere;
-  font-size: 1rem;
+  font-size: var(--live-value-size);
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
 }
 
-.live-tile--ec strong,
-.live-tile--water strong {
+.live-metric--pnorm strong {
   color: #41e7ff;
 }
 
-.live-tile--balance strong {
+.live-metric--ratio strong {
   color: #d9a3ff;
 }
 
-.live-tile--wide,
-.live-tile--balance,
-.live-tile--meta {
-  grid-column: 1 / -1;
-}
-
-.live-tile--npk strong {
-  font-size: 1.36rem;
+.live-metric--npk strong {
+  font-size: var(--live-value-size);
   line-height: 1.05;
 }
 
-.live-tile--balance {
-  min-height: 3.1rem;
+.live-ec {
+  color: rgba(255, 255, 255, 0.86);
+  overflow-x: auto;
 }
 
-.live-tile--meta {
-  min-height: 2.6rem;
+.live-ec .metric-title {
+  margin-bottom: var(--space-2);
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--live-label-size);
+  text-align: center;
 }
 
-.live-tile--meta span {
-  align-self: center;
+.live-ec .ec-line {
+  grid-template-columns: 2.7rem minmax(2.6rem, auto) minmax(2.5rem, 1fr) minmax(2.6rem, auto) minmax(2.5rem, 1fr);
+  column-gap: var(--space-2);
+}
+
+.live-ec .ec-temp,
+.live-ec .ec-label {
+  font-size: var(--live-label-size);
+  line-height: 1.1;
+}
+
+.live-ec .ec-value {
+  color: #41e7ff;
+  font-size: var(--live-value-size);
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: right;
+}
+
+.live-meta {
+  min-height: 2.4rem;
+  align-items: center;
+  justify-items: center;
+  text-align: center;
 }
 
 .live-chip {
@@ -1634,11 +1678,10 @@ button,
   .app-rail {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
-    overflow: hidden;
+    overflow: visible;
   }
 
-  .rail-brand,
-  .rail-status {
+  .rail-brand {
     grid-column: 1 / -1;
   }
 
@@ -1656,16 +1699,6 @@ button,
   .app-rail {
     grid-template-columns: 1fr;
     padding: var(--space-3);
-  }
-
-  .live-bar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .live-tile--npk,
-  .live-tile--balance,
-  .live-tile--meta {
-    grid-column: 1 / -1;
   }
 
   .rail-actions {
@@ -1691,7 +1724,4 @@ button,
     font-size: 0.78rem;
   }
 
-  .live-bar {
-    grid-template-columns: 1fr;
-  }
 }

@@ -2,15 +2,18 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import yaml
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
+from horticalc.data_io import load_fertilizers, load_molar_masses, load_water_profile_data
 from horticalc.data_io import Fertilizer
 from horticalc.solver import (
     _fertilizer_element_contrib_per_g,
     _score_by_priority_groups,
     _singleton_supplier_pass,
     _solve_weights,
+    solve_recipe_data,
 )
 
 
@@ -140,3 +143,60 @@ def test_score_by_priority_groups_defaults_to_max_percent_error() -> None:
     score = _score_by_priority_groups(objective_keys, targets_raw, achieved, priority_groups=[])
 
     assert score == (100.0,)
+
+
+def test_default_n_total_portfolio_avoids_saloner_macro_collapse() -> None:
+    root = Path(__file__).resolve().parents[1]
+    with (root / "user" / "nutrient_solutions" / "Saloner_Bernstein_Cannabis_NPK_Target_Optimization.yml").open(
+        "r",
+        encoding="utf-8",
+    ) as handle:
+        profile = yaml.safe_load(handle)
+
+    recipe = {
+        "liters": 10.0,
+        "targets_mg_per_l": {
+            **profile["targets_mg_per_l"],
+            "Si": 7.0,
+        },
+        "fertilizers_allowed": [
+            "Compo Fetrilon Combi 1",
+            "Yara Magnitra-L Magnesiumnitrat",
+            "HAIFA monokaliumphosphat MKP",
+            "YaraTera KRISTALON ROT CALCIUM",
+            "Agrolution Special 313 14-7-14+14CaO+TE",
+            "S3 Kaliwasser 28 Be",
+            "Peters Professional Combi Sol 6-18-36+3MgO+TE",
+        ],
+        "water_profile": "65936",
+        "osmosis_percent": 66.0,
+        "solver_config": {
+            "relative_weighting": False,
+            "overshoot_penalty": 1.0,
+            "irls_max_outer_iter": 4,
+            "scale_eps_mg_per_l": 1.0,
+            "singleton_supplier_enabled": False,
+            "singleton_share_threshold": 0.85,
+            "singleton_max_regress_pp": 0.25,
+            "singleton_underfill_enabled": True,
+            "singleton_underfill_share_threshold": 0.85,
+            "singleton_underfill_max_iter": 2,
+            "n_total_governor_enabled": False,
+            "n_total_governor_weight": 1.0,
+            "nitrogen_objective_mode": "n_total_only",
+        },
+    }
+
+    result = solve_recipe_data(
+        recipe,
+        ferts=load_fertilizers(),
+        mm=load_molar_masses(),
+        water_profile_data=load_water_profile_data(root / "user" / "water_profiles" / "65936.yml"),
+    )
+
+    achieved = result.achieved_elements_mg_l
+    assert achieved["N_total"] > 150.0
+    assert achieved["P"] > 26.0
+    assert achieved["K"] > 100.0
+    assert achieved["Ca"] > 120.0
+    assert np.isclose(achieved["Si"], 7.0)

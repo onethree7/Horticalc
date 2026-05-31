@@ -21,11 +21,17 @@ from .data_io import (
     load_water_profile_data,
 )
 from .paths import resolve_water_profile_path
+from .solver_config import SOLVER_CONFIG_DEFINITIONS
 
 
 IGNORED_TARGETS = {"S", "SO4", "NA", "CL"}
 N_FORM_KEYS = {"N_NH4", "N_NO3", "N_UREA"}
 NITROGEN_OBJECTIVE_MODES = {"as_targets", "n_total_only", "n_forms_only"}
+DEFAULT_SOLVER_CONFIG = {
+    str(definition["key"]): definition.get("default") for definition in SOLVER_CONFIG_DEFINITIONS
+}
+DEFAULT_PORTFOLIO_MACRO_KEYS = ("P", "K", "Ca", "Mg", "Si")
+DEFAULT_PORTFOLIO_MICRO_KEYS = ("Fe", "Mn", "Cu", "Zn", "B", "Mo")
 
 
 @dataclass
@@ -358,6 +364,92 @@ def _score_by_priority_groups(
     return tuple(scores)
 
 
+def _solver_config_value_matches_default(key: str, value: object) -> bool:
+    if key not in DEFAULT_SOLVER_CONFIG:
+        return False
+    default_value = DEFAULT_SOLVER_CONFIG[key]
+    if isinstance(default_value, bool):
+        return bool(value) is default_value
+    if isinstance(default_value, int) and not isinstance(default_value, bool):
+        try:
+            return int(value) == default_value
+        except (TypeError, ValueError):
+            return False
+    if isinstance(default_value, float):
+        try:
+            return abs(float(value) - default_value) <= 1e-12
+        except (TypeError, ValueError):
+            return False
+    return str(value) == str(default_value)
+
+
+def _uses_default_solver_portfolio(solver_config: Dict[str, object]) -> bool:
+    if not solver_config:
+        return True
+    for key, value in solver_config.items():
+        if not _solver_config_value_matches_default(str(key), value):
+            return False
+    return True
+
+
+def _rms_percent_error(
+    keys: list[str],
+    targets_raw: Dict[str, float],
+    achieved_elements: Dict[str, float],
+) -> float:
+    if not keys:
+        return 0.0
+    squared_errors: list[float] = []
+    for key in keys:
+        target_value = float(targets_raw.get(key, 0.0))
+        if target_value == 0.0:
+            continue
+        achieved_value = float(achieved_elements.get(key, 0.0))
+        squared_errors.append(((achieved_value - target_value) / target_value * 100.0) ** 2)
+    if not squared_errors:
+        return 0.0
+    return float(np.sqrt(sum(squared_errors) / len(squared_errors)))
+
+
+def _max_percent_error(
+    keys: list[str],
+    targets_raw: Dict[str, float],
+    achieved_elements: Dict[str, float],
+) -> float:
+    errors: list[float] = []
+    for key in keys:
+        target_value = float(targets_raw.get(key, 0.0))
+        if target_value == 0.0:
+            continue
+        achieved_value = float(achieved_elements.get(key, 0.0))
+        errors.append(abs((achieved_value - target_value) / target_value * 100.0))
+    return max(errors, default=0.0)
+
+
+def _default_portfolio_score(
+    objective_keys: List[str],
+    targets_raw: Dict[str, float],
+    achieved_elements: Dict[str, float],
+) -> tuple[float, ...]:
+    objective_key_set = set(objective_keys)
+    n_total_error = _max_percent_error(["N_total"], targets_raw, achieved_elements)
+    macro_keys = [key for key in DEFAULT_PORTFOLIO_MACRO_KEYS if key in objective_key_set]
+    micro_keys = [key for key in DEFAULT_PORTFOLIO_MICRO_KEYS if key in objective_key_set]
+    other_keys = [
+        key
+        for key in objective_keys
+        if key not in {"N_total", *DEFAULT_PORTFOLIO_MACRO_KEYS, *DEFAULT_PORTFOLIO_MICRO_KEYS, *N_FORM_KEYS}
+    ]
+    return (
+        n_total_error,
+        _max_percent_error(macro_keys, targets_raw, achieved_elements),
+        _rms_percent_error(macro_keys, targets_raw, achieved_elements),
+        _rms_percent_error(micro_keys, targets_raw, achieved_elements),
+        _max_percent_error(micro_keys, targets_raw, achieved_elements),
+        _rms_percent_error(other_keys, targets_raw, achieved_elements),
+    )
+
+
 def _build_stage_groups(
     objective_keys: List[str],
     priority_groups: List[List[str]],
@@ -548,26 +640,51 @@ def solve_recipe_data(
         or {}
     )
     solver_config = recipe.get("solver_config") or {}
-    relative_weighting = bool(solver_config.get("relative_weighting", True))
-    overshoot_penalty = float(solver_config.get("overshoot_penalty", 1.0))
-    irls_max_outer_iter = int(solver_config.get("irls_max_outer_iter", 4))
-    scale_eps_mg_per_l = float(solver_config.get("scale_eps_mg_per_l", 1.0))
-    singleton_supplier_enabled = bool(solver_config.get("singleton_supplier_enabled", True))
-    singleton_share_threshold = float(solver_config.get("singleton_share_threshold", 0.85))
-    singleton_max_regress_pp = float(solver_config.get("singleton_max_regress_pp", 0.25))
-    singleton_underfill_enabled = bool(solver_config.get("singleton_underfill_enabled", True))
-    singleton_underfill_share_threshold = float(
-        solver_config.get("singleton_underfill_share_threshold", singleton_share_threshold)
+    relative_weighting = bool(solver_config.get("relative_weighting", DEFAULT_SOLVER_CONFIG["relative_weighting"]))
+    overshoot_penalty = float(solver_config.get("overshoot_penalty", DEFAULT_SOLVER_CONFIG["overshoot_penalty"]))
+    irls_max_outer_iter = int(solver_config.get("irls_max_outer_iter", DEFAULT_SOLVER_CONFIG["irls_max_outer_iter"]))
+    scale_eps_mg_per_l = float(solver_config.get("scale_eps_mg_per_l", DEFAULT_SOLVER_CONFIG["scale_eps_mg_per_l"]))
+    singleton_supplier_enabled = bool(
+        solver_config.get("singleton_supplier_enabled", DEFAULT_SOLVER_CONFIG["singleton_supplier_enabled"])
     )
-    singleton_underfill_max_iter = int(solver_config.get("singleton_underfill_max_iter", 2))
-    stage_optimization_enabled = bool(solver_config.get("stage_optimization_enabled", False))
-    stage_regression_pp = float(solver_config.get("stage_regression_pp", 5.0))
-    stage_regression_mg_l = float(solver_config.get("stage_regression_mg_l", 2.0))
-    macro_priority_enabled = bool(solver_config.get("macro_priority_enabled", False))
-    macro_regress_pp = float(solver_config.get("macro_regress_pp", 0.25))
-    nitrogen_objective_mode = str(solver_config.get("nitrogen_objective_mode", "n_total_only"))
-    n_total_governor_enabled = bool(solver_config.get("n_total_governor_enabled", False))
-    n_total_governor_weight = float(solver_config.get("n_total_governor_weight", 1.0))
+    singleton_share_threshold = float(
+        solver_config.get("singleton_share_threshold", DEFAULT_SOLVER_CONFIG["singleton_share_threshold"])
+    )
+    singleton_max_regress_pp = float(
+        solver_config.get("singleton_max_regress_pp", DEFAULT_SOLVER_CONFIG["singleton_max_regress_pp"])
+    )
+    singleton_underfill_enabled = bool(
+        solver_config.get("singleton_underfill_enabled", DEFAULT_SOLVER_CONFIG["singleton_underfill_enabled"])
+    )
+    singleton_underfill_share_threshold = float(
+        solver_config.get(
+            "singleton_underfill_share_threshold",
+            DEFAULT_SOLVER_CONFIG["singleton_underfill_share_threshold"],
+        )
+    )
+    singleton_underfill_max_iter = int(
+        solver_config.get("singleton_underfill_max_iter", DEFAULT_SOLVER_CONFIG["singleton_underfill_max_iter"])
+    )
+    stage_optimization_enabled = bool(
+        solver_config.get("stage_optimization_enabled", DEFAULT_SOLVER_CONFIG["stage_optimization_enabled"])
+    )
+    stage_regression_pp = float(solver_config.get("stage_regression_pp", DEFAULT_SOLVER_CONFIG["stage_regression_pp"]))
+    stage_regression_mg_l = float(
+        solver_config.get("stage_regression_mg_l", DEFAULT_SOLVER_CONFIG["stage_regression_mg_l"])
+    )
+    macro_priority_enabled = bool(
+        solver_config.get("macro_priority_enabled", DEFAULT_SOLVER_CONFIG["macro_priority_enabled"])
+    )
+    macro_regress_pp = float(solver_config.get("macro_regress_pp", DEFAULT_SOLVER_CONFIG["macro_regress_pp"]))
+    nitrogen_objective_mode = str(
+        solver_config.get("nitrogen_objective_mode", DEFAULT_SOLVER_CONFIG["nitrogen_objective_mode"])
+    )
+    n_total_governor_enabled = bool(
+        solver_config.get("n_total_governor_enabled", DEFAULT_SOLVER_CONFIG["n_total_governor_enabled"])
+    )
+    n_total_governor_weight = float(
+        solver_config.get("n_total_governor_weight", DEFAULT_SOLVER_CONFIG["n_total_governor_weight"])
+    )
     n_form_priority_weights = solver_config.get("n_form_priority_weights") or {}
     default_priority_groups = [
         ["N_total"],
@@ -665,6 +782,8 @@ def solve_recipe_data(
     def solve_with_stages(
         *,
         use_relative_weighting: bool,
+        singleton_supplier_enabled_local: bool,
+        singleton_underfill_enabled_local: bool,
     ) -> tuple[np.ndarray, list[dict[str, float]], dict[str, float], dict]:
         prev_achieved: dict[str, float] | None = None
         prev_stage_keys: list[str] = []
@@ -813,14 +932,14 @@ def solve_recipe_data(
                 achieved_elements_local = achieved_solution.elements_mg_l
                 return True
 
-            if singleton_supplier_enabled:
+            if singleton_supplier_enabled_local:
                 apply_singleton_pass(
                     mode="overshoot",
                     share_threshold=singleton_share_threshold,
                     use_potential_share=False,
                 )
 
-            if singleton_underfill_enabled:
+            if singleton_underfill_enabled_local:
                 regression_guard = None
                 if prev_achieved is not None and prev_stage_keys:
                     budgets = {
@@ -853,30 +972,72 @@ def solve_recipe_data(
 
         return x_full_local, latest_fertilizers, prev_achieved or {}, latest_recipe
 
-    x_full, fertilizers_out, achieved_elements, full_recipe = solve_with_stages(
-        use_relative_weighting=relative_weighting
+    def solve_variant(
+        *,
+        use_relative_weighting: bool,
+        singleton_supplier_enabled_local: bool,
+        singleton_underfill_enabled_local: bool,
+    ) -> tuple[np.ndarray, list[dict[str, float]], dict[str, float], dict]:
+        x_full_local, fertilizers_local, achieved_local, recipe_local = solve_with_stages(
+            use_relative_weighting=use_relative_weighting,
+            singleton_supplier_enabled_local=singleton_supplier_enabled_local,
+            singleton_underfill_enabled_local=singleton_underfill_enabled_local,
+        )
+        if use_relative_weighting and not (n_total_governor_enabled or n_form_priority_weights):
+            x_full_unweighted, ferts_unweighted, achieved_unweighted, recipe_unweighted = solve_with_stages(
+                use_relative_weighting=False,
+                singleton_supplier_enabled_local=singleton_supplier_enabled_local,
+                singleton_underfill_enabled_local=singleton_underfill_enabled_local,
+            )
+            weighted_score = _score_by_priority_groups(
+                objective_keys,
+                target_raw,
+                achieved_local,
+                priority_groups=priority_groups,
+            )
+            unweighted_score = _score_by_priority_groups(
+                objective_keys,
+                target_raw,
+                achieved_unweighted,
+                priority_groups=priority_groups,
+            )
+            if unweighted_score < weighted_score:
+                return x_full_unweighted, ferts_unweighted, achieved_unweighted, recipe_unweighted
+        return x_full_local, fertilizers_local, achieved_local, recipe_local
+
+    x_full, fertilizers_out, achieved_elements, full_recipe = solve_variant(
+        use_relative_weighting=relative_weighting,
+        singleton_supplier_enabled_local=singleton_supplier_enabled,
+        singleton_underfill_enabled_local=singleton_underfill_enabled,
     )
-    if relative_weighting and not (n_total_governor_enabled or n_form_priority_weights):
-        x_full_unweighted, ferts_unweighted, achieved_unweighted, recipe_unweighted = solve_with_stages(
-            use_relative_weighting=False
-        )
-        weighted_score = _score_by_priority_groups(
-            objective_keys,
-            target_raw,
-            achieved_elements,
-            priority_groups=priority_groups,
-        )
-        unweighted_score = _score_by_priority_groups(
-            objective_keys,
-            target_raw,
-            achieved_unweighted,
-            priority_groups=priority_groups,
-        )
-        if unweighted_score < weighted_score:
-            x_full = x_full_unweighted
-            fertilizers_out = ferts_unweighted
-            achieved_elements = achieved_unweighted
-            full_recipe = recipe_unweighted
+    if nitrogen_objective_mode == "n_total_only" and _uses_default_solver_portfolio(solver_config):
+        default_variants = [
+            (relative_weighting, singleton_supplier_enabled, singleton_underfill_enabled),
+            (True, False, singleton_underfill_enabled),
+            (False, singleton_supplier_enabled, singleton_underfill_enabled),
+            (False, False, singleton_underfill_enabled),
+        ]
+        best_variant = (x_full, fertilizers_out, achieved_elements, full_recipe)
+        best_score = _default_portfolio_score(objective_keys, target_raw, achieved_elements)
+        seen_variants: set[tuple[bool, bool, bool]] = set()
+        for candidate in default_variants:
+            if candidate in seen_variants:
+                continue
+            seen_variants.add(candidate)
+            candidate_result = solve_variant(
+                use_relative_weighting=candidate[0],
+                singleton_supplier_enabled_local=candidate[1],
+                singleton_underfill_enabled_local=candidate[2],
+            )
+            candidate_score = _default_portfolio_score(
+                objective_keys,
+                target_raw,
+                candidate_result[2],
+            )
+            if candidate_score < best_score:
+                best_variant = candidate_result
+                best_score = candidate_score
+        x_full, fertilizers_out, achieved_elements, full_recipe = best_variant
 
     errors_mg_l = {}
     errors_percent = {}

@@ -42,10 +42,10 @@ BOOLEAN_SOLVER_KEYS = (
     "n_total_governor_enabled",
 )
 BOOLEAN_DEFAULTS = {
-    "relative_weighting": True,
+    "relative_weighting": False,
     "macro_priority_enabled": False,
     "stage_optimization_enabled": False,
-    "singleton_supplier_enabled": True,
+    "singleton_supplier_enabled": False,
     "singleton_underfill_enabled": True,
     "n_total_governor_enabled": False,
 }

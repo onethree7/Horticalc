@@ -16,7 +16,9 @@ def test_solver_config_definitions_use_data_backed_defaults() -> None:
     defaults = {definition["key"]: definition["default"] for definition in SOLVER_CONFIG_DEFINITIONS}
 
     assert defaults["nitrogen_objective_mode"] == "n_total_only"
-    assert defaults["relative_weighting"] is True
+    assert defaults["relative_weighting"] is False
+    assert defaults["singleton_supplier_enabled"] is False
+    assert defaults["singleton_underfill_enabled"] is True
     assert defaults["macro_priority_enabled"] is False
     assert defaults["stage_optimization_enabled"] is False
 

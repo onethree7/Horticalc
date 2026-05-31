@@ -6,11 +6,11 @@ from typing import Any
 
 
 SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
-    {"key": "relative_weighting", "type": "boolean", "default": True},
+    {"key": "relative_weighting", "type": "boolean", "default": False},
     {"key": "overshoot_penalty", "type": "number", "default": 1.0},
     {"key": "irls_max_outer_iter", "type": "integer", "default": 4},
     {"key": "scale_eps_mg_per_l", "type": "number", "default": 1.0},
-    {"key": "singleton_supplier_enabled", "type": "boolean", "default": True},
+    {"key": "singleton_supplier_enabled", "type": "boolean", "default": False},
     {"key": "singleton_share_threshold", "type": "number", "default": 0.85},
     {"key": "singleton_max_regress_pp", "type": "number", "default": 0.25},
     {"key": "singleton_underfill_enabled", "type": "boolean", "default": True},

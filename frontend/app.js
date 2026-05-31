@@ -381,11 +381,11 @@ function normalizeSolverConfigDefinitions(definitions = []) {
 }
 
 const FALLBACK_SOLVER_CONFIG_DEFINITIONS = [
-  { key: "relative_weighting", type: "boolean", defaultValue: true },
+  { key: "relative_weighting", type: "boolean", defaultValue: false },
   { key: "overshoot_penalty", type: "number", defaultValue: 1.0 },
   { key: "irls_max_outer_iter", type: "integer", defaultValue: 4 },
   { key: "scale_eps_mg_per_l", type: "number", defaultValue: 1.0 },
-  { key: "singleton_supplier_enabled", type: "boolean", defaultValue: true },
+  { key: "singleton_supplier_enabled", type: "boolean", defaultValue: false },
   { key: "singleton_share_threshold", type: "number", defaultValue: 0.85 },
   { key: "singleton_max_regress_pp", type: "number", defaultValue: 0.25 },
   { key: "singleton_underfill_enabled", type: "boolean", defaultValue: true },

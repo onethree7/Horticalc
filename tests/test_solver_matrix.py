@@ -102,10 +102,10 @@ def test_boolean_solver_configs_start_with_current_simple_default() -> None:
     first = solver_matrix.boolean_solver_configs(["n_total_only"])[0]
 
     assert first.values == {
-        "relative_weighting": True,
+        "relative_weighting": False,
         "macro_priority_enabled": False,
         "stage_optimization_enabled": False,
-        "singleton_supplier_enabled": True,
+        "singleton_supplier_enabled": False,
         "singleton_underfill_enabled": True,
         "n_total_governor_enabled": False,
         "nitrogen_objective_mode": "n_total_only",

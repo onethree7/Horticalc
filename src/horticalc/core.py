@@ -584,8 +584,16 @@ def run_recipe(recipe_path: Path, water_profile_path: Path | None = None) -> dic
     return res.to_dict()
 
 
-def solve_recipe(recipe_path: Path, water_profile_path: Path | None = None) -> dict:
+def solve_recipe(
+    recipe_path: Path,
+    water_profile_path: Path | None = None,
+    solver_config_overrides: dict | None = None,
+) -> dict:
     from .solver import solve_recipe as run_solver
 
-    result = run_solver(recipe_path, water_profile_path=water_profile_path)
+    result = run_solver(
+        recipe_path,
+        water_profile_path=water_profile_path,
+        solver_config_overrides=solver_config_overrides,
+    )
     return result.to_dict()

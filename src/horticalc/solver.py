@@ -877,6 +877,15 @@ def solve_recipe_data(
     )
 
 
-def solve_recipe(recipe_path: Path, water_profile_path: Path | None = None) -> SolveResult:
+def solve_recipe(
+    recipe_path: Path,
+    water_profile_path: Path | None = None,
+    solver_config_overrides: dict | None = None,
+) -> SolveResult:
     recipe = load_recipe(recipe_path)
+    if solver_config_overrides:
+        recipe = dict(recipe)
+        solver_config = dict(recipe.get("solver_config") or {})
+        solver_config.update(solver_config_overrides)
+        recipe["solver_config"] = solver_config
     return solve_recipe_data(recipe, water_profile_path=water_profile_path)

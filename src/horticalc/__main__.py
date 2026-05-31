@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .core import run_recipe, solve_recipe
 from .paths import resolve_recipe_path, resolve_water_profile_path
+from .solver_config import add_solver_config_arguments, solver_config_overrides_from_args
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -43,6 +44,7 @@ def main(argv: list[str] | None = None) -> None:
             help="JSON hübsch formatieren",
             action="store_true",
         )
+        add_solver_config_arguments(parser)
         args = parser.parse_args(args_list[1:])
         recipe_arg = args.load_recipe or args.recipe
         if not recipe_arg:
@@ -51,7 +53,15 @@ def main(argv: list[str] | None = None) -> None:
         water_profile_path = None
         if args.load_water:
             water_profile_path = resolve_water_profile_path(args.load_water)
-        result = solve_recipe(recipe_path, water_profile_path=water_profile_path)
+        try:
+            solver_config_overrides = solver_config_overrides_from_args(args)
+        except (json.JSONDecodeError, ValueError) as exc:
+            parser.error(str(exc))
+        result = solve_recipe(
+            recipe_path,
+            water_profile_path=water_profile_path,
+            solver_config_overrides=solver_config_overrides,
+        )
     else:
         parser = argparse.ArgumentParser(
             prog="horticalc",

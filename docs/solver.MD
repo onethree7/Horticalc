@@ -215,7 +215,7 @@ This enables reliable regression testing and golden-file comparisons.
 
 ## Configuration (solver_config)
 
-Recipes may supply `solver_config` to tune behavior (names may vary depending on implementation):
+Recipes may supply `solver_config` to tune behavior. The GUI writes the same keys into recipe payloads, and the CLI can optionally override them for a single run.
 
 Typical toggles:
 
@@ -242,6 +242,16 @@ Typical toggles:
   - `n_total_governor_enabled` (keep `N_total` in the objective and penalize only overshoot)
   - `n_total_governor_weight` (overshoot-only weight multiplier for `N_total`)
   - `n_form_priority_weights` (per-form multipliers like `{"N_NO3": 3.0, "N_UREA": 2.0, "N_NH4": 1.0}`)
+
+CLI overrides:
+
+- Use explicit switches for GUI-exposed primitives, e.g.:
+  - `python -m horticalc solve recipes/solve_golden.yml --no-relative-weighting --overshoot-penalty 1.5`
+  - `python -m horticalc solve recipes/solve_golden.yml --n-total-governor-enabled --n-total-governor-weight 0.05`
+- Use `--solver-config KEY=VALUE` for advanced/structured keys, e.g.:
+  - `python -m horticalc solve recipes/solve_golden.yml --solver-config n_form_priority_weights='{"N_NO3": 3.0}'`
+- Use `--solver-config-json '{"priority_groups":[["N_total"],["K"]],"priority_group_weights":[3.5,2.5]}'` to merge a JSON object into `solver_config`.
+- CLI values are optional overrides. If no switch is supplied, the recipe's `solver_config` is used unchanged.
 
 ## Verification
 

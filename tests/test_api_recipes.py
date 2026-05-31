@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
 from api.app import app
+from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS
 
 
 def test_recipes_filters_solver_and_default() -> None:
@@ -61,3 +62,11 @@ def test_recipe_payload_persists_solver_config() -> None:
     assert get_response.status_code == 200
     recipe = get_response.json()
     assert recipe.get("solver_config") == payload["solver_config"]
+
+
+def test_solver_config_schema_matches_backend_definitions() -> None:
+    client = TestClient(app)
+    response = client.get("/schema/solver-config")
+
+    assert response.status_code == 200
+    assert response.json() == {"definitions": list(SOLVER_CONFIG_DEFINITIONS)}

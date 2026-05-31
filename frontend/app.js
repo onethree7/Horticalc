@@ -77,11 +77,6 @@ const solverConfigControls = {
   singleton_underfill_enabled: document.querySelector("#solverConfigSingletonUnderfillEnabled"),
   singleton_underfill_share_threshold: document.querySelector("#solverConfigSingletonUnderfillShareThreshold"),
   singleton_underfill_max_iter: document.querySelector("#solverConfigSingletonUnderfillMaxIter"),
-  stage_optimization_enabled: document.querySelector("#solverConfigStageOptimizationEnabled"),
-  stage_regression_pp: document.querySelector("#solverConfigStageRegressionPp"),
-  stage_regression_mg_l: document.querySelector("#solverConfigStageRegressionMgL"),
-  macro_priority_enabled: document.querySelector("#solverConfigMacroPriorityEnabled"),
-  macro_regress_pp: document.querySelector("#solverConfigMacroRegressPp"),
   n_total_governor_enabled: document.querySelector("#solverConfigNTotalGovernorEnabled"),
   n_total_governor_weight: document.querySelector("#solverConfigNTotalGovernorWeight"),
 };
@@ -364,7 +359,28 @@ function parseDecimalInput(raw) {
   return Number.isFinite(n) ? n : null;
 }
 
-const solverConfigDefinitions = [
+function normalizeSolverConfigDefinitions(definitions = []) {
+  if (!Array.isArray(definitions)) {
+    return [...FALLBACK_SOLVER_CONFIG_DEFINITIONS];
+  }
+  const normalized = definitions
+    .map((definition) => ({
+      key: String(definition?.key || ""),
+      type: String(definition?.type || ""),
+      defaultValue: Object.prototype.hasOwnProperty.call(definition || {}, "default")
+        ? definition.default
+        : definition?.defaultValue,
+    }))
+    .filter(
+      (definition) =>
+        definition.key &&
+        solverConfigControls[definition.key] &&
+        ["boolean", "number", "integer"].includes(definition.type)
+    );
+  return normalized.length ? normalized : [...FALLBACK_SOLVER_CONFIG_DEFINITIONS];
+}
+
+const FALLBACK_SOLVER_CONFIG_DEFINITIONS = [
   { key: "relative_weighting", type: "boolean", defaultValue: true },
   { key: "overshoot_penalty", type: "number", defaultValue: 1.0 },
   { key: "irls_max_outer_iter", type: "integer", defaultValue: 4 },
@@ -375,14 +391,10 @@ const solverConfigDefinitions = [
   { key: "singleton_underfill_enabled", type: "boolean", defaultValue: true },
   { key: "singleton_underfill_share_threshold", type: "number", defaultValue: 0.85 },
   { key: "singleton_underfill_max_iter", type: "integer", defaultValue: 2 },
-  { key: "stage_optimization_enabled", type: "boolean", defaultValue: true },
-  { key: "stage_regression_pp", type: "number", defaultValue: 5.0 },
-  { key: "stage_regression_mg_l", type: "number", defaultValue: 2.0 },
-  { key: "macro_priority_enabled", type: "boolean", defaultValue: true },
-  { key: "macro_regress_pp", type: "number", defaultValue: 0.25 },
   { key: "n_total_governor_enabled", type: "boolean", defaultValue: false },
   { key: "n_total_governor_weight", type: "number", defaultValue: 1.0 },
 ];
+let solverConfigDefinitions = [...FALLBACK_SOLVER_CONFIG_DEFINITIONS];
 
 function validLiters(value) {
   const liters = Number(value);
@@ -456,14 +468,26 @@ function buildSolverConfigPayload() {
   return config;
 }
 
+function sanitizeSolverConfig(config = {}) {
+  const allowedKeys = new Set(solverConfigDefinitions.map((definition) => definition.key));
+  const sanitized = {};
+  Object.entries(config || {}).forEach(([key, value]) => {
+    if (allowedKeys.has(key)) {
+      sanitized[key] = value;
+    }
+  });
+  return sanitized;
+}
+
 function applySolverConfig(config = {}) {
+  const sanitized = sanitizeSolverConfig(config);
   solverConfigDefinitions.forEach((definition) => {
     const input = solverConfigControls[definition.key];
     if (!input) {
       return;
     }
-    const value = Object.prototype.hasOwnProperty.call(config, definition.key)
-      ? config[definition.key]
+    const value = Object.prototype.hasOwnProperty.call(sanitized, definition.key)
+      ? sanitized[definition.key]
       : definition.defaultValue;
     if (definition.type === "boolean") {
       input.checked = Boolean(value);
@@ -2133,6 +2157,14 @@ function fetchRecipes() {
   return fetchJson(`${apiBase()}/recipes`, "Fehler beim Laden der Recipes");
 }
 
+async function fetchSolverConfigDefinitions() {
+  const data = await fetchJson(
+    `${apiBase()}/schema/solver-config`,
+    "Fehler beim Laden der Solver-Konfiguration"
+  );
+  return normalizeSolverConfigDefinitions(data?.definitions || []);
+}
+
 function fetchRecipeData(filename) {
   return fetchJson(`${apiBase()}/recipes/${encodeURIComponent(filename)}`, "Fehler beim Laden des Recipes");
 }
@@ -2495,6 +2527,13 @@ function restoreSolverAllowedFromStorage(context = solverAllowedContext) {
 async function init() {
   let hasStoredAllowed = false;
   setApiStatus("Lade Daten", "loading");
+  try {
+    solverConfigDefinitions = await fetchSolverConfigDefinitions();
+  } catch (error) {
+    reportError(error, "Fehler beim Laden der Solver-Defaults");
+    solverConfigDefinitions = [...FALLBACK_SOLVER_CONFIG_DEFINITIONS];
+  }
+  applySolverConfig();
   try {
     fertilizerEditorPreferredKeys = await fetchFertilizerCompKeys();
   } catch (error) {

@@ -37,9 +37,3 @@ python -m horticalc solve recipes/solve_golden.yml --pretty
 - Build and release guide: [docs/release_build.md](docs/release_build.md)
 - Full docs audit from the 2026-06-01 rework: [docs/audit_2026_06_01.md](docs/audit_2026_06_01.md)
 
-## Verify
-
-```bash
-python scripts/check_unicode_controls.py
-python -m pytest -q
-```

@@ -9,8 +9,10 @@ def test_solver_allowed_sync_button_present():
     assert 'id="solverAllowedFromRecipe"' in content
     assert "Aus Rechner übernehmen" in content
     assert 'id="solverAllowedSearch"' in content
-    assert 'id="solverAllowedSelectVisible"' in content
-    assert 'id="solverAllowedDeselectVisible"' in content
+    assert 'id="solverAllowedSelectVisible"' not in content
+    assert 'id="solverAllowedDeselectVisible"' not in content
+    assert "Sichtbare auswählen" not in content
+    assert "Sichtbare abwählen" not in content
     assert 'id="solverAllowedClear"' in content
     assert 'id="solverAllowedFertilizers" class="table-wrap solver-picker"' in content
     assert 'id="solverOverrides" class="solver-overrides"' in content

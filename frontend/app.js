@@ -56,8 +56,6 @@ const solverTargetsTable = document.querySelector("#solverTargetsTable tbody");
 const solverAllowedFertilizersSelect = document.querySelector("#solverAllowedFertilizers");
 const solverAllowedSearchInput = document.querySelector("#solverAllowedSearch");
 const solverAllowedCount = document.querySelector("#solverAllowedCount");
-const solverAllowedSelectVisibleButton = document.querySelector("#solverAllowedSelectVisible");
-const solverAllowedDeselectVisibleButton = document.querySelector("#solverAllowedDeselectVisible");
 const solverAllowedClearButton = document.querySelector("#solverAllowedClear");
 const solverAllowedFromRecipeButton = document.querySelector("#solverAllowedFromRecipe");
 const solverOverridesDetails = document.querySelector("#solverOverrides");
@@ -2932,25 +2930,6 @@ if (solverAllowedSearchInput) {
 if (solverAllowedFromRecipeButton) {
   solverAllowedFromRecipeButton.addEventListener("click", () => {
     syncSolverAllowedWithSelection("merge");
-  });
-}
-
-if (solverAllowedSelectVisibleButton) {
-  solverAllowedSelectVisibleButton.addEventListener("click", () => {
-    updateSolverAllowedFertilizers(
-      getVisibleSolverAllowedOptions().map((fert) => fert.name),
-      "merge"
-    );
-  });
-}
-
-if (solverAllowedDeselectVisibleButton) {
-  solverAllowedDeselectVisibleButton.addEventListener("click", () => {
-    const visibleNames = new Set(getVisibleSolverAllowedOptions().map((fert) => fert.name));
-    updateSolverAllowedFertilizers(
-      solverAllowedFertilizers.filter((name) => !visibleNames.has(name)),
-      "replace"
-    );
   });
 }
 

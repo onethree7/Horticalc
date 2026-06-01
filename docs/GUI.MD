@@ -30,8 +30,9 @@ the ion-based `Ca:Mg` ratio, centered EC solution/water values, and compact
 mg/L ion-ratio chips from `npk_metrics.npk_ratios_ion`.
 
 The solver allowed-fertilizer picker in `frontend/index.html` is rendered by
-`frontend/app.js` as a compact searchable checkbox list using the same framed
-table surface as the surrounding calculator UI. It stores allowed fertilizer
+`frontend/app.js` as a compact searchable checkbox table using the same
+`grid grid--form` rendering as the surrounding Solver target and result tables.
+It stores allowed fertilizer
 selections by context in `localStorage` and does not write fertilizer favorites
 or defaults to CSV.
 

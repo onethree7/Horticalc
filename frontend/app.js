@@ -1222,22 +1222,48 @@ function renderSolverAllowedOptions() {
   solverAllowedFertilizersSelect.innerHTML = "";
   const visibleOptions = getVisibleSolverAllowedOptions();
 
+  const table = document.createElement("table");
+  table.className = "grid grid--form solver-picker-table";
+
+  const colgroup = document.createElement("colgroup");
+  const checkCol = document.createElement("col");
+  checkCol.className = "col-check";
+  const nameCol = document.createElement("col");
+  colgroup.append(checkCol, nameCol);
+
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  const checkHead = document.createElement("th");
+  checkHead.textContent = "";
+  const nameHead = document.createElement("th");
+  nameHead.textContent = "Dünger";
+  headRow.append(checkHead, nameHead);
+  thead.appendChild(headRow);
+
+  const tbody = document.createElement("tbody");
+  table.append(colgroup, thead, tbody);
+
   if (!visibleOptions.length) {
-    const empty = document.createElement("div");
-    empty.className = "solver-picker-empty";
-    empty.textContent = "Keine Dünger gefunden";
-    solverAllowedFertilizersSelect.appendChild(empty);
+    const emptyRow = document.createElement("tr");
+    const emptyCell = document.createElement("td");
+    emptyCell.colSpan = 2;
+    emptyCell.textContent = "Keine Dünger gefunden";
+    emptyRow.appendChild(emptyCell);
+    tbody.appendChild(emptyRow);
+    solverAllowedFertilizersSelect.appendChild(table);
     updateSolverAllowedCount();
     return;
   }
 
   visibleOptions.forEach((fert) => {
     const name = fert.name;
-    const row = document.createElement("div");
+    const row = document.createElement("tr");
     row.className = "solver-picker-row";
     row.setAttribute("role", "option");
     row.tabIndex = 0;
 
+    const checkCell = document.createElement("td");
+    checkCell.className = "solver-picker-check";
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.value = name;
@@ -1271,17 +1297,14 @@ function renderSolverAllowedOptions() {
       checkbox.dispatchEvent(new Event("change", { bubbles: true }));
     });
 
-    const copy = document.createElement("span");
-    copy.className = "solver-picker-copy";
-
-    const title = document.createElement("span");
-    title.className = "solver-picker-title";
-    title.textContent = name;
-    copy.append(title);
-    row.append(checkbox, copy);
+    const nameCell = document.createElement("td");
+    nameCell.textContent = name;
+    checkCell.appendChild(checkbox);
+    row.append(checkCell, nameCell);
     setSolverAllowedRowState(row, checkbox.checked);
-    solverAllowedFertilizersSelect.appendChild(row);
+    tbody.appendChild(row);
   });
+  solverAllowedFertilizersSelect.appendChild(table);
   updateSolverAllowedCount();
 }
 

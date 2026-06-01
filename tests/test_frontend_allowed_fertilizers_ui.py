@@ -27,6 +27,9 @@ def test_solver_allowed_sync_logic_present():
     assert "getVisibleSolverAllowedOptions" in content
     assert "solverAllowedSearchInput" in content
     assert "rerenderPicker: false" in content
+    assert 'table.className = "grid grid--form solver-picker-table"' in content
+    assert "document.createElement(\"tr\")" in content
+    assert "document.createElement(\"td\")" in content
 
 
 def test_solver_auto_apply_control_present():

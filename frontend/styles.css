@@ -863,9 +863,7 @@ main {
   height: min(18rem, 32vh);
   min-height: 10rem;
   margin: var(--space-2) 0 var(--space-3);
-  padding: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: auto;
   scrollbar-gutter: stable;
 }
 
@@ -874,54 +872,25 @@ main {
   margin-bottom: var(--space-2);
 }
 
+.solver-picker-table {
+  margin: 0;
+}
+
+.solver-picker-table .col-check {
+  width: 2.4rem;
+}
+
+.solver-picker-table th:first-child,
+.solver-picker-table td:first-child {
+  text-align: center;
+}
+
 .solver-picker-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-2);
-  align-items: center;
-  min-height: 1.8rem;
-  padding: var(--space-2) var(--space-3);
-  border-bottom: 1px solid rgba(174, 183, 166, 0.08);
-  color: var(--app-text);
   cursor: pointer;
 }
 
-.solver-picker-row:nth-child(odd) {
-  background: rgba(20, 31, 23, 0.46);
-}
-
-.solver-picker-row:nth-child(even) {
-  background: rgba(10, 16, 14, 0.5);
-}
-
-.solver-picker-row:hover,
-.solver-picker-row:focus-within {
-  background: rgba(155, 211, 106, 0.08);
-}
-
-.solver-picker-row.is-selected {
-  background: rgba(76, 199, 176, 0.1);
-}
-
-.solver-picker-copy {
-  min-width: 0;
-}
-
-.solver-picker-title {
-  display: block;
-  overflow: hidden;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.solver-picker-empty {
-  color: var(--app-muted);
-  font-size: var(--text-xs);
-}
-
-.solver-picker-empty {
-  padding: var(--space-4);
+.solver-picker-check input {
+  margin: 0;
 }
 
 .solver-picker-actions {

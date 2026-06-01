@@ -1,391 +1,138 @@
 # Solver Matrix Benchmark
 
-The solver matrix is a removable analysis tool for testing Horticalc solver
-quality across many target profiles, fertilizer subsets, and solver
-configuration toggles.
+Status: current-state.
 
-It is intentionally kept outside the product UI and outside the normal solver
-code path. Think of it as a solver laboratory: it generates data so we can see
-which solver settings behave well, which profiles are hard to solve, and which
-fertilizers matter most.
+The solver matrix is a removable research harness in `scripts/solver_matrix.py`.
+It is not part of product runtime and is not called by the API, UI, core, or
+launcher.
+
+## Purpose
+
+Use it to compare solver quality across:
+
+- target profiles
+- allowed fertilizer subsets
+- nitrogen objective modes
+- solver config toggles
+- numeric refinement settings
+
+The benchmark scores the same `objective_elements` returned by
+`solve_recipe_data()`. It does not independently decide that report-only
+targets such as `S`, `SO4`, `Na`, or `Cl` are optimization errors.
 
 ## Files
 
-- `scripts/solver_matrix.py` runs the matrix and writes result files.
-- `scripts/solver_matrix_cases.yml` defines the default water, fertilizers, and custom target profiles.
-- `logs/solver_matrix/...` receives generated output. This folder is ignored by git.
-- `tests/test_solver_matrix.py` covers the name validation, scoring rules, and CLI smoke path.
+- `scripts/solver_matrix.py`: run matrix/deep benchmark.
+- `scripts/solver_matrix_cases.yml`: default water, fertilizers, nitrogen
+  modes, and custom profiles.
+- `scripts/solver_matrix_analyze.py`: analyze a completed run.
+- `logs/solver_matrix/...`: generated output, ignored by git.
+- `tests/test_solver_matrix.py`: score, config, cap, and smoke tests.
+- `tests/test_solver_matrix_analyze.py`: analysis tests.
 
-See [Solver matrix deep run report 2026-05-31](solver_matrix_deep_run_2026_05_31.md)
-for the first large-run interpretation and the resulting solver-default
-decision record.
+## Current Defaults
 
-Large local runs are capped by default. `--max-runs` defaults to `100000` so a
-normal `matrix` or `deep` command cannot accidentally start another multi-hour
-2.6M-row run. Use `--max-runs 0` only for an intentionally uncapped research
-run. When the full base grid is larger than the cap, the runner samples
-fertilizer subsets deterministically across the subset space instead of simply
-stopping after the first rows. This keeps capped runs useful across all selected
-profiles and solver configs.
-
-## Default Scenario
-
-The default case file uses:
-
-- Water profile: `65936`
-- Osmosis: `66%`
-- Liters: `10.0`
-- Fertilizers:
-  - `Compo Fetrilon Combi 1`
-  - `Compo Hakaphos Soft16-8-22(+3) Spezial`
-  - `Compo Hakaphos Blau 15-10-15(+2)`
-  - `Yara Magnitra-L Magnesiumnitrat`
-  - `Yara Tera CALCINIT`
-  - `HAIFA monokaliumphosphat MKP`
-  - `K+S EPSO Top Bittersalz 16-39`
-  - `YaraTera KRISTALON ROT CALCIUM`
-  - `Agrolution Special 313 14-7-14+14CaO+TE`
-  - `S3 Kaliwasser 28 Be`
-  - `Peters Professional Combi Sol 6-18-36+3MgO+TE`
-- Nitrogen objective modes:
-  - `n_total_only`
-  - `n_forms_only`
-
-The matrix loads all shipped nutrient solution profiles from
-`data/nutrient_solutions/*.yml` and also includes the custom profile
-`saloner_bernstein_with_si_7` from `scripts/solver_matrix_cases.yml`.
-
-Fertilizer names must match exactly after Horticalc loads them. The script
-intentionally rejects surrounding whitespace and prints a hint if a name looks
-close to an existing fertilizer.
-
-## Nitrogen Objective Modes
-
-Nitrogen mode is solver behavior, not benchmark-only filtering. The matrix
-passes `solver_config.nitrogen_objective_mode` into `solve_recipe_data()`, and
-then scores exactly the objectives returned by the solver.
-
-Available modes:
-
-- `as_targets`: legacy solver behavior. Use every non-zero target key,
-  including `N_total` and any non-zero N forms that appear together.
-- `n_total_only`: current default solver behavior. Make `N_total` the boss. Exclude `N_NH4`, `N_NO3`, and
-  `N_UREA` from solver objectives.
-- `n_forms_only`: solve individual N forms. Exclude `N_total`, and include
-  `N_NH4`, `N_NO3`, and `N_UREA` as objectives when they exist in the target
-  profile, even when a form target is `0`.
-
-The default case file intentionally runs `n_total_only` and `n_forms_only` so
-deep runs compare those two philosophies directly.
-
-The current solver defaults are intentionally simple and data-backed:
+The first boolean solver config starts from the implementation defaults in
+`src/horticalc/solver_config.py`:
 
 - `nitrogen_objective_mode: n_total_only`
-- `relative_weighting: true`
+- `relative_weighting: false`
 - `macro_priority_enabled: false`
 - `stage_optimization_enabled: false`
-- `singleton_supplier_enabled: true`
+- `singleton_supplier_enabled: false`
 - `singleton_underfill_enabled: true`
 - `n_total_governor_enabled: false`
 
+Historical note: the 2026-05-31 deep run recommended a different default for
+`relative_weighting`. Current code and tests default it to `false`.
+
 ## Presets
 
-### quick
-
-Use this for fast feedback while developing the solver or checking a branch.
-
-```powershell
-python scripts\solver_matrix.py --preset quick
-```
-
-Behavior:
-
-- Uses the full fertilizer list as one subset.
-- Runs the full boolean solver toggle grid.
-- With the default case file, this is usually `10 profiles * 1 subset * 64 boolean configs * 2 N modes = 1280 runs`.
-- Writes results to `logs/solver_matrix/dev` unless `--out-dir` is provided.
-
-### matrix
-
-Use this when you want to test all fertilizer inclusion/exclusion combinations.
-
-```powershell
-python scripts\solver_matrix.py --preset matrix --max-runs 100000 --out-dir logs\solver_matrix\matrix_001
-```
-
-Behavior:
-
-- Tests every non-empty subset of the 11 allowed fertilizers.
-- That is `2^11 - 1 = 2047` fertilizer subsets.
-- Runs the full boolean solver toggle grid for each subset.
-- With the default case file, the uncapped full grid is `10 profiles * 2047 subsets * 64 boolean configs * 2 N modes = 2620160 runs`.
-- By default, the CLI stops at `100000` attempted rows.
-- If the cap is smaller than the full base grid, fertilizer subsets are sampled
-  across the full subset list so the run is not biased toward the first profile
-  or first subset sizes.
-- This is the main "with X, without Y/Z/A, with B" mode.
-
-### deep
-
-Use this for the biggest solver exploration pass.
-
-```powershell
-python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --max-runs 100000 --out-dir logs\solver_matrix\deep_001
-```
-
-Behavior:
-
-- Starts with the full `matrix` preset.
-- Keeps the best `--top-n` base rows per profile.
-- Adds numeric mutations around those winners.
-- Uses `--seed` to make refinement ordering reproducible.
-- Stops at `--max-runs` rows. The default cap is `100000`.
-- Reserves a small part of the cap for refinement when possible, then samples
-  the base subset grid to fit the remaining budget.
-
-The deep refinement mutates numeric solver settings such as:
-
-- `overshoot_penalty`
-- `scale_eps_mg_per_l`
-- `irls_max_outer_iter`
-- `singleton_share_threshold`
-- `singleton_underfill_share_threshold`
-- `stage_regression_pp`
-- `stage_regression_mg_l`
-- `macro_regress_pp`
-- `n_total_governor_weight`
-
-This is intentionally not a blind billion-run brute force. The script first
-finds promising boolean configurations, then tries numeric variations around
-the strongest candidates.
-
-## Useful Run Examples
-
-Run the default quick matrix:
-
-```powershell
-python scripts\solver_matrix.py --preset quick
-```
-
-Run quick into a named output folder:
-
-```powershell
-python scripts\solver_matrix.py --preset quick --out-dir logs\solver_matrix\quick_2026_05_31
-```
-
-Run only one target profile:
-
-```powershell
-python scripts\solver_matrix.py --preset quick --profiles Hoagland_Arnon_1950_Solution1_Nitrate
-```
-
-Run two target profiles:
-
-```powershell
-python scripts\solver_matrix.py --preset quick --profiles Hoagland_Arnon_1950_Solution1_Nitrate,saloner_bernstein_with_si_7
-```
-
-Run all fertilizer subsets:
-
-```powershell
-python scripts\solver_matrix.py --preset matrix --out-dir logs\solver_matrix\all_subsets
-```
-
-Run a reproducible deep pass:
-
-```powershell
-python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --max-runs 100000 --out-dir logs\solver_matrix\deep_1337
-```
-
-Run only one nitrogen mode:
-
-```powershell
-python scripts\solver_matrix.py --preset deep --nitrogen-modes n_total_only --seed 1337 --top-n 20 --max-runs 100000
-```
-
-Run the legacy mixed target behavior explicitly:
-
-```powershell
-python scripts\solver_matrix.py --preset quick --nitrogen-modes as_targets
-```
-
-Run a small smoke pass for development:
-
-```powershell
-python scripts\solver_matrix.py --preset quick --max-profiles 1 --max-configs 2 --out-dir logs\solver_matrix\smoke
-```
-
-Run an intentionally uncapped research pass only when you really want the
-multi-hour full grid:
-
-```powershell
-python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --max-runs 0 --out-dir logs\solver_matrix\uncapped_research
-```
-
-Run a small subset smoke pass:
-
-```powershell
-python scripts\solver_matrix.py --preset matrix --max-profiles 1 --max-subsets 5 --max-configs 4 --out-dir logs\solver_matrix\subset_smoke
-```
-
-Override water and osmosis from the command line:
-
-```powershell
-python scripts\solver_matrix.py --preset quick --water-profile 65936 --osmosis-percent 66
-```
-
-Use a different case file:
-
-```powershell
-python scripts\solver_matrix.py --preset quick --cases scripts\solver_matrix_cases.yml
-```
-
-On bash-like shells, use forward slashes:
+`quick`:
 
 ```bash
-python scripts/solver_matrix.py --preset quick --out-dir logs/solver_matrix/quick
+python scripts/solver_matrix.py --preset quick
 ```
 
-## Output Files
+- Uses the full fertilizer list as one subset.
+- Runs the boolean config grid.
+- Writes to `logs/solver_matrix/dev` unless `--out-dir` is set.
 
-Each run writes three files into the selected output directory.
+`matrix`:
 
-### results.csv
-
-This is the spreadsheet-friendly output. Each row is one solver run.
-
-Important columns:
-
-- `profile_id`: target profile id, usually the YAML stem.
-- `profile_name`: human-readable profile name.
-- `preset`: `quick`, `matrix`, or `deep`.
-- `phase`: `base` for boolean grid runs, `refine` for deep numeric mutations.
-- `nitrogen_objective_mode`: solver N-objective mode used for this row.
-- `subset_size`: number of allowed fertilizers in this run.
-- `fertilizers_allowed`: JSON list of fertilizer names used by this run.
-- `config_name`: readable summary of changed solver toggles.
-- `solver_config`: JSON object passed into the solver.
-- `status`: `ok` or `error`.
-- `elapsed_seconds`: solver runtime for this row.
-- `composite_score`: main quality score. Lower is better.
-- `macro_score`: RMS normalized score for macro targets.
-- `n_form_score`: RMS normalized score for nitrogen form targets.
-- `micro_score`: RMS normalized score for trace element targets.
-- `other_score`: RMS normalized score for other optimized/reportable targets.
-- `ignored_score`: report-only score for ignored solver targets.
-- `max_error_key`: worst non-ignored element by normalized score.
-- `max_error_score`: score for `max_error_key`.
-- `total_grams`: total grams of fertilizers in the generated solution.
-- `used_fertilizer_count`: number of fertilizers with non-zero grams.
-- `used_fertilizers`: JSON list of fertilizer grams.
-- `achieved_elements_mg_per_l`: JSON object with final achieved element values.
-- `errors_mg_per_l`: JSON object with achieved minus target for solver objective elements.
-- `errors_percent`: JSON object with percent errors for solver objective elements.
-- `ignored_targets`: JSON object for report-only targets.
-- `error`: exception text if the run failed.
-
-### results.jsonl
-
-This contains the same row data as `results.csv`, but one JSON object per line.
-Use it when writing follow-up analysis scripts.
-
-Example:
-
-```powershell
-Get-Content logs\solver_matrix\dev\results.jsonl | Select-Object -First 3
+```bash
+python scripts/solver_matrix.py --preset matrix --max-runs 100000 --out-dir logs/solver_matrix/matrix_001
 ```
 
-### summary.json
+- Tests all non-empty subsets of the allowed fertilizers.
+- Defaults to a `100000` attempted-row cap.
+- Samples subsets across the full subset list when the cap is smaller than the
+  full grid.
 
-This is the high-level report.
+`deep`:
 
-Important sections:
-
-- `total_runs`: number of rows attempted.
-- `failed_runs`: number of rows that captured an exception.
-- `best_by_profile`: best row for each profile by `composite_score`.
-- `global_config_ranking`: average score by `config_name` across successful runs.
-- `fertilizer_omission_impact`: compares average score when a fertilizer is present vs absent.
-- `allowed_fertilizers`: exact fertilizer names used.
-- `profiles`: profile ids included in the run.
-- `results_csv`: path to the CSV file.
-- `results_jsonl`: path to the JSONL file.
-- `max_runs`: active row cap (`0` means intentionally uncapped).
-- `stopped_early`: whether the cap stopped the run before the full preset was exhausted.
-- `sampled_subsets_for_cap`: whether the base subset list was sampled to fit
-  the cap.
-
-Quickly inspect the top global configs:
-
-```powershell
-python -c "import json; s=json.load(open('logs/solver_matrix/dev/summary.json', encoding='utf-8')); print(*s['global_config_ranking'][:10], sep='\n')"
+```bash
+python scripts/solver_matrix.py --preset deep --seed 1337 --top-n 20 --max-runs 100000 --out-dir logs/solver_matrix/deep_001
 ```
 
-Inspect best profile winners:
+- Starts from the matrix search.
+- Keeps the best base rows per profile.
+- Refines numeric settings around winners.
+- Uses the same safety cap behavior as matrix.
 
-```powershell
-python -c "import json; s=json.load(open('logs/solver_matrix/dev/summary.json', encoding='utf-8')); print(*[(k, v['config_name'], v['composite_score']) for k, v in s['best_by_profile'].items()], sep='\n')"
+Use `--max-runs 0` only for an intentionally uncapped research run.
+
+## Common Commands
+
+One-profile smoke:
+
+```bash
+python scripts/solver_matrix.py --preset quick --profiles Hoagland_Arnon_1950_Solution1_Nitrate --max-configs 2 --out-dir logs/solver_matrix/smoke
 ```
 
-## Analyze A Run
+One nitrogen mode:
 
-Use the analysis helper after a capped or uncapped run:
-
-```powershell
-python scripts\solver_matrix_analyze.py logs\solver_matrix\deep_1337
+```bash
+python scripts/solver_matrix.py --preset deep --nitrogen-modes n_total_only --seed 1337 --top-n 20 --max-runs 100000
 ```
 
-It writes:
+Analyze a run:
 
-- `analysis_summary.json`: structured aggregate data for follow-up tooling.
-- `analysis_report.md`: readable tables for mode comparison, feature effects,
-  best profile rows, fertilizer omission impact, and worst nutrient keys.
-
-Compare against an older run:
-
-```powershell
-python scripts\solver_matrix_analyze.py logs\solver_matrix\deep_1337 --baseline-dir "logs\solver_matrix\dev\old -hco3"
+```bash
+python scripts/solver_matrix_analyze.py logs/solver_matrix/deep_001
 ```
+
+Compare against a baseline:
+
+```bash
+python scripts/solver_matrix_analyze.py logs/solver_matrix/deep_001 --baseline-dir logs/solver_matrix/dev
+```
+
+## Output
+
+Each run writes:
+
+- `results.csv`: spreadsheet-friendly row output.
+- `results.jsonl`: one JSON object per row.
+- `summary.json`: aggregate counts, best rows, rankings, and metadata.
+
+The analyzer writes:
+
+- `analysis_summary.json`
+- `analysis_report.md`
 
 ## Scoring
 
-The matrix is a quality benchmark first, not a speed benchmark.
-
-The benchmark follows the solver 1:1. It does not independently decide which
-target keys are optimized. `composite_score`, `macro_score`, `n_form_score`,
-`micro_score`, and `other_score` only include keys returned by
-`result.objective_elements` from the solver. Any target key not present in
-`result.objective_elements` is report-only and goes to `ignored_targets`.
-
-For non-zero targets, the element score is absolute percent error:
+For non-zero targets:
 
 ```text
 abs((achieved - target) / target * 100)
 ```
 
-If the solver includes a zero target in `objective_elements`, percent error
-would be meaningless, so the matrix uses an absolute tolerance:
+For zero targets included by `objective_elements`, the matrix uses absolute
+tolerances by group because percent error is undefined.
 
-```text
-abs(achieved - target) / tolerance * 100
-```
-
-Current zero-target tolerances:
-
-- Micro targets: `0.05 mg/l`
-- N form targets: `1.0 mg/l`
-- Macro targets: `2.0 mg/l`
-- Other targets: `1.0 mg/l`
-
-Element groups:
-
-- Macro: `N_total`, `P`, `K`, `Ca`, `Mg`, `Si`
-- N forms: `N_NH4`, `N_NO3`, `N_UREA`
-- Micro: `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`
-- Ignored/report-only: any target not returned by the solver as an objective
-- Other: everything else
-
-Group scores are RMS values. The main score is:
+Main score:
 
 ```text
 3.0 * macro_score
@@ -394,131 +141,22 @@ Group scores are RMS values. The main score is:
 + 0.5 * other_score
 ```
 
-Lower is better.
+Lower is better. Ignored/report-only targets are written to ignored fields but
+do not affect `composite_score`.
 
-Ignored/report-only targets are written to `ignored_score` and
-`ignored_targets`, but they do not affect `composite_score`.
+## Keep It Removable
 
-## Important Interpretation Notes
-
-The current solver skips zero-valued targets and ignores `S`, `SO4`, `Na`, and
-`Cl` as optimization objectives. The matrix mirrors that behavior because it
-uses `result.objective_elements` as the source of truth. For example, `HCO3: 0`
-is report-only today because the solver skips zero targets; if the solver later
-optimizes non-zero `HCO3`, the matrix will score it automatically.
-
-The `quick` preset cannot calculate fertilizer omission impact, because every
-run uses all allowed fertilizers. Use `matrix` or `deep` to populate meaningful
-`avg_when_absent` and `omission_delta` values.
-
-## How To Compare Solver Settings
-
-Start with:
-
-```powershell
-python scripts\solver_matrix.py --preset quick --out-dir logs\solver_matrix\quick_baseline
-```
-
-Then inspect:
-
-- `summary.json -> best_by_profile`
-- `summary.json -> global_config_ranking`
-- `results.csv -> max_error_key`
-- `results.csv -> macro_score`
-- `results.csv -> n_form_score`
-- `results.csv -> micro_score`
-
-If one profile is weird, isolate it:
-
-```powershell
-python scripts\solver_matrix.py --preset matrix --profiles saloner_bernstein_with_si_7 --out-dir logs\solver_matrix\saloner_matrix
-```
-
-If one config family looks promising, run deep:
-
-```powershell
-python scripts\solver_matrix.py --preset deep --seed 1337 --top-n 20 --profiles saloner_bernstein_with_si_7 --max-runs 100000 --out-dir logs\solver_matrix\saloner_deep
-```
-
-Then compare `best_by_profile` between output folders.
-
-## How To Add A Custom Profile
-
-Add an entry under `custom_profiles` in `scripts/solver_matrix_cases.yml`:
-
-```yaml
-custom_profiles:
-  - id: my_profile_id
-    name: My Profile Name
-    source: Short source note
-    targets_mg_per_l:
-      N_total: 160
-      N_NH4: 32
-      N_NO3: 128
-      P: 30
-      K: 100
-      Ca: 120
-      Mg: 35
-      Fe: 1.5
-```
-
-Then run it by id:
-
-```powershell
-python scripts\solver_matrix.py --preset quick --profiles my_profile_id
-```
-
-## How To Change Fertilizers
-
-Edit `allowed_fertilizers` in `scripts/solver_matrix_cases.yml`.
-
-Use exact names from the loaded fertilizer CSV. If the script fails with an
-invalid fertilizer error, read the suggestion carefully. It often means there is
-extra whitespace or a slightly different product spelling.
-
-To test one profile with all subsets of a changed fertilizer list:
-
-```powershell
-python scripts\solver_matrix.py --preset matrix --profiles Hoagland_Arnon_1950_Solution1_Nitrate --out-dir logs\solver_matrix\custom_ferts
-```
-
-## Development And Verification
-
-Run focused tests:
-
-```powershell
-.\.venv\Scripts\python.exe -m pytest tests\test_solver_matrix.py -q
-```
-
-Run the full test suite:
-
-```powershell
-.\.venv\Scripts\python.exe -m pytest -q
-```
-
-Run a tiny CLI smoke test:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\solver_matrix.py --preset quick --profiles Hoagland_Arnon_1950_Solution1_Nitrate --max-configs 2 --out-dir logs\solver_matrix\smoke
-```
-
-Run the normal quick lab:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\solver_matrix.py --preset quick --out-dir logs\solver_matrix\dev
-```
-
-## Keeping It Removable
-
-The solver matrix is designed so it can be removed later without touching core
-solver behavior.
-
-To remove it:
+Product code must not depend on the matrix. To remove it:
 
 - Delete `scripts/solver_matrix.py`.
 - Delete `scripts/solver_matrix_cases.yml`.
-- Delete `tests/test_solver_matrix.py`.
-- Remove the solver matrix link from `docs/index.md`.
-- Delete any generated `logs/solver_matrix/...` folders if desired.
+- Delete `scripts/solver_matrix_analyze.py` if no longer needed.
+- Delete matrix tests.
+- Remove docs links.
+- Delete generated `logs/solver_matrix/...` output if desired.
 
-No product code depends on the matrix.
+## Verification
+
+```bash
+python -m pytest tests/test_solver_matrix.py tests/test_solver_matrix_analyze.py -q
+```

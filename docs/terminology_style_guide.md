@@ -1,88 +1,50 @@
-# Terminology & Formatting Guide (Core-Aligned)
+# Terminology And Style Guide
 
-This guide defines the **single source of truth** for wording, layout, and naming used for
-nutrient solutions, solver recipes, and recipes. It is **100% aligned with the core terms**
-and output keys defined in `src/horticalc/core.py`.
+Status: current-state.
 
-## 1) Canonical Terms (use exact wording)
+Use these terms consistently in docs, UI labels, and API descriptions.
 
-| Term | Definition | Scope |
-| --- | --- | --- |
-| **Recipe** | Input YAML that defines a nutrient solution. | CLI, API, UI, docs |
-| **Solver Recipe** | Input YAML for the solver (targets/constraints). | CLI, API, UI, docs |
-| **Nutrient Solution** | The computed result of a Recipe. | CLI, API, UI, docs |
-| **Solution Output** | The JSON output of the Nutrient Solution. | CLI, API, UI, docs |
+## Canonical Terms
 
-**Rules**
-- Do **not** use alternative terms (e.g., “result”, “output”, “solution recipe”) unless the
-  canonical term above applies.
-- Use the same capitalization in user-facing strings (e.g., “Solver Recipe”).
+| Term | Meaning |
+| --- | --- |
+| Recipe | A calculator input with fertilizer grams. |
+| Solver Recipe | An input for solving targets into fertilizer grams. |
+| Nutrient Solution | The computed solution represented by calculation output. |
+| Solution Output | The JSON object returned by the calculator core. |
+| Target Profile | A saved nutrient-solution target profile. |
+| Water Profile | A saved water baseline profile. |
+| AppRoot | Repo root in dev, executable folder in release. |
 
-## 1a) German UI Terms
+German UI labels currently use:
 
-When the UI is in German, use the following mappings consistently:
+| UI label | Meaning |
+| --- | --- |
+| `DUENGER-EDITOR` | Fertilizer editor. |
+| `WASSERWERTE` | Water profile and water values. |
+| `RECHNER` | Calculator recipe workflow. |
+| `SOLVER` | Target solver workflow. |
 
-| Canonical term | German UI term | Notes |
-| --- | --- | --- |
-| **Recipe** | **Düngerrezept** | Used for calculator recipes. |
-| **Solver Recipe** | **Zielprofil** | Used for solver targets/constraints. |
-| **Solution Output** | **Lösungsanalyse** | Use when referencing the computed output. |
+## Units
 
-## 2) Core-Aligned Output Keys (source: `CalcResult.to_dict`)
+- Use `mg/L` for element, oxide, and input concentration text.
+- Use `mmol/L` for ion molarity display.
+- Use `meq/L` for ion charge balance display.
+- Use `mS/cm` and `uS/cm` for EC.
+- Use `grams` for fertilizer dosing.
 
-The following keys are the **canonical field names**. Do not rename or paraphrase them in
-UI labels, docs, or API specs.
+## Output Keys
 
-**Primary Nutrient Solution output (order matters):**
-1. `liters`
-2. `elements_mg_per_l`
-3. `oxides_mg_per_l`
-4. `ions_mmol_per_l`
-5. `ions_meq_per_l`
-6. `ion_balance`
-7. `fertilizer_elements_mg_per_l`
-8. `fertilizer_oxides_mg_per_l`
-9. `fertilizer_ions_mmol_per_l`
-10. `fertilizer_ions_meq_per_l`
-11. `fertilizer_ion_balance`
-12. `ec_fertilizer`
-13. `water_elements_mg_per_l`
-14. `water_oxides_mg_per_l`
-15. `water_ions_mmol_per_l`
-16. `water_ions_meq_per_l`
-17. `water_ion_balance`
-18. `ec`
-19. `ec_water`
-20. `npk_metrics`
-21. `sluijsmann`
-22. `osmosis_percent`
+When describing JSON, use exact keys from code. Do not paraphrase keys.
 
-**Key formatting rules**
-- Use `snake_case` with units in the key suffix (e.g., `mg_per_l`, `mmol_per_l`).
-- Always use the exact key names above when describing output fields.
+Calculator output keys are listed in [Data model](data_model.md).
+Solver output keys are listed in [Data model](data_model.md).
 
-## 3) Core Terms Must Be Reflected Everywhere
+## Writing Rules
 
-When documenting or labeling output:
-- Use **Nutrient Solution** to describe computed results.
-- Use **Solution Output** to describe JSON output fields.
-- When referencing individual fields, **use the exact key name** shown above.
-
-## 4) CLI / UI / Docs Alignment
-
-All user-facing strings must use the canonical terms:
-- “Load Recipe”
-- “Load Solver Recipe”
-- “Nutrient Solution”
-- “Solution Output”
-
-Avoid:
-- “Compute Recipe Output”
-- “Solver result”
-- “Solution recipe”
-
-## 5) Examples
-
-✅ “Nutrient Solution (Solution Output): `elements_mg_per_l`”
-
-❌ “Recipe results: elements mg/l”
+- Current docs describe current code behavior and cite owning files.
+- Historical reports keep their original conclusions but must be labelled as
+  historical.
+- Avoid duplicating long command lists across docs; link to the operation guide.
+- Prefer ASCII in new docs unless a file already requires specific symbols or
+  user-facing labels.

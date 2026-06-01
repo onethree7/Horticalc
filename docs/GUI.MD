@@ -1,32 +1,77 @@
-# GUI - Horticalc App Frame
+# GUI
 
-Dieses Dokument beschreibt die aktuelle Web-UI in `frontend/`. Die GUI ist eine statische Vanilla-JS-App und nutzt die bestehende FastAPI unveraendert.
+Status: current-state.
 
-## App-Shell
+The frontend is a static Vanilla JS app in `frontend/`. It is served by
+FastAPI from the same origin as the API.
 
-- Die linke Arbeitsleiste beginnt mit Horticalc-Logo und App-Titel, direkt darunter folgt das Systempanel mit API-Status, API Base URL und Daten laden.
-- Die vertikale Bereichsnavigation zeigt nur die vier echten App-Bereiche: DÜNGER-EDITOR, WASSERWERTE, RECHNER und SOLVER. Separate Buttons fuer Manuell, Ergebnis und Details sind entfernt.
-- Hauptarbeitsflaeche mit bestehenden Rechner-, Solver-, Wasser- und Editor-Panels in einem eigenen scrollbaren rechten Frame.
-- Linke Arbeitsleiste mit aktivem Bereich und Live-Ergebnis-Kacheln fuer NPK, EC18/EC25, Wasser-EC25, Wasser-EC18 und Ionenbilanz mit Summen.
-- Sehr schmale Viewports bleiben im sichtbaren Browserraum; die App erzwingt keine starre Mindestbreite.
-- Breite Ergebnis- und Ionen-Tabellen scrollen innerhalb ihres Moduls horizontal, statt die gesamte Seite seitlich aufzuziehen.
-- Das alte sichtbare Modus-Menue ist entfernt; interne Radio-Inputs bleiben versteckt, damit bestehende JS-Pfade stabil bleiben.
+## Files
 
-## Workflow-Bereiche
+- `frontend/index.html`: DOM structure, workflow panels, stable IDs.
+- `frontend/app.js`: state, API calls, rendering, workflow navigation.
+- `frontend/styles.css`: app frame layout, tables, responsive rules.
 
-- **DÜNGER-EDITOR**: eigene Duenger laden, anlegen, suchen und Zeilen bearbeiten.
-- **WASSERWERTE**: Wasserprofile laden/speichern/resetten, Osmoseanteil setzen, mg/L oder mmol/L anzeigen und Helperwerte wie CO3, CaCO3, KH und S pflegen.
-- **RECHNER**: Rezeptprofile laden/speichern/resetten, Komponenten aus der Duengerliste waehlen, Zeilen hinzufuegen/entfernen, Gramm-Mengen bearbeiten und den bestehenden `/calculate`-Flow ausloesen. Ergebnis- und Detailtabellen bleiben innerhalb dieses Bereichs.
-- **SOLVER**: Zielwerte, Liter, Urea-as-NH4, Phosphat-Spezies, erlaubte Duenger und fixe Gramm verwalten. Dieser Weg ist in der Navigation farblich eigenstaendig hervorgehoben.
+## App Areas
 
-## Kompatibilitaet
+The active navigation has four user-facing areas:
 
-- Backend-Vertraege bleiben unveraendert: `/calculate`, `/solve`, `/fertilizers`, `/recipes`, `/water-profiles`, `/nutrient-solutions`, `/molar-masses`.
-- Kritische IDs bleiben im DOM, unter anderem `calculatorMode`, `solverMode`, `fertilizerEditorMode`, `waterSection`, `profileSection`, `fertilizerSelectTableWrap`, `calculatorTableWrap`, `waterValuesTable`, `summaryViewToggle`, `waterSummaryTable`, `oxideSummaryTable`, `ionSummaryTable`, `ionMeqList`, `ionBalanceList`, `solverTargetsTable`, `solverAllowedFertilizers`, `solverFixedTable`, `solveBtn`, `copySolverResults`, `applySolverToCalculator` und `saveSolverAsRecipe`.
-- Neue stabile UI-Vertraege sind `data-shell-view`, `data-panel-anchor` und `data-testid`.
+- `DUENGER-EDITOR`: fertilizer CSV editing, search, add/delete rows.
+- `WASSERWERTE`: water profiles, osmosis percent, helper conversions, mg/L or mmol/L display.
+- `RECHNER`: recipe profiles, fertilizer grams, calculation output, details.
+- `SOLVER`: target values, allowed fertilizers, fixed grams, solver config, solve result.
 
-## Verifikation
+The older visible mode bar is not the user workflow. Some hidden radio inputs
+remain only to keep existing JavaScript paths stable.
 
-- Standardtests: `python -m pytest -q`.
-- Whitespace-Check: `git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check`.
-- Browser-Check: App unter `http://127.0.0.1:8000/` oeffnen, Console Errors pruefen und Screenshots fuer RECHNER, WASSERWERTE, SOLVER und DÜNGER-EDITOR aufnehmen.
+## API Use
+
+The UI calls:
+
+- `/health`
+- `/schema/fertilizer-comp-keys`
+- `/schema/solver-config`
+- `/fertilizers`
+- `/water-profiles`
+- `/nutrient-solutions`
+- `/recipes`
+- `/molar-masses`
+- `/calculate`
+- `/solve`
+
+The API base defaults to the same origin. A visible API base field remains for
+developer fallback scenarios.
+
+## Browser State
+
+The UI stores small workflow state in `localStorage`:
+
+- Last calculated solution snapshot.
+- Solver allowed fertilizer selections by context.
+- Legacy global allowed fertilizer list migration.
+
+Solver config is intentionally not restored from saved solution snapshots and
+is not automatically applied from loaded recipes. The UI fetches the backend
+schema from `/schema/solver-config`.
+
+## Stable Contracts
+
+Tests rely on these categories of frontend contracts:
+
+- Workflow buttons with `data-shell-view`.
+- Panels with `data-panel-anchor` and `data-testid`.
+- Calculator, water, solver, and editor IDs used by `app.js`.
+- Solver copy/apply controls.
+- Summary tabs and output tables.
+- Hidden legacy macro/stage solver controls staying absent from the UI.
+
+Before changing IDs or panel names, search tests and `frontend/app.js`.
+
+## Verification
+
+```bash
+python -m pytest tests/test_frontend_serving.py tests/test_frontend_recipe_wheel_shell.py -q
+python -m pytest tests/test_frontend_solver_config_ui.py tests/test_frontend_allowed_fertilizers_ui.py -q
+```
+
+For visual work, also run the API and inspect `http://127.0.0.1:8000/` in a
+browser.

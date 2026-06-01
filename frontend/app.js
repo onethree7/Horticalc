@@ -66,6 +66,7 @@ const solverUreaToggle = document.querySelector("#solverUreaToggle");
 const solverPhosphateSelect = document.querySelector("#solverPhosphate");
 const solverConfigControls = {
   relative_weighting: document.querySelector("#solverConfigRelativeWeighting"),
+  nitrogen_objective_mode: document.querySelector("#solverConfigNitrogenObjectiveMode"),
   overshoot_penalty: document.querySelector("#solverConfigOvershootPenalty"),
   irls_max_outer_iter: document.querySelector("#solverConfigIrlsMaxOuterIter"),
   scale_eps_mg_per_l: document.querySelector("#solverConfigScaleEpsMgPerL"),
@@ -226,6 +227,8 @@ const nutrientIntegerFormatter = new Intl.NumberFormat("en-US", {
 const LAST_FERTILIZERS_ALLOWED_CONTEXT_KEY_PREFIX = "last_fertilizers_allowed::";
 const LAST_SOLUTION_CALCULATED_KEY = "last_solution_calculated";
 const SUMMARY_VIEW_KEY = "horticalc.summary_view";
+const NITROGEN_OBJECTIVE_TOTAL_ONLY = "n_total_only";
+const NITROGEN_OBJECTIVE_FORMS_ONLY = "n_forms_only";
 const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
 const nutrientTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "Si"]);
 const oxideIntegerKeys = new Set([
@@ -356,13 +359,15 @@ function normalizeSolverConfigDefinitions(definitions = []) {
       (definition) =>
         definition.key &&
         solverConfigControls[definition.key] &&
-        ["boolean", "number", "integer"].includes(definition.type)
+        (["boolean", "number", "integer"].includes(definition.type) ||
+          (definition.key === "nitrogen_objective_mode" && definition.type === "string"))
     );
   return normalized.length ? normalized : [...FALLBACK_SOLVER_CONFIG_DEFINITIONS];
 }
 
 const FALLBACK_SOLVER_CONFIG_DEFINITIONS = [
   { key: "relative_weighting", type: "boolean", defaultValue: false },
+  { key: "nitrogen_objective_mode", type: "string", defaultValue: NITROGEN_OBJECTIVE_TOTAL_ONLY },
   { key: "overshoot_penalty", type: "number", defaultValue: 1.0 },
   { key: "irls_max_outer_iter", type: "integer", defaultValue: 4 },
   { key: "scale_eps_mg_per_l", type: "number", defaultValue: 1.0 },
@@ -436,6 +441,12 @@ function buildSolverConfigPayload() {
     if (!input) {
       return;
     }
+    if (definition.key === "nitrogen_objective_mode") {
+      config[definition.key] = input.checked
+        ? NITROGEN_OBJECTIVE_TOTAL_ONLY
+        : NITROGEN_OBJECTIVE_FORMS_ONLY;
+      return;
+    }
     if (definition.type === "boolean") {
       config[definition.key] = Boolean(input.checked);
       return;
@@ -470,7 +481,9 @@ function applySolverConfig(config = {}) {
     const value = Object.prototype.hasOwnProperty.call(sanitized, definition.key)
       ? sanitized[definition.key]
       : definition.defaultValue;
-    if (definition.type === "boolean") {
+    if (definition.key === "nitrogen_objective_mode") {
+      input.checked = value !== NITROGEN_OBJECTIVE_FORMS_ONLY;
+    } else if (definition.type === "boolean") {
       input.checked = Boolean(value);
     } else {
       input.value = String(value);

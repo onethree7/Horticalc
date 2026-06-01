@@ -23,6 +23,12 @@ The active navigation has four user-facing areas:
 The older visible mode bar is not the user workflow. Some hidden radio inputs
 remain only to keep existing JavaScript paths stable.
 
+The solver advanced config in `frontend/index.html` is backed by
+`/schema/solver-config` and wired in `frontend/app.js`. The visible
+`N-total statt N-Formen` checkbox writes
+`solver_config.nitrogen_objective_mode`: checked sends `n_total_only`,
+unchecked sends `n_forms_only`.
+
 ## API Use
 
 The UI calls:

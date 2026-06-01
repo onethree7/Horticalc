@@ -9,6 +9,7 @@ def test_solver_ui_uses_reduced_solver_config_controls() -> None:
 
     expected_controls = [
         "solverConfigRelativeWeighting",
+        "solverConfigNitrogenObjectiveMode",
         "solverConfigOvershootPenalty",
         "solverConfigSingletonSupplierEnabled",
         "solverConfigSingletonUnderfillEnabled",
@@ -30,6 +31,19 @@ def test_solver_ui_fetches_backend_solver_config_schema() -> None:
     assert "/schema/solver-config" in content
     assert "fetchSolverConfigDefinitions" in content
     assert "normalizeSolverConfigDefinitions" in content
+
+
+def test_solver_ui_exposes_nitrogen_objective_checkbox() -> None:
+    index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
+    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
+    html_content = index_html.read_text(encoding="utf-8")
+    js_content = app_js.read_text(encoding="utf-8")
+
+    assert 'id="solverConfigNitrogenObjectiveMode"' in html_content
+    assert "N-total statt N-Formen" in html_content
+    assert "nitrogen_objective_mode" in js_content
+    assert "n_total_only" in js_content
+    assert "n_forms_only" in js_content
 
 
 def test_solver_ui_does_not_restore_hidden_solver_config_from_saved_solution() -> None:

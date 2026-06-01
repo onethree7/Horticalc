@@ -12,7 +12,9 @@ def test_solver_allowed_sync_button_present():
     assert 'id="solverAllowedSelectVisible"' in content
     assert 'id="solverAllowedDeselectVisible"' in content
     assert 'id="solverAllowedClear"' in content
-    assert 'id="solverAllowedFertilizers" class="solver-picker"' in content
+    assert 'id="solverAllowedFertilizers" class="table-wrap solver-picker"' in content
+    assert 'id="solverOverrides" class="solver-overrides"' in content
+    assert "Override / fixe Menge (g, optional)" in content
     assert not re.search(r'<select[^>]+id="solverAllowedFertilizers"', content)
 
 
@@ -40,3 +42,14 @@ def test_solver_auto_apply_control_present():
     assert "SOLVER_AUTO_APPLY_KEY" in js_content
     assert "applySolverResultToCalculator" in js_content
     assert 'setSolverApplyStatus("Im Rechner übernommen")' in js_content
+
+
+def test_solver_override_panel_is_optional_and_auto_opens_when_active():
+    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
+    content = app_js.read_text(encoding="utf-8")
+
+    assert "solverOverridesDetails" in content
+    assert "solverOverrideSummary" in content
+    assert "function syncSolverOverridePanel" in content
+    assert "solverOverridesDetails.open = true" in content
+    assert "forceOpen: Number(event.target.value) > 0" in content

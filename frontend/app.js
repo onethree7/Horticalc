@@ -60,6 +60,8 @@ const solverAllowedSelectVisibleButton = document.querySelector("#solverAllowedS
 const solverAllowedDeselectVisibleButton = document.querySelector("#solverAllowedDeselectVisible");
 const solverAllowedClearButton = document.querySelector("#solverAllowedClear");
 const solverAllowedFromRecipeButton = document.querySelector("#solverAllowedFromRecipe");
+const solverOverridesDetails = document.querySelector("#solverOverrides");
+const solverOverrideSummary = document.querySelector("#solverOverrideSummary");
 const solverFixedTable = document.querySelector("#solverFixedTable tbody");
 const solverFertilizersTable = document.querySelector("#solverFertilizersTable tbody");
 const solverTargetsResultsTable = document.querySelector("#solverTargetsResultsTable tbody");
@@ -1239,6 +1241,7 @@ function renderSolverAllowedOptions() {
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.value = name;
+    checkbox.setAttribute("aria-label", name);
     checkbox.checked = solverAllowedFertilizers.includes(name);
     checkbox.addEventListener("change", () => {
       if (checkbox.checked) {
@@ -1274,17 +1277,26 @@ function renderSolverAllowedOptions() {
     const title = document.createElement("span");
     title.className = "solver-picker-title";
     title.textContent = name;
-
-    const meta = document.createElement("span");
-    meta.className = "solver-picker-meta";
-    meta.textContent = fert.form ? `${fert.form}` : "Dünger";
-
-    copy.append(title, meta);
+    copy.append(title);
     row.append(checkbox, copy);
     setSolverAllowedRowState(row, checkbox.checked);
     solverAllowedFertilizersSelect.appendChild(row);
   });
   updateSolverAllowedCount();
+}
+
+function activeSolverOverrideCount() {
+  return Object.values(solverFixedGrams).filter((value) => Number(value) > 0).length;
+}
+
+function syncSolverOverridePanel({ forceOpen = false } = {}) {
+  const activeCount = activeSolverOverrideCount();
+  if (solverOverrideSummary) {
+    solverOverrideSummary.textContent = activeCount ? `${activeCount} aktiv` : "0 aktiv";
+  }
+  if (solverOverridesDetails && (forceOpen || activeCount > 0)) {
+    solverOverridesDetails.open = true;
+  }
 }
 
 function renderSolverFixedTable() {
@@ -1303,12 +1315,14 @@ function renderSolverFixedTable() {
     input.value = solverFixedGrams[name] || 0;
     input.addEventListener("input", (event) => {
       solverFixedGrams[name] = Number(event.target.value) || 0;
+      syncSolverOverridePanel({ forceOpen: Number(event.target.value) > 0 });
     });
     valueCell.appendChild(input);
 
     row.append(nameCell, valueCell);
     solverFixedTable.appendChild(row);
   });
+  syncSolverOverridePanel();
 }
 
 function renderSolverResults(data) {

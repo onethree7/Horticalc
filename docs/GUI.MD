@@ -18,8 +18,8 @@ The active navigation has four user-facing areas:
 - `DUENGER-EDITOR`: fertilizer CSV editing, search, add/delete rows.
 - `WASSERWERTE`: water profiles, osmosis percent, helper conversions, mg/L or mmol/L display.
 - `RECHNER`: recipe profiles, fertilizer grams, calculation output, details.
-- `SOLVER`: target values, searchable allowed-fertilizer picker, optional fixed
-  grams, solver config, solve result, and calculator handoff.
+- `SOLVER`: target values, compact searchable allowed-fertilizer picker,
+  optional override grams, solver config, solve result, and calculator handoff.
 
 The older visible mode bar is not the user workflow. Some hidden radio inputs
 remain only to keep existing JavaScript paths stable.
@@ -30,9 +30,14 @@ the ion-based `Ca:Mg` ratio, centered EC solution/water values, and compact
 mg/L ion-ratio chips from `npk_metrics.npk_ratios_ion`.
 
 The solver allowed-fertilizer picker in `frontend/index.html` is rendered by
-`frontend/app.js` as a searchable checkbox list. It stores allowed fertilizer
+`frontend/app.js` as a compact searchable checkbox list using the same framed
+table surface as the surrounding calculator UI. It stores allowed fertilizer
 selections by context in `localStorage` and does not write fertilizer favorites
 or defaults to CSV.
+
+Solver override grams live in the collapsed `solverOverrides` details panel.
+`frontend/app.js` opens the panel when an override value is active and keeps
+zero-override use out of the main flow.
 
 The solver can automatically apply a successful solve result to the calculator.
 The `solverAutoApply` checkbox defaults on, stores its preference in
@@ -40,8 +45,8 @@ The `solverAutoApply` checkbox defaults on, stores its preference in
 recipes so the live sidebar updates after the recalculation.
 
 The solver advanced config lives inside the Solver panel in
-`frontend/index.html`, is backed by `/schema/solver-config`, and is wired in
-`frontend/app.js`. The visible
+`frontend/index.html`, includes the urea and phosphate solver options, is
+backed by `/schema/solver-config`, and is wired in `frontend/app.js`. The visible
 `N-total statt N-Formen` checkbox writes
 `solver_config.nitrogen_objective_mode`: checked sends `n_total_only`,
 unchecked sends `n_forms_only`.

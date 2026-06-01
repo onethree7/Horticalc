@@ -47,10 +47,12 @@ Sluijsmann, and the active `osmosis_percent`.
 1. Load a nutrient solution target profile or enter target values manually.
 2. Search and tick allowed fertilizers in the Solver picker, or use
    `Aus Rechner übernehmen` to add the current calculator fertilizer selection.
-3. Optionally set `Fixe Menge (g, optional)` values for specific fertilizers.
+3. Leave `Override / fixe Menge (g, optional)` collapsed unless a fertilizer
+   must be held at a fixed gram amount.
 4. Keep `Solver-Ergebnis automatisch im Rechner übernehmen` enabled when the
    calculator and live sidebar should update after each solve.
-5. Adjust `Erweitert` solver config only when needed.
+5. Adjust `Erweitert` solver config, including urea and phosphate handling,
+   only when needed.
 6. Click `Solver berechnen`.
 7. Copy the result or use `Im Rechner ansehen` to switch to the calculator.
 

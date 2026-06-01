@@ -53,6 +53,8 @@ def test_solver_advanced_config_lives_in_solver_panel() -> None:
     assert 'class="rail-advanced-config"' not in html_content
     assert 'class="solver-advanced-config"' in html_content
     assert html_content.index('id="solverMode"') < html_content.index('id="solverConfigResetDefaults"')
+    assert html_content.index('class="solver-advanced-config"') < html_content.index('id="solverUreaToggle"')
+    assert html_content.index('class="solver-advanced-config"') < html_content.index('id="solverPhosphate"')
 
 
 def test_solver_ui_does_not_restore_hidden_solver_config_from_saved_solution() -> None:

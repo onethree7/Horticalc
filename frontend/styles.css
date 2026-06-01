@@ -806,18 +806,18 @@ main {
 .solver-toolbar {
   display: flex;
   gap: var(--space-4);
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
 }
 
 .solver-auto-apply {
-  justify-content: flex-end;
+  min-height: 1.8rem;
 }
 
 .solver-main-grid {
   display: grid;
-  grid-template-columns: minmax(20rem, 0.85fr) minmax(24rem, 1.15fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   gap: var(--space-4);
   align-items: start;
 }
@@ -844,7 +844,7 @@ main {
 
 .solver-target-wrap,
 .solver-fixed-wrap {
-  max-height: 34rem;
+  max-height: 32rem;
   overflow: auto;
 }
 
@@ -860,26 +860,38 @@ main {
 }
 
 .solver-picker {
-  width: 100%;
-  height: min(28rem, 44vh);
-  min-height: 14rem;
-  margin: var(--space-3) 0;
-  overflow: auto;
-  border: 1px solid rgba(174, 183, 166, 0.14);
-  border-radius: 8px;
-  background: rgba(8, 12, 11, 0.66);
+  height: min(18rem, 32vh);
+  min-height: 10rem;
+  margin: var(--space-2) 0 var(--space-3);
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   scrollbar-gutter: stable;
+}
+
+#solverAllowedSearch {
+  width: 100%;
+  margin-bottom: var(--space-2);
 }
 
 .solver-picker-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-3);
-  align-items: start;
-  padding: var(--space-3);
+  gap: var(--space-2);
+  align-items: center;
+  min-height: 1.8rem;
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid rgba(174, 183, 166, 0.08);
   color: var(--app-text);
   cursor: pointer;
+}
+
+.solver-picker-row:nth-child(odd) {
+  background: rgba(20, 31, 23, 0.46);
+}
+
+.solver-picker-row:nth-child(even) {
+  background: rgba(10, 16, 14, 0.5);
 }
 
 .solver-picker-row:hover,
@@ -888,23 +900,21 @@ main {
 }
 
 .solver-picker-row.is-selected {
-  background: rgba(76, 199, 176, 0.12);
+  background: rgba(76, 199, 176, 0.1);
 }
 
 .solver-picker-copy {
-  display: grid;
   min-width: 0;
-  gap: var(--space-1);
 }
 
 .solver-picker-title {
+  display: block;
   overflow: hidden;
-  font-weight: 700;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.solver-picker-meta,
 .solver-picker-empty {
   color: var(--app-muted);
   font-size: var(--text-xs);
@@ -915,16 +925,38 @@ main {
 }
 
 .solver-picker-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
 }
 
 .solver-picker-actions .btn {
+  width: 100%;
+  min-width: 0;
   white-space: nowrap;
 }
 
 .solver-actions {
   align-items: center;
   margin-top: var(--space-4);
+}
+
+.solver-overrides {
+  margin-top: var(--space-3);
+}
+
+.solver-overrides summary {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+  justify-content: space-between;
+  cursor: pointer;
+  color: #eaf4e5;
+  font-weight: 800;
+}
+
+.solver-overrides[open] summary {
+  margin-bottom: var(--space-3);
 }
 
 .solver-results {
@@ -1197,6 +1229,17 @@ html {
 .solver-advanced-config {
   display: grid;
   gap: var(--space-3);
+}
+
+.solver-advanced-config {
+  min-width: min(24rem, 100%);
+}
+
+.solver-advanced-config .solver-settings {
+  margin-bottom: var(--space-3);
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .rail-advanced-config summary,
@@ -1643,9 +1686,7 @@ button,
 }
 
 .water-controls,
-.solver-settings,
 .solver-toolbar,
-.solver-advanced-config,
 .solver-columns,
 .solver-results,
 .data-grid {

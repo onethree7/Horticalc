@@ -54,7 +54,12 @@ const solverMode = document.querySelector("#solverMode");
 const fertilizerEditorMode = document.querySelector("#fertilizerEditorMode");
 const solverTargetsTable = document.querySelector("#solverTargetsTable tbody");
 const solverAllowedFertilizersSelect = document.querySelector("#solverAllowedFertilizers");
+const solverAllowedSearchInput = document.querySelector("#solverAllowedSearch");
+const solverAllowedCount = document.querySelector("#solverAllowedCount");
+const solverAllowedClearButton = document.querySelector("#solverAllowedClear");
 const solverAllowedFromRecipeButton = document.querySelector("#solverAllowedFromRecipe");
+const solverOverridesDetails = document.querySelector("#solverOverrides");
+const solverOverrideSummary = document.querySelector("#solverOverrideSummary");
 const solverFixedTable = document.querySelector("#solverFixedTable tbody");
 const solverFertilizersTable = document.querySelector("#solverFertilizersTable tbody");
 const solverTargetsResultsTable = document.querySelector("#solverTargetsResultsTable tbody");
@@ -64,6 +69,9 @@ const solverTargetScaleValue = document.querySelector("#solverTargetScaleValue")
 const solveButton = document.querySelector("#solveBtn");
 const copySolverResultsButton = document.querySelector("#copySolverResults");
 const copySolverResultsStatus = document.querySelector("#copySolverResultsStatus");
+const solverAutoApplyInput = document.querySelector("#solverAutoApply");
+const solverApplyStatus = document.querySelector("#solverApplyStatus");
+const applySolverToCalculatorInlineButton = document.querySelector("#applySolverToCalculatorInline");
 const solverUreaToggle = document.querySelector("#solverUreaToggle");
 const solverPhosphateSelect = document.querySelector("#solverPhosphate");
 const solverConfigControls = {
@@ -109,6 +117,7 @@ let calculatorTable;
 let currentProfileMode = "calculator";
 let activeMode = "calculator";
 let copySolverStatusTimer = null;
+let solverApplyStatusTimer = null;
 let fertilizerEditorRows = [];
 let fertilizerEditorSelectedIndex = 0;
 let fertilizerEditorFilter = "";
@@ -178,6 +187,7 @@ let calculatorScaleFactor = 1.0;
 const SCALE_STEP = 0.05;
 const solverAllowedFertilizers = [];
 let solverAllowedContext = "global";
+let solverAllowedFilter = "";
 const solverFixedGrams = {};
 
 const waterFieldDefinitions = [
@@ -229,6 +239,7 @@ const nutrientIntegerFormatter = new Intl.NumberFormat("en-US", {
 const LAST_FERTILIZERS_ALLOWED_CONTEXT_KEY_PREFIX = "last_fertilizers_allowed::";
 const LAST_SOLUTION_CALCULATED_KEY = "last_solution_calculated";
 const SUMMARY_VIEW_KEY = "horticalc.summary_view";
+const SOLVER_AUTO_APPLY_KEY = "horticalc.solver_auto_apply";
 const NITROGEN_OBJECTIVE_TOTAL_ONLY = "n_total_only";
 const NITROGEN_OBJECTIVE_FORMS_ONLY = "n_forms_only";
 const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
@@ -1169,17 +1180,144 @@ function deleteFertilizerEditorRow() {
   renderFertilizerEditor();
 }
 
+function updateSolverAllowedCount() {
+  if (!solverAllowedCount) {
+    return;
+  }
+  const visibleCount = getVisibleSolverAllowedOptions().length;
+  const selectedCount = solverAllowedFertilizers.length;
+  const suffix = solverAllowedFilter.trim() ? `, ${visibleCount} sichtbar` : "";
+  solverAllowedCount.textContent = `${selectedCount} ausgewählt${suffix}`;
+}
+
+function solverAllowedMatchesFilter(fert) {
+  const query = solverAllowedFilter.trim().toLowerCase();
+  if (!query) {
+    return true;
+  }
+  return [fert.name, fert.form, String(fert.weight_factor ?? "")]
+    .some((value) => String(value || "").toLowerCase().includes(query));
+}
+
+function getVisibleSolverAllowedOptions() {
+  return fertilizerOptions.filter(solverAllowedMatchesFilter);
+}
+
+function setSolverAllowedRowState(row, checked) {
+  row.classList.toggle("is-selected", checked);
+  const checkbox = row.querySelector('input[type="checkbox"]');
+  if (checkbox) {
+    checkbox.checked = checked;
+  }
+  const pressed = checked ? "true" : "false";
+  row.setAttribute("aria-selected", pressed);
+}
+
 function renderSolverAllowedOptions() {
+  if (!solverAllowedFertilizersSelect) {
+    return;
+  }
   solverAllowedFertilizersSelect.innerHTML = "";
-  fertilizerOptions.forEach((fert) => {
-    const option = document.createElement("option");
-    option.value = fert.name;
-    option.textContent = fert.name;
-    if (solverAllowedFertilizers.includes(fert.name)) {
-      option.selected = true;
-    }
-    solverAllowedFertilizersSelect.appendChild(option);
+  const visibleOptions = getVisibleSolverAllowedOptions();
+
+  const table = document.createElement("table");
+  table.className = "grid grid--form solver-picker-table";
+
+  const colgroup = document.createElement("colgroup");
+  const checkCol = document.createElement("col");
+  checkCol.className = "col-check";
+  const nameCol = document.createElement("col");
+  colgroup.append(checkCol, nameCol);
+
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  const checkHead = document.createElement("th");
+  checkHead.textContent = "";
+  const nameHead = document.createElement("th");
+  nameHead.textContent = "Dünger";
+  headRow.append(checkHead, nameHead);
+  thead.appendChild(headRow);
+
+  const tbody = document.createElement("tbody");
+  table.append(colgroup, thead, tbody);
+
+  if (!visibleOptions.length) {
+    const emptyRow = document.createElement("tr");
+    const emptyCell = document.createElement("td");
+    emptyCell.colSpan = 2;
+    emptyCell.textContent = "Keine Dünger gefunden";
+    emptyRow.appendChild(emptyCell);
+    tbody.appendChild(emptyRow);
+    solverAllowedFertilizersSelect.appendChild(table);
+    updateSolverAllowedCount();
+    return;
+  }
+
+  visibleOptions.forEach((fert) => {
+    const name = fert.name;
+    const row = document.createElement("tr");
+    row.className = "solver-picker-row";
+    row.setAttribute("role", "option");
+    row.tabIndex = 0;
+
+    const checkCell = document.createElement("td");
+    checkCell.className = "solver-picker-check";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = name;
+    checkbox.setAttribute("aria-label", name);
+    checkbox.checked = solverAllowedFertilizers.includes(name);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        updateSolverAllowedFertilizers([name], "merge", { rerenderPicker: false });
+      } else {
+        updateSolverAllowedFertilizers(
+          solverAllowedFertilizers.filter((allowedName) => allowedName !== name),
+          "replace",
+          { rerenderPicker: false }
+        );
+      }
+      setSolverAllowedRowState(row, checkbox.checked);
+    });
+    row.addEventListener("click", (event) => {
+      if (event.target === checkbox) {
+        return;
+      }
+      checkbox.checked = !checkbox.checked;
+      checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    row.addEventListener("keydown", (event) => {
+      if (event.key !== " " && event.key !== "Enter") {
+        return;
+      }
+      event.preventDefault();
+      checkbox.checked = !checkbox.checked;
+      checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    const nameCell = document.createElement("td");
+    nameCell.textContent = name;
+    checkCell.appendChild(checkbox);
+    row.append(checkCell, nameCell);
+    setSolverAllowedRowState(row, checkbox.checked);
+    tbody.appendChild(row);
   });
+  solverAllowedFertilizersSelect.appendChild(table);
+  updateSolverAllowedCount();
+}
+
+function activeSolverOverrideCount() {
+  return Object.values(solverFixedGrams).filter((value) => Number(value) > 0).length;
+}
+
+function syncSolverOverridePanel({ forceOpen = false } = {}) {
+  const activeCount = activeSolverOverrideCount();
+  if (solverOverrideSummary) {
+    solverOverrideSummary.textContent = activeCount ? `${activeCount} aktiv` : "0 aktiv";
+  }
+  if (solverOverridesDetails && (forceOpen || activeCount > 0)) {
+    solverOverridesDetails.open = true;
+  }
 }
 
 function renderSolverFixedTable() {
@@ -1198,12 +1336,14 @@ function renderSolverFixedTable() {
     input.value = solverFixedGrams[name] || 0;
     input.addEventListener("input", (event) => {
       solverFixedGrams[name] = Number(event.target.value) || 0;
+      syncSolverOverridePanel({ forceOpen: Number(event.target.value) > 0 });
     });
     valueCell.appendChild(input);
 
     row.append(nameCell, valueCell);
     solverFixedTable.appendChild(row);
   });
+  syncSolverOverridePanel();
 }
 
 function renderSolverResults(data) {
@@ -1307,6 +1447,66 @@ function setCopySolverStatus(message) {
     copySolverResultsStatus.textContent = "";
     copySolverStatusTimer = null;
   }, 2000);
+}
+
+function setSolverApplyStatus(message) {
+  if (!solverApplyStatus) {
+    return;
+  }
+  solverApplyStatus.textContent = message;
+  if (solverApplyStatusTimer) {
+    window.clearTimeout(solverApplyStatusTimer);
+  }
+  solverApplyStatusTimer = window.setTimeout(() => {
+    solverApplyStatus.textContent = "";
+    solverApplyStatusTimer = null;
+  }, 2400);
+}
+
+function solverAutoApplyEnabled() {
+  return !solverAutoApplyInput || solverAutoApplyInput.checked;
+}
+
+function restoreSolverAutoApplyPreference() {
+  if (!solverAutoApplyInput) {
+    return;
+  }
+  const stored = lsGet(SOLVER_AUTO_APPLY_KEY, true);
+  solverAutoApplyInput.checked = stored !== false;
+}
+
+function persistSolverAutoApplyPreference() {
+  if (!solverAutoApplyInput) {
+    return;
+  }
+  lsSet(SOLVER_AUTO_APPLY_KEY, solverAutoApplyInput.checked);
+}
+
+function applySolverResultToCalculator({ switchToCalculator = false } = {}) {
+  if (!lastSolveResult) {
+    reportError(null, "Bitte zuerst ein Zielprofil berechnen.");
+    return false;
+  }
+  const fertilizers = (lastSolveResult.fertilizers || []).map((fert) => ({
+    name: fert.name,
+    grams: Number(fert.grams || 0),
+  }));
+  const recipe = {
+    liters: currentLiters,
+    fertilizers,
+  };
+  applyRecipe(recipe);
+  scheduleRecalculate();
+  setSolverApplyStatus("Im Rechner übernommen");
+
+  if (switchToCalculator) {
+    const calculatorInput = Array.from(modeToggleInputs).find((input) => input.value === "calculator");
+    if (calculatorInput) {
+      calculatorInput.checked = true;
+    }
+    showShellView("fertilizers");
+  }
+  return true;
 }
 
 function formatClipboardIonLabel(key) {
@@ -2390,6 +2590,9 @@ function updateSolverResultActions() {
   if (copySolverResultsButton) {
     copySolverResultsButton.disabled = !hasResult;
   }
+  if (applySolverToCalculatorInlineButton) {
+    applySolverToCalculatorInlineButton.disabled = !hasResult;
+  }
 }
 
 function collectSelectedFertilizerNames() {
@@ -2405,7 +2608,7 @@ function pruneSolverFixedGrams() {
   });
 }
 
-function updateSolverAllowedFertilizers(names, mode = "merge") {
+function updateSolverAllowedFertilizers(names, mode = "merge", { rerenderPicker = true } = {}) {
   const uniqueNames = Array.from(new Set(names.filter(Boolean)));
   if (mode === "replace") {
     solverAllowedFertilizers.length = 0;
@@ -2418,7 +2621,11 @@ function updateSolverAllowedFertilizers(names, mode = "merge") {
     });
   }
   pruneSolverFixedGrams();
-  renderSolverAllowedOptions();
+  if (rerenderPicker) {
+    renderSolverAllowedOptions();
+  } else {
+    updateSolverAllowedCount();
+  }
   renderSolverFixedTable();
   persistSolverAllowedToStorage();
 }
@@ -2570,6 +2777,7 @@ async function init() {
     solverConfigDefinitions = [...FALLBACK_SOLVER_CONFIG_DEFINITIONS];
   }
   applySolverConfig();
+  restoreSolverAutoApplyPreference();
   try {
     fertilizerEditorPreferredKeys = await fetchFertilizerCompKeys();
   } catch (error) {
@@ -2712,15 +2920,27 @@ fertEditorDeleteRowButton.addEventListener("click", deleteFertilizerEditorRow);
 fertEditorLoadButton.addEventListener("click", reloadFertilizerEditor);
 fertEditorSaveButton.addEventListener("click", saveFertilizerEditor);
 
-solverAllowedFertilizersSelect.addEventListener("change", () => {
-  const selected = Array.from(solverAllowedFertilizersSelect.selectedOptions).map((opt) => opt.value);
-  updateSolverAllowedFertilizers(selected, "replace");
-});
+if (solverAllowedSearchInput) {
+  solverAllowedSearchInput.addEventListener("input", (event) => {
+    solverAllowedFilter = event.target.value || "";
+    renderSolverAllowedOptions();
+  });
+}
 
 if (solverAllowedFromRecipeButton) {
   solverAllowedFromRecipeButton.addEventListener("click", () => {
     syncSolverAllowedWithSelection("merge");
   });
+}
+
+if (solverAllowedClearButton) {
+  solverAllowedClearButton.addEventListener("click", () => {
+    updateSolverAllowedFertilizers([], "replace");
+  });
+}
+
+if (solverAutoApplyInput) {
+  solverAutoApplyInput.addEventListener("change", persistSolverAutoApplyPreference);
 }
 
 if (solverTargetScaleDownButton) {
@@ -2782,13 +3002,16 @@ solveButton.addEventListener("click", async () => {
   if (!solverAllowedFertilizers.length) {
     reportError(
       null,
-      "Keine Solver-Dünger ausgewählt. Bitte erst über ›Aus Rezept übernehmen‹ oder die Mehrfachauswahl Dünger freigeben."
+      "Keine Solver-Dünger ausgewählt. Bitte erst über ›Aus Rechner übernehmen‹ oder den Suchpicker Dünger freigeben."
     );
     return;
   }
   try {
     const data = await solveRecipe();
     renderSolverResults(data);
+    if (solverAutoApplyEnabled()) {
+      applySolverResultToCalculator({ switchToCalculator: false });
+    }
   } catch (error) {
     reportError(error, "Solver fehlgeschlagen");
   }
@@ -2909,26 +3132,14 @@ saveSolverAsRecipeButton.addEventListener("click", async () => {
 });
 
 applySolverToCalculatorButton.addEventListener("click", async () => {
-  if (!lastSolveResult) {
-    reportError(null, "Bitte zuerst ein Zielprofil berechnen.");
-    return;
-  }
-  const fertilizers = (lastSolveResult.fertilizers || []).map((fert) => ({
-    name: fert.name,
-    grams: Number(fert.grams || 0),
-  }));
-  const recipe = {
-    liters: currentLiters,
-    fertilizers,
-  };
-  applyRecipe(recipe);
-  const calculatorInput = Array.from(modeToggleInputs).find((input) => input.value === "calculator");
-  if (calculatorInput) {
-    calculatorInput.checked = true;
-  }
-  showShellView("fertilizers");
-  scheduleRecalculate();
+  applySolverResultToCalculator({ switchToCalculator: true });
 });
+
+if (applySolverToCalculatorInlineButton) {
+  applySolverToCalculatorInlineButton.addEventListener("click", async () => {
+    applySolverResultToCalculator({ switchToCalculator: true });
+  });
+}
 
 loadWaterProfileButton.addEventListener("click", async () => {
   const selection = waterProfileSelect.value;

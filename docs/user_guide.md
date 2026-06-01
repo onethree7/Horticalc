@@ -45,11 +45,16 @@ Sluijsmann, and the active `osmosis_percent`.
 ## Solver Workflow
 
 1. Load a nutrient solution target profile or enter target values manually.
-2. Choose allowed fertilizers.
-3. Optionally set fixed grams for specific fertilizers.
-4. Adjust advanced solver config only when needed.
-5. Click `Solve`.
-6. Copy the result or apply it to the calculator.
+2. Search and tick allowed fertilizers in the Solver picker, or use
+   `Aus Rechner übernehmen` to add the current calculator fertilizer selection.
+3. Leave `Override / fixe Menge (g, optional)` collapsed unless a fertilizer
+   must be held at a fixed gram amount.
+4. Keep `Solver-Ergebnis automatisch im Rechner übernehmen` enabled when the
+   calculator and live sidebar should update after each solve.
+5. Adjust `Erweitert` solver config, including urea and phosphate handling,
+   only when needed.
+6. Click `Solver berechnen`.
+7. Copy the result or use `Im Rechner ansehen` to switch to the calculator.
 
 The solver optimizes only `objective_elements`. Some reported targets, such as
 `S`, `SO4`, `Na`, and `Cl`, are intentionally not objectives in the current

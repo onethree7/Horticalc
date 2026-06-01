@@ -66,7 +66,9 @@ def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
     assert 'id="configLitersStatus"' in content
     assert 'id="osmosisPercent"' in content
     assert 'id="waterUnitToggle"' in content
-    assert "Solver Advanced Config" in content
+    assert "Solver Advanced Config" not in content
+    assert 'class="solver-advanced-config"' in content
+    assert "<summary>Erweitert</summary>" in content
     assert 'id="solverConfigResetDefaults"' in content
     assert 'id="solverConfigRelativeWeighting"' in content
     assert 'id="solverConfigNTotalGovernorEnabled"' in content
@@ -163,6 +165,8 @@ def test_app_js_shell_helpers_are_top_level_and_initialized() -> None:
     assert 'showShellView("fertilizers", { scroll: false });' in content
     assert "renderCalculation(data)" in content
     assert "updateLiveResultBar(data);" in content
+    assert "applySolverResultToCalculator" in content
+    assert "solverAutoApplyEnabled" in content
     assert 'label: "RECHNER"' in content
     assert 'label: "SOLVER"' in content
 
@@ -179,6 +183,9 @@ def test_framed_shell_styles_present() -> None:
     assert ".rail-guide-list" in content
     assert "--app-solver" in content
     assert ".workflow-step.is-active" in content
+    assert ".solver-workbench" in content
+    assert ".solver-picker" in content
+    assert ".solver-main-grid" in content
     assert ".workspace" in content
     assert "overflow-y: auto" in content
     assert ".live-bar" in content

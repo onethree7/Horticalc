@@ -46,6 +46,17 @@ def test_solver_ui_exposes_nitrogen_objective_checkbox() -> None:
     assert "n_forms_only" in js_content
 
 
+def test_solver_advanced_config_lives_in_solver_panel() -> None:
+    index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
+    html_content = index_html.read_text(encoding="utf-8")
+
+    assert 'class="rail-advanced-config"' not in html_content
+    assert 'class="solver-advanced-config"' in html_content
+    assert html_content.index('id="solverMode"') < html_content.index('id="solverConfigResetDefaults"')
+    assert html_content.index('class="solver-advanced-config"') < html_content.index('id="solverUreaToggle"')
+    assert html_content.index('class="solver-advanced-config"') < html_content.index('id="solverPhosphate"')
+
+
 def test_solver_ui_does_not_restore_hidden_solver_config_from_saved_solution() -> None:
     app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
     content = app_js.read_text(encoding="utf-8")

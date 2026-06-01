@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Horticalc GUI</title>
-    <link rel="stylesheet" href="styles.css?v=app-frame9" />
+    <link rel="stylesheet" href="styles.css?v=solver-ux5" />
   </head>
   <body class="compact app-body">
     <div class="sr-only" id="modeStateControls" aria-hidden="true">
@@ -55,64 +55,6 @@
               <span>L</span>
             </label>
           </div>
-          <details class="rail-advanced-config">
-            <summary>Solver Advanced Config</summary>
-            <button id="solverConfigResetDefaults" class="btn btn--outline rail-config-reset" type="button">Default</button>
-            <div class="rail-config-grid rail-config-grid--advanced">
-              <label class="toggle">
-                <input id="solverConfigRelativeWeighting" type="checkbox" checked />
-                <span>Relative weighting</span>
-              </label>
-              <label class="toggle">
-                <input id="solverConfigNitrogenObjectiveMode" type="checkbox" checked />
-                <span>N-total statt N-Formen</span>
-              </label>
-              <label>
-                Overshoot penalty
-                <input id="solverConfigOvershootPenalty" type="number" min="0" step="0.1" value="1" />
-              </label>
-              <label>
-                IRLS Iterationen
-                <input id="solverConfigIrlsMaxOuterIter" type="number" min="1" step="1" value="4" />
-              </label>
-              <label>
-                Scale epsilon mg/L
-                <input id="solverConfigScaleEpsMgPerL" type="number" min="0" step="0.1" value="1" />
-              </label>
-              <label class="toggle">
-                <input id="solverConfigSingletonSupplierEnabled" type="checkbox" checked />
-                <span>Singleton overshoot pass</span>
-              </label>
-              <label>
-                Singleton share
-                <input id="solverConfigSingletonShareThreshold" type="number" min="0" max="1" step="0.01" value="0.85" />
-              </label>
-              <label>
-                Singleton max regress pp
-                <input id="solverConfigSingletonMaxRegressPp" type="number" min="0" step="0.01" value="0.25" />
-              </label>
-              <label class="toggle">
-                <input id="solverConfigSingletonUnderfillEnabled" type="checkbox" checked />
-                <span>Singleton underfill pass</span>
-              </label>
-              <label>
-                Underfill share
-                <input id="solverConfigSingletonUnderfillShareThreshold" type="number" min="0" max="1" step="0.01" value="0.85" />
-              </label>
-              <label>
-                Underfill max iter
-                <input id="solverConfigSingletonUnderfillMaxIter" type="number" min="1" step="1" value="2" />
-              </label>
-              <label class="toggle">
-                <input id="solverConfigNTotalGovernorEnabled" type="checkbox" />
-                <span>N-total governor</span>
-              </label>
-              <label>
-                N-governor weight
-                <input id="solverConfigNTotalGovernorWeight" type="number" min="0" step="0.01" value="1" />
-              </label>
-            </div>
-          </details>
         </section>
         <section class="rail-card rail-workflow" aria-label="Hauptsteuerung" data-testid="workflow-nav">
           <div class="rail-card-heading">
@@ -294,7 +236,7 @@
         </div>
         <div class="actions is-hidden" id="solverProfileActions">
           <button id="saveSolverAsRecipe" class="btn btn--outline" type="button">Als Düngerrezept speichern</button>
-          <button id="applySolverToCalculator" class="btn btn--outline" type="button">Im Düngerrechner übernehmen</button>
+          <button id="applySolverToCalculator" class="btn btn--outline" type="button">Im Rechner ansehen</button>
         </div>
       </section>
 
@@ -379,64 +321,145 @@
       <div class="mode-panel is-hidden" id="solverMode" data-testid="solver-view">
         <section class="block" data-panel-anchor="solver">
           <h2>Zielprofil-Rechner</h2>
-          <p class="hint">Zielwerte, erlaubte Dünger und fixe Grammangaben definieren.</p>
-          <div class="solver-settings">
-            <label class="toggle">
-              <input id="solverUreaToggle" type="checkbox" />
-              <span>Harnstoff als NH4 behandeln</span>
-            </label>
-            <label>
-              Phosphat-Spezies
-              <select id="solverPhosphate">
-                <option value="H2PO4">H2PO4</option>
-                <option value="HPO4">HPO4</option>
-              </select>
-            </label>
-          </div>
-          <div class="solver-columns">
-            <div class="solver-column">
-              <h3>Zielwerte (mg/L)</h3>
-              <div class="actions inline-actions">
-                <button id="solverTargetScaleDown" class="btn btn--outline btn--icon icon-button" type="button">-</button>
-                <button id="solverTargetScaleUp" class="btn btn--outline btn--icon icon-button" type="button">+</button>
-                <span class="inline-hint">Skalierung <span id="solverTargetScaleValue">1.00x</span></span>
+          <p class="hint">Zielwerte setzen, Dünger freigeben und das Ergebnis direkt im Rechner prüfen.</p>
+          <div class="solver-workbench">
+            <div class="solver-toolbar">
+              <label class="toggle solver-auto-apply">
+                <input id="solverAutoApply" type="checkbox" checked />
+                <span>Solver-Ergebnis automatisch im Rechner übernehmen</span>
+              </label>
+              <details class="solver-advanced-config">
+                <summary>Erweitert</summary>
+                <div class="solver-settings">
+                  <label class="toggle">
+                    <input id="solverUreaToggle" type="checkbox" />
+                    <span>Harnstoff als NH4 behandeln</span>
+                  </label>
+                  <label>
+                    Phosphat-Spezies
+                    <select id="solverPhosphate">
+                      <option value="H2PO4">H2PO4</option>
+                      <option value="HPO4">HPO4</option>
+                    </select>
+                  </label>
+                </div>
+                <button id="solverConfigResetDefaults" class="btn btn--outline rail-config-reset" type="button">Default</button>
+                <div class="rail-config-grid rail-config-grid--advanced">
+                  <label class="toggle">
+                    <input id="solverConfigRelativeWeighting" type="checkbox" checked />
+                    <span>Relative weighting</span>
+                  </label>
+                  <label class="toggle">
+                    <input id="solverConfigNitrogenObjectiveMode" type="checkbox" checked />
+                    <span>N-total statt N-Formen</span>
+                  </label>
+                  <label>
+                    Overshoot penalty
+                    <input id="solverConfigOvershootPenalty" type="number" min="0" step="0.1" value="1" />
+                  </label>
+                  <label>
+                    IRLS Iterationen
+                    <input id="solverConfigIrlsMaxOuterIter" type="number" min="1" step="1" value="4" />
+                  </label>
+                  <label>
+                    Scale epsilon mg/L
+                    <input id="solverConfigScaleEpsMgPerL" type="number" min="0" step="0.1" value="1" />
+                  </label>
+                  <label class="toggle">
+                    <input id="solverConfigSingletonSupplierEnabled" type="checkbox" checked />
+                    <span>Singleton overshoot pass</span>
+                  </label>
+                  <label>
+                    Singleton share
+                    <input id="solverConfigSingletonShareThreshold" type="number" min="0" max="1" step="0.01" value="0.85" />
+                  </label>
+                  <label>
+                    Singleton max regress pp
+                    <input id="solverConfigSingletonMaxRegressPp" type="number" min="0" step="0.01" value="0.25" />
+                  </label>
+                  <label class="toggle">
+                    <input id="solverConfigSingletonUnderfillEnabled" type="checkbox" checked />
+                    <span>Singleton underfill pass</span>
+                  </label>
+                  <label>
+                    Underfill share
+                    <input id="solverConfigSingletonUnderfillShareThreshold" type="number" min="0" max="1" step="0.01" value="0.85" />
+                  </label>
+                  <label>
+                    Underfill max iter
+                    <input id="solverConfigSingletonUnderfillMaxIter" type="number" min="1" step="1" value="2" />
+                  </label>
+                  <label class="toggle">
+                    <input id="solverConfigNTotalGovernorEnabled" type="checkbox" />
+                    <span>N-total governor</span>
+                  </label>
+                  <label>
+                    N-governor weight
+                    <input id="solverConfigNTotalGovernorWeight" type="number" min="0" step="0.01" value="1" />
+                  </label>
+                </div>
+              </details>
+            </div>
+
+            <div class="solver-main-grid">
+              <div class="solver-panel solver-panel--targets">
+                <h3>Zielwerte (mg/L)</h3>
+                <div class="actions inline-actions">
+                  <button id="solverTargetScaleDown" class="btn btn--outline btn--icon icon-button" type="button">-</button>
+                  <button id="solverTargetScaleUp" class="btn btn--outline btn--icon icon-button" type="button">+</button>
+                  <span class="inline-hint">Skalierung <span id="solverTargetScaleValue">1.00x</span></span>
+                </div>
+                <div class="table-wrap solver-target-wrap">
+                  <table class="grid grid--form" id="solverTargetsTable">
+                    <thead>
+                      <tr>
+                        <th>Element</th>
+                        <th>Ziel</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
               </div>
-              <div class="table-wrap">
-                <table class="grid grid--form" id="solverTargetsTable">
-                  <thead>
-                    <tr>
-                      <th>Element</th>
-                      <th>Ziel</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
+
+              <div class="solver-panel solver-panel--fertilizers">
+                <div class="solver-panel-heading">
+                  <h3>Erlaubte Dünger</h3>
+                  <span class="inline-hint" id="solverAllowedCount">0 ausgewählt</span>
+                </div>
+                <input id="solverAllowedSearch" class="input-field" type="search" placeholder="Dünger suchen, z.B. 313 oder soft" autocomplete="off" />
+                <div class="actions inline-actions solver-picker-actions">
+                  <button id="solverAllowedFromRecipe" class="btn btn--outline" type="button">Aus Rechner übernehmen</button>
+                  <button id="solverAllowedClear" class="btn btn--outline" type="button">Auswahl leeren</button>
+                </div>
+                <div id="solverAllowedFertilizers" class="table-wrap solver-picker" role="listbox" aria-label="Erlaubte Dünger"></div>
+
+                <details id="solverOverrides" class="solver-overrides">
+                  <summary>
+                    <span>Override / fixe Menge (g, optional)</span>
+                    <span class="inline-hint" id="solverOverrideSummary">0 aktiv</span>
+                  </summary>
+                  <div class="table-wrap solver-fixed-wrap">
+                    <table class="grid grid--form" id="solverFixedTable">
+                      <thead>
+                        <tr>
+                          <th>Dünger</th>
+                          <th>Override (g)</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </details>
               </div>
             </div>
-            <div class="solver-column">
-              <h3>Erlaubte Dünger</h3>
-              <select id="solverAllowedFertilizers" multiple></select>
-              <div class="actions inline-actions">
-                <button id="solverAllowedFromRecipe" type="button">Allowed aus Rezept übernehmen</button>
-              </div>
-              <h3>Fixe Gramm</h3>
-              <div class="table-wrap">
-                <table class="grid grid--form" id="solverFixedTable">
-                  <thead>
-                    <tr>
-                      <th>Dünger</th>
-                      <th>Fix (g)</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-            </div>
           </div>
-          <div class="actions">
-            <button id="solveBtn" class="btn btn--solver-primary" type="button">Solve</button>
+          <div class="actions solver-actions">
+            <button id="solveBtn" class="btn btn--solver-primary" type="button">Solver berechnen</button>
             <button id="copySolverResults" class="btn btn--outline" type="button">In Zwischenablage kopieren</button>
+            <button id="applySolverToCalculatorInline" class="btn btn--outline" type="button">Im Rechner ansehen</button>
             <span class="inline-hint" id="copySolverResultsStatus" aria-live="polite"></span>
+            <span class="inline-hint" id="solverApplyStatus" aria-live="polite"></span>
           </div>
           <div class="solver-results">
             <div class="table-wrap">
@@ -497,6 +520,6 @@
       </section>
     </main>
 
-    <script src="app.js?v=app-frame9"></script>
+    <script src="app.js?v=solver-ux5"></script>
   </body>
 </html>

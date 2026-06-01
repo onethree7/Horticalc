@@ -23,6 +23,11 @@ The active navigation has four user-facing areas:
 The older visible mode bar is not the user workflow. Some hidden radio inputs
 remain only to keep existing JavaScript paths stable.
 
+The live sidebar in `frontend/index.html` and `frontend/app.js` displays the
+latest calculation's NPK totals, compact P-normalized and NPK-only bubbles,
+the ion-based `Ca:Mg` ratio, centered EC solution/water values, and compact
+mg/L ion-ratio chips from `npk_metrics.npk_ratios_ion`.
+
 The solver advanced config in `frontend/index.html` is backed by
 `/schema/solver-config` and wired in `frontend/app.js`. The visible
 `N-total statt N-Formen` checkbox writes

@@ -143,6 +143,11 @@ schema:
 21. `sluijsmann`
 22. `osmosis_percent`
 
+`npk_metrics` is produced by `src/horticalc/metrics.py`. It includes the
+existing oxide/form ratios in `npk_ratios` and a separate `npk_ratios_ion`
+mapping for dissolved mg/L element or form comparisons such as `Ca:Mg`,
+`Ca:K`, `N:K`, `SO4:P`, and `P:K`.
+
 ## Solver Output
 
 `SolveResult.to_dict()` in `src/horticalc/solver.py` is the canonical solver

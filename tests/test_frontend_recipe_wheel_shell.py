@@ -80,6 +80,8 @@ def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
     assert 'id="npkAllPct"' in content
     assert 'id="npkPNorm"' in content
     assert 'id="npkNpkPct"' in content
+    assert 'id="caMgRatio"' in content
+    assert 'id="ionRatioList"' in content
     assert 'id="ec25Value"' in content
     assert 'id="ec18Value"' in content
     assert 'id="ecWater25Value"' in content
@@ -89,6 +91,8 @@ def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
     assert "Wasser</span>" in content
     assert "live-metric--npk" in content
     assert "live-metric--ratio" in content
+    assert "live-metric--camg" in content
+    assert "live-ion-ratios" in content
     assert "Hydroponic Solution Calculator and powerful Nutrient Solver." in content
     assert "Nährlösung-Rechner" not in content
     assert "live-metric" in content
@@ -182,7 +186,9 @@ def test_framed_shell_styles_present() -> None:
     assert ".btn--solver-primary" in content
     assert ".live-metric--npk" in content
     assert ".live-metric--ratio" in content
+    assert ".live-metric--camg" in content
     assert ".live-ec" in content
+    assert ".live-ion-ratios" in content
     assert "scrollbar-gutter: stable" in content
     assert "--app-min-width" not in content
     assert "min-width: calc(var(--app-min-width)" not in content
@@ -231,8 +237,11 @@ def test_live_result_bar_uses_consistent_high_visibility_type() -> None:
     assert "--live-value-size: 1.18rem" in styles
     assert ".live-metric strong" in styles
     assert ".live-ec .ec-value" in styles
+    assert ".ion-ratio-pill strong" in styles
     assert "font-size: var(--live-value-size)" in styles
-    assert ".live-ec .metric-title {\n  margin-bottom: var(--space-2);" in styles
+    assert ".live-ec .metric-title,\n.live-ion-ratios .metric-title {\n  margin-bottom: var(--space-2);" in styles
     assert "text-transform: none" in styles
     assert "letter-spacing: 0" in styles
     assert "EC (mS/cm)" in index
+    assert "Ionen-Verhältnisse (mg/L)" in index
+    assert "Ca:Mg Ratio (mg/L)" in index

@@ -15,6 +15,8 @@ const waterSection = document.querySelector("#waterSection");
 const npkAllPctValue = document.querySelector("#npkAllPct");
 const npkPNormValue = document.querySelector("#npkPNorm");
 const npkNpkPctValue = document.querySelector("#npkNpkPct");
+const caMgRatioValue = document.querySelector("#caMgRatio");
+const ionRatioList = document.querySelector("#ionRatioList");
 const ec18Value = document.querySelector("#ec18Value");
 const ec25Value = document.querySelector("#ec25Value");
 const ecWater18Value = document.querySelector("#ecWater18Value");
@@ -2237,6 +2239,62 @@ function renderEcPair(ecValues, el18, el25) {
   el25.textContent = Number.isFinite(ec25) ? formatNumber(ec25) : "-";
 }
 
+function ratioValueText(value) {
+  const text = String(value || "").trim();
+  if (!text) {
+    return "-";
+  }
+  const markerIndex = text.indexOf("=");
+  return markerIndex >= 0 ? text.slice(markerIndex + 1) : text;
+}
+
+function formatRatioNumber(value) {
+  if (!Number.isFinite(value)) {
+    return "-";
+  }
+  const rounded = Math.round(value * 10) / 10;
+  return rounded.toFixed(1).replace(/\.0$/, "");
+}
+
+function ratioToOneText(value, leftLabel, rightLabel) {
+  const parts = ratioValueText(value).split(":").map((part) => Number(part));
+  if (parts.length !== 2 || !Number.isFinite(parts[0]) || !Number.isFinite(parts[1])) {
+    return "-";
+  }
+  const [left, right] = parts;
+  if (left <= 0 && right <= 0) {
+    return `0 ${leftLabel} : 0 ${rightLabel}`;
+  }
+  if (right <= 0) {
+    return `${formatRatioNumber(left)} ${leftLabel} : 0 ${rightLabel}`;
+  }
+  return `${formatRatioNumber(left / right)} ${leftLabel} : 1 ${rightLabel}`;
+}
+
+function renderIonRatios(metrics) {
+  const ratios = metrics?.npk_ratios_ion || {};
+  if (caMgRatioValue) {
+    caMgRatioValue.textContent = ratioToOneText(ratios["Ca:Mg"], "Ca", "Mg");
+  }
+  if (!ionRatioList) {
+    return;
+  }
+
+  ionRatioList.innerHTML = "";
+  ["N:K", "Ca:K", "Na:Mg", "SO4:P", "P:K", "Fe:Mg", "CO3:Si"].forEach((key) => {
+    const item = document.createElement("div");
+    item.className = "ion-ratio-pill";
+
+    const label = document.createElement("span");
+    label.textContent = key;
+    const value = document.createElement("strong");
+    value.textContent = ratioValueText(ratios[key]);
+
+    item.append(label, value);
+    ionRatioList.appendChild(item);
+  });
+}
+
 function renderCalculation(data) {
   lastCalculation = data;
   const oxides = data.oxides_mg_per_l || {};
@@ -2257,6 +2315,7 @@ function renderCalculation(data) {
   npkAllPctValue.textContent = npkMetrics.npk_all_pct || "-";
   npkPNormValue.textContent = npkMetrics.npk_p_norm || "-";
   npkNpkPctValue.textContent = npkMetrics.npk_npk_pct || "-";
+  renderIonRatios(npkMetrics);
 
   const ec = data.ec || {};
   renderEcPair(ec.ec_mS_per_cm || {}, ec18Value, ec25Value);

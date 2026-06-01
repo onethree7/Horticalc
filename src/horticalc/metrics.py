@@ -29,7 +29,6 @@ OXIDE_TOTAL_KEYS = [
     "SiO2",
 ]
 
-
 def round0(value: float) -> int:
     return int(Decimal(str(value)).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
@@ -117,6 +116,14 @@ def format_npks(result: CalcResult | Mapping[str, object]) -> dict[str, str | di
         ratio_str = f"{ratio:.1f}".rstrip("0").rstrip(".")
         return f"{label}=1:{ratio_str}"
 
+    def element_mg_l(element_key: str) -> float:
+        if element_key == "N":
+            return n_total
+        return float(elements.get(element_key, 0.0) or 0.0)
+
+    def form_mg_l(form_key: str) -> float:
+        return float(oxides.get(form_key, 0.0) or 0.0)
+
     npk_ratios = {
         "N:K": ratio_string("N:K", n_total, float(elements.get("K", 0.0) or 0.0)),
         "CaO:K2O": ratio_string("CaO:K2O", cao, k2o),
@@ -131,6 +138,16 @@ def format_npks(result: CalcResult | Mapping[str, object]) -> dict[str, str | di
             float(oxides.get("SiO2", 0.0) or 0.0),
         ),
     }
+    npk_ratios_ion = {
+        "N:K": ratio_string("N:K", element_mg_l("N"), element_mg_l("K")),
+        "Ca:K": ratio_string("Ca:K", element_mg_l("Ca"), element_mg_l("K")),
+        "Ca:Mg": ratio_string("Ca:Mg", element_mg_l("Ca"), element_mg_l("Mg")),
+        "Na:Mg": ratio_string("Na:Mg", element_mg_l("Na"), element_mg_l("Mg")),
+        "SO4:P": ratio_string("SO4:P", form_mg_l("SO4"), element_mg_l("P")),
+        "P:K": ratio_string("P:K", element_mg_l("P"), element_mg_l("K")),
+        "Fe:Mg": ratio_string("Fe:Mg", element_mg_l("Fe"), element_mg_l("Mg")),
+        "CO3:Si": ratio_string("CO3:Si", form_mg_l("CO3"), element_mg_l("Si")),
+    }
 
     return {
         "npk_all_pct": npk_all_pct,
@@ -138,6 +155,7 @@ def format_npks(result: CalcResult | Mapping[str, object]) -> dict[str, str | di
         "npk_npk_pct": npk_npk_pct,
         "n_form_pct": n_form_pct,
         "npk_ratios": npk_ratios,
+        "npk_ratios_ion": npk_ratios_ion,
         "npk_values": {
             "n_total": n_total,
             "p2o5": p2o5,

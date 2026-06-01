@@ -1641,6 +1641,7 @@ button,
 
 .live-metric,
 .live-ec,
+.live-ion-ratios,
 .live-meta {
   display: grid;
   gap: var(--space-1);
@@ -1652,11 +1653,23 @@ button,
     linear-gradient(145deg, rgba(27, 38, 36, 0.72), rgba(12, 16, 14, 0.86));
 }
 
+.live-metric-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  min-width: 0;
+}
+
 .live-metric {
   align-items: center;
   justify-items: center;
   min-height: 3.2rem;
   text-align: center;
+}
+
+.live-metric--compact {
+  min-height: 2.9rem;
+  padding: var(--space-2);
 }
 
 .live-metric span,
@@ -1691,12 +1704,18 @@ button,
   line-height: 1.05;
 }
 
-.live-ec {
+.live-metric--camg strong {
+  color: #ffd166;
+}
+
+.live-ec,
+.live-ion-ratios {
   color: rgba(255, 255, 255, 0.86);
   overflow-x: auto;
 }
 
-.live-ec .metric-title {
+.live-ec .metric-title,
+.live-ion-ratios .metric-title {
   margin-bottom: var(--space-2);
   color: rgba(255, 255, 255, 0.6);
   text-transform: none;
@@ -1706,8 +1725,10 @@ button,
 }
 
 .live-ec .ec-line {
-  grid-template-columns: 2.7rem minmax(2.6rem, auto) minmax(2.5rem, 1fr) minmax(2.6rem, auto) minmax(2.5rem, 1fr);
+  display: grid;
+  grid-template-columns: 3.2rem repeat(2, minmax(0, 1fr));
   column-gap: var(--space-2);
+  align-items: center;
 }
 
 .live-ec .ec-temp,
@@ -1716,12 +1737,60 @@ button,
   line-height: 1.1;
 }
 
+.live-ec .ec-temp {
+  text-align: center;
+}
+
+.live-ec .ec-pair {
+  display: grid;
+  gap: 0.12rem;
+  justify-items: center;
+  min-width: 0;
+}
+
 .live-ec .ec-value {
+  display: block;
+  min-width: 0;
   color: #41e7ff;
   font-size: var(--live-value-size);
   font-weight: 800;
   line-height: 1.1;
-  text-align: right;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.ion-ratio-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.ion-ratio-pill {
+  display: grid;
+  gap: 0.08rem;
+  justify-items: center;
+  min-width: 0;
+  padding: var(--space-2);
+  border: 1px solid rgba(174, 183, 166, 0.12);
+  border-radius: 6px;
+  background: rgba(4, 8, 7, 0.32);
+  text-align: center;
+}
+
+.ion-ratio-pill span {
+  color: var(--app-muted);
+  font-size: var(--live-label-size);
+  line-height: 1.05;
+}
+
+.ion-ratio-pill strong {
+  min-width: 0;
+  color: #ffd166;
+  overflow-wrap: anywhere;
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
 }
 
 .live-meta {

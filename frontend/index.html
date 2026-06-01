@@ -171,32 +171,50 @@
             <span>NPK Gesamt (%)</span>
             <strong id="npkAllPct">-</strong>
           </div>
-          <div class="live-metric live-metric--pnorm">
-            <span>NPK P-Norm</span>
-            <strong id="npkPNorm">-</strong>
+          <div class="live-metric-row" aria-label="NPK Kennzahlen">
+            <div class="live-metric live-metric--pnorm live-metric--compact">
+              <span>NPK P-Norm</span>
+              <strong id="npkPNorm">-</strong>
+            </div>
+            <div class="live-metric live-metric--ratio live-metric--compact">
+              <span>NPK Verhältnis (%)</span>
+              <strong id="npkNpkPct">-</strong>
+            </div>
           </div>
-          <div class="live-metric live-metric--ratio">
-            <span>NPK Verhältnis (%)</span>
-            <strong id="npkNpkPct">-</strong>
+          <div class="live-metric live-metric--camg">
+            <span>Ca:Mg Ratio (mg/L)</span>
+            <strong id="caMgRatio">-</strong>
           </div>
           <div class="live-ec">
             <div class="metric-title">EC (mS/cm)</div>
             <div class="ec-lines">
               <div class="ec-line ec-primary">
                 <span class="ec-temp">25&nbsp;°C</span>
-                <span class="ec-label">Lösung</span>
-                <span class="ec-value" id="ec25Value">—</span>
-                <span class="ec-label">Wasser</span>
-                <span class="ec-value muted" id="ecWater25Value">—</span>
+                <span class="ec-pair">
+                  <span class="ec-label">Lösung</span>
+                  <strong class="ec-value" id="ec25Value">—</strong>
+                </span>
+                <span class="ec-pair">
+                  <span class="ec-label">Wasser</span>
+                  <strong class="ec-value muted" id="ecWater25Value">—</strong>
+                </span>
               </div>
               <div class="ec-line">
                 <span class="ec-temp">18&nbsp;°C</span>
-                <span class="ec-label">Lösung</span>
-                <span class="ec-value" id="ec18Value">—</span>
-                <span class="ec-label">Wasser</span>
-                <span class="ec-value muted" id="ecWater18Value">—</span>
+                <span class="ec-pair">
+                  <span class="ec-label">Lösung</span>
+                  <strong class="ec-value" id="ec18Value">—</strong>
+                </span>
+                <span class="ec-pair">
+                  <span class="ec-label">Wasser</span>
+                  <strong class="ec-value muted" id="ecWater18Value">—</strong>
+                </span>
               </div>
             </div>
+          </div>
+          <div class="live-ion-ratios">
+            <div class="metric-title">Ionen-Verhältnisse (mg/L)</div>
+            <div class="ion-ratio-grid" id="ionRatioList" aria-label="Ionen-Verhältnisse"></div>
           </div>
           <div class="live-meta">
             <span id="liveLastCalc">Noch keine Berechnung</span>

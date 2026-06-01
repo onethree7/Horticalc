@@ -110,35 +110,53 @@
             </div>
           </details>
         </section>
-        <section class="rail-card rail-guide" aria-label="Ablaufplan" data-testid="workflow-guide">
+        <section class="rail-card rail-workflow" aria-label="Hauptsteuerung" data-testid="workflow-nav">
           <div class="rail-card-heading">
-            <span>Ablauf</span>
-          </div>
-          <ol class="rail-guide-list">
-            <li><strong>Erstelle oder lade eigene Dünger im <span>DÜNGER-EDITOR</span>.</strong></li>
-            <li><strong>Konfiguriere deine <span>WASSERWERTE</span>.</strong></li>
-            <li><strong>Erstelle Rezepte von Hand im <span>RECHNER</span>.</strong></li>
-            <li><strong>Oder lass den <span>SOLVER</span> für dich lösen.</strong></li>
-          </ol>
-        </section>
-        <section class="rail-card rail-workflow" aria-label="Workflow Navigation" data-testid="workflow-nav">
-          <div class="rail-card-heading">
-            <span>Bereiche</span>
+            <span>Hauptmenü</span>
           </div>
           <nav class="workflow-nav" aria-label="Workflow Schritte">
             <button class="workflow-step workflow-step--editor" type="button" data-shell-view="editor" data-testid="workflow-editor">
-              <span>DÜNGER-EDITOR</span>
+              <span class="workflow-step-index" aria-hidden="true">1</span>
+              <span class="workflow-step-copy">
+                <span class="workflow-step-title">Dünger-Editor</span>
+                <span class="workflow-step-hint">Datenbank pflegen</span>
+              </span>
+              <span class="workflow-step-arrow" aria-hidden="true">›</span>
             </button>
             <button class="workflow-step" type="button" data-shell-view="water" data-testid="workflow-water">
-              <span>WASSERWERTE</span>
+              <span class="workflow-step-index" aria-hidden="true">2</span>
+              <span class="workflow-step-copy">
+                <span class="workflow-step-title">Wasserwerte</span>
+                <span class="workflow-step-hint">Profile und Osmose</span>
+              </span>
+              <span class="workflow-step-arrow" aria-hidden="true">›</span>
             </button>
             <button class="workflow-step is-active" type="button" data-shell-view="fertilizers" data-testid="workflow-fertilizers">
-              <span>RECHNER</span>
+              <span class="workflow-step-index" aria-hidden="true">3</span>
+              <span class="workflow-step-copy">
+                <span class="workflow-step-title">Rechner</span>
+                <span class="workflow-step-hint">Rezept von Hand bauen</span>
+              </span>
+              <span class="workflow-step-arrow" aria-hidden="true">›</span>
             </button>
             <button class="workflow-step workflow-step--solver" type="button" data-shell-view="solver" data-testid="workflow-solver">
-              <span>SOLVER</span>
+              <span class="workflow-step-index" aria-hidden="true">4</span>
+              <span class="workflow-step-copy">
+                <span class="workflow-step-title">Solver</span>
+                <span class="workflow-step-hint">Zielprofil automatisch lösen</span>
+              </span>
+              <span class="workflow-step-arrow" aria-hidden="true">›</span>
             </button>
           </nav>
+          <details class="rail-guide" data-testid="workflow-guide">
+            <summary>Ablauf kurz</summary>
+            <ol class="rail-guide-list">
+              <li><strong>Erstelle oder lade eigene Dünger im <span>Dünger-Editor</span>.</strong></li>
+              <li><strong>Konfiguriere deine <span>Wasserwerte</span>.</strong></li>
+              <li><strong>Erstelle Rezepte von Hand im <span>Rechner</span>.</strong></li>
+              <li><strong>Oder lass den <span>Solver</span> für dich lösen.</strong></li>
+            </ol>
+          </details>
         </section>
         <aside class="live-bar" aria-label="Live Ergebnisse" data-testid="live-bar">
           <div class="live-bar-heading">

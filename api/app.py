@@ -19,6 +19,7 @@ from horticalc.core import (
 )
 from horticalc.data_io import (
     Fertilizer,
+    fertilizer_name_key,
     load_fertilizers,
     load_molar_masses,
     load_nutrient_solution_data,
@@ -280,12 +281,15 @@ def fertilizers() -> List[dict]:
 def put_fertilizers(payload: List[FertilizerPayload]) -> dict:
     _ensure_initialized()
     new_ferts: Dict[str, Fertilizer] = {}
+    seen_names: set[str] = set()
     for entry in payload:
         name = entry.name.strip()
         if not name:
             raise HTTPException(status_code=400, detail="Düngername darf nicht leer sein")
-        if name in new_ferts:
+        name_key = fertilizer_name_key(name)
+        if name_key in seen_names:
             raise HTTPException(status_code=400, detail="Düngernamen müssen eindeutig sein")
+        seen_names.add(name_key)
 
         form = entry.form.strip() if entry.form and entry.form.strip() else "fest"
         weight = entry.weight_factor if entry.weight_factor is not None else 1.0

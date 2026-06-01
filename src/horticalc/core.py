@@ -65,9 +65,32 @@ WATER_PROFILE_KEYS: List[str] = [
     "Mo",
 ]
 
-OXIDE_ELEMENT_FORMS: tuple[str, ...] = ("P2O5", "K2O", "CaO", "MgO", "Na2O")
+OXIDE_ELEMENT_RULES: dict[str, tuple[str, float]] = {
+    "P2O5": ("P", 2.0),
+    "K2O": ("K", 2.0),
+    "CaO": ("Ca", 1.0),
+    "MgO": ("Mg", 1.0),
+    "Na2O": ("Na", 2.0),
+}
 
-OTHER_ELEMENT_FORMS: tuple[str, ...] = ("SO4", "CO3", "SiO2", "Cl", "Fe", "Mn", "Cu", "Zn", "B", "Mo")
+FORM_ELEMENT_RULES: dict[str, tuple[str, float]] = {
+    "SO4": ("S", 1.0),
+    "CO3": ("C", 1.0),
+    "SiO2": ("Si", 1.0),
+    "Cl": ("Cl", 1.0),
+    "Fe": ("Fe", 1.0),
+    "Mn": ("Mn", 1.0),
+    "Cu": ("Cu", 1.0),
+    "Zn": ("Zn", 1.0),
+    "B": ("B", 1.0),
+    "Mo": ("Mo", 1.0),
+}
+
+N_MOLECULE_FORMS: tuple[str, ...] = ("NH4", "NO3")
+
+OXIDE_ELEMENT_FORMS: tuple[str, ...] = tuple(OXIDE_ELEMENT_RULES)
+
+OTHER_ELEMENT_FORMS: tuple[str, ...] = tuple(FORM_ELEMENT_RULES)
 
 
 def _mm(mm: Dict[str, float], key: str) -> float:
@@ -77,37 +100,15 @@ def _mm(mm: Dict[str, float], key: str) -> float:
 
 
 def _oxide_to_element(mg_l_oxide: float, mm: Dict[str, float], oxide: str) -> Tuple[str, float]:
-    # returns (element_symbol, mg/L element)
-    if oxide == "P2O5":
-        # P2O5 -> 2P
-        return "P", mg_l_oxide * (2 * _mm(mm, "P")) / _mm(mm, "P2O5")
-    if oxide == "K2O":
-        return "K", mg_l_oxide * (2 * _mm(mm, "K")) / _mm(mm, "K2O")
-    if oxide == "CaO":
-        return "Ca", mg_l_oxide * _mm(mm, "Ca") / _mm(mm, "CaO")
-    if oxide == "MgO":
-        return "Mg", mg_l_oxide * _mm(mm, "Mg") / _mm(mm, "MgO")
-    if oxide == "Na2O":
-        return "Na", mg_l_oxide * (2 * _mm(mm, "Na")) / _mm(mm, "Na2O")
-    raise ValueError(f"Unsupported oxide: {oxide}")
+    try:
+        element, multiplier = OXIDE_ELEMENT_RULES[oxide]
+    except KeyError as exc:
+        raise ValueError(f"Unsupported oxide: {oxide}") from exc
+    return element, mg_l_oxide * (multiplier * _mm(mm, element)) / _mm(mm, oxide)
 
 
 def oxide_to_element_mg_l(mm: Dict[str, float], oxide_key: str, mg_l: float) -> Tuple[str, float]:
     mg_l_oxide = float(mg_l)
-    if mg_l_oxide == 0.0:
-        if oxide_key == "P2O5":
-            return "P", 0.0
-        if oxide_key == "K2O":
-            return "K", 0.0
-        if oxide_key == "CaO":
-            return "Ca", 0.0
-        if oxide_key == "MgO":
-            return "Mg", 0.0
-        if oxide_key == "Na2O":
-            return "Na", 0.0
-        if oxide_key == "SO4":
-            return "S", 0.0
-        raise ValueError(f"Unsupported oxide/form: {oxide_key}")
     if oxide_key in OXIDE_ELEMENT_FORMS:
         return _oxide_to_element(mg_l_oxide, mm, oxide_key)
     return _form_to_element(mg_l_oxide, mm, oxide_key)
@@ -127,32 +128,23 @@ def augment_water_profile_with_elements(mm: Dict[str, float], water_profile: Dic
 
 
 def _form_to_element(mg_l: float, mm: Dict[str, float], form: str) -> Tuple[str, float]:
-    if form in ("Fe", "Mn", "Cu", "Zn", "B", "Mo", "Cl"):
-        return form, mg_l
-    if form == "SO4":
-        return "S", mg_l * _mm(mm, "S") / _mm(mm, "SO4")
-    if form == "CO3":
-        return "C", mg_l * _mm(mm, "C") / _mm(mm, "CO3")
-    if form == "SiO2":
-        return "Si", mg_l * _mm(mm, "Si") / _mm(mm, "SiO2")
-    raise ValueError(f"Unsupported form: {form}")
+    try:
+        element, multiplier = FORM_ELEMENT_RULES[form]
+    except KeyError as exc:
+        raise ValueError(f"Unsupported form: {form}") from exc
+    return element, mg_l * (multiplier * _mm(mm, element)) / _mm(mm, form)
 
 
 def _n_molecule_to_n_element(mg_l_molecule: float, mm: Dict[str, float], molecule: str) -> float:
-    # molecule is NH4 or NO3
-    if molecule == "NH4":
-        return mg_l_molecule * _mm(mm, "N") / _mm(mm, "NH4")
-    if molecule == "NO3":
-        return mg_l_molecule * _mm(mm, "N") / _mm(mm, "NO3")
-    raise ValueError(molecule)
+    if molecule not in N_MOLECULE_FORMS:
+        raise ValueError(molecule)
+    return mg_l_molecule * _mm(mm, "N") / _mm(mm, molecule)
 
 
 def _n_element_to_molecule(mg_l_n: float, mm: Dict[str, float], molecule: str) -> float:
-    if molecule == "NH4":
-        return mg_l_n * _mm(mm, "NH4") / _mm(mm, "N")
-    if molecule == "NO3":
-        return mg_l_n * _mm(mm, "NO3") / _mm(mm, "N")
-    raise ValueError(molecule)
+    if molecule not in N_MOLECULE_FORMS:
+        raise ValueError(molecule)
+    return mg_l_n * _mm(mm, molecule) / _mm(mm, "N")
 
 
 def _urea_element_to_molecule(mg_l_n: float, mm: Dict[str, float]) -> float:

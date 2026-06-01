@@ -12,13 +12,23 @@ Shipped defaults:
 
 Runtime user copies:
 
-- `user/fertilizers.csv`
+- `user/fertilizers_overrides.csv`
+- `user/fertilizers_disabled.txt`
 - `user/water_profiles/*.yml`
 - `user/nutrient_solutions/*.yml`
 - `user/recipes/*.yml`
 
-`ensure_portable_layout()` copies shipped defaults into `user/` when a user
-copy is missing. Runtime edits are written to `user/`, not to shipped defaults.
+`ensure_portable_layout()` creates writable runtime folders. Fertilizers are
+loaded by `load_fertilizers()` in `src/horticalc/data_io.py` from the shipped
+catalog first, then user overrides are applied, and names listed in
+`user/fertilizers_disabled.txt` are removed. Legacy `user/fertilizers.csv`
+snapshots are migrated once: custom names move into
+`user/fertilizers_overrides.csv`, and the original file is retained as a
+`.legacy-backup`.
+
+Water profiles, nutrient solutions, and recipes still copy shipped defaults
+into `user/` when a user copy is missing. Runtime edits are written to `user/`,
+not to shipped defaults.
 
 ## Fertilizers CSV
 
@@ -26,7 +36,7 @@ Loaded by `load_fertilizers()` in `src/horticalc/data_io.py`.
 
 Required columns:
 
-- `Duengername`
+- `Düngername` or `Duengername`
 - `Form`
 - `Gewicht`
 

@@ -26,6 +26,11 @@ from .solver_config import SOLVER_CONFIG_DEFINITIONS
 
 IGNORED_TARGETS = {"S", "SO4", "NA", "CL"}
 N_FORM_KEYS = {"N_NH4", "N_NO3", "N_UREA"}
+FERTILIZER_N_FORM_OUTPUT_KEYS = {
+    "NH4": "N_NH4",
+    "NO3": "N_NO3",
+    "UREA": "N_UREA",
+}
 NITROGEN_OBJECTIVE_MODES = {"as_targets", "n_total_only", "n_forms_only"}
 DEFAULT_SOLVER_CONFIG = {
     str(definition["key"]): definition.get("default") for definition in SOLVER_CONFIG_DEFINITIONS
@@ -134,14 +139,10 @@ def _fertilizer_element_contrib_per_g(fert: Fertilizer, mm: Dict[str, float]) ->
 
     for form, frac in fert.comp.items():
         mg_per_g = float(frac) * 1000.0 * wf
-        if form in ("NH4", "NO3", "UREA"):
+        n_form_key = FERTILIZER_N_FORM_OUTPUT_KEYS.get(form)
+        if n_form_key is not None:
             add("N_total", mg_per_g)
-            if form == "NH4":
-                add("N_NH4", mg_per_g)
-            elif form == "NO3":
-                add("N_NO3", mg_per_g)
-            else:
-                add("N_UREA", mg_per_g)
+            add(n_form_key, mg_per_g)
             continue
         if form in OXIDE_ELEMENT_FORMS:
             element, mg_el = _oxide_to_element(mg_per_g, mm, form)

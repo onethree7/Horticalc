@@ -42,7 +42,9 @@ Source: `src/horticalc/launcher.py`.
 
 - AppRoot is the repo root in development and the executable folder in release.
 - Runtime writes stay under `AppRoot/user/` and `AppRoot/logs/`.
-- Shipped defaults are copied to user space on first run if missing.
+- The shipped fertilizer catalog remains in `data/fertilizers.csv`; user
+  fertilizer edits are stored as overrides and disabled names under `user/`.
+- Shipped YAML defaults are copied to user space on first run if missing.
 - AppRoot must be writable; otherwise startup fails fast.
 
 Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`.

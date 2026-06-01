@@ -74,12 +74,15 @@ AppRoot/
   data/       shipped defaults
   recipes/    shipped defaults
   frontend/   static UI
-  user/       editable user copies
+  user/       editable user overlays and copied YAML defaults
   logs/       launcher/server logs
 ```
 
 On startup, `ensure_portable_layout()` creates `user/` and `logs/`, checks that
-they are writable, and copies shipped defaults into user space if missing.
+they are writable, and copies shipped YAML defaults into user space if missing.
+The fertilizer catalog stays in `data/fertilizers.csv`; `data_io.py` applies
+`user/fertilizers_overrides.csv` and `user/fertilizers_disabled.txt` as an
+overlay so shipped catalog updates are visible after app updates.
 
 ## Current Boundaries
 

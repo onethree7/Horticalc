@@ -17,7 +17,7 @@ static frontend from the same origin.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/fertilizers` | List loaded fertilizers. |
-| `PUT` | `/fertilizers` | Replace the user fertilizer CSV. |
+| `PUT` | `/fertilizers` | Replace the effective fertilizer list by saving user overrides and disabled shipped names. |
 
 `PUT /fertilizers` accepts a list:
 
@@ -31,6 +31,10 @@ static frontend from the same origin.
   }
 ]
 ```
+
+Names are matched case-insensitively after whitespace normalization. The
+shipped catalog remains `data/fertilizers.csv`; the endpoint writes only user
+deltas under `user/`.
 
 ## Water Profiles
 

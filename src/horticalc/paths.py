@@ -49,6 +49,14 @@ def user_fertilizers_path(root: Path | None = None) -> Path:
     return user_dir(root) / "fertilizers.csv"
 
 
+def user_fertilizer_overrides_path(root: Path | None = None) -> Path:
+    return user_dir(root) / "fertilizers_overrides.csv"
+
+
+def user_disabled_fertilizers_path(root: Path | None = None) -> Path:
+    return user_dir(root) / "fertilizers_disabled.txt"
+
+
 def user_water_profiles_dir(root: Path | None = None) -> Path:
     return user_dir(root) / "water_profiles"
 
@@ -161,17 +169,12 @@ def ensure_portable_layout(root: Path | None = None) -> PortableLayout:
     except OSError as exc:
         raise RuntimeError(PORTABLE_WRITE_ERROR) from exc
 
-    fertilizers_path = user_fertilizers_path(base)
     water_profiles = user_water_profiles_dir(base)
     nutrient_solutions = user_nutrient_solutions_dir(base)
     recipes = user_recipes_dir(base)
     water_profiles.mkdir(parents=True, exist_ok=True)
     nutrient_solutions.mkdir(parents=True, exist_ok=True)
     recipes.mkdir(parents=True, exist_ok=True)
-
-    shipped_fertilizers = shipped_fertilizers_path(base)
-    if shipped_fertilizers.exists():
-        _copy_if_missing(shipped_fertilizers, fertilizers_path)
 
     shipped_water_profiles = shipped_water_profiles_dir(base)
     if shipped_water_profiles.exists():
@@ -192,7 +195,7 @@ def ensure_portable_layout(root: Path | None = None) -> PortableLayout:
         root=base,
         user=user,
         logs=logs,
-        fertilizers=fertilizers_path,
+        fertilizers=shipped_fertilizers_path(base),
         water_profiles=water_profiles,
         nutrient_solutions=nutrient_solutions,
         recipes=recipes,

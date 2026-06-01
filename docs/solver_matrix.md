@@ -37,8 +37,6 @@ The first boolean solver config starts from the implementation defaults in
 
 - `nitrogen_objective_mode: n_total_only`
 - `relative_weighting: false`
-- `macro_priority_enabled: false`
-- `stage_optimization_enabled: false`
 - `singleton_supplier_enabled: false`
 - `singleton_underfill_enabled: true`
 - `n_total_governor_enabled: false`

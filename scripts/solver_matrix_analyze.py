@@ -14,8 +14,6 @@ from typing import Any, Iterable
 
 BOOLEAN_SOLVER_KEYS = (
     "relative_weighting",
-    "macro_priority_enabled",
-    "stage_optimization_enabled",
     "singleton_supplier_enabled",
     "singleton_underfill_enabled",
     "n_total_governor_enabled",

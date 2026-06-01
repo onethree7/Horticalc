@@ -90,7 +90,7 @@ def test_score_solution_scores_hco3_when_solver_objective_includes_it() -> None:
 def test_boolean_solver_configs_include_requested_nitrogen_modes() -> None:
     configs = solver_matrix.boolean_solver_configs(["n_total_only", "n_forms_only"])
 
-    assert len(configs) == 128
+    assert len(configs) == 32
     assert {config.values["nitrogen_objective_mode"] for config in configs} == {
         "n_total_only",
         "n_forms_only",
@@ -103,8 +103,6 @@ def test_boolean_solver_configs_start_with_current_simple_default() -> None:
 
     assert first.values == {
         "relative_weighting": False,
-        "macro_priority_enabled": False,
-        "stage_optimization_enabled": False,
         "singleton_supplier_enabled": False,
         "singleton_underfill_enabled": True,
         "n_total_governor_enabled": False,

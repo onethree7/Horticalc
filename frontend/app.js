@@ -1,8 +1,6 @@
 const fertilizerSelectTableWrap = document.querySelector("#fertilizerSelectTableWrap");
 const calculatorTableWrap = document.querySelector("#calculatorTableWrap");
-const reloadButton = document.querySelector("#reloadData");
 const calculateButton = document.querySelector("#calculateBtn");
-const apiBaseInput = document.querySelector("#apiBase");
 const addRowButton = document.querySelector("#addFertilizerRow");
 const removeRowButton = document.querySelector("#removeFertilizerRow");
 const waterTableBody = document.querySelector("#waterValuesTable tbody");
@@ -178,9 +176,6 @@ const SCALE_STEP = 0.05;
 const solverAllowedFertilizers = [];
 let solverAllowedContext = "global";
 const solverFixedGrams = {};
-const saveAllowedFertilizersDebounced = debounce(() => {
-  persistSolverAllowedToStorage();
-}, 200);
 
 const waterFieldDefinitions = [
   { key: "NH4", label: "Ammonium in NH4" },
@@ -228,9 +223,7 @@ const nutrientIntegerFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
   useGrouping: false,
 });
-const LAST_FERTILIZERS_ALLOWED_KEY = "last_fertilizers_allowed";
 const LAST_FERTILIZERS_ALLOWED_CONTEXT_KEY_PREFIX = "last_fertilizers_allowed::";
-const LAST_FERTILIZERS_ALLOWED_CONTEXT_LEGACY_KEY_PREFIX = "last_fertilizers_allowed_context:";
 const LAST_SOLUTION_CALCULATED_KEY = "last_solution_calculated";
 const SUMMARY_VIEW_KEY = "horticalc.summary_view";
 const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
@@ -315,11 +308,7 @@ const summaryLabelWidth = "12rem";
 const ION_NITROGEN_EXPANDED_KEY = "horticalc.ion_n_expanded";
 
 function apiBase() {
-  const raw = apiBaseInput?.value.trim() || "";
-  if (!raw) {
-    return "";
-  }
-  return raw.replace(/\/$/, "");
+  return "";
 }
 
 function lsGet(key, fallback) {
@@ -340,14 +329,6 @@ function lsSet(key, value) {
   } catch (error) {
     // ignore storage errors
   }
-}
-
-function debounce(fn, ms) {
-  let timer;
-  return (...args) => {
-    window.clearTimeout(timer);
-    timer = window.setTimeout(() => fn(...args), ms);
-  };
 }
 
 function parseDecimalInput(raw) {
@@ -2493,27 +2474,15 @@ function buildSolutionSnapshot() {
 }
 
 function restoreSolverAllowedFromStorage(context = solverAllowedContext) {
-  const normalizedContext = normalizeSolverAllowedContext(context);
-  const contextKey = solverAllowedStorageKey(normalizedContext);
-  const legacyContextKey = `${LAST_FERTILIZERS_ALLOWED_CONTEXT_LEGACY_KEY_PREFIX}${normalizedContext}`;
+  const contextKey = solverAllowedStorageKey(context);
   const storedContextAllowed = lsGet(contextKey, null);
-  const storedLegacyContextAllowed = lsGet(legacyContextKey, null);
-  const legacyAllowed = lsGet(LAST_FERTILIZERS_ALLOWED_KEY, null);
-  const allowed = Array.isArray(storedContextAllowed)
-    ? storedContextAllowed
-    : Array.isArray(storedLegacyContextAllowed)
-      ? storedLegacyContextAllowed
-      : legacyAllowed;
-  if (!Array.isArray(allowed)) {
+  if (!Array.isArray(storedContextAllowed)) {
     return false;
   }
   const options = new Set(fertilizerOptions.map((fert) => fert.name));
-  const filtered = allowed.filter((name) => options.has(name));
+  const filtered = storedContextAllowed.filter((name) => options.has(name));
   solverAllowedFertilizers.length = 0;
   solverAllowedFertilizers.push(...filtered);
-  if (!Array.isArray(storedContextAllowed)) {
-    lsSet(contextKey, filtered);
-  }
   renderSolverAllowedOptions();
   renderSolverFixedTable();
   return true;
@@ -2633,9 +2602,6 @@ async function init() {
   setApiStatus("API bereit", "ready");
 }
 
-if (reloadButton) {
-  reloadButton.addEventListener("click", init);
-}
 addRowButton.addEventListener("click", addFertilizerRow);
 removeRowButton.addEventListener("click", removeFertilizerRow);
 calculateButton.addEventListener("click", async () => {
@@ -2675,12 +2641,8 @@ fertEditorLoadButton.addEventListener("click", reloadFertilizerEditor);
 fertEditorSaveButton.addEventListener("click", saveFertilizerEditor);
 
 solverAllowedFertilizersSelect.addEventListener("change", () => {
-  solverAllowedFertilizers.length = 0;
   const selected = Array.from(solverAllowedFertilizersSelect.selectedOptions).map((opt) => opt.value);
-  solverAllowedFertilizers.push(...selected);
-  pruneSolverFixedGrams();
-  renderSolverFixedTable();
-  saveAllowedFertilizersDebounced();
+  updateSolverAllowedFertilizers(selected, "replace");
 });
 
 if (solverAllowedFromRecipeButton) {

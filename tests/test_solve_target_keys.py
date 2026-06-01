@@ -50,7 +50,6 @@ class TestSolveTargetKeys(unittest.TestCase):
                 "solver_config": {
                     "relative_weighting": True,
                     "overshoot_penalty": 1.5,
-                    "stage_optimization_enabled": True,
                     "n_total_governor_enabled": True,
                     "n_total_governor_weight": 0.05,
                 },

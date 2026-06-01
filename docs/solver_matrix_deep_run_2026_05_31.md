@@ -2,6 +2,10 @@
 
 This report records the interpretation of the large local solver-matrix run in `logs/solver_matrix/dev`. It is intentionally evidence-heavy because the purpose of this benchmark is to decide solver behavior, not just to find a nice-looking single recipe.
 
+Historical note: after this report, `macro_priority_enabled` and
+`stage_optimization_enabled` were removed from the active backend config. The
+tables below remain as the evidence that motivated that cleanup.
+
 ## Source Run
 
 | Item | Value |

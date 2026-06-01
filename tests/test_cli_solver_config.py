@@ -19,8 +19,8 @@ def test_solver_config_definitions_use_data_backed_defaults() -> None:
     assert defaults["relative_weighting"] is False
     assert defaults["singleton_supplier_enabled"] is False
     assert defaults["singleton_underfill_enabled"] is True
-    assert defaults["macro_priority_enabled"] is False
-    assert defaults["stage_optimization_enabled"] is False
+    assert "macro_priority_enabled" not in defaults
+    assert "stage_optimization_enabled" not in defaults
 
 
 def test_solve_cli_passes_solver_config_overrides(monkeypatch, capsys, tmp_path) -> None:

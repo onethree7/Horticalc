@@ -60,11 +60,6 @@ The canonical defaults are in `src/horticalc/solver_config.py`.
 | `singleton_underfill_enabled` | `true` |
 | `singleton_underfill_share_threshold` | `0.85` |
 | `singleton_underfill_max_iter` | `2` |
-| `stage_optimization_enabled` | `false` |
-| `stage_regression_pp` | `5.0` |
-| `stage_regression_mg_l` | `2.0` |
-| `macro_priority_enabled` | `false` |
-| `macro_regress_pp` | `0.25` |
 | `nitrogen_objective_mode` | `n_total_only` |
 | `n_total_governor_enabled` | `false` |
 | `n_total_governor_weight` | `1.0` |
@@ -101,8 +96,8 @@ targets can matter more. IRLS can increase weights for overshoot rows.
 Singleton passes can reduce dominant-supplier overshoot or top up underfilled
 dominant nutrients, guarded by regression budgets.
 
-Stage optimization and macro priority are present in backend config but hidden
-from the current UI. They default off.
+Legacy stage optimization and macro priority controls were removed from the
+backend config after default-off matrix runs showed no current benefit.
 
 The default portfolio path may compare a small set of candidate variants when
 `nitrogen_objective_mode` is `n_total_only` and the config matches the default

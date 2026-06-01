@@ -38,8 +38,7 @@ The UI calls:
 - `/calculate`
 - `/solve`
 
-The API base defaults to the same origin. A visible API base field remains for
-developer fallback scenarios.
+The API base is the same origin as the served frontend.
 
 ## Browser State
 
@@ -47,7 +46,6 @@ The UI stores small workflow state in `localStorage`:
 
 - Last calculated solution snapshot.
 - Solver allowed fertilizer selections by context.
-- Legacy global allowed fertilizer list migration.
 
 Solver config is intentionally not restored from saved solution snapshots and
 is not automatically applied from loaded recipes. The UI fetches the backend
@@ -62,7 +60,7 @@ Tests rely on these categories of frontend contracts:
 - Calculator, water, solver, and editor IDs used by `app.js`.
 - Solver copy/apply controls.
 - Summary tabs and output tables.
-- Hidden legacy macro/stage solver controls staying absent from the UI.
+- Reduced solver config controls from `/schema/solver-config`.
 
 Before changing IDs or panel names, search tests and `frontend/app.js`.
 

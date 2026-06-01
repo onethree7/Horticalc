@@ -482,13 +482,6 @@ main {
   margin-top: var(--space-4);
 }
 
-.summary-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  margin-bottom: var(--space-3);
-}
-
 .segmented {
   display: inline-flex;
   align-items: center;
@@ -571,69 +564,6 @@ main {
   overflow-x: auto;
   overscroll-behavior-inline: contain;
   scrollbar-gutter: stable;
-}
-
-.summary-metrics,
-.ec-card {
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-
-.summary-metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-3);
-  margin: var(--space-3) 0 var(--space-4);
-}
-
-.summary-metric-card {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-2);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(12, 14, 16, 0.6);
-  color: rgba(255, 255, 255, 0.86);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.summary-metric-card.ec-metric {
-  align-items: center;
-  text-align: center;
-}
-
-.metric-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: var(--space-3);
-  font-size: var(--text-sm);
-  text-align: center;
-}
-
-.metric-label {
-  color: rgba(255, 255, 255, 0.6);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: var(--text-xs);
-}
-
-.metric-value {
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
-}
-
-/* EC KPI – gleiche Hierarchie wie NPK */
-.ec-card .metric-title {
-  margin-bottom: 8px;
-  color: rgba(255, 255, 255, 0.6);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: var(--text-xs);
 }
 
 .ec-lines {
@@ -1411,17 +1341,6 @@ html {
   min-width: 0;
 }
 
-.rail-actions {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-3);
-}
-
-.rail-actions button {
-  min-width: 0;
-  white-space: normal;
-}
-
 .workspace {
   box-sizing: border-box;
   min-width: 0;
@@ -1591,47 +1510,13 @@ button,
   background: rgba(41, 61, 31, 0.64);
 }
 
-.table-card,
-.summary-metric-card {
+.table-card {
   border-color: rgba(174, 183, 166, 0.16);
   border-radius: 12px;
   background:
     radial-gradient(circle at 88% 22%, rgba(76, 199, 176, 0.1), transparent 34%),
     rgba(16, 23, 22, 0.88);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
-}
-
-.summary-metrics {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-}
-
-.summary-metric-card {
-  min-height: 4.8rem;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.summary-metric-card .metric-value,
-.summary-metric-card .ec-value {
-  font-size: 1.28rem;
-  color: #9df068;
-}
-
-.summary-metric-card:nth-child(2) .metric-value {
-  color: #41e7ff;
-}
-
-.summary-metric-card:nth-child(3) .metric-value {
-  color: #d9a3ff;
-}
-
-.summary-metric-card.ec-metric .metric-card {
-  width: 100%;
-}
-
-.summary-metric-card.ec-metric .ec-value {
-  color: #41e7ff;
 }
 
 .segmented {
@@ -1912,9 +1797,6 @@ button,
     padding: var(--space-3);
   }
 
-  .rail-actions {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 560px) {

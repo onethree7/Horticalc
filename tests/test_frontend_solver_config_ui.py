@@ -1,14 +1,26 @@
 from pathlib import Path
 
 
-def test_solver_ui_hides_legacy_macro_and_stage_controls() -> None:
+def test_solver_ui_uses_reduced_solver_config_controls() -> None:
     index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
-    content = index_html.read_text(encoding="utf-8")
+    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
+    html_content = index_html.read_text(encoding="utf-8")
+    js_content = app_js.read_text(encoding="utf-8")
 
-    assert "Macro priority" not in content
-    assert "Stage optimization" not in content
-    assert 'id="solverConfigMacroPriorityEnabled"' not in content
-    assert 'id="solverConfigStageOptimizationEnabled"' not in content
+    expected_controls = [
+        "solverConfigRelativeWeighting",
+        "solverConfigOvershootPenalty",
+        "solverConfigSingletonSupplierEnabled",
+        "solverConfigSingletonUnderfillEnabled",
+        "solverConfigNTotalGovernorEnabled",
+    ]
+    for control_id in expected_controls:
+        assert f'id="{control_id}"' in html_content
+
+    assert "macro_priority_enabled" not in js_content
+    assert "stage_optimization_enabled" not in js_content
+    assert "solverConfigMacroPriorityEnabled" not in html_content
+    assert "solverConfigStageOptimizationEnabled" not in html_content
 
 
 def test_solver_ui_fetches_backend_solver_config_schema() -> None:

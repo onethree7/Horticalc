@@ -83,8 +83,6 @@ def test_analyze_run_extracts_feature_and_fertilizer_effects(tmp_path: Path) -> 
                 "config_name": "n_mode=n_total_only",
                 "solver_config": {
                     "relative_weighting": True,
-                    "macro_priority_enabled": False,
-                    "stage_optimization_enabled": False,
                     "singleton_supplier_enabled": True,
                     "singleton_underfill_enabled": True,
                     "n_total_governor_enabled": False,
@@ -106,12 +104,10 @@ def test_analyze_run_extracts_feature_and_fertilizer_effects(tmp_path: Path) -> 
                 "nitrogen_objective_mode": "n_total_only",
                 "subset_size": 1,
                 "fertilizers_allowed": ["Fert B"],
-                "config_name": "n_mode=n_total_only,macro_priority_enabled=true",
+                "config_name": "n_mode=n_total_only,singleton_supplier_enabled=false",
                 "solver_config": {
                     "relative_weighting": True,
-                    "macro_priority_enabled": True,
-                    "stage_optimization_enabled": False,
-                    "singleton_supplier_enabled": True,
+                    "singleton_supplier_enabled": False,
                     "singleton_underfill_enabled": True,
                     "n_total_governor_enabled": False,
                 },
@@ -131,9 +127,9 @@ def test_analyze_run_extracts_feature_and_fertilizer_effects(tmp_path: Path) -> 
 
     assert analysis["counts"]["status"] == {"ok": 2}
     assert analysis["best_final_by_profile"]["profile_a"]["score"] == 10.0
-    macro_stats = analysis["base_flag_effects_by_mode"]["n_total_only"]["macro_priority_enabled"]
-    assert macro_stats["false"]["avg"] == 10.0
-    assert macro_stats["true"]["avg"] == 30.0
+    supplier_stats = analysis["base_flag_effects_by_mode"]["n_total_only"]["singleton_supplier_enabled"]
+    assert supplier_stats["true"]["avg"] == 10.0
+    assert supplier_stats["false"]["avg"] == 30.0
     fert_effect = analysis["fertilizer_effect_base_by_mode"]["n_total_only"]
     fert_a = next(row for row in fert_effect if row["fertilizer"] == "Fert A")
     assert fert_a["omission_delta"] == 20.0

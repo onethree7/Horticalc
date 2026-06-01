@@ -35,16 +35,12 @@ DEFAULT_CASES_PATH = Path(__file__).with_name("solver_matrix_cases.yml")
 DEFAULT_OUT_DIR = logs_dir(ROOT) / "solver_matrix" / "dev"
 BOOLEAN_SOLVER_KEYS = (
     "relative_weighting",
-    "macro_priority_enabled",
-    "stage_optimization_enabled",
     "singleton_supplier_enabled",
     "singleton_underfill_enabled",
     "n_total_governor_enabled",
 )
 BOOLEAN_DEFAULTS = {
     "relative_weighting": False,
-    "macro_priority_enabled": False,
-    "stage_optimization_enabled": False,
     "singleton_supplier_enabled": False,
     "singleton_underfill_enabled": True,
     "n_total_governor_enabled": False,
@@ -376,12 +372,6 @@ def deep_refinement_configs(base: SolverConfigCase) -> list[SolverConfigCase]:
         ("singleton_share_threshold", 0.95),
         ("singleton_underfill_share_threshold", 0.65),
         ("singleton_underfill_share_threshold", 0.95),
-        ("stage_regression_pp", 1.0),
-        ("stage_regression_pp", 10.0),
-        ("stage_regression_mg_l", 0.5),
-        ("stage_regression_mg_l", 5.0),
-        ("macro_regress_pp", 0.0),
-        ("macro_regress_pp", 1.0),
         ("n_total_governor_weight", 0.01),
         ("n_total_governor_weight", 0.1),
         ("n_total_governor_weight", 5.0),

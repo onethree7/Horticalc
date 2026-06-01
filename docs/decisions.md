@@ -55,8 +55,7 @@ Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`.
 - The visible workflow areas are `DUENGER-EDITOR`, `WASSERWERTE`,
   `RECHNER`, and `SOLVER`.
 - The frontend fetches solver config schema from `/schema/solver-config`.
-- Macro/stage solver controls are backend-configurable but hidden from the
-  current UI.
+- Legacy macro/stage solver controls are removed from the backend config and UI.
 
 Source: `api/app.py`, `frontend/`, `tests/test_frontend_solver_config_ui.py`.
 
@@ -66,8 +65,6 @@ Source: `api/app.py`, `frontend/`, `tests/test_frontend_solver_config_ui.py`.
 - Default `relative_weighting`: `false`.
 - Default `singleton_supplier_enabled`: `false`.
 - Default `singleton_underfill_enabled`: `true`.
-- Default `macro_priority_enabled`: `false`.
-- Default `stage_optimization_enabled`: `false`.
 - Report-only ignored target keys: `S`, `SO4`, `Na`, `Cl`.
 - Solver matrix scoring follows `result.objective_elements`.
 

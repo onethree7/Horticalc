@@ -18,7 +18,8 @@ The active navigation has four user-facing areas:
 - `DUENGER-EDITOR`: fertilizer CSV editing, search, add/delete rows.
 - `WASSERWERTE`: water profiles, osmosis percent, helper conversions, mg/L or mmol/L display.
 - `RECHNER`: recipe profiles, fertilizer grams, calculation output, details.
-- `SOLVER`: target values, allowed fertilizers, fixed grams, solver config, solve result.
+- `SOLVER`: target values, searchable allowed-fertilizer picker, optional fixed
+  grams, solver config, solve result, and calculator handoff.
 
 The older visible mode bar is not the user workflow. Some hidden radio inputs
 remain only to keep existing JavaScript paths stable.
@@ -28,8 +29,19 @@ latest calculation's NPK totals, compact P-normalized and NPK-only bubbles,
 the ion-based `Ca:Mg` ratio, centered EC solution/water values, and compact
 mg/L ion-ratio chips from `npk_metrics.npk_ratios_ion`.
 
-The solver advanced config in `frontend/index.html` is backed by
-`/schema/solver-config` and wired in `frontend/app.js`. The visible
+The solver allowed-fertilizer picker in `frontend/index.html` is rendered by
+`frontend/app.js` as a searchable checkbox list. It stores allowed fertilizer
+selections by context in `localStorage` and does not write fertilizer favorites
+or defaults to CSV.
+
+The solver can automatically apply a successful solve result to the calculator.
+The `solverAutoApply` checkbox defaults on, stores its preference in
+`localStorage`, and uses the same `applyRecipe()` calculator path as loaded
+recipes so the live sidebar updates after the recalculation.
+
+The solver advanced config lives inside the Solver panel in
+`frontend/index.html`, is backed by `/schema/solver-config`, and is wired in
+`frontend/app.js`. The visible
 `N-total statt N-Formen` checkbox writes
 `solver_config.nitrogen_objective_mode`: checked sends `n_total_only`,
 unchecked sends `n_forms_only`.
@@ -57,6 +69,7 @@ The UI stores small workflow state in `localStorage`:
 
 - Last calculated solution snapshot.
 - Solver allowed fertilizer selections by context.
+- Solver auto-apply preference.
 
 Solver config is intentionally not restored from saved solution snapshots and
 is not automatically applied from loaded recipes. The UI fetches the backend

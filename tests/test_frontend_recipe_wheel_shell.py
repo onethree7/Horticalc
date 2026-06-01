@@ -48,11 +48,14 @@ def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
     assert "<span>WASSERWERTE</span>" in content
     assert "<span>RECHNER</span>" in content
     assert "<span>SOLVER</span>" in content
-    assert "Erstelle oder lade eigene Dünger im <span>DÜNGER-EDITOR</span>." in content
-    assert "Konfiguriere deine <span>WASSERWERTE</span>." in content
-    assert "Erstelle Rezepte von Hand im <span>RECHNER</span>." in content
-    assert "Oder lass den <span>SOLVER</span> für dich lösen." in content
-    assert 'class="workflow-step-index"' not in content
+    assert "Hauptmenü" in content
+    assert "Ablauf kurz" in content
+    assert "Erstelle oder lade eigene Dünger im <span>Dünger-Editor</span>." in content
+    assert "Konfiguriere deine <span>Wasserwerte</span>." in content
+    assert "Erstelle Rezepte von Hand im <span>Rechner</span>." in content
+    assert "Oder lass den <span>Solver</span> für dich lösen." in content
+    assert 'class="workflow-step-index"' in content
+    assert 'class="workflow-step-hint"' in content
     assert "<span>0</span>" not in content
     assert "<span>1</span>" not in content
     assert "<span>2a</span>" not in content
@@ -92,8 +95,8 @@ def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
     assert "summary-metrics" not in content
     assert content.index('data-testid="rail-brand"') < content.index('data-testid="rail-api-controls"')
     assert content.index('data-testid="rail-api-controls"') < content.index('data-testid="rail-config-controls"')
-    assert content.index('data-testid="rail-config-controls"') < content.index('data-testid="workflow-guide"')
-    assert content.index('data-testid="workflow-guide"') < content.index('data-testid="workflow-nav"')
+    assert content.index('data-testid="rail-config-controls"') < content.index('data-testid="workflow-nav"')
+    assert content.index('data-testid="workflow-nav"') < content.index('data-testid="workflow-guide"')
     assert content.index('data-testid="live-bar"') < content.index('data-testid="workspace-scroll-frame"')
 
 

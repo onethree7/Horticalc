@@ -814,6 +814,20 @@ main {
   align-items: start;
 }
 
+.solver-comparison-grid,
+.solver-lower-grid {
+  display: grid;
+  grid-template-columns: minmax(17rem, 0.82fr) minmax(28rem, 1.18fr);
+  gap: var(--space-4);
+  align-items: stretch;
+}
+
+.solver-lower-grid {
+  grid-template-columns: minmax(17rem, 0.82fr) minmax(28rem, 1.18fr);
+  margin-top: var(--space-4);
+  align-items: start;
+}
+
 .solver-panel {
   min-width: 0;
   padding: var(--space-3);
@@ -842,6 +856,44 @@ main {
 .solver-target-wrap {
   max-height: none;
   overflow: visible;
+}
+
+.solver-panel--targets,
+.solver-panel--target-results {
+  display: flex;
+  flex-direction: column;
+}
+
+.solver-panel--targets .solver-target-wrap,
+.solver-panel--target-results .table-wrap {
+  flex: 1;
+}
+
+.solver-results-spacer {
+  min-height: 1.6rem;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#solverTargetsTable tbody tr,
+#solverTargetsResultsTable tbody tr {
+  height: 1.95rem;
+}
+
+.solver-results-empty {
+  min-height: 8rem;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  color: var(--app-muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.solver-results-empty.is-hidden {
+  display: none;
 }
 
 .solver-columns {
@@ -891,22 +943,23 @@ main {
 
 .solver-picker-actions {
   display: grid;
-  grid-template-columns: minmax(9rem, 1fr) minmax(3.8rem, 0.42fr) minmax(7rem, 0.6fr) minmax(7.8rem, 0.72fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
   gap: var(--space-3);
 }
 
-.solver-picker-actions .btn {
+.solver-picker-actions .btn,
+.solver-picker-toggle {
   width: 100%;
   min-width: 0;
+  min-height: 2.15rem;
+  padding-inline: var(--space-2);
   white-space: nowrap;
 }
 
 .solver-picker-toggle {
+  display: flex;
   justify-content: center;
-  min-width: 0;
-  min-height: 2.15rem;
-  padding-inline: var(--space-2);
   border: 1px solid #3d4737;
   border-radius: 6px;
   color: #dfe8d7;
@@ -953,10 +1006,7 @@ main {
 }
 
 .solver-results {
-  margin-top: var(--space-3);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: var(--space-4);
+  margin-top: 0;
 }
 
 .solver-result-fertilizer-name-col {
@@ -1715,6 +1765,7 @@ button,
 .water-controls,
 .solver-columns,
 .solver-results,
+.solver-lower-grid,
 .data-grid {
   padding: var(--space-3);
   border: 1px solid rgba(174, 183, 166, 0.1);
@@ -1734,7 +1785,8 @@ button,
 }
 
 .solver-column,
-.solver-results .table-wrap {
+.solver-results .table-wrap,
+.solver-lower-grid .table-wrap {
   min-width: 0;
 }
 
@@ -2034,7 +2086,9 @@ button,
     min-height: 34rem;
   }
 
-  .solver-main-grid {
+  .solver-main-grid,
+  .solver-comparison-grid,
+  .solver-lower-grid {
     grid-template-columns: 1fr;
   }
 

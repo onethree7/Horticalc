@@ -323,7 +323,7 @@
           <h2>Zielprofil-Rechner</h2>
           <p class="hint">Zielwerte setzen, Dünger freigeben und das Ergebnis direkt im Rechner prüfen.</p>
           <div class="solver-workbench">
-            <div class="solver-main-grid">
+            <div class="solver-results solver-comparison-grid">
               <div class="solver-panel solver-panel--targets">
                 <h3>Zielwerte (mg/L)</h3>
                 <div class="actions inline-actions">
@@ -344,6 +344,30 @@
                 </div>
               </div>
 
+              <div class="solver-panel solver-panel--target-results">
+                <h3>Solver Results</h3>
+                <div class="actions inline-actions solver-results-spacer" aria-hidden="true"></div>
+                <div class="table-wrap">
+                  <div class="solver-results-empty" id="solverTargetsResultsEmpty">
+                    Zielwerte setzen, erlaubte Dünger auswählen und dann Solver berechnen.
+                  </div>
+                  <table class="grid grid--form is-hidden" id="solverTargetsResultsTable">
+                    <thead>
+                      <tr>
+                        <th>Element</th>
+                        <th>Ziel</th>
+                        <th>Erreicht</th>
+                        <th>Delta</th>
+                        <th>Delta %</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="solver-lower-grid">
               <div class="solver-panel solver-panel--fertilizers">
                 <div class="solver-panel-heading">
                   <h3>Erlaubte Dünger</h3>
@@ -379,6 +403,25 @@
                   </div>
                 </details>
               </div>
+
+              <div class="solver-panel solver-panel--fertilizer-results">
+                <h3>Düngermengen</h3>
+                <div class="table-wrap">
+                  <table class="grid grid--form" id="solverFertilizersTable">
+                    <colgroup>
+                      <col class="solver-result-fertilizer-name-col" />
+                      <col class="solver-result-grams-col" />
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th>Dünger</th>
+                        <th>Gramm</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
           <div class="actions solver-actions">
@@ -391,37 +434,6 @@
             <button id="applySolverToCalculatorInline" class="btn btn--outline" type="button">Im Rechner ansehen</button>
             <span class="inline-hint" id="copySolverResultsStatus" aria-live="polite"></span>
             <span class="inline-hint" id="solverApplyStatus" aria-live="polite"></span>
-          </div>
-          <div class="solver-results">
-            <div class="table-wrap">
-              <table class="grid grid--form" id="solverFertilizersTable">
-                <colgroup>
-                  <col class="solver-result-fertilizer-name-col" />
-                  <col class="solver-result-grams-col" />
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th>Dünger</th>
-                    <th>Gramm</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-            <div class="table-wrap">
-              <table class="grid grid--form" id="solverTargetsResultsTable">
-                <thead>
-                  <tr>
-                    <th>Element</th>
-                    <th>Ziel</th>
-                    <th>Erreicht</th>
-                    <th>Delta</th>
-                    <th>Delta %</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
           </div>
           <details class="solver-advanced-config">
             <summary>Erweitert</summary>

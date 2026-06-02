@@ -64,7 +64,9 @@ const solverOverridesDetails = document.querySelector("#solverOverrides");
 const solverOverrideSummary = document.querySelector("#solverOverrideSummary");
 const solverFixedTable = document.querySelector("#solverFixedTable tbody");
 const solverFertilizersTable = document.querySelector("#solverFertilizersTable tbody");
+const solverTargetsResultsTableEl = document.querySelector("#solverTargetsResultsTable");
 const solverTargetsResultsTable = document.querySelector("#solverTargetsResultsTable tbody");
+const solverTargetsResultsEmpty = document.querySelector("#solverTargetsResultsEmpty");
 const solverTargetScaleDownButton = document.querySelector("#solverTargetScaleDown");
 const solverTargetScaleUpButton = document.querySelector("#solverTargetScaleUp");
 const solverTargetScaleValue = document.querySelector("#solverTargetScaleValue");
@@ -1376,6 +1378,12 @@ function solverResultDisplayKeys(data) {
 function renderSolverResults(data) {
   lastSolveResult = data || null;
   updateSolverResultActions();
+  if (solverTargetsResultsTableEl) {
+    solverTargetsResultsTableEl.classList.toggle("is-hidden", !data);
+  }
+  if (solverTargetsResultsEmpty) {
+    solverTargetsResultsEmpty.classList.toggle("is-hidden", !!data);
+  }
   solverFertilizersTable.innerHTML = "";
   solverTargetsResultsTable.innerHTML = "";
 

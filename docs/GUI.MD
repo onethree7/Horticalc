@@ -32,10 +32,16 @@ mg/L ion-ratio chips from `npk_metrics.npk_ratios_ion`.
 The solver allowed-fertilizer picker in `frontend/index.html` is rendered by
 `frontend/app.js` as a compact searchable checkbox table using the same
 `grid grid--form` rendering as the surrounding Solver target and result tables.
-The action row can merge the calculator fertilizer selection, select all
-fertilizers, hide inactive rows for a focused selected-only view, or clear the
-selection. It stores allowed fertilizer selections by context in `localStorage`
-and does not write fertilizer favorites or defaults to CSV.
+The equal-width action controls can merge the calculator fertilizer selection,
+select all fertilizers, hide inactive rows for a focused selected-only view, or
+clear the selection. It stores allowed fertilizer selections by context in
+`localStorage` and does not write fertilizer favorites or defaults to CSV.
+
+The Solver view in `frontend/index.html` places the editable Zielwerte table
+next to the Solver target/achieved/delta result table in the top comparison
+grid. The allowed-fertilizer picker sits below it on the left, and
+Düngermengen sit on the right. Before a solve result exists, Solver Results
+shows an instruction hint instead of the empty result table.
 
 Solver override grams live in the collapsed `solverOverrides` details panel.
 `frontend/app.js` opens the panel when an override value is active and keeps

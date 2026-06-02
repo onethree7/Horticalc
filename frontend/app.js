@@ -1967,6 +1967,12 @@ function renderIonBalanceCompact(container, entries) {
     raw_cbe_percent_signed: "Rohe CBE",
     din_38402_62_percent_signed: "Ionenbilanzabweichung nach DIN 38402-62 Formel",
   };
+  const unitMap = {
+    cations_meq_per_l: "meq/L",
+    anions_meq_per_l: "meq/L",
+    raw_cbe_percent_signed: "%",
+    din_38402_62_percent_signed: "%",
+  };
   const order = [
     "cations_meq_per_l",
     "anions_meq_per_l",
@@ -1974,11 +1980,19 @@ function renderIonBalanceCompact(container, entries) {
     "din_38402_62_percent_signed",
   ];
   const values = new Map(entries.map(([key, value]) => [key, value]));
+  if (!values.has("raw_cbe_percent_signed") && values.has("error_percent_signed")) {
+    values.set("raw_cbe_percent_signed", values.get("error_percent_signed"));
+  }
+  if (!values.has("din_38402_62_percent_signed")) {
+    const rawCbe = Number(values.get("raw_cbe_percent_signed"));
+    if (Number.isFinite(rawCbe)) {
+      values.set("din_38402_62_percent_signed", rawCbe * 2.0);
+    }
+  }
 
   const table = document.createElement("table");
   table.classList.add("compact-balance-table");
   const tbody = document.createElement("tbody");
-  const row = document.createElement("tr");
 
   order.forEach((key) => {
     if (!values.has(key)) {
@@ -1988,13 +2002,18 @@ function renderIonBalanceCompact(container, entries) {
     if (!Number.isFinite(value)) {
       return;
     }
-    const cell = document.createElement("td");
-    cell.classList.add("compact-item");
-    cell.textContent = `${labelMap[key]} ${ionFormatter.format(value)}`;
-    row.appendChild(cell);
+    const row = document.createElement("tr");
+    const labelCell = document.createElement("th");
+    labelCell.classList.add("compact-balance-label");
+    labelCell.textContent = labelMap[key];
+    const valueCell = document.createElement("td");
+    valueCell.classList.add("compact-item", "compact-balance-value");
+    valueCell.textContent = `${ionFormatter.format(value)} ${unitMap[key]}`;
+    row.appendChild(labelCell);
+    row.appendChild(valueCell);
+    tbody.appendChild(row);
   });
 
-  tbody.appendChild(row);
   table.appendChild(tbody);
   container.appendChild(table);
 }

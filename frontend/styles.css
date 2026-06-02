@@ -755,7 +755,7 @@ main {
 
 .compact-balance-table {
   width: 100%;
-  table-layout: fixed;
+  table-layout: auto;
   border-collapse: collapse;
 }
 
@@ -765,10 +765,26 @@ main {
   white-space: nowrap;
 }
 
+.compact-balance-table th,
 .compact-balance-table td {
   padding: var(--space-1) var(--space-2);
   border: 1px solid #2b3543;
+}
+
+.compact-balance-table th {
+  width: 70%;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.compact-balance-table td {
   text-align: center;
+}
+
+.compact-balance-value {
+  width: 30%;
+  text-align: right;
 }
 
 .compact label,
@@ -1717,6 +1733,7 @@ button,
 .grid td,
 .compact-ion-table th,
 .compact-ion-table td,
+.compact-balance-table th,
 .compact-balance-table td {
   border-color: #343b2f;
 }

@@ -116,6 +116,13 @@ Instead of `water_mg_l`, callers may pass `water_profile_name`.
 Response follows `CalcResult.to_dict()` in `src/horticalc/core.py`; see
 [Data model](data_model.md).
 
+The `ion_balance` response object keeps legacy raw CBE fields
+`error_percent_signed` and `error_percent_abs` and also includes explicit
+`raw_cbe_percent_signed`, `raw_cbe_percent_abs`,
+`din_38402_62_percent_signed`, `din_38402_62_percent_abs`, and
+`balance_method` fields. The DIN field label in the UI is
+"Ionenbilanzabweichung nach DIN 38402-62 Formel".
+
 ## Solve
 
 `POST /solve` solves target values into fertilizer grams.

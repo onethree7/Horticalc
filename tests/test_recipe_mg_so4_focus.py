@@ -54,8 +54,13 @@ def test_mg_so4_focus_recipe_elements_and_balance() -> None:
     anions_meq = so4_mmol * 2.0
     denom = cations_meq + anions_meq
     error_signed = 0.0 if denom == 0 else (cations_meq - anions_meq) / denom * 100.0
+    din_signed = 0.0 if denom == 0 else (cations_meq - anions_meq) / (0.5 * denom) * 100.0
 
     assert result.fertilizer_ion_balance["cations_meq_per_l"] == pytest.approx(cations_meq, rel=0, abs=1e-9)
     assert result.fertilizer_ion_balance["anions_meq_per_l"] == pytest.approx(anions_meq, rel=0, abs=1e-9)
     assert result.fertilizer_ion_balance["error_percent_signed"] == pytest.approx(error_signed, rel=0, abs=1e-9)
     assert result.fertilizer_ion_balance["error_percent_abs"] == pytest.approx(abs(error_signed), rel=0, abs=1e-9)
+    assert result.fertilizer_ion_balance["raw_cbe_percent_signed"] == pytest.approx(error_signed, rel=0, abs=1e-9)
+    assert result.fertilizer_ion_balance["raw_cbe_percent_abs"] == pytest.approx(abs(error_signed), rel=0, abs=1e-9)
+    assert result.fertilizer_ion_balance["din_38402_62_percent_signed"] == pytest.approx(din_signed, rel=0, abs=1e-9)
+    assert result.fertilizer_ion_balance["din_38402_62_percent_abs"] == pytest.approx(abs(din_signed), rel=0, abs=1e-9)

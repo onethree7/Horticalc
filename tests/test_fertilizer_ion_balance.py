@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
-from horticalc.core import compute_solution
+from horticalc.core import _compute_ion_balance, compute_solution
 from horticalc.data_io import load_fertilizers, load_molar_masses
 
 
@@ -27,6 +27,17 @@ def _ion_charge(label: str) -> int:
 
 
 class TestFertilizerIonBalance(unittest.TestCase):
+    def test_ion_balance_reports_raw_cbe_and_din_formula(self) -> None:
+        balance = _compute_ion_balance(cations_sum=10.0, anions_sum=11.0)
+
+        self.assertAlmostEqual(balance["raw_cbe_percent_signed"], -4.7619047619, places=9)
+        self.assertAlmostEqual(balance["raw_cbe_percent_abs"], 4.7619047619, places=9)
+        self.assertAlmostEqual(balance["din_38402_62_percent_signed"], -9.5238095238, places=9)
+        self.assertAlmostEqual(balance["din_38402_62_percent_abs"], 9.5238095238, places=9)
+        self.assertEqual(balance["error_percent_signed"], balance["raw_cbe_percent_signed"])
+        self.assertEqual(balance["error_percent_abs"], balance["raw_cbe_percent_abs"])
+        self.assertEqual(balance["balance_method"], "non_speciated_major_ion_balance")
+
     def test_fertilizer_ion_balance_matches_charges(self) -> None:
         ferts = load_fertilizers()
         molar_masses = load_molar_masses()
@@ -79,6 +90,50 @@ class TestFertilizerIonBalance(unittest.TestCase):
             err_abs,
             places=9,
         )
+        self.assertAlmostEqual(
+            result.fertilizer_ion_balance["raw_cbe_percent_signed"],
+            err_signed,
+            places=9,
+        )
+        self.assertAlmostEqual(
+            result.fertilizer_ion_balance["raw_cbe_percent_abs"],
+            err_abs,
+            places=9,
+        )
+        self.assertAlmostEqual(
+            result.fertilizer_ion_balance["din_38402_62_percent_signed"],
+            err_signed * 2.0,
+            places=9,
+        )
+        self.assertAlmostEqual(
+            result.fertilizer_ion_balance["din_38402_62_percent_abs"],
+            err_abs * 2.0,
+            places=9,
+        )
+        self.assertEqual(
+            result.fertilizer_ion_balance["balance_method"],
+            "non_speciated_major_ion_balance",
+        )
+
+    def test_nh4_is_cation_and_trace_elements_stay_out_of_ions(self) -> None:
+        ferts = load_fertilizers()
+        molar_masses = load_molar_masses()
+
+        recipe = {
+            "liters": 10.0,
+            "fertilizers": [
+                {"name": "Agrolution pHLow 222 20-20-20+TE", "grams": 5.0},
+            ],
+            "urea_as_nh4": False,
+            "phosphate_species": "H2PO4",
+        }
+
+        result = compute_solution(recipe, ferts, molar_masses, water_mg_l={})
+
+        self.assertIn("NH4+", result.fertilizer_ions_meq_l)
+        self.assertGreaterEqual(result.fertilizer_ions_meq_l["NH4+"], 0.0)
+        for trace_label in ("Fe", "Mn", "Cu", "Zn", "B", "Mo"):
+            self.assertNotIn(trace_label, result.fertilizer_ions_meq_l)
 
 
 if __name__ == "__main__":

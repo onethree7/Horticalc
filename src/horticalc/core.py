@@ -310,7 +310,7 @@ def _compute_solution_state(
     water_forms: Dict[str, float],
     urea_as_nh4: bool,
     phosphate_species: str,
-) -> tuple[Dict[str, float], Dict[str, float], Dict[str, float], Dict[str, float], Dict[str, float]]:
+) -> tuple[Dict[str, float], Dict[str, float], Dict[str, float], Dict[str, float], Dict[str, float | str]]:
     elements, nh4_mg_l_raw, no3_mg_l_raw = _compute_nitrogen(mm, forms_mg_l, water_forms, urea_as_nh4)
     oxides = _compute_oxides_and_elements(mm, forms_mg_l, water_forms, elements)
     ions_mmol, ions_meq, ion_balance = _compute_ions(
@@ -325,6 +325,24 @@ def _compute_solution_state(
     return elements, oxides, ions_mmol, ions_meq, ion_balance
 
 
+def _compute_ion_balance(cations_sum: float, anions_sum: float) -> Dict[str, float | str]:
+    denom = cations_sum + anions_sum
+    raw_cbe_signed = 0.0 if denom == 0 else (cations_sum - anions_sum) / denom * 100.0
+    din_signed = 0.0 if denom == 0 else (cations_sum - anions_sum) / (0.5 * denom) * 100.0
+
+    return {
+        "cations_meq_per_l": cations_sum,
+        "anions_meq_per_l": anions_sum,
+        "error_percent_signed": raw_cbe_signed,
+        "error_percent_abs": abs(raw_cbe_signed),
+        "raw_cbe_percent_signed": raw_cbe_signed,
+        "raw_cbe_percent_abs": abs(raw_cbe_signed),
+        "din_38402_62_percent_signed": din_signed,
+        "din_38402_62_percent_abs": abs(din_signed),
+        "balance_method": "non_speciated_major_ion_balance",
+    }
+
+
 def _compute_ions(
     mm: Dict[str, float],
     forms_mg_l: Dict[str, float],
@@ -333,7 +351,7 @@ def _compute_ions(
     nh4_mg_l_raw: float,
     no3_mg_l_raw: float,
     phosphate_species: str,
-) -> tuple[Dict[str, float], Dict[str, float], Dict[str, float]]:
+) -> tuple[Dict[str, float], Dict[str, float], Dict[str, float | str]]:
     ions_mmol: Dict[str, float] = {}
     ions_meq: Dict[str, float] = {}
 
@@ -379,16 +397,7 @@ def _compute_ions(
 
     cations_sum = sum(v for v in ions_meq.values() if v > 0)
     anions_sum = -sum(v for v in ions_meq.values() if v < 0)
-    denom = (cations_sum + anions_sum)
-    err_signed = 0.0 if denom == 0 else (cations_sum - anions_sum) / denom * 100.0
-    err_abs = abs(err_signed)
-
-    ion_balance = {
-        "cations_meq_per_l": cations_sum,
-        "anions_meq_per_l": anions_sum,
-        "error_percent_signed": err_signed,
-        "error_percent_abs": err_abs,
-    }
+    ion_balance = _compute_ion_balance(cations_sum, anions_sum)
 
     return ions_mmol, ions_meq, ion_balance
 
@@ -403,18 +412,18 @@ class CalcResult:
     oxides_mg_l: Dict[str, float]
     ions_mmol_l: Dict[str, float]
     ions_meq_l: Dict[str, float]
-    ion_balance: Dict[str, float]
+    ion_balance: Dict[str, float | str]
     fertilizer_elements_mg_l: Dict[str, float]
     fertilizer_oxides_mg_l: Dict[str, float]
     fertilizer_ions_mmol_l: Dict[str, float]
     fertilizer_ions_meq_l: Dict[str, float]
-    fertilizer_ion_balance: Dict[str, float]
+    fertilizer_ion_balance: Dict[str, float | str]
     ec_fertilizer: Dict[str, object]
     water_elements_mg_l: Dict[str, float]
     water_oxides_mg_l: Dict[str, float]
     water_ions_mmol_l: Dict[str, float]
     water_ions_meq_l: Dict[str, float]
-    water_ion_balance: Dict[str, float]
+    water_ion_balance: Dict[str, float | str]
     ec_water: Dict[str, object]
     sluijsmann: Dict[str, float | dict]
     osmosis_percent: float

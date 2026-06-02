@@ -24,7 +24,12 @@
     "anions_meq_per_l": 18.151499528012362,
     "cations_meq_per_l": 16.65883332513663,
     "error_percent_abs": 4.2879975011233,
-    "error_percent_signed": -4.2879975011233
+    "error_percent_signed": -4.2879975011233,
+    "raw_cbe_percent_abs": 4.2879975011233,
+    "raw_cbe_percent_signed": -4.2879975011233,
+    "din_38402_62_percent_abs": 8.5759950022466,
+    "din_38402_62_percent_signed": -8.5759950022466,
+    "balance_method": "non_speciated_major_ion_balance"
   },
   "ions_meq_per_l": {
     "CO3^2-": -0.33767008843265345,

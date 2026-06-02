@@ -1964,9 +1964,15 @@ function renderIonBalanceCompact(container, entries) {
   const labelMap = {
     cations_meq_per_l: "Σ+",
     anions_meq_per_l: "Σ−",
-    error_percent_signed: "Δ",
+    raw_cbe_percent_signed: "Rohe CBE",
+    din_38402_62_percent_signed: "Ionenbilanzabweichung nach DIN 38402-62 Formel",
   };
-  const order = ["cations_meq_per_l", "anions_meq_per_l", "error_percent_signed"];
+  const order = [
+    "cations_meq_per_l",
+    "anions_meq_per_l",
+    "raw_cbe_percent_signed",
+    "din_38402_62_percent_signed",
+  ];
   const values = new Map(entries.map(([key, value]) => [key, value]));
 
   const table = document.createElement("table");

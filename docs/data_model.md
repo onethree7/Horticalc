@@ -143,6 +143,28 @@ schema:
 21. `sluijsmann`
 22. `osmosis_percent`
 
+`ion_balance`, `fertilizer_ion_balance`, and `water_ion_balance` are produced
+by `src/horticalc/core.py`. They contain `cations_meq_per_l`,
+`anions_meq_per_l`, legacy compatibility fields `error_percent_signed` and
+`error_percent_abs`, explicit raw CBE fields `raw_cbe_percent_signed` and
+`raw_cbe_percent_abs`, DIN formula fields `din_38402_62_percent_signed` and
+`din_38402_62_percent_abs`, and `balance_method`.
+
+`error_percent_signed` and `error_percent_abs` remain aliases for the raw CBE:
+`(cations_sum - anions_sum) / (cations_sum + anions_sum) * 100`. The DIN value
+shown as "Ionenbilanzabweichung nach DIN 38402-62 Formel" uses
+`(cations_sum - anions_sum) / (0.5 * (cations_sum + anions_sum)) * 100`.
+
+Die Ionenbilanzabweichung wird mit der DIN-38402-62-Formel berechnet.
+HortiCalc berücksichtigt dabei nur die im Modell vorhandenen analytischen
+Ionensummen; fehlende Wasseranalyse-Ionen werden nicht rekonstruiert, geraten
+oder durch stilles Wunschdenken ergänzt.
+
+The current ion set in `src/horticalc/core.py` is NH4+, K+, Ca2+, Mg2+, Na+,
+NO3-, phosphate as the configured H2PO4-/HPO4^2- species, SO4^2-, Cl-, HCO3-,
+and CO3^2-. Trace nutrients are not included in the ion balance unless they are
+explicitly modelled as charged species.
+
 `npk_metrics` is produced by `src/horticalc/metrics.py`. It includes the
 existing oxide/form ratios in `npk_ratios` and a separate `npk_ratios_ion`
 mapping for dissolved mg/L element or form comparisons such as `Ca:Mg`,

@@ -1988,14 +1988,12 @@ function renderIonBalanceCompact(container, entries) {
     }
   }
 
-  const table = document.createElement("table");
-  table.classList.add("compact-balance-table");
-  const tbody = document.createElement("tbody");
+  const grid = document.createElement("div");
+  grid.classList.add("compact-balance-grid");
 
   rows.forEach((rowKeys) => {
-    const row = document.createElement("tr");
     rowKeys.forEach((key) => {
-      const cell = document.createElement("td");
+      const cell = document.createElement("div");
       cell.classList.add("compact-item", "compact-balance-tile");
       if (values.has(key)) {
         const value = Number(values.get(key));
@@ -2010,13 +2008,11 @@ function renderIonBalanceCompact(container, entries) {
           cell.appendChild(number);
         }
       }
-      row.appendChild(cell);
+      grid.appendChild(cell);
     });
-    tbody.appendChild(row);
   });
 
-  table.appendChild(tbody);
-  container.appendChild(table);
+  container.appendChild(grid);
 }
 
 function buildSummaryColumns(extraColumns = []) {

@@ -753,10 +753,10 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
-.compact-balance-table {
+.compact-balance-grid {
   width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .compact-item {
@@ -765,13 +765,9 @@ main {
   white-space: nowrap;
 }
 
-.compact-balance-table td {
+.compact-balance-tile {
   padding: var(--space-1) var(--space-2);
   border: 1px solid #2b3543;
-  width: 50%;
-}
-
-.compact-balance-tile {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -1736,7 +1732,7 @@ button,
 .grid td,
 .compact-ion-table th,
 .compact-ion-table td,
-.compact-balance-table td {
+.compact-balance-tile {
   border-color: #343b2f;
 }
 

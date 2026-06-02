@@ -32,22 +32,34 @@ mg/L ion-ratio chips from `npk_metrics.npk_ratios_ion`.
 The solver allowed-fertilizer picker in `frontend/index.html` is rendered by
 `frontend/app.js` as a compact searchable checkbox table using the same
 `grid grid--form` rendering as the surrounding Solver target and result tables.
-It stores allowed fertilizer
-selections by context in `localStorage` and does not write fertilizer favorites
-or defaults to CSV.
+The action row can merge the calculator fertilizer selection, select all
+fertilizers, hide inactive rows for a focused selected-only view, or clear the
+selection. It stores allowed fertilizer selections by context in `localStorage`
+and does not write fertilizer favorites or defaults to CSV.
 
 Solver override grams live in the collapsed `solverOverrides` details panel.
 `frontend/app.js` opens the panel when an override value is active and keeps
 zero-override use out of the main flow.
 
 The solver can automatically apply a successful solve result to the calculator.
-The `solverAutoApply` checkbox defaults on, stores its preference in
-`localStorage`, and uses the same `applyRecipe()` calculator path as loaded
-recipes so the live sidebar updates after the recalculation.
+The `solverAutoApply` checkbox lives in the lower Solver action row next to
+`Solver berechnen`, defaults on, stores its preference in `localStorage`, and
+uses the same `applyRecipe()` calculator path as loaded recipes so the live
+sidebar updates after the recalculation.
 
-The solver advanced config lives inside the Solver panel in
-`frontend/index.html`, includes the urea and phosphate solver options, is
-backed by `/schema/solver-config`, and is wired in `frontend/app.js`. The visible
+The solver result table always shows the standard nutrient rows after a solve;
+rows that were not active targets are muted so collateral nutrient changes are
+visible without implying they were optimized objectives. The fertilizer result
+table lets long product names wrap while keeping the grams column compact and
+right-aligned.
+
+The solver clipboard export in `frontend/app.js` includes the batch liters,
+osmosis percent, fertilizer grams, NPK metrics, EC, Solver target/achieved/delta
+values, and ion mg/L values.
+
+The solver advanced config lives at the bottom of the Solver panel in
+`frontend/index.html`, includes the urea and phosphate solver options, is backed
+by `/schema/solver-config`, and is wired in `frontend/app.js`. The visible
 `N-total statt N-Formen` checkbox writes
 `solver_config.nitrogen_objective_mode`: checked sends `n_total_only`,
 unchecked sends `n_forms_only`.

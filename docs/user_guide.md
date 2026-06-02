@@ -47,18 +47,22 @@ Sluijsmann, and the active `osmosis_percent`.
 1. Load a nutrient solution target profile or enter target values manually.
 2. Search and tick allowed fertilizers in the Solver picker, or use
    `Aus Rechner übernehmen` to add the current calculator fertilizer selection.
+   Use `Alle` to allow every fertilizer, `Nur aktive` to temporarily show only
+   selected fertilizers, and `Auswahl leeren` to reset the allowed list.
 3. Leave `Override / fixe Menge (g, optional)` collapsed unless a fertilizer
    must be held at a fixed gram amount.
-4. Keep `Solver-Ergebnis automatisch im Rechner übernehmen` enabled when the
-   calculator and live sidebar should update after each solve.
-5. Adjust `Erweitert` solver config, including urea and phosphate handling,
-   only when needed.
-6. Click `Solver berechnen`.
-7. Copy the result or use `Im Rechner ansehen` to switch to the calculator.
+4. Keep `Auto übernehmen` enabled in the lower action row when the calculator
+   and live sidebar should update after each solve.
+5. Click `Solver berechnen`.
+6. Copy the result or use `Im Rechner ansehen` to switch to the calculator. The
+   clipboard text includes batch liters, osmosis percent, fertilizer grams, NPK,
+   EC, Solver target/achieved/delta values, and ion mg/L values.
+7. Adjust the bottom `Erweitert` solver config, including urea and phosphate
+   handling, only when needed.
 
-The solver optimizes only `objective_elements`. Some reported targets, such as
-`S`, `SO4`, `Na`, and `Cl`, are intentionally not objectives in the current
-solver.
+The solver optimizes only `objective_elements`, but the Solver result table
+still shows the standard nutrient rows. Rows that were not active targets are
+muted so collateral nutrient changes remain visible.
 
 ## CLI
 

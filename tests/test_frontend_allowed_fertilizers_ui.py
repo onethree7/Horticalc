@@ -9,6 +9,10 @@ def test_solver_allowed_sync_button_present():
     assert 'id="solverAllowedFromRecipe"' in content
     assert "Aus Rechner übernehmen" in content
     assert 'id="solverAllowedSearch"' in content
+    assert 'id="solverAllowedAll"' in content
+    assert "Alle" in content
+    assert 'id="solverAllowedHideInactive"' in content
+    assert "Nur aktive" in content
     assert 'id="solverAllowedSelectVisible"' not in content
     assert 'id="solverAllowedDeselectVisible"' not in content
     assert "Sichtbare auswählen" not in content
@@ -28,6 +32,10 @@ def test_solver_allowed_sync_logic_present():
     assert "solverAllowedFromRecipe" in content
     assert "getVisibleSolverAllowedOptions" in content
     assert "solverAllowedSearchInput" in content
+    assert "solverAllowedAllButton" in content
+    assert "solverAllowedHideInactiveInput" in content
+    assert "solverAllowedHideInactive" in content
+    assert "fertilizerOptions.map((fert) => fert.name)" in content
     assert "rerenderPicker: false" in content
     assert 'table.className = "grid grid--form solver-picker-table"' in content
     assert "document.createElement(\"tr\")" in content
@@ -41,9 +49,11 @@ def test_solver_auto_apply_control_present():
     js_content = app_js.read_text(encoding="utf-8")
 
     assert 'id="solverAutoApply" type="checkbox" checked' in html_content
-    assert "Solver-Ergebnis automatisch im Rechner übernehmen" in html_content
+    assert "Auto übernehmen" in html_content
     assert 'id="solverApplyStatus"' in html_content
     assert 'id="applySolverToCalculatorInline"' in html_content
+    assert html_content.index('id="solveBtn"') < html_content.index('id="solverAutoApply"')
+    assert html_content.index('id="solverAutoApply"') < html_content.index('id="copySolverResults"')
     assert "SOLVER_AUTO_APPLY_KEY" in js_content
     assert "applySolverResultToCalculator" in js_content
     assert 'setSolverApplyStatus("Im Rechner übernommen")' in js_content

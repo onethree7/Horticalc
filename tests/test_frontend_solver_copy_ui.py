@@ -17,4 +17,6 @@ def test_solver_copy_logic_present() -> None:
     assert "buildSolverClipboardText" in content
     assert "copySolverResultsToClipboard" in content
     assert "copyTextWithFallback" in content
+    assert "Ansatz (L)" in content
+    assert "Solver Zielwerte (mg/L)" in content
     assert "EC (mS/cm)" in content

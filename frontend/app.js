@@ -58,6 +58,8 @@ const solverAllowedSearchInput = document.querySelector("#solverAllowedSearch");
 const solverAllowedCount = document.querySelector("#solverAllowedCount");
 const solverAllowedClearButton = document.querySelector("#solverAllowedClear");
 const solverAllowedFromRecipeButton = document.querySelector("#solverAllowedFromRecipe");
+const solverAllowedAllButton = document.querySelector("#solverAllowedAll");
+const solverAllowedHideInactiveInput = document.querySelector("#solverAllowedHideInactive");
 const solverOverridesDetails = document.querySelector("#solverOverrides");
 const solverOverrideSummary = document.querySelector("#solverOverrideSummary");
 const solverFixedTable = document.querySelector("#solverFixedTable tbody");
@@ -188,6 +190,7 @@ const SCALE_STEP = 0.05;
 const solverAllowedFertilizers = [];
 let solverAllowedContext = "global";
 let solverAllowedFilter = "";
+let solverAllowedHideInactive = false;
 const solverFixedGrams = {};
 
 const waterFieldDefinitions = [
@@ -1191,6 +1194,9 @@ function updateSolverAllowedCount() {
 }
 
 function solverAllowedMatchesFilter(fert) {
+  if (solverAllowedHideInactive && !solverAllowedFertilizers.includes(fert.name)) {
+    return false;
+  }
   const query = solverAllowedFilter.trim().toLowerCase();
   if (!query) {
     return true;
@@ -1346,6 +1352,27 @@ function renderSolverFixedTable() {
   syncSolverOverridePanel();
 }
 
+function solverResultDisplayKeys(data) {
+  const nitrogenKeys = ["N_total", "N_NO3", "N_NH4", "N_UREA"];
+  const orderedKeys = [
+    ...nitrogenKeys,
+    ...summaryColumnOrder.map((column) => column.element).filter((key) => !nitrogenKeys.includes(key)),
+  ];
+  const seen = new Set();
+  const addKey = (key) => {
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      orderedKeys.push(key);
+    }
+  };
+
+  Object.keys(data?.targets_mg_per_l || {}).forEach(addKey);
+  Object.keys(data?.achieved_elements_mg_per_l || {}).forEach(addKey);
+  (data?.objective_elements || []).forEach(addKey);
+
+  return orderedKeys.filter((key, index) => orderedKeys.indexOf(key) === index);
+}
+
 function renderSolverResults(data) {
   lastSolveResult = data || null;
   updateSolverResultActions();
@@ -1372,13 +1399,14 @@ function renderSolverResults(data) {
     });
   }
 
+  if (!data) {
+    return;
+  }
+
   const targets = data?.targets_mg_per_l || {};
   const achieved = data?.achieved_elements_mg_per_l || {};
   const errors = data?.errors_mg_per_l || {};
   const errorsPercent = data?.errors_percent || {};
-  const keys = data?.objective_elements?.length
-    ? data.objective_elements
-    : Object.keys(targets);
   const nitrogenKeys = ["N_total", "N_NO3", "N_NH4", "N_UREA"];
   const labelMap = {
     N_total: "N-Σ",
@@ -1386,10 +1414,8 @@ function renderSolverResults(data) {
     N_NH4: "NH4",
     N_UREA: "UREA",
   };
-  const displayKeys = [
-    ...nitrogenKeys,
-    ...keys.filter((key) => !nitrogenKeys.includes(key)),
-  ];
+  const objectiveKeys = new Set(data?.objective_elements || []);
+  const displayKeys = solverResultDisplayKeys(data);
 
   displayKeys.forEach((key) => {
     const row = document.createElement("tr");
@@ -1397,6 +1423,11 @@ function renderSolverResults(data) {
     keyCell.textContent = labelMap[key] || key;
     if (key !== "N_total" && nitrogenKeys.includes(key)) {
       keyCell.classList.add("solver-n-extra");
+    }
+
+    const hasTarget = Number(targets[key]) > 0 || objectiveKeys.has(key);
+    if (!hasTarget) {
+      row.classList.add("solver-result-inactive");
     }
 
     const targetValue = Number(targets[key] ?? 0);
@@ -1411,7 +1442,7 @@ function renderSolverResults(data) {
         : NaN;
 
     const targetCell = document.createElement("td");
-    targetCell.textContent = formatNumber(targetValue, nutrientFormatter);
+    targetCell.textContent = hasTarget ? formatNumber(targetValue, nutrientFormatter) : "-";
 
     const achievedCell = document.createElement("td");
     achievedCell.textContent = formatNumber(achievedValue, nutrientFormatter);
@@ -1518,7 +1549,11 @@ function formatClipboardIonLabel(key) {
 
 function buildSolverClipboardText() {
   const fertilizers = Array.isArray(lastSolveResult?.fertilizers) ? lastSolveResult.fertilizers : [];
-  const lines = ["Dünger\tGramm"];
+  const lines = ["Solver Ergebnis"];
+  lines.push(`Ansatz (L)\t${formatNumber(currentLiters)}`);
+  lines.push(`Osmose (%)\t${formatNumber(Number(osmosisPercentInput.value) || 0)}`);
+  lines.push("");
+  lines.push("Dünger\tGramm");
 
   fertilizers.forEach((fert) => {
     const name = fert.name || "";
@@ -1548,6 +1583,26 @@ function buildSolverClipboardText() {
     lines.push("EC (mS/cm)");
     lines.push(`EC 25°C\t${formatNumber(Number(ecValues["25.0"]))}`);
     lines.push(`EC 18°C\t${formatNumber(Number(ecValues["18.0"]))}`);
+
+    lines.push("");
+    lines.push("Solver Zielwerte (mg/L)");
+    lines.push("Element\tZiel\tErreicht\tDelta");
+    const targets = lastSolveResult?.targets_mg_per_l || {};
+    const achieved = lastSolveResult?.achieved_elements_mg_per_l || {};
+    const errors = lastSolveResult?.errors_mg_per_l || {};
+    solverResultDisplayKeys(lastSolveResult).forEach((key) => {
+      const targetValue = Number(targets[key] ?? 0);
+      const achievedValue = Number(achieved[key] ?? 0);
+      const errorValue = Number.isFinite(errors[key])
+        ? Number(errors[key])
+        : achievedValue - targetValue;
+      lines.push([
+        formatClipboardIonLabel(key),
+        targetValue > 0 ? formatNumber(targetValue, nutrientFormatter) : "-",
+        formatNumber(achievedValue, nutrientFormatter),
+        formatNumber(errorValue, nutrientFormatter),
+      ].join("\t"));
+    });
 
     lines.push("");
     lines.push("Ionen (mg/L)");
@@ -2481,7 +2536,7 @@ function renderIonRatios(metrics) {
   }
 
   ionRatioList.innerHTML = "";
-  ["N:K", "Ca:K", "Na:Mg", "SO4:P", "P:K", "Fe:Mg", "CO3:Si"].forEach((key) => {
+  ["N:K", "Ca:K", "Na:Mg", "SO4:P", "P:K", "Fe:Mg"].forEach((key) => {
     const item = document.createElement("div");
     item.className = "ion-ratio-pill";
 
@@ -2930,6 +2985,22 @@ if (solverAllowedSearchInput) {
 if (solverAllowedFromRecipeButton) {
   solverAllowedFromRecipeButton.addEventListener("click", () => {
     syncSolverAllowedWithSelection("merge");
+  });
+}
+
+if (solverAllowedAllButton) {
+  solverAllowedAllButton.addEventListener("click", () => {
+    updateSolverAllowedFertilizers(
+      fertilizerOptions.map((fert) => fert.name),
+      "replace"
+    );
+  });
+}
+
+if (solverAllowedHideInactiveInput) {
+  solverAllowedHideInactiveInput.addEventListener("change", (event) => {
+    solverAllowedHideInactive = event.target.checked;
+    renderSolverAllowedOptions();
   });
 }
 

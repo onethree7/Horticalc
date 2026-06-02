@@ -803,14 +803,6 @@ main {
   gap: var(--space-4);
 }
 
-.solver-toolbar {
-  display: flex;
-  gap: var(--space-4);
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-
 .solver-auto-apply {
   min-height: 1.8rem;
 }
@@ -842,10 +834,14 @@ main {
   justify-content: space-between;
 }
 
-.solver-target-wrap,
 .solver-fixed-wrap {
   max-height: 32rem;
   overflow: auto;
+}
+
+.solver-target-wrap {
+  max-height: none;
+  overflow: visible;
 }
 
 .solver-columns {
@@ -895,8 +891,8 @@ main {
 
 .solver-picker-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: stretch;
+  grid-template-columns: minmax(9rem, 1fr) minmax(3.8rem, 0.42fr) minmax(7rem, 0.6fr) minmax(7.8rem, 0.72fr);
+  align-items: center;
   gap: var(--space-3);
 }
 
@@ -906,9 +902,22 @@ main {
   white-space: nowrap;
 }
 
+.solver-picker-toggle {
+  justify-content: center;
+  min-width: 0;
+  min-height: 2.15rem;
+  padding-inline: var(--space-2);
+  border: 1px solid #3d4737;
+  border-radius: 6px;
+  color: #dfe8d7;
+}
+
 .solver-actions {
   align-items: center;
   margin-top: var(--space-4);
+  display: grid;
+  grid-template-columns: minmax(10rem, max-content) minmax(8.6rem, max-content) repeat(2, minmax(9rem, max-content)) minmax(0, 1fr);
+  gap: var(--space-3);
 }
 
 .solver-overrides {
@@ -929,11 +938,59 @@ main {
   margin-bottom: var(--space-3);
 }
 
+.solver-advanced-config {
+  margin-top: var(--space-4);
+}
+
+.solver-advanced-config summary {
+  cursor: pointer;
+  color: #eaf4e5;
+  font-weight: 800;
+}
+
+.solver-advanced-config[open] summary {
+  margin-bottom: var(--space-3);
+}
+
 .solver-results {
   margin-top: var(--space-3);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: var(--space-4);
+}
+
+.solver-result-fertilizer-name-col {
+  width: auto;
+}
+
+.solver-result-grams-col {
+  width: 6.5rem;
+}
+
+#solverFertilizersTable {
+  table-layout: auto;
+}
+
+#solverFertilizersTable th:first-child,
+#solverFertilizersTable td:first-child {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+#solverFertilizersTable th:last-child,
+#solverFertilizersTable td:last-child {
+  width: 6.5rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.solver-result-inactive {
+  opacity: 0.52;
+}
+
+.solver-result-inactive:hover {
+  opacity: 0.75;
 }
 
 .solver-results .solver-n-extra {
@@ -1656,7 +1713,6 @@ button,
 }
 
 .water-controls,
-.solver-toolbar,
 .solver-columns,
 .solver-results,
 .data-grid {
@@ -1982,8 +2038,9 @@ button,
     grid-template-columns: 1fr;
   }
 
-  .solver-toolbar {
-    align-items: stretch;
+  .solver-picker-actions,
+  .solver-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .solver-auto-apply {
@@ -2019,6 +2076,11 @@ button,
 
   .rail-brand span:not(.rail-logo) {
     font-size: 0.78rem;
+  }
+
+  .solver-picker-actions,
+  .solver-actions {
+    grid-template-columns: 1fr;
   }
 
 }

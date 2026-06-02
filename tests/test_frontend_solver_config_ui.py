@@ -55,6 +55,7 @@ def test_solver_advanced_config_lives_in_solver_panel() -> None:
     assert html_content.index('id="solverMode"') < html_content.index('id="solverConfigResetDefaults"')
     assert html_content.index('class="solver-advanced-config"') < html_content.index('id="solverUreaToggle"')
     assert html_content.index('class="solver-advanced-config"') < html_content.index('id="solverPhosphate"')
+    assert html_content.index('id="solverTargetsResultsTable"') < html_content.index('class="solver-advanced-config"')
 
 
 def test_solver_ui_does_not_restore_hidden_solver_config_from_saved_solution() -> None:

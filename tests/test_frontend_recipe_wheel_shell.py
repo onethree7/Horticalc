@@ -252,3 +252,10 @@ def test_live_result_bar_uses_consistent_high_visibility_type() -> None:
     assert "EC (mS/cm)" in index
     assert "Ionen-Verhältnisse (mg/L)" in index
     assert "Ca:Mg Ratio (mg/L)" in index
+
+
+def test_sidebar_omits_co3_si_ratio_chip() -> None:
+    app_js = _read_frontend_file("app.js")
+    render_block = app_js.split("function renderIonRatios", 1)[1].split("function renderCalculation", 1)[0]
+
+    assert '"CO3:Si"' not in render_block

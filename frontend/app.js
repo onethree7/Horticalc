@@ -1962,10 +1962,10 @@ function buildIonRow(label, items, maxCols) {
 function renderIonBalanceCompact(container, entries) {
   container.innerHTML = "";
   const labelMap = {
-    cations_meq_per_l: "Σ+",
-    anions_meq_per_l: "Σ−",
-    raw_cbe_percent_signed: "Rohe CBE",
-    din_38402_62_percent_signed: "Ionenbilanzabweichung nach DIN 38402-62 Formel",
+    cations_meq_per_l: "E+",
+    anions_meq_per_l: "E-",
+    raw_cbe_percent_signed: "CBE-raw",
+    din_38402_62_percent_signed: "DIN-raw",
   };
   const unitMap = {
     cations_meq_per_l: "meq/L",
@@ -1973,11 +1973,9 @@ function renderIonBalanceCompact(container, entries) {
     raw_cbe_percent_signed: "%",
     din_38402_62_percent_signed: "%",
   };
-  const order = [
-    "cations_meq_per_l",
-    "anions_meq_per_l",
-    "raw_cbe_percent_signed",
-    "din_38402_62_percent_signed",
+  const rows = [
+    ["cations_meq_per_l", "anions_meq_per_l"],
+    ["raw_cbe_percent_signed", "din_38402_62_percent_signed"],
   ];
   const values = new Map(entries.map(([key, value]) => [key, value]));
   if (!values.has("raw_cbe_percent_signed") && values.has("error_percent_signed")) {
@@ -1994,23 +1992,26 @@ function renderIonBalanceCompact(container, entries) {
   table.classList.add("compact-balance-table");
   const tbody = document.createElement("tbody");
 
-  order.forEach((key) => {
-    if (!values.has(key)) {
-      return;
-    }
-    const value = Number(values.get(key));
-    if (!Number.isFinite(value)) {
-      return;
-    }
+  rows.forEach((rowKeys) => {
     const row = document.createElement("tr");
-    const labelCell = document.createElement("th");
-    labelCell.classList.add("compact-balance-label");
-    labelCell.textContent = labelMap[key];
-    const valueCell = document.createElement("td");
-    valueCell.classList.add("compact-item", "compact-balance-value");
-    valueCell.textContent = `${ionFormatter.format(value)} ${unitMap[key]}`;
-    row.appendChild(labelCell);
-    row.appendChild(valueCell);
+    rowKeys.forEach((key) => {
+      const cell = document.createElement("td");
+      cell.classList.add("compact-item", "compact-balance-tile");
+      if (values.has(key)) {
+        const value = Number(values.get(key));
+        if (Number.isFinite(value)) {
+          const label = document.createElement("span");
+          label.classList.add("compact-balance-label");
+          label.textContent = `${labelMap[key]}:`;
+          const number = document.createElement("span");
+          number.classList.add("compact-balance-value");
+          number.textContent = `${ionFormatter.format(value)} ${unitMap[key]}`;
+          cell.appendChild(label);
+          cell.appendChild(number);
+        }
+      }
+      row.appendChild(cell);
+    });
     tbody.appendChild(row);
   });
 

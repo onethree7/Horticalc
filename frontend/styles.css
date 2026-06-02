@@ -755,7 +755,7 @@ main {
 
 .compact-balance-table {
   width: 100%;
-  table-layout: auto;
+  table-layout: fixed;
   border-collapse: collapse;
 }
 
@@ -765,25 +765,28 @@ main {
   white-space: nowrap;
 }
 
-.compact-balance-table th,
 .compact-balance-table td {
   padding: var(--space-1) var(--space-2);
   border: 1px solid #2b3543;
+  width: 50%;
 }
 
-.compact-balance-table th {
-  width: 70%;
-  text-align: left;
-  white-space: normal;
-  overflow-wrap: anywhere;
+.compact-balance-tile {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
-.compact-balance-table td {
-  text-align: center;
+.compact-balance-label {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: var(--text-xs);
 }
 
 .compact-balance-value {
-  width: 30%;
+  color: var(--app-text);
+  font-weight: 700;
   text-align: right;
 }
 
@@ -1733,7 +1736,6 @@ button,
 .grid td,
 .compact-ion-table th,
 .compact-ion-table td,
-.compact-balance-table th,
 .compact-balance-table td {
   border-color: #343b2f;
 }

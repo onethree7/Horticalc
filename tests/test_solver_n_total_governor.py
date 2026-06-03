@@ -119,3 +119,61 @@ def test_nitrogen_objective_mode_rejects_unknown_value() -> None:
         assert "nitrogen_objective_mode" in str(exc)
     else:
         raise AssertionError("Expected invalid nitrogen_objective_mode to fail")
+
+
+def test_s_target_is_ignored_by_default() -> None:
+    molar_masses = load_molar_masses()
+    ferts = {
+        "SO4-only": Fertilizer(name="SO4-only", form="solid", weight_factor=1.0, comp={"SO4": 1.0}),
+        "K-only": Fertilizer(name="K-only", form="solid", weight_factor=1.0, comp={"K2O": 1.0}),
+    }
+    recipe = {
+        "liters": 1.0,
+        "targets": {"S": 10.0, "K": 10.0},
+        "fertilizers_allowed": ["SO4-only", "K-only"],
+        "solver_config": {},
+    }
+
+    result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
+
+    assert "S" not in result.objective_elements
+    assert "K" in result.objective_elements
+
+
+def test_s_target_can_be_enabled_as_solver_objective() -> None:
+    molar_masses = load_molar_masses()
+    ferts = {
+        "SO4-only": Fertilizer(name="SO4-only", form="solid", weight_factor=1.0, comp={"SO4": 1.0}),
+    }
+    recipe = {
+        "liters": 1.0,
+        "targets": {"S": 10.0},
+        "fertilizers_allowed": ["SO4-only"],
+        "solver_config": {"s_objective_enabled": True},
+    }
+
+    result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
+
+    assert "S" in result.objective_elements
+    assert result.fertilizers[0]["name"] == "SO4-only"
+    assert result.fertilizers[0]["grams"] > 0
+
+
+def test_so4_target_is_converted_to_s_when_s_objective_is_enabled() -> None:
+    molar_masses = load_molar_masses()
+    ferts = {
+        "SO4-only": Fertilizer(name="SO4-only", form="solid", weight_factor=1.0, comp={"SO4": 1.0}),
+    }
+    recipe = {
+        "liters": 1.0,
+        "targets": {"SO4": 30.0},
+        "fertilizers_allowed": ["SO4-only"],
+        "solver_config": {"s_objective_enabled": True},
+    }
+
+    result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
+
+    assert "S" in result.objective_elements
+    assert "SO4" not in result.objective_elements
+    assert result.targets_mg_l["S"] == 30.0 * molar_masses["S"] / molar_masses["SO4"]
+    assert result.fertilizers[0]["grams"] > 0

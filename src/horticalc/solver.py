@@ -24,7 +24,8 @@ from .paths import resolve_water_profile_path
 from .solver_config import SOLVER_CONFIG_DEFINITIONS
 
 
-IGNORED_TARGETS = {"S", "SO4", "NA", "CL"}
+ALWAYS_IGNORED_TARGETS = {"NA", "CL"}
+S_TARGETS = {"S", "SO4"}
 N_FORM_KEYS = {"N_NH4", "N_NO3", "N_UREA"}
 FERTILIZER_N_FORM_OUTPUT_KEYS = {
     "NH4": "N_NH4",
@@ -98,11 +99,22 @@ def _normalize_targets(targets: Dict[str, float]) -> Dict[str, float]:
     return cleaned
 
 
+def _normalize_s_objective_target(targets: Dict[str, float], mm: Dict[str, float]) -> Dict[str, float]:
+    normalized = dict(targets)
+    so4_value = normalized.pop("SO4", None)
+    if so4_value is None:
+        so4_value = normalized.pop("so4", None)
+    if so4_value is not None and "S" not in normalized:
+        normalized["S"] = float(so4_value) * mm["S"] / mm["SO4"]
+    return normalized
+
+
 def _objective_keys(
     targets: Dict[str, float],
     *,
     allow_n_total_with_forms: bool = True,
     nitrogen_objective_mode: str = "as_targets",
+    s_objective_enabled: bool = False,
 ) -> List[str]:
     if nitrogen_objective_mode not in NITROGEN_OBJECTIVE_MODES:
         allowed = ", ".join(sorted(NITROGEN_OBJECTIVE_MODES))
@@ -112,7 +124,10 @@ def _objective_keys(
         include_zero_n_form = nitrogen_objective_mode == "n_forms_only" and key in N_FORM_KEYS
         if val == 0 and not include_zero_n_form:
             continue
-        if key.upper() in IGNORED_TARGETS:
+        key_upper = key.upper()
+        if key_upper in ALWAYS_IGNORED_TARGETS:
+            continue
+        if key_upper in S_TARGETS and not s_objective_enabled:
             continue
         keys.append(key)
     if nitrogen_objective_mode == "n_total_only":
@@ -569,6 +584,9 @@ def solve_recipe_data(
     nitrogen_objective_mode = str(
         solver_config.get("nitrogen_objective_mode", DEFAULT_SOLVER_CONFIG["nitrogen_objective_mode"])
     )
+    s_objective_enabled = bool(
+        solver_config.get("s_objective_enabled", DEFAULT_SOLVER_CONFIG["s_objective_enabled"])
+    )
     n_total_governor_enabled = bool(
         solver_config.get("n_total_governor_enabled", DEFAULT_SOLVER_CONFIG["n_total_governor_enabled"])
     )
@@ -576,13 +594,16 @@ def solve_recipe_data(
         solver_config.get("n_total_governor_weight", DEFAULT_SOLVER_CONFIG["n_total_governor_weight"])
     )
     n_form_priority_weights = solver_config.get("n_form_priority_weights") or {}
+    if s_objective_enabled:
+        target_raw = _normalize_s_objective_target(target_raw, molar_masses)
     objective_keys = _objective_keys(
         target_raw,
         allow_n_total_with_forms=True,
         nitrogen_objective_mode=nitrogen_objective_mode,
+        s_objective_enabled=s_objective_enabled,
     )
     if not objective_keys:
-        raise ValueError("No solvable targets defined (S/SO4/Na/Cl are ignored).")
+        raise ValueError("No solvable targets defined (Na/Cl are ignored; S/SO4 require s_objective_enabled).")
 
     allowed_names = [str(name) for name in recipe.get("fertilizers_allowed", [])]
     if not allowed_names:

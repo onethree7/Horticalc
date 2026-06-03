@@ -17,6 +17,7 @@ SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"key": "singleton_underfill_share_threshold", "type": "number", "default": 0.85},
     {"key": "singleton_underfill_max_iter", "type": "integer", "default": 2},
     {"key": "nitrogen_objective_mode", "type": "string", "default": "n_total_only"},
+    {"key": "s_objective_enabled", "type": "boolean", "default": False},
     {"key": "n_total_governor_enabled", "type": "boolean", "default": False},
     {"key": "n_total_governor_weight", "type": "number", "default": 1.0},
 )

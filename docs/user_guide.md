@@ -57,12 +57,16 @@ Sluijsmann, and the active `osmosis_percent`.
 6. Copy the result or use `Im Rechner ansehen` to switch to the calculator. The
    clipboard text includes batch liters, osmosis percent, fertilizer grams, NPK,
    EC, Solver target/achieved/delta values, and ion mg/L values.
-7. Adjust the bottom `Erweitert` solver config, including urea and phosphate
-   handling, only when needed.
+7. Adjust the bottom `Erweitert` solver config, including urea, phosphate
+   handling, and optional `S als Solver-Ziel`, only when needed.
 
 The solver optimizes only `objective_elements`, but the Solver result table
 still shows the standard nutrient rows. Rows that were not active targets are
 muted so collateral nutrient changes remain visible.
+
+`S`/`SO4` targets are visible in reports but ignored by default. Enable
+`S als Solver-Ziel` in `Erweitert` when sulfur demand should actively influence
+the fertilizer selection.
 
 ## CLI
 

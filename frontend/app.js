@@ -84,6 +84,7 @@ const solverConfigControls = {
   overshoot_penalty: document.querySelector("#solverConfigOvershootPenalty"),
   irls_max_outer_iter: document.querySelector("#solverConfigIrlsMaxOuterIter"),
   scale_eps_mg_per_l: document.querySelector("#solverConfigScaleEpsMgPerL"),
+  s_objective_enabled: document.querySelector("#solverConfigSObjectiveEnabled"),
   singleton_supplier_enabled: document.querySelector("#solverConfigSingletonSupplierEnabled"),
   singleton_share_threshold: document.querySelector("#solverConfigSingletonShareThreshold"),
   singleton_max_regress_pp: document.querySelector("#solverConfigSingletonMaxRegressPp"),
@@ -380,7 +381,16 @@ function normalizeSolverConfigDefinitions(definitions = []) {
         (["boolean", "number", "integer"].includes(definition.type) ||
           (definition.key === "nitrogen_objective_mode" && definition.type === "string"))
     );
-  return normalized.length ? normalized : [...FALLBACK_SOLVER_CONFIG_DEFINITIONS];
+  if (!normalized.length) {
+    return [...FALLBACK_SOLVER_CONFIG_DEFINITIONS];
+  }
+  const seenKeys = new Set(normalized.map((definition) => definition.key));
+  FALLBACK_SOLVER_CONFIG_DEFINITIONS.forEach((definition) => {
+    if (!seenKeys.has(definition.key) && solverConfigControls[definition.key]) {
+      normalized.push({ ...definition });
+    }
+  });
+  return normalized;
 }
 
 const FALLBACK_SOLVER_CONFIG_DEFINITIONS = [
@@ -389,6 +399,7 @@ const FALLBACK_SOLVER_CONFIG_DEFINITIONS = [
   { key: "overshoot_penalty", type: "number", defaultValue: 1.0 },
   { key: "irls_max_outer_iter", type: "integer", defaultValue: 4 },
   { key: "scale_eps_mg_per_l", type: "number", defaultValue: 1.0 },
+  { key: "s_objective_enabled", type: "boolean", defaultValue: false },
   { key: "singleton_supplier_enabled", type: "boolean", defaultValue: false },
   { key: "singleton_share_threshold", type: "number", defaultValue: 0.85 },
   { key: "singleton_max_regress_pp", type: "number", defaultValue: 0.25 },

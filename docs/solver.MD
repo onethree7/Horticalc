@@ -26,7 +26,11 @@ Current rules:
 
 - Numeric zero targets are skipped, except N-form zero targets in
   `n_forms_only` mode.
-- `S`, `SO4`, `Na`, and `Cl` are report-only and ignored as objectives.
+- `Na` and `Cl` are report-only and ignored as objectives.
+- `S` and `SO4` are report-only by default. Set
+  `solver_config.s_objective_enabled=true` to allow sulfur as an objective.
+  `SO4` targets are converted to element `S` using `data/molar_masses.yml`
+  before the solver matrix is built.
 - Nitrogen form handling depends on `nitrogen_objective_mode`.
 
 The output field `objective_elements` is the authoritative list. The solver
@@ -61,6 +65,7 @@ The canonical defaults are in `src/horticalc/solver_config.py`.
 | `singleton_underfill_share_threshold` | `0.85` |
 | `singleton_underfill_max_iter` | `2` |
 | `nitrogen_objective_mode` | `n_total_only` |
+| `s_objective_enabled` | `false` |
 | `n_total_governor_enabled` | `false` |
 | `n_total_governor_weight` | `1.0` |
 

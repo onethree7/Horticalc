@@ -10,6 +10,7 @@ def test_solver_ui_uses_reduced_solver_config_controls() -> None:
     expected_controls = [
         "solverConfigRelativeWeighting",
         "solverConfigNitrogenObjectiveMode",
+        "solverConfigSObjectiveEnabled",
         "solverConfigOvershootPenalty",
         "solverConfigSingletonSupplierEnabled",
         "solverConfigSingletonUnderfillEnabled",
@@ -44,6 +45,25 @@ def test_solver_ui_exposes_nitrogen_objective_checkbox() -> None:
     assert "nitrogen_objective_mode" in js_content
     assert "n_total_only" in js_content
     assert "n_forms_only" in js_content
+
+
+def test_solver_ui_exposes_s_objective_toggle() -> None:
+    index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
+    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
+    html_content = index_html.read_text(encoding="utf-8")
+    js_content = app_js.read_text(encoding="utf-8")
+
+    assert 'id="solverConfigSObjectiveEnabled"' in html_content
+    assert "S als Solver-Ziel" in html_content
+    assert "s_objective_enabled" in js_content
+
+
+def test_solver_ui_merges_local_solver_config_fallbacks() -> None:
+    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
+    content = app_js.read_text(encoding="utf-8")
+
+    assert "FALLBACK_SOLVER_CONFIG_DEFINITIONS.forEach" in content
+    assert "normalized.push({ ...definition })" in content
 
 
 def test_solver_advanced_config_lives_in_solver_panel() -> None:

@@ -112,8 +112,11 @@ targets_mg_per_l:
   K: 180
 ```
 
-Targets are element mg/L. Some keys may be reported but ignored by the solver
-objective; see [Solver](solver.MD).
+Targets are element mg/L. The accepted solver target keys live in
+`ALLOWED_TARGET_KEYS` in `src/horticalc/solver.py`; oxide aliases such as
+`K2O` and `P2O5` are fertilizer composition keys, not target keys. Some target
+keys may be reported but ignored by the solver objective; see
+[Solver](solver.MD).
 
 ## Calculation Output
 

@@ -67,7 +67,8 @@ Save payload:
 | `GET` | `/nutrient-solutions/{solution_name}` | Load target profile. |
 | `POST`/`PUT` | `/nutrient-solutions` | Save target profile. |
 
-Allowed target keys are defined in `api/app.py` as `ALLOWED_TARGET_KEYS`.
+Allowed target keys are defined in `src/horticalc/solver.py` as
+`ALLOWED_TARGET_KEYS` and reused by `api/app.py`.
 
 ## Recipes
 

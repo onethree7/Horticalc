@@ -26,6 +26,28 @@ from .solver_config import SOLVER_CONFIG_DEFINITIONS
 
 ALWAYS_IGNORED_TARGETS = {"NA", "CL"}
 S_TARGETS = {"S", "SO4"}
+ALLOWED_TARGET_KEYS = {
+    "N_total",
+    "N_NH4",
+    "N_NO3",
+    "N_UREA",
+    "P",
+    "K",
+    "Ca",
+    "Mg",
+    "S",
+    "SO4",
+    "Fe",
+    "Mn",
+    "Cu",
+    "Zn",
+    "B",
+    "Mo",
+    "Si",
+    "Cl",
+    "Na",
+    "HCO3",
+}
 N_FORM_KEYS = {"N_NH4", "N_NO3", "N_UREA"}
 FERTILIZER_N_FORM_OUTPUT_KEYS = {
     "NH4": "N_NH4",
@@ -95,15 +117,19 @@ def _normalize_targets(targets: Dict[str, float]) -> Dict[str, float]:
     for key, value in (targets or {}).items():
         if key is None:
             continue
-        cleaned[str(key)] = float(value)
+        key_text = str(key)
+        if key_text not in ALLOWED_TARGET_KEYS:
+            raise ValueError(f"Invalid target key: {key_text}")
+        target_value = float(value)
+        if not np.isfinite(target_value):
+            raise ValueError(f"Invalid target value for {key_text}: {value!r}")
+        cleaned[key_text] = target_value
     return cleaned
 
 
 def _normalize_s_objective_target(targets: Dict[str, float], mm: Dict[str, float]) -> Dict[str, float]:
     normalized = dict(targets)
     so4_value = normalized.pop("SO4", None)
-    if so4_value is None:
-        so4_value = normalized.pop("so4", None)
     if so4_value is not None and "S" not in normalized:
         normalized["S"] = float(so4_value) * mm["S"] / mm["SO4"]
     return normalized
@@ -166,6 +192,9 @@ def _fertilizer_element_contrib_per_g(fert: Fertilizer, mm: Dict[str, float]) ->
         if form in OTHER_ELEMENT_FORMS:
             element, mg_el = _form_to_element(mg_per_g, mm, form)
             add(element, mg_el)
+            continue
+        if form == "HCO3":
+            add("HCO3", mg_per_g)
             continue
 
     return elements
@@ -316,14 +345,23 @@ def _score_percent_errors(
     targets_raw: Dict[str, float],
     achieved_elements: Dict[str, float],
 ) -> tuple[float, ...]:
-    max_error = 0.0
+    return (max(_objective_percent_errors(objective_keys, targets_raw, achieved_elements), default=0.0),)
+
+
+def _objective_percent_errors(
+    objective_keys: List[str],
+    targets_raw: Dict[str, float],
+    achieved_elements: Dict[str, float],
+) -> tuple[float, ...]:
+    errors: list[float] = []
     for key in objective_keys:
         target = float(targets_raw.get(key, 0.0))
         if target == 0:
+            errors.append(0.0)
             continue
         achieved_val = float(achieved_elements.get(key, 0.0))
-        max_error = max(max_error, abs((achieved_val - target) / target * 100.0))
-    return (max_error,)
+        errors.append(abs((achieved_val - target) / target * 100.0))
+    return tuple(errors)
 
 
 def _solver_config_value_matches_default(key: str, value: object) -> bool:
@@ -475,16 +513,9 @@ def _singleton_supplier_pass(
         else:
             raise ValueError(f"Unknown singleton supplier mode: {mode}")
         achieved_new = recompute_achieved_fn(proposed)
-        old_score = _score_percent_errors(
-            objective_keys,
-            targets_raw,
-            achieved_elements,
-        )
-        new_score = _score_percent_errors(
-            objective_keys,
-            targets_raw,
-            achieved_new,
-        )
+        score_fn = _objective_percent_errors if mode == "overshoot" else _score_percent_errors
+        old_score = score_fn(objective_keys, targets_raw, achieved_elements)
+        new_score = score_fn(objective_keys, targets_raw, achieved_new)
         improves = (mode == "overshoot" and achieved_new.get(key, 0.0) <= achieved_elements.get(key, 0.0)) or (
             mode == "underfill" and achieved_new.get(key, 0.0) >= achieved_elements.get(key, 0.0)
         )
@@ -544,7 +575,12 @@ def solve_recipe_data(
     fertilizers = ferts or load_fertilizers()
     molar_masses = mm or load_molar_masses()
 
-    liters = float(recipe.get("liters") or 10.0)
+    liters_value = recipe.get("liters", 10.0)
+    if liters_value is None:
+        liters_value = 10.0
+    liters = float(liters_value)
+    if not np.isfinite(liters) or liters <= 0.0:
+        raise ValueError("liters must be > 0")
     water_profile = _resolve_water_profile(recipe, water_profile_data, water_profile_path)
     osmosis_percent = float(recipe.get("osmosis_percent", water_profile.get("osmosis_percent", 0.0)))
     # compute_solution() applies osmosis_mix; do not pre-mix here.
@@ -552,7 +588,6 @@ def solve_recipe_data(
     target_raw = _normalize_targets(
         recipe.get("targets")
         or recipe.get("targets_mg_per_l")
-        or recipe.get("water_elements_mg_per_l")
         or {}
     )
     solver_config = recipe.get("solver_config") or {}
@@ -615,7 +650,18 @@ def solve_recipe_data(
             raise KeyError(f"Unbekannter Dünger in fertilizers_allowed: '{name}'")
         allowed.append(fertilizers[name])
 
-    fixed_grams = {str(k): float(v) for k, v in (recipe.get("fixed_grams") or {}).items()}
+    fixed_grams: dict[str, float] = {}
+    for key, value in (recipe.get("fixed_grams") or {}).items():
+        name = str(key)
+        grams = float(value)
+        if not np.isfinite(grams):
+            raise ValueError(f"fixed_grams must be finite: {name}")
+        if grams < 0:
+            raise ValueError(f"fixed_grams must be >= 0: {name}")
+        fixed_grams[name] = grams
+    unknown_fixed = sorted(set(fixed_grams) - {fert.name for fert in allowed})
+    if unknown_fixed:
+        raise ValueError(f"fixed_grams not in fertilizers_allowed: {unknown_fixed}")
     fixed_weights = np.array([fixed_grams.get(fert.name, 0.0) for fert in allowed], dtype=float)
     variable_mask = np.array([fert.name not in fixed_grams for fert in allowed], dtype=bool)
 

@@ -35,7 +35,7 @@ from horticalc.paths import (
     default_recipe_path,
     ensure_portable_layout,
 )
-from horticalc.solver import solve_recipe_data
+from horticalc.solver import ALLOWED_TARGET_KEYS, solve_recipe_data
 from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS
 
 
@@ -171,30 +171,6 @@ ALLOWED_WATER_KEYS = {
     "MgO",
     "Na2O",
 }
-
-ALLOWED_TARGET_KEYS = {
-    "N_total",
-    "N_NH4",
-    "N_NO3",
-    "N_UREA",
-    "P",
-    "K",
-    "Ca",
-    "Mg",
-    "S",
-    "SO4",
-    "Fe",
-    "Mn",
-    "Cu",
-    "Zn",
-    "B",
-    "Mo",
-    "Si",
-    "Cl",
-    "Na",
-    "HCO3",
-}
-
 
 def sanitize_water_profile(mg_per_l: Dict[str, float]) -> Dict[str, float]:
     sanitized: Dict[str, float] = {}

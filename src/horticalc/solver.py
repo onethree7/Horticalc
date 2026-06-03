@@ -485,7 +485,8 @@ def _singleton_supplier_pass(
             share_denominator = sum_row
         j_star = int(np.argmax(base_row))
         share = base_row[j_star] / share_denominator if share_denominator > 0 else 0.0
-        if share < share_threshold:
+        effective_share_threshold = 0.0 if mode == "underfill" and key == "S" else share_threshold
+        if share < effective_share_threshold:
             continue
         if not variable_mask_full[j_star]:
             continue

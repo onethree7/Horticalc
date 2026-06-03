@@ -66,6 +66,16 @@ def test_solver_ui_merges_local_solver_config_fallbacks() -> None:
     assert "normalized.push({ ...definition })" in content
 
 
+def test_solver_ui_underfill_share_default_matches_backend_default() -> None:
+    index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
+    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
+    html_content = index_html.read_text(encoding="utf-8")
+    js_content = app_js.read_text(encoding="utf-8")
+
+    assert 'id="solverConfigSingletonUnderfillShareThreshold" type="number" min="0" max="1" step="0.01" value="0.85"' in html_content
+    assert '{ key: "singleton_underfill_share_threshold", type: "number", defaultValue: 0.85 }' in js_content
+
+
 def test_solver_advanced_config_lives_in_solver_panel() -> None:
     index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
     html_content = index_html.read_text(encoding="utf-8")

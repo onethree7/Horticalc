@@ -67,6 +67,10 @@ Source: `api/app.py`, `frontend/`, `tests/test_frontend_solver_config_ui.py`.
 - Default `relative_weighting`: `false`.
 - Default `singleton_supplier_enabled`: `false`.
 - Default `singleton_underfill_enabled`: `true`.
+- Default `singleton_underfill_share_threshold`: `0.85`.
+- Sulfur underfill is permissive when `S` is an active solver objective, so
+  `s_objective_enabled=true` can fill sulfate demand even when supply is split
+  across multiple allowed fertilizers.
 - Report-only ignored target keys: `S`, `SO4`, `Na`, `Cl`.
 - Solver matrix scoring follows `result.objective_elements`.
 

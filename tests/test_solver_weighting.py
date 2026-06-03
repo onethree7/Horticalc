@@ -129,6 +129,34 @@ def test_singleton_supplier_pass_checks_each_objective_regression() -> None:
     assert np.allclose(updated, x_full)
 
 
+def test_singleton_underfill_pass_treats_sulfur_as_permissive() -> None:
+    A = np.array([[5.0, 4.0]])
+    x_full = np.array([0.0, 0.0])
+    targets_raw = {"S": 20.0}
+    achieved_elements = {"S": 0.0}
+
+    def recompute_achieved_fn(new_x_full: np.ndarray) -> dict:
+        return {"S": float((A @ new_x_full)[0])}
+
+    updated = _singleton_supplier_pass(
+        A=A,
+        x_full=x_full,
+        variable_mask_full=np.array([True, True]),
+        objective_keys=["S"],
+        targets_raw=targets_raw,
+        achieved_elements=achieved_elements,
+        liters=10.0,
+        share_threshold=0.85,
+        max_regress_pp=0.25,
+        skip_keys=None,
+        recompute_achieved_fn=recompute_achieved_fn,
+        mode="underfill",
+        use_potential_share=True,
+    )
+
+    assert updated[0] == 4.0
+
+
 def test_score_percent_errors_returns_max_percent_error() -> None:
     objective_keys = ["K", "Fe"]
     targets_raw = {"K": 100.0, "Fe": 0.1}

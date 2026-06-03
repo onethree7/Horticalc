@@ -116,6 +116,12 @@ dominant nutrients. The overshoot pass checks per-objective regression budgets;
 the underfill pass keeps the broader max-error budget used by the default
 portfolio behavior.
 
+`singleton_underfill_share_threshold=0.0` keeps the underfill pass enabled and
+permissive; it does not disable underfill. Disabling is controlled by
+`singleton_underfill_enabled=false`. When `S` is an active solver objective, the
+underfill pass treats sulfur as permissive even at the default share threshold,
+because sulfate supply is often split across several allowed fertilizers.
+
 Legacy stage optimization and macro priority controls were removed from the
 backend config after default-off matrix runs showed no current benefit.
 

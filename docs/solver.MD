@@ -18,12 +18,21 @@ Solver recipes and `/solve` requests provide:
 - `phosphate_species`: `H2PO4` by default, or `HPO4`.
 - `solver_config`: optional advanced settings.
 
+`solve_recipe_data()` validates these inputs before solving: `liters` must be
+greater than zero, target keys must be in `ALLOWED_TARGET_KEYS`, target values
+must be finite numbers, and `fixed_grams` must be finite, non-negative amounts
+for fertilizers also listed in `fertilizers_allowed`.
+
 ## Objective Elements
 
 `_objective_keys()` decides which target keys are optimized.
 
 Current rules:
 
+- Accepted target keys are defined by `ALLOWED_TARGET_KEYS` in
+  `src/horticalc/solver.py`. Oxide/form aliases such as `K2O`, `P2O5`,
+  lowercase keys, and unknown keys are rejected instead of becoming zero-column
+  objectives.
 - Numeric zero targets are skipped, except N-form zero targets in
   `n_forms_only` mode.
 - `Na` and `Cl` are report-only and ignored as objectives.
@@ -86,6 +95,10 @@ Water baseline is computed with the same core calculation path and subtracted
 from targets before solving. Fixed grams are also subtracted before optimizing
 the remaining variable fertilizers.
 
+`targets` or `targets_mg_per_l` are the only target sources. Calculation output
+fields such as `water_elements_mg_per_l` are not treated as desired solver
+targets.
+
 The base solve is deterministic non-negative least squares:
 
 ```text
@@ -99,7 +112,9 @@ Relative weighting scales rows by target/residual magnitude so small trace
 targets can matter more. IRLS can increase weights for overshoot rows.
 
 Singleton passes can reduce dominant-supplier overshoot or top up underfilled
-dominant nutrients, guarded by regression budgets.
+dominant nutrients. The overshoot pass checks per-objective regression budgets;
+the underfill pass keeps the broader max-error budget used by the default
+portfolio behavior.
 
 Legacy stage optimization and macro priority controls were removed from the
 backend config after default-off matrix runs showed no current benefit.

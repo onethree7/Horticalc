@@ -102,6 +102,33 @@ def test_singleton_supplier_pass_rolls_back_on_regression() -> None:
     assert np.allclose(updated, x_full)
 
 
+def test_singleton_supplier_pass_checks_each_objective_regression() -> None:
+    A = np.array([[10.0, 0.0], [10.0, 0.0]])
+    x_full = np.array([15.0, 0.0])
+    targets_raw = {"K": 100.0, "Ca": 150.0}
+    achieved_elements = {"K": 150.0, "Ca": 150.0}
+
+    def recompute_achieved_fn(new_x_full: np.ndarray) -> dict:
+        values = A @ new_x_full
+        return {"K": float(values[0]), "Ca": float(values[1])}
+
+    updated = _singleton_supplier_pass(
+        A=A,
+        x_full=x_full,
+        variable_mask_full=np.array([True, True]),
+        objective_keys=["K", "Ca"],
+        targets_raw=targets_raw,
+        achieved_elements=achieved_elements,
+        liters=10.0,
+        share_threshold=0.85,
+        max_regress_pp=0.0,
+        skip_keys=None,
+        recompute_achieved_fn=recompute_achieved_fn,
+    )
+
+    assert np.allclose(updated, x_full)
+
+
 def test_score_percent_errors_returns_max_percent_error() -> None:
     objective_keys = ["K", "Fe"]
     targets_raw = {"K": 100.0, "Fe": 0.1}

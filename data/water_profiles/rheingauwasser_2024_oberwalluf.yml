@@ -1,0 +1,11 @@
+name: Rheingauwasser 2024 Oberwalluf
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 2.1
+  K: 2.48
+  Ca: 105
+  Mg: 17.2
+  Na: 16.3
+  SO4: 71.6
+  Cl: 33

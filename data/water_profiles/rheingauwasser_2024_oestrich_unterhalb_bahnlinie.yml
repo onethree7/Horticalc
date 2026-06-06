@@ -1,0 +1,11 @@
+name: Rheingauwasser 2024 Oestrich unterhalb Bahnlinie
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 7.15
+  K: 2.52
+  Ca: 58.9
+  Mg: 10.2
+  Na: 11.1
+  SO4: 40.8
+  Cl: 20

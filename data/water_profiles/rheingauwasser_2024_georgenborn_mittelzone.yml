@@ -1,0 +1,11 @@
+name: Rheingauwasser 2024 Georgenborn Mittelzone
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 2.35
+  K: 2.46
+  Ca: 99.7
+  Mg: 16.4
+  Na: 16.6
+  SO4: 68.9
+  Cl: 32.7

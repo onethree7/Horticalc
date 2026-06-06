@@ -1,0 +1,12 @@
+name: Rheingauwasser 2024 Niederwalluf oberhalb Bahnlinie
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 2.2
+  K: 2.56
+  Ca: 102
+  Mg: 16.7
+  Na: 17.1
+  SO4: 69.2
+  Fe: 0.05
+  Cl: 33.6

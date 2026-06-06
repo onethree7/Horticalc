@@ -1,0 +1,11 @@
+name: Rheingauwasser 2024 Rauenthal
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 6.03
+  K: 0.92
+  Ca: 63.3
+  Mg: 6.75
+  Na: 6.14
+  SO4: 16.1
+  Cl: 9.05

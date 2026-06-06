@@ -1,0 +1,11 @@
+name: Rheingauwasser 2024 Niederwalluf Gewerbegebiet Kressboden
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 2.04
+  K: 2.55
+  Ca: 104
+  Mg: 17.2
+  Na: 16.3
+  SO4: 71.9
+  Cl: 33.1

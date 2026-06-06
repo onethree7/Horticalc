@@ -1,0 +1,11 @@
+name: Rheingauwasser 2024 Hattenheim
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 5.47
+  K: 2.59
+  Ca: 85.2
+  Mg: 14.6
+  Na: 13.5
+  SO4: 57.2
+  Cl: 26.5

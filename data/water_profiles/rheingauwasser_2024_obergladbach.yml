@@ -1,0 +1,12 @@
+name: Rheingauwasser 2024 Obergladbach
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 2.58
+  K: 1.28
+  Ca: 49.6
+  Mg: 16.9
+  Na: 15.8
+  SO4: 35.8
+  Fe: 0.04
+  Cl: 25.6

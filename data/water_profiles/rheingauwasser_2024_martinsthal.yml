@@ -1,0 +1,12 @@
+name: Rheingauwasser 2024 Martinsthal
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 4.38
+  K: 3.18
+  Ca: 31
+  Mg: 5.56
+  Na: 31.7
+  SO4: 18.5
+  Fe: 0.02
+  Cl: 42.1

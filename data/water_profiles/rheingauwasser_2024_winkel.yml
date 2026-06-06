@@ -1,0 +1,11 @@
+name: Rheingauwasser 2024 Winkel
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 11.3
+  K: 2.65
+  Ca: 112
+  Mg: 18.6
+  Na: 17.5
+  SO4: 85.7
+  Cl: 33.5

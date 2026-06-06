@@ -1,0 +1,12 @@
+name: Rheingauwasser 2024 Hallgarten
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 4.68
+  K: 1.98
+  Ca: 74.1
+  Mg: 14
+  Na: 12.7
+  SO4: 51.3
+  Fe: 0.06
+  Cl: 24.7

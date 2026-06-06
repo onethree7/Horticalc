@@ -1,0 +1,12 @@
+name: Rheingauwasser 2024 Baerstadt
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 1.08
+  K: 2.07
+  Ca: 90.5
+  Mg: 14.8
+  Na: 16.7
+  SO4: 66.3
+  Fe: 0.03
+  Cl: 29.3

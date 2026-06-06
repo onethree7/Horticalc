@@ -1,0 +1,11 @@
+name: Rheingauwasser 2024 Erbach unterhalb Bahnlinie
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 12.3
+  K: 5.32
+  Ca: 98.5
+  Mg: 19.3
+  Na: 44.1
+  SO4: 66.7
+  Cl: 78.5

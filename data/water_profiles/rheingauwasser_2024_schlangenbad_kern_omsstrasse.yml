@@ -1,0 +1,11 @@
+name: Rheingauwasser 2024 Schlangenbad-Kern Omsstrasse
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 7.4
+  K: 1.13
+  Ca: 27.6
+  Mg: 3.37
+  Na: 3.48
+  SO4: 4
+  Cl: 5.43

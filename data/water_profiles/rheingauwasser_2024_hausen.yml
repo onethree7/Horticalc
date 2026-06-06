@@ -1,0 +1,12 @@
+name: Rheingauwasser 2024 Hausen
+source: TW-Analysen2024 Rheingauwasser
+osmosis_percent: 0
+mg_per_l:
+  NO3: 1.17
+  K: 1.68
+  Ca: 83.1
+  Mg: 15.7
+  Na: 14.9
+  SO4: 59.3
+  Fe: 0.07
+  Cl: 25

@@ -436,15 +436,15 @@ main {
 }
 
 #fertilizerEditorTable tbody tr:nth-child(odd) td:nth-child(-n + 4) {
-  background: #111722;
+  background: var(--app-table-row-odd);
 }
 
 #fertilizerEditorTable tbody tr:nth-child(even) td:nth-child(-n + 4) {
-  background: #0e131c;
+  background: var(--app-table-row-even);
 }
 
 #fertilizerEditorTable thead th:nth-child(-n + 4) {
-  background: #1a2230;
+  background: var(--app-fert-editor-head-bg);
   z-index: 9;
 }
 

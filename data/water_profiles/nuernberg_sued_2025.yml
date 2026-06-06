@@ -1,0 +1,20 @@
+name: Nuernberg Sued 2025
+source: N-ERGIE Trinkwasser-Analysewerte
+region: Bayern
+zone: Sued
+year: 2025
+pdf_url: https://www.n-ergie.de/public/remotemedien/media/n_ergie/internet/privatkunden/produkte/wasser_1/neugestaltung_seite/Trinkwasser-Analysewerte.pdf
+source_quality: A
+ph: 7.54
+ec_us_cm: 488
+hardness_dh: 13.2
+osmosis_percent: 0
+mg_per_l:
+  Ca: 65
+  Mg: 18
+  Na: 8.9
+  K: 1.9
+  Cl: 13
+  SO4: 18
+  NO3: 6
+  HCO3: 270

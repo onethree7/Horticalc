@@ -1,0 +1,20 @@
+name: Nuernberg Ost 2025
+source: N-ERGIE Trinkwasser-Analysewerte
+region: Bayern
+zone: Ost
+year: 2025
+pdf_url: https://www.n-ergie.de/public/remotemedien/media/n_ergie/internet/privatkunden/produkte/wasser_1/neugestaltung_seite/Trinkwasser-Analysewerte.pdf
+source_quality: A
+ph: 7.99
+ec_us_cm: 340
+hardness_dh: 7.8
+osmosis_percent: 0
+mg_per_l:
+  Ca: 45
+  Mg: 6
+  Na: 9.0
+  K: 2.5
+  Cl: 22
+  SO4: 24
+  NO3: 5
+  HCO3: 134

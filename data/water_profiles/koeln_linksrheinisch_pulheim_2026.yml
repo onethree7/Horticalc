@@ -1,0 +1,19 @@
+name: Koeln linksrheinisch Pulheim 2026
+source: RheinEnergie Trinkwasseranalyse 2026 linksrheinisch
+region: Nordrhein-Westfalen
+zone: Koeln linksrheinisch und Pulheim
+year: 2026
+pdf_url: https://web.cdn.rheinenergie.com/cms/media/documents/trinkwasseranalyse/Trinkwasseranalyse_Linksrheinisch.pdf
+source_quality: A
+ph: 7.30
+ec_us_cm: 784
+osmosis_percent: 0
+mg_per_l:
+  Ca: 106
+  Mg: 14
+  Na: 35
+  K: 4.5
+  Cl: 58
+  SO4: 73
+  NO3: 22
+  HCO3: 280

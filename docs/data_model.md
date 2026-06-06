@@ -67,6 +67,13 @@ mg_per_l:
   HCO3: 120
 ```
 
+Shipped water profiles may include optional source metadata such as `region`,
+`zone`, `year`, `pdf_url`, `source_url`, `source_quality`, `ph`, `ec_us_cm`,
+`hardness_dh`, `limit_policy`, and `raw_mg_per_l`. These fields document the
+published analysis source and detection-limit handling. `load_water_profile_data()`
+in `src/horticalc/data_io.py` returns only `name`, `source`, `osmosis_percent`,
+and numeric `mg_per_l` for runtime calculation.
+
 Accepted input keys include direct forms, element helpers, oxide helpers, and
 carbonate helpers. `normalize_water_profile()` converts helper keys into the
 forms used by the calculation core.

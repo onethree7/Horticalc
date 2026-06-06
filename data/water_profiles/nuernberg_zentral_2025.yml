@@ -1,0 +1,20 @@
+name: Nuernberg Zentral 2025
+source: N-ERGIE Trinkwasser-Analysewerte
+region: Bayern
+zone: Zentral
+year: 2025
+pdf_url: https://www.n-ergie.de/public/remotemedien/media/n_ergie/internet/privatkunden/produkte/wasser_1/neugestaltung_seite/Trinkwasser-Analysewerte.pdf
+source_quality: A
+ph: 7.56
+ec_us_cm: 516
+hardness_dh: 14.0
+osmosis_percent: 0
+mg_per_l:
+  Ca: 62
+  Mg: 23
+  Na: 8.3
+  K: 1.5
+  Cl: 20
+  SO4: 17
+  NO3: 12
+  HCO3: 266

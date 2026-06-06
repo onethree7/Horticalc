@@ -1,0 +1,20 @@
+name: Steinfurt 2025
+source: Stadtwerke Steinfurt Trinkwasser-Analyse vom 13. Juni 2025
+region: Nordrhein-Westfalen
+zone: Steinfurt
+year: 2025
+pdf_url: https://www.swst.de/medien/wasser/trinkwasseranalyse/%40%40download/file/Trinkwasseranalyse%202025.pdf
+source_quality: A
+ph: 7.5
+ec_us_cm: 593
+hardness_dh: 14.8
+osmosis_percent: 0
+mg_per_l:
+  Ca: 96
+  Mg: 5.82
+  Na: 15.7
+  K: 6.6
+  Cl: 26.3
+  SO4: 61.8
+  NO3: 23.5
+  HCO3: 240

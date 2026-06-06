@@ -1,0 +1,24 @@
+name: Speyer 2025
+source: Stadtwerke Speyer Trinkwasseranalyse, Netzprobe Stand 10/2025
+region: Rheinland-Pfalz
+zone: Speyer
+year: 2025
+pdf_url: https://www.stadtwerke-speyer.de/de/Energie-Wasser/Wasser/Trinkwasser/sws-2099-001-Trinkwasseranalyse-WEB-A.pdf
+source_quality: A-
+ph: 7.16
+ec_us_cm: 523
+hardness_dh: 14.5
+limit_policy: half_detection_limit_for_less_than_values
+raw_mg_per_l:
+  SO4: "<5"
+  NO3: "<1"
+osmosis_percent: 0
+mg_per_l:
+  Ca: 82.9
+  Mg: 12.5
+  Na: 12.3
+  K: 2.4
+  Cl: 6
+  SO4: 2.5
+  NO3: 0.5
+  HCO3: 334

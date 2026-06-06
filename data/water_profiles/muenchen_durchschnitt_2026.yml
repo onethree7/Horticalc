@@ -1,0 +1,20 @@
+name: Muenchen Durchschnitt 2026
+source: Stadtwerke Muenchen Trinkwasser-Analysewerte, Stand Januar 2026
+region: Bayern
+zone: Muenchner Trinkwasser
+year: 2026
+pdf_url: https://www.swm.de/dam/doc/wasser/trinkwasser-analysewerte.pdf?pk_content=analysewerte&pk_medium=vanity&pk_source=magnolia
+source_quality: A
+ph: 7.56
+ec_us_cm: 554
+hardness_dh: 15.8
+osmosis_percent: 0
+mg_per_l:
+  Ca: 78.0
+  Mg: 20.9
+  Na: 5.9
+  K: 1.1
+  Cl: 10.6
+  SO4: 14.8
+  NO3: 6.5
+  HCO3: 324

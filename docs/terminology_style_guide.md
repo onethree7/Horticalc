@@ -25,6 +25,20 @@ German UI labels currently use:
 | `RECHNER` | Calculator recipe workflow. |
 | `SOLVER` | Target solver workflow. |
 
+Frontend language catalogs use these UI workflow terms:
+
+| German | English | Dutch |
+| --- | --- | --- |
+| `Dünger-Editor` | `Fertilizer editor` | `Meststoffen-editor` |
+| `Wasserwerte` | `Water values` | `Waterwaarden` |
+| `Rechner` | `Calculator` | `Calculator` |
+| `Solver` | `Solver` | `Solver` |
+| `Zielprofil` | `Target profile` | `Doelprofiel` |
+
+Do not translate data contract names in catalogs or docs when they refer to
+actual files, payloads, or keys. Examples: `Düngername`, `fertilizers_allowed`,
+`N_total`, `NO3`, `mg/L`, and `solver_config`.
+
 ## Units
 
 - Use `mg/L` for element, oxide, and input concentration text.

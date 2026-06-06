@@ -6,7 +6,7 @@ def test_solver_copy_button_present() -> None:
     content = index_html.read_text(encoding="utf-8")
 
     assert 'id="copySolverResults"' in content
-    assert "In Zwischenablage kopieren" in content
+    assert 'data-i18n="solver.copyClipboard"' in content
     assert 'id="copySolverResultsStatus"' in content
 
 
@@ -18,8 +18,8 @@ def test_solver_copy_logic_present() -> None:
     assert "buildClipboardRows" in content
     assert "copySolverResultsToClipboard" in content
     assert "copyTextWithFallback" in content
-    assert "Ansatz (L)" in content
-    assert "Solver Zielwerte (mg/L)" in content
+    assert 't("solver.clipboardBatchLiters")' in content
+    assert 't("solver.clipboardTargets")' in content
     assert "EC (mS/cm)" in content
     assert "\\t" not in content
     assert '.join("  ")' in content

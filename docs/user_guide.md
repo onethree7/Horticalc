@@ -30,6 +30,11 @@ found, it falls back to the system default browser.
 - `RECHNER`: calculate a nutrient solution from selected fertilizers and grams.
 - `SOLVER`: solve target nutrient profiles into fertilizer grams.
 
+Use `Sprache` in the `Konfiguration` card to switch the frontend between
+German, English, and Dutch. The selection is stored in the browser as
+`horticalc.locale`. It changes visible UI text only; files, API keys, CSV
+headers, element symbols, and saved recipes keep their original data names.
+
 ## Calculator Workflow
 
 1. Load or edit the fertilizer list if needed.

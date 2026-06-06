@@ -44,16 +44,16 @@ def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
     assert 'data-shell-view="calculate"' not in content
     assert 'data-shell-view="results"' not in content
     assert 'data-shell-view="details"' not in content
-    assert "<span>DÜNGER-EDITOR</span>" in content
-    assert "<span>WASSERWERTE</span>" in content
-    assert "<span>RECHNER</span>" in content
-    assert "<span>SOLVER</span>" in content
-    assert "Hauptmenü" in content
-    assert "Ablauf kurz" in content
-    assert "Erstelle oder lade eigene Dünger im <span>Dünger-Editor</span>." in content
-    assert "Konfiguriere deine <span>Wasserwerte</span>." in content
-    assert "Erstelle Rezepte von Hand im <span>Rechner</span>." in content
-    assert "Oder lass den <span>Solver</span> für dich lösen." in content
+    assert 'data-i18n="workflow.editorUpper"' in content
+    assert 'data-i18n="workflow.waterUpper"' in content
+    assert 'data-i18n="workflow.calculatorUpper"' in content
+    assert 'data-i18n="workflow.solverUpper"' in content
+    assert 'data-i18n="workflow.menu"' in content
+    assert 'data-i18n="workflow.shortGuide"' in content
+    assert 'data-i18n="workflow.guide.editor"' in content
+    assert 'data-i18n="workflow.guide.water"' in content
+    assert 'data-i18n="workflow.guide.calculator"' in content
+    assert 'data-i18n="workflow.guide.solver"' in content
     assert 'class="workflow-step-index"' in content
     assert 'class="workflow-step-hint"' in content
     assert "<span>0</span>" not in content
@@ -65,15 +65,17 @@ def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
     assert 'id="configLiters"' in content
     assert 'id="configLitersStatus"' in content
     assert 'id="themeSelect"' in content
+    assert 'id="languageSelect"' in content
     assert "Horticalc Dark" in content
     assert "Solaris Console" in content
     rail_config_block = content.split('data-testid="rail-config-controls"', 1)[1].split("</section>", 1)[0]
-    assert "Darstellung auswählen" in rail_config_block
+    assert 'data-i18n-aria-label="aria.theme"' in rail_config_block
+    assert 'data-i18n-aria-label="aria.language"' in rail_config_block
     assert 'id="osmosisPercent"' in content
     assert 'id="waterUnitToggle"' in content
     assert "Solver Advanced Config" not in content
     assert 'class="solver-advanced-config"' in content
-    assert "<summary>Erweitert</summary>" in content
+    assert 'data-i18n="solver.advanced"' in content
     assert 'id="solverConfigResetDefaults"' in content
     assert 'id="solverConfigRelativeWeighting"' in content
     assert 'id="solverConfigNTotalGovernorEnabled"' in content
@@ -95,7 +97,7 @@ def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
     assert 'id="ecWater18Value"' in content
     assert content.count('id="npkAllPct"') == 1
     assert content.count('id="ecWater18Value"') == 1
-    assert "Wasser</span>" in content
+    assert 'data-i18n="live.water"' in content
     assert "live-metric--npk" in content
     assert "live-metric--ratio" in content
     assert "live-metric--camg" in content
@@ -172,8 +174,8 @@ def test_app_js_shell_helpers_are_top_level_and_initialized() -> None:
     assert "updateLiveResultBar(data);" in content
     assert "applySolverResultToCalculator" in content
     assert "solverAutoApplyEnabled" in content
-    assert 'label: "RECHNER"' in content
-    assert 'label: "SOLVER"' in content
+    assert 'labelKey: "workflow.calculatorUpper"' in content
+    assert 'labelKey: "workflow.solverUpper"' in content
 
 
 def test_framed_shell_styles_present() -> None:
@@ -245,7 +247,7 @@ def test_fertilizer_editor_sticky_columns_size_from_visible_content() -> None:
     assert "left: calc(var(--fert-editor-index-width) + 18rem)" in styles
     assert "left: calc(var(--fert-editor-index-width) + 18rem + var(--fert-editor-form-width))" in styles
     assert "const indexDigitCount = String(Math.max(1, filteredRows.length)).length;" in app_js
-    assert "const formWidthCh = contentWidthCh(filteredRows.map(({ row }) => row.form), \"Form\", 4);" in app_js
+    assert 'const formWidthCh = contentWidthCh(filteredRows.map(({ row }) => row.form), t("common.form"), 4);' in app_js
     assert "const weightWidthCh = contentWidthCh(" in app_js
     assert "calc(${indexDigitCount}ch + (var(--space-2) * 2))" in app_js
     assert "calc(${formWidthCh + 1}ch + (var(--space-2) * 2))" in app_js
@@ -274,7 +276,7 @@ def test_live_result_bar_uses_consistent_high_visibility_type() -> None:
     assert "text-transform: none" in styles
     assert "letter-spacing: 0" in styles
     assert "EC (mS/cm)" in index
-    assert "Ionen-Verhältnisse (mg/L)" in index
+    assert 'data-i18n="live.ionRatios"' in index
     assert "Ca:Mg Ratio (mg/L)" in index
 
 

@@ -54,7 +54,7 @@ def test_solver_ui_exposes_s_objective_toggle() -> None:
     js_content = app_js.read_text(encoding="utf-8")
 
     assert 'id="solverConfigSObjectiveEnabled"' in html_content
-    assert "S als Solver-Ziel" in html_content
+    assert 'data-i18n="solver.sAsTarget"' in html_content
     assert "s_objective_enabled" in js_content
 
 

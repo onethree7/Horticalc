@@ -58,8 +58,15 @@ Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`.
   `RECHNER`, and `SOLVER`.
 - The frontend fetches solver config schema from `/schema/solver-config`.
 - Legacy macro/stage solver controls are removed from the backend config and UI.
+- Frontend i18n is implemented without a bundler or external dependency in
+  `frontend/i18n/`. German is the fallback catalog; English and Dutch catalogs
+  must keep the same keys. Language selection is stored in `localStorage` under
+  `horticalc.locale` and only affects frontend presentation text.
+- API keys, CSV fields, element symbols, units, persisted recipe fields, and
+  solver config keys remain literal data contracts and are not translated.
 
-Source: `api/app.py`, `frontend/`, `tests/test_frontend_solver_config_ui.py`.
+Source: `api/app.py`, `frontend/`, `tests/test_frontend_solver_config_ui.py`,
+`tests/test_frontend_i18n.py`.
 
 ### Solver
 

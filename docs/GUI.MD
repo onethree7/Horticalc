@@ -9,6 +9,7 @@ FastAPI from the same origin as the API.
 
 - `frontend/index.html`: DOM structure, workflow panels, stable IDs.
 - `frontend/app.js`: state, API calls, rendering, workflow navigation.
+- `frontend/i18n/`: frontend-only translation catalogs and runtime.
 - `frontend/styles.css`: app frame layout, tables, responsive rules.
 
 ## App Areas
@@ -25,12 +26,23 @@ The older visible mode bar is not the user workflow. Some hidden radio inputs
 remain only to keep existing JavaScript paths stable.
 
 The `Konfiguration` card in `frontend/index.html` contains the global batch
-liters input and a `Design` selector. `frontend/app.js` applies the selected
-theme to `document.body.dataset.theme` and stores it in `localStorage` under
-`horticalc.theme`. `frontend/styles.css` defines the available visual themes:
-Horticalc Dark, Horticalc Light, High Contrast, Solaris Console, VT Green, and
-Blue Matrix. Theme selection is browser-only presentation state and is not sent
-to recipes, solver payloads, or API routes.
+liters input, a `Design` selector, and a `Sprache` selector. `frontend/app.js`
+applies the selected theme to `document.body.dataset.theme` and stores it in
+`localStorage` under `horticalc.theme`. `frontend/i18n/runtime.js` stores the
+selected language under `horticalc.locale`, updates `document.documentElement.lang`,
+and applies `data-i18n` attributes from the static catalogs. `frontend/styles.css`
+defines the available visual themes: Horticalc Dark, Horticalc Light, High
+Contrast, Solaris Console, VT Green, and Blue Matrix. Theme and language
+selection are browser-only presentation state and are not sent to recipes,
+solver payloads, or API routes.
+
+The frontend language model is intentionally frontend-only. German is the
+fallback catalog in `frontend/i18n/de.js`, with English and Dutch in
+`frontend/i18n/en.js` and `frontend/i18n/nl.js`. Visible labels, placeholders,
+ARIA labels, status messages, empty states, and clipboard section labels use
+translation keys. Data contracts such as API route names, JSON keys, CSV fields
+like `Düngername`, element symbols, solver config keys, and units remain
+literal and are not translated.
 
 The live sidebar in `frontend/index.html` and `frontend/app.js` displays the
 latest calculation's NPK totals, compact P-normalized and NPK-only bubbles,
@@ -104,6 +116,7 @@ The UI stores small workflow state in `localStorage`:
 - Solver allowed fertilizer selections by context.
 - Solver auto-apply preference.
 - Selected visual theme.
+- Selected frontend language.
 
 Solver config is intentionally not restored from saved solution snapshots and
 is not automatically applied from loaded recipes. The UI fetches the backend
@@ -119,6 +132,7 @@ Tests rely on these categories of frontend contracts:
 - Solver copy/apply controls.
 - Summary tabs and output tables.
 - Reduced solver config controls from `/schema/solver-config`.
+- Frontend i18n catalogs with matching keys for `de`, `en`, and `nl`.
 
 Before changing IDs or panel names, search tests and `frontend/app.js`.
 

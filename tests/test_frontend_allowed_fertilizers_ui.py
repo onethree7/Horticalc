@@ -7,12 +7,12 @@ def test_solver_allowed_sync_button_present():
     content = index_html.read_text(encoding="utf-8")
 
     assert 'id="solverAllowedFromRecipe"' in content
-    assert "Aus Rechner übernehmen" in content
+    assert 'data-i18n="solver.allowedFromRecipe"' in content
     assert 'id="solverAllowedSearch"' in content
     assert 'id="solverAllowedAll"' in content
-    assert "Alle" in content
+    assert 'data-i18n="common.all"' in content
     assert 'id="solverAllowedHideInactive"' in content
-    assert "Nur aktive" in content
+    assert 'data-i18n="solver.onlyActive"' in content
     assert 'id="solverAllowedSelectVisible"' not in content
     assert 'id="solverAllowedDeselectVisible"' not in content
     assert "Sichtbare auswählen" not in content
@@ -20,7 +20,7 @@ def test_solver_allowed_sync_button_present():
     assert 'id="solverAllowedClear"' in content
     assert 'id="solverAllowedFertilizers" class="table-wrap solver-picker"' in content
     assert 'id="solverOverrides" class="solver-overrides"' in content
-    assert "Override / fixe Menge (g, optional)" in content
+    assert 'data-i18n="solver.overrideTitle"' in content
     assert not re.search(r'<select[^>]+id="solverAllowedFertilizers"', content)
 
 
@@ -49,14 +49,14 @@ def test_solver_auto_apply_control_present():
     js_content = app_js.read_text(encoding="utf-8")
 
     assert 'id="solverAutoApply" type="checkbox" checked' in html_content
-    assert "Auto übernehmen" in html_content
+    assert 'data-i18n="solver.autoApply"' in html_content
     assert 'id="solverApplyStatus"' in html_content
     assert 'id="applySolverToCalculatorInline"' in html_content
     assert html_content.index('id="solveBtn"') < html_content.index('id="solverAutoApply"')
     assert html_content.index('id="solverAutoApply"') < html_content.index('id="copySolverResults"')
     assert "SOLVER_AUTO_APPLY_KEY" in js_content
     assert "applySolverResultToCalculator" in js_content
-    assert 'setSolverApplyStatus("Im Rechner übernommen")' in js_content
+    assert 'setSolverApplyStatus(t("status.appliedCalculator"))' in js_content
 
 
 def test_solver_override_panel_is_optional_and_auto_opens_when_active():

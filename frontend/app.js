@@ -38,6 +38,7 @@ const calculatorScaleValue = document.querySelector("#calculatorScaleValue");
 const configLitersInput = document.querySelector("#configLiters");
 const configLitersStatus = document.querySelector("#configLitersStatus");
 const themeSelect = document.querySelector("#themeSelect");
+const languageSelect = document.querySelector("#languageSelect");
 
 const waterSummaryTable = document.querySelector("#waterSummaryTable");
 const oxideSummaryTable = document.querySelector("#oxideSummaryTable");
@@ -149,22 +150,22 @@ const shellViewConfigs = {
   fertilizers: {
     mode: "calculator",
     anchor: "fertilizers",
-    label: "RECHNER",
+    labelKey: "workflow.calculatorUpper",
   },
   water: {
     mode: "water",
     anchor: "water",
-    label: "WASSERWERTE",
+    labelKey: "workflow.waterUpper",
   },
   solver: {
     mode: "solver",
     anchor: "solver",
-    label: "SOLVER",
+    labelKey: "workflow.solverUpper",
   },
   editor: {
     mode: "fertilizers",
     anchor: "editor",
-    label: "DÜNGER-EDITOR",
+    labelKey: "workflow.editorUpper",
   },
 };
 
@@ -208,28 +209,28 @@ let solverAllowedHideInactive = false;
 const solverFixedGrams = {};
 
 const waterFieldDefinitions = [
-  { key: "NH4", label: "Ammonium in NH4" },
-  { key: "NO3", label: "Nitrat in NO3" },
-  { key: "PO4", label: "Phosphat in PO4" },
-  { key: "P", label: "Phosphor in P" },
-  { key: "K", label: "Kalium in K" },
-  { key: "Ca", label: "Calcium in Ca" },
-  { key: "Mg", label: "Magnesium in Mg" },
-  { key: "Na", label: "Natrium in Na" },
-  { key: "SO4", label: "Sulfat in SO4" },
-  { key: "S", label: "Schwefel in S" },
-  { key: "Fe", label: "Eisen in Fe" },
-  { key: "Mn", label: "Mangan in Mn" },
-  { key: "Cu", label: "Kupfer in Cu" },
-  { key: "Zn", label: "Zink in Zn" },
-  { key: "B", label: "Bor in B" },
-  { key: "Mo", label: "Molybdän in Mo" },
-  { key: "Cl", label: "Chlor in Cl" },
-  { key: "HCO3", label: "Carbonate in HCO3" },
-  { key: "CO3", label: "Carbonat in CO3" },
-  { key: "CaCO3", label: "Gesamtcarbonathärte in CaCO3" },
-  { key: "KH", label: "Carbonathärte in °KH" },
-  { key: "SiO2", label: "Silicium in SiO2" },
+  { key: "NH4", labelKey: "waterField.NH4", label: "Ammonium in NH4" },
+  { key: "NO3", labelKey: "waterField.NO3", label: "Nitrat in NO3" },
+  { key: "PO4", labelKey: "waterField.PO4", label: "Phosphat in PO4" },
+  { key: "P", labelKey: "waterField.P", label: "Phosphor in P" },
+  { key: "K", labelKey: "waterField.K", label: "Kalium in K" },
+  { key: "Ca", labelKey: "waterField.Ca", label: "Calcium in Ca" },
+  { key: "Mg", labelKey: "waterField.Mg", label: "Magnesium in Mg" },
+  { key: "Na", labelKey: "waterField.Na", label: "Natrium in Na" },
+  { key: "SO4", labelKey: "waterField.SO4", label: "Sulfat in SO4" },
+  { key: "S", labelKey: "waterField.S", label: "Schwefel in S" },
+  { key: "Fe", labelKey: "waterField.Fe", label: "Eisen in Fe" },
+  { key: "Mn", labelKey: "waterField.Mn", label: "Mangan in Mn" },
+  { key: "Cu", labelKey: "waterField.Cu", label: "Kupfer in Cu" },
+  { key: "Zn", labelKey: "waterField.Zn", label: "Zink in Zn" },
+  { key: "B", labelKey: "waterField.B", label: "Bor in B" },
+  { key: "Mo", labelKey: "waterField.Mo", label: "Molybdän in Mo" },
+  { key: "Cl", labelKey: "waterField.Cl", label: "Chlor in Cl" },
+  { key: "HCO3", labelKey: "waterField.HCO3", label: "Carbonate in HCO3" },
+  { key: "CO3", labelKey: "waterField.CO3", label: "Carbonat in CO3" },
+  { key: "CaCO3", labelKey: "waterField.CaCO3", label: "Gesamtcarbonathärte in CaCO3" },
+  { key: "KH", labelKey: "waterField.KH", label: "Carbonathärte in °KH" },
+  { key: "SiO2", labelKey: "waterField.SiO2", label: "Silicium in SiO2" },
 ];
 
 const waterValues = Object.fromEntries(waterFieldDefinitions.map((field) => [field.key, 0]));
@@ -259,6 +260,19 @@ const SUMMARY_VIEW_KEY = "horticalc.summary_view";
 const SOLVER_AUTO_APPLY_KEY = "horticalc.solver_auto_apply";
 const NITROGEN_OBJECTIVE_TOTAL_ONLY = "n_total_only";
 const NITROGEN_OBJECTIVE_FORMS_ONLY = "n_forms_only";
+const i18n = window.HorticalcI18n || {
+  t: (key, params = {}) => {
+    let text = String(key);
+    Object.entries(params).forEach(([paramKey, value]) => {
+      text = text.replaceAll(`{${paramKey}}`, String(value));
+    });
+    return text;
+  },
+  setLocale: () => {},
+  getLocale: () => "de",
+  applyDomTranslations: () => {},
+};
+const t = (key, params) => i18n.t(key, params);
 const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
 const nutrientTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "Si"]);
 const oxideIntegerKeys = new Set([
@@ -388,6 +402,17 @@ function initializeThemeControl() {
   });
 }
 
+function initializeLanguageControl() {
+  i18n.setLocale(i18n.getLocale(), { persist: false });
+  if (!languageSelect) {
+    return;
+  }
+  languageSelect.value = i18n.getLocale();
+  languageSelect.addEventListener("change", (event) => {
+    i18n.setLocale(event.target.value);
+  });
+}
+
 function parseDecimalInput(raw) {
   const s = String(raw ?? "").trim();
   if (!s) {
@@ -461,7 +486,7 @@ function updateLitersDisplay() {
     configLitersInput.value = formatLiters(currentLiters);
   }
   if (configLitersStatus) {
-    configLitersStatus.setAttribute("aria-label", `NL: ${formatLiters(currentLiters)} L`);
+    configLitersStatus.setAttribute("aria-label", `${t("config.solutionLiters")} ${formatLiters(currentLiters)} L`);
   }
 }
 
@@ -559,7 +584,7 @@ function createSelect(options, onChange) {
   const select = document.createElement("select");
   const emptyOption = document.createElement("option");
   emptyOption.value = "";
-  emptyOption.textContent = "-- auswählen --";
+  emptyOption.textContent = t("common.selectEmpty");
   select.appendChild(emptyOption);
 
   options.forEach((opt) => {
@@ -590,7 +615,10 @@ function createTable({ id, className, colgroupClasses, headerCells }) {
   const headerRow = document.createElement("tr");
   headerCells.forEach((cell) => {
     const th = document.createElement("th");
-    th.textContent = cell.label;
+    if (cell.labelKey) {
+      th.dataset.i18n = cell.labelKey;
+    }
+    th.textContent = cell.labelKey ? t(cell.labelKey) : cell.label;
     if (cell.colSpan) {
       th.colSpan = cell.colSpan;
     }
@@ -612,9 +640,9 @@ function initializeFertilizerTables() {
     colgroupClasses: ["col-index", "col-name", "col-form", "col-weight"],
     headerCells: [
       { label: "#" },
-      { label: "Dünger (Dropdown)" },
-      { label: "Form" },
-      { label: "Gewicht" },
+      { labelKey: "calculator.fertilizerDropdown", label: "Dünger (Dropdown)" },
+      { labelKey: "common.form", label: "Form" },
+      { labelKey: "common.weight", label: "Gewicht" },
     ],
   });
   fertilizerSelectTableWrap.appendChild(selectTable.table);
@@ -626,8 +654,8 @@ function initializeFertilizerTables() {
     colgroupClasses: ["col-index", "col-name", "col-form", "col-amount"],
     headerCells: [
       { label: "#" },
-      { label: "Düngername", colSpan: 2 },
-      { label: "Menge (g)" },
+      { labelKey: "editor.fertilizerName", label: "Düngername", colSpan: 2 },
+      { labelKey: "calculator.amountGrams", label: "Menge (g)" },
     ],
   });
   calculatorTableWrap.appendChild(calculator.table);
@@ -663,6 +691,19 @@ function setApiStatus(message, state = "ready") {
   }
   apiStatus.textContent = message;
   apiStatus.dataset.state = state;
+}
+
+function refreshApiStatusLabel() {
+  if (!apiStatus) {
+    return;
+  }
+  if (apiStatus.dataset.state === "loading") {
+    setApiStatus(t("status.loadingData"), "loading");
+  } else if (apiStatus.dataset.state === "error") {
+    setApiStatus(t("status.checking"), "error");
+  } else {
+    setApiStatus(t("status.apiReady"), "ready");
+  }
 }
 
 function syncModeRadio(mode) {
@@ -735,11 +776,13 @@ function updateLiveResultBar(data = lastCalculation) {
     return;
   }
   if (!data) {
-    liveLastCalc.textContent = "Noch keine Berechnung";
+    liveLastCalc.textContent = t("status.noCalculation");
     return;
   }
 
-  liveLastCalc.textContent = `Aktualisiert ${new Date().toLocaleTimeString("de-DE")}`;
+  liveLastCalc.textContent = t("status.updatedAt", {
+    time: new Date().toLocaleTimeString(i18n.getLocale()),
+  });
 }
 
 function updateModeToggleUI() {
@@ -754,20 +797,22 @@ function updateModeToggleUI() {
 
 const profileConfigs = {
   calculator: {
-    title: "Rezeptverwaltung",
-    hint: "Rezepte lokal speichern oder laden. Solver-Zielprofile bleiben im Solver.",
+    titleKey: "profile.recipeTitle",
+    hintKey: "profile.recipeHint",
   },
   solver: {
-    title: "Zielprofil",
-    hint: "Zielprofile lokal speichern oder laden.",
+    titleKey: "profile.targetTitle",
+    hintKey: "profile.targetHint",
   },
 };
 
 function setProfileMode(mode) {
   currentProfileMode = mode === "solver" ? "solver" : "calculator";
   const config = profileConfigs[currentProfileMode];
-  profileSectionTitle.textContent = config.title;
-  profileSectionHint.textContent = config.hint;
+  profileSectionTitle.dataset.i18n = config.titleKey;
+  profileSectionHint.dataset.i18n = config.hintKey;
+  profileSectionTitle.textContent = t(config.titleKey);
+  profileSectionHint.textContent = t(config.hintKey);
   solverProfileActions.classList.toggle("is-hidden", currentProfileMode !== "solver");
   renderProfileOptions();
 }
@@ -776,7 +821,7 @@ function renderProfileOptions() {
   profileSelect.innerHTML = "";
   const empty = document.createElement("option");
   empty.value = "";
-  empty.textContent = "-- auswählen --";
+  empty.textContent = t("common.selectEmpty");
   profileSelect.appendChild(empty);
 
   const profiles = currentProfileMode === "solver" ? nutrientSolutions : recipeProfiles;
@@ -794,7 +839,7 @@ function renderSolverTargetsTable() {
     const row = document.createElement("tr");
 
     const labelCell = document.createElement("td");
-    labelCell.textContent = field.label;
+    labelCell.textContent = field.labelKey ? t(field.labelKey) : field.label;
 
     const valueCell = document.createElement("td");
     const input = document.createElement("input");
@@ -1004,10 +1049,10 @@ function renderFertilizerEditor() {
       return row.name.toLowerCase().includes(filterValue);
     });
   const indexDigitCount = String(Math.max(1, filteredRows.length)).length;
-  const formWidthCh = contentWidthCh(filteredRows.map(({ row }) => row.form), "Form", 4);
+  const formWidthCh = contentWidthCh(filteredRows.map(({ row }) => row.form), t("common.form"), 4);
   const weightWidthCh = contentWidthCh(
     filteredRows.map(({ row }) => row.weight_factor),
-    "Gewicht",
+    t("common.weight"),
     7
   );
   const colgroupClasses = [
@@ -1019,9 +1064,9 @@ function renderFertilizerEditor() {
   ];
   const headerCells = [
     { label: "#" },
-    { label: "Düngername" },
-    { label: "Form" },
-    { label: "Gewicht" },
+    { labelKey: "editor.fertilizerName", label: "Düngername" },
+    { labelKey: "common.form", label: "Form" },
+    { labelKey: "common.weight", label: "Gewicht" },
     ...fertilizerEditorCompKeys.map((key) => ({ label: key })),
   ];
   const table = createTable({
@@ -1151,7 +1196,7 @@ async function putFertilizers(payload) {
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(data.detail || "Speichern fehlgeschlagen");
+    throw new Error(data.detail || t("errors.saveFailed"));
   }
 }
 
@@ -1162,12 +1207,12 @@ async function saveFertilizerEditor() {
     const row = fertilizerEditorRows[index];
     const name = row.name.trim();
     if (!name) {
-      reportError(null, "Bitte einen Düngernamen angeben.");
+      reportError(null, t("editor.nameRequired"));
       focusEditorInput(index, "name");
       return;
     }
     if (seen.has(name)) {
-      reportError(null, "Düngernamen müssen eindeutig sein.");
+      reportError(null, t("editor.uniqueNames"));
       focusEditorInput(index, "name");
       return;
     }
@@ -1196,7 +1241,7 @@ async function saveFertilizerEditor() {
       setMode("fertilizers");
     }
   } catch (error) {
-    reportError(error, "Speichern fehlgeschlagen");
+    reportError(error, t("errors.saveFailed"));
   }
 }
 
@@ -1209,7 +1254,7 @@ async function reloadFertilizerEditor() {
     renderSolverAllowedOptions();
     renderSolverFixedTable();
   } catch (error) {
-    reportError(error, "Fehler beim Laden der Dünger-Liste");
+    reportError(error, t("errors.loadFertilizers"));
   }
 }
 
@@ -1237,8 +1282,8 @@ function updateSolverAllowedCount() {
   }
   const visibleCount = getVisibleSolverAllowedOptions().length;
   const selectedCount = solverAllowedFertilizers.length;
-  const suffix = solverAllowedFilter.trim() ? `, ${visibleCount} sichtbar` : "";
-  solverAllowedCount.textContent = `${selectedCount} ausgewählt${suffix}`;
+  const suffix = solverAllowedFilter.trim() ? t("status.visibleSuffix", { count: visibleCount }) : "";
+  solverAllowedCount.textContent = t("status.selectedCount", { count: selectedCount, suffix });
 }
 
 function solverAllowedMatchesFilter(fert) {
@@ -1288,7 +1333,7 @@ function renderSolverAllowedOptions() {
   const checkHead = document.createElement("th");
   checkHead.textContent = "";
   const nameHead = document.createElement("th");
-  nameHead.textContent = "Dünger";
+  nameHead.textContent = t("common.fertilizer");
   headRow.append(checkHead, nameHead);
   thead.appendChild(headRow);
 
@@ -1299,7 +1344,7 @@ function renderSolverAllowedOptions() {
     const emptyRow = document.createElement("tr");
     const emptyCell = document.createElement("td");
     emptyCell.colSpan = 2;
-    emptyCell.textContent = "Keine Dünger gefunden";
+    emptyCell.textContent = t("solver.noFertilizersFound");
     emptyRow.appendChild(emptyCell);
     tbody.appendChild(emptyRow);
     solverAllowedFertilizersSelect.appendChild(table);
@@ -1367,7 +1412,7 @@ function activeSolverOverrideCount() {
 function syncSolverOverridePanel({ forceOpen = false } = {}) {
   const activeCount = activeSolverOverrideCount();
   if (solverOverrideSummary) {
-    solverOverrideSummary.textContent = activeCount ? `${activeCount} aktiv` : "0 aktiv";
+    solverOverrideSummary.textContent = t("status.activeCount", { count: activeCount });
   }
   if (solverOverridesDetails && (forceOpen || activeCount > 0)) {
     solverOverridesDetails.open = true;
@@ -1438,7 +1483,7 @@ function renderSolverResults(data) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
     cell.colSpan = 2;
-    cell.textContent = "Keine Dünger berechnet";
+    cell.textContent = t("solver.noFertilizersCalculated");
     row.appendChild(cell);
     solverFertilizersTable.appendChild(row);
   } else {
@@ -1569,7 +1614,7 @@ function persistSolverAutoApplyPreference() {
 
 function applySolverResultToCalculator({ switchToCalculator = false } = {}) {
   if (!lastSolveResult) {
-    reportError(null, "Bitte zuerst ein Zielprofil berechnen.");
+    reportError(null, t("solver.noResult"));
     return false;
   }
   const fertilizers = (lastSolveResult.fertilizers || []).map((fert) => ({
@@ -1582,7 +1627,7 @@ function applySolverResultToCalculator({ switchToCalculator = false } = {}) {
   };
   applyRecipe(recipe);
   scheduleRecalculate();
-  setSolverApplyStatus("Im Rechner übernommen");
+  setSolverApplyStatus(t("status.appliedCalculator"));
 
   if (switchToCalculator) {
     const calculatorInput = Array.from(modeToggleInputs).find((input) => input.value === "calculator");
@@ -1626,17 +1671,17 @@ function buildClipboardRows(headers, rows, numericColumns = []) {
 
 function buildSolverClipboardText() {
   const fertilizers = Array.isArray(lastSolveResult?.fertilizers) ? lastSolveResult.fertilizers : [];
-  const lines = ["Solver Ergebnis"];
+  const lines = [t("solver.clipboardTitle")];
   lines.push(
     ...buildClipboardRows(null, [
-      ["Ansatz (L)", formatNumber(currentLiters)],
-      ["Osmose (%)", formatNumber(Number(osmosisPercentInput.value) || 0)],
+      [t("solver.clipboardBatchLiters"), formatNumber(currentLiters)],
+      [t("solver.clipboardOsmosis"), formatNumber(Number(osmosisPercentInput.value) || 0)],
     ], [1])
   );
   lines.push("");
   lines.push(
     ...buildClipboardRows(
-      ["Dünger", "Gramm"],
+      [t("common.fertilizer"), t("common.grams")],
       fertilizers.map((fert) => [
         fert.name || "",
         formatNumber(Number(fert.grams), nutrientFormatter),
@@ -1658,12 +1703,12 @@ function buildSolverClipboardText() {
     const ionValues = data?.elements_mg_per_l || {};
 
     lines.push("");
-    lines.push("NPK GESAMT %");
+    lines.push(t("solver.clipboardNpk"));
     lines.push(
       ...buildClipboardRows(null, [
-        ["NPK Gesamt (%)", npkMetrics.npk_all_pct || "-"],
+        [t("live.npkTotal"), npkMetrics.npk_all_pct || "-"],
         ["NPK P-Norm", npkMetrics.npk_p_norm || "-"],
-        ["NPK Verhältnis (%)", npkMetrics.npk_npk_pct || "-"],
+        [t("live.npkRatio"), npkMetrics.npk_npk_pct || "-"],
       ], [1])
     );
 
@@ -1677,7 +1722,7 @@ function buildSolverClipboardText() {
     );
 
     lines.push("");
-    lines.push("Solver Zielwerte (mg/L)");
+    lines.push(t("solver.clipboardTargets"));
     const targets = lastSolveResult?.targets_mg_per_l || {};
     const achieved = lastSolveResult?.achieved_elements_mg_per_l || {};
     const errors = lastSolveResult?.errors_mg_per_l || {};
@@ -1695,11 +1740,11 @@ function buildSolverClipboardText() {
       ];
     });
     lines.push(
-      ...buildClipboardRows(["Element", "Ziel", "Erreicht", "Delta"], solverRows, [1, 2, 3])
+      ...buildClipboardRows([t("common.element"), t("common.target"), t("common.achieved"), t("common.delta")], solverRows, [1, 2, 3])
     );
 
     lines.push("");
-    lines.push("Ionen (mg/L)");
+    lines.push(t("solver.clipboardIons"));
     const ionRows = summaryColumnOrder.map((column) => {
       const key = column.element;
       const value = Number(ionValues[key]);
@@ -1730,7 +1775,7 @@ function copyTextWithFallback(text) {
       const successful = document.execCommand("copy");
       document.body.removeChild(textArea);
       if (!successful) {
-        reject(new Error("Kopieren fehlgeschlagen"));
+        reject(new Error(t("errors.copyFailed")));
         return;
       }
       resolve();
@@ -1743,17 +1788,17 @@ function copyTextWithFallback(text) {
 
 async function copySolverResultsToClipboard() {
   if (!lastSolveResult || !Array.isArray(lastSolveResult.fertilizers) || !lastSolveResult.fertilizers.length) {
-    reportError(null, "Bitte zuerst ein Zielprofil berechnen.");
+    reportError(null, t("solver.noResult"));
     return;
   }
 
   try {
     const text = await buildSolverClipboardText();
     await copyTextWithFallback(text);
-    setCopySolverStatus("Kopiert");
+    setCopySolverStatus(t("status.copied"));
   } catch (error) {
-    reportError(error, "Kopieren fehlgeschlagen");
-    setCopySolverStatus("Fehler beim Kopieren");
+    reportError(error, t("errors.copyFailed"));
+    setCopySolverStatus(t("status.copyFailed"));
   }
 }
 
@@ -1832,7 +1877,7 @@ function renderWaterTable() {
     const row = document.createElement("tr");
 
     const labelCell = document.createElement("td");
-    labelCell.textContent = field.label;
+    labelCell.textContent = field.labelKey ? t(field.labelKey) : field.label;
 
     const valueCell = document.createElement("td");
     const input = document.createElement("input");
@@ -1921,9 +1966,9 @@ function formatNumber(value, formatter = numberFormatter) {
   return "-";
 }
 
-function reportError(error, fallbackMessage = "Unbekannter Fehler") {
+function reportError(error, fallbackMessage = t("errors.unknown")) {
   const message = error?.message || fallbackMessage;
-  setApiStatus("Prüfen", "error");
+  setApiStatus(t("status.checking"), "error");
   alert(message);
 }
 
@@ -1976,7 +2021,7 @@ function scheduleRecalculate() {
       const data = await calculate();
       renderCalculation(data);
     } catch (error) {
-      reportError(error, "Berechnung fehlgeschlagen");
+      reportError(error, t("errors.calculateFailed"));
     }
   }, 250);
 }
@@ -2017,8 +2062,8 @@ function renderIonCompactList(container, entries) {
   table.appendChild(colgroup);
 
   const tbody = document.createElement("tbody");
-  tbody.appendChild(buildIonRow("CATIONS", cations, maxCols));
-  tbody.appendChild(buildIonRow("ANIONS", anions, maxCols));
+  tbody.appendChild(buildIonRow(t("chem.cations"), cations, maxCols));
+  tbody.appendChild(buildIonRow(t("chem.anions"), anions, maxCols));
   table.appendChild(tbody);
   container.appendChild(table);
 }
@@ -2049,8 +2094,8 @@ function buildIonRow(label, items, maxCols) {
 function renderIonBalanceCompact(container, entries) {
   container.innerHTML = "";
   const labelMap = {
-    cations_meq_per_l: "E+",
-    anions_meq_per_l: "E-",
+    cations_meq_per_l: "Σ+",
+    anions_meq_per_l: "Σ-",
     raw_cbe_percent_signed: "CBE-raw",
     din_38402_62_percent_signed: "DIN-raw",
   };
@@ -2075,31 +2120,44 @@ function renderIonBalanceCompact(container, entries) {
     }
   }
 
-  const grid = document.createElement("div");
-  grid.classList.add("compact-balance-grid");
+  const table = document.createElement("table");
+  table.classList.add("compact-ion-table", "compact-balance-table");
+  table.style.setProperty("--ion-cols", "2");
 
+  const colgroup = document.createElement("colgroup");
+  const labelCol = document.createElement("col");
+  labelCol.classList.add("compact-ion-label-col");
+  colgroup.appendChild(labelCol);
+  for (let i = 0; i < 2; i += 1) {
+    const col = document.createElement("col");
+    col.classList.add("compact-ion-value-col");
+    colgroup.appendChild(col);
+  }
+  table.appendChild(colgroup);
+
+  const tbody = document.createElement("tbody");
   rows.forEach((rowKeys) => {
-    rowKeys.forEach((key) => {
-      const cell = document.createElement("div");
-      cell.classList.add("compact-item", "compact-balance-tile");
-      if (values.has(key)) {
-        const value = Number(values.get(key));
-        if (Number.isFinite(value)) {
-          const label = document.createElement("span");
-          label.classList.add("compact-balance-label");
-          label.textContent = `${labelMap[key]}:`;
-          const number = document.createElement("span");
-          number.classList.add("compact-balance-value");
-          number.textContent = `${ionFormatter.format(value)} ${unitMap[key]}`;
-          cell.appendChild(label);
-          cell.appendChild(number);
-        }
-      }
-      grid.appendChild(cell);
-    });
-  });
+    const row = document.createElement("tr");
+    const unit = unitMap[rowKeys[0]];
+    const labelCell = document.createElement("th");
+    labelCell.classList.add("compact-label");
+    labelCell.textContent = unit.toUpperCase();
+    row.appendChild(labelCell);
 
-  container.appendChild(grid);
+    rowKeys.forEach((key) => {
+      const cell = document.createElement("td");
+      cell.classList.add("compact-ion-cell");
+      const value = Number(values.get(key));
+      cell.textContent = Number.isFinite(value)
+        ? `${labelMap[key]} ${ionFormatter.format(value)} ${unitMap[key]}`
+        : "";
+      row.appendChild(cell);
+    });
+    tbody.appendChild(row);
+  });
+  table.appendChild(tbody);
+
+  container.appendChild(table);
 }
 
 function buildSummaryColumns(extraColumns = []) {
@@ -2172,7 +2230,7 @@ function renderSummaryTable({
         toggleButton.type = "button";
         toggleButton.classList.add("column-expander");
         toggleButton.dataset.ionNToggle = "true";
-        toggleButton.setAttribute("aria-label", "N-Details umschalten");
+        toggleButton.setAttribute("aria-label", t("aria.toggleNDetails"));
         toggleButton.setAttribute("aria-expanded", ionNitrogenExpanded ? "true" : "false");
         toggleButton.textContent = ionNitrogenExpanded ? "‹" : "›";
         th.appendChild(toggleButton);
@@ -2228,7 +2286,7 @@ function renderWaterSummaryTable(table, waterElements) {
     table,
     headerLabels: (column) => column.ionHeaderLabel,
     valueKey: (column) => column.element,
-    rowLabel: "Wasserwerte",
+    rowLabel: t("water.rowWaterValues"),
     valueMap: waterMap,
     formatter: (column, value) =>
       waterUnit === "mol_l" ? formatTraceValue(value) : formatNutrientValue(column.element, value),
@@ -2238,13 +2296,13 @@ function renderWaterSummaryTable(table, waterElements) {
 function renderOxideSummaryTable(table, oxides) {
   const oxideMap = new Map(Object.entries(oxides || {}));
   if (oxideSummaryBadge) {
-    oxideSummaryBadge.textContent = "mg/L (Oxid)";
+    oxideSummaryBadge.textContent = t("unit.mgLoxide");
   }
   renderSummaryTable({
     table,
     headerLabels: (column) => column.oxideHeaderLabel,
     valueKey: (column) => column.oxide,
-    rowLabel: "Oxidformen",
+    rowLabel: t("calculator.oxideForms"),
     valueMap: oxideMap,
     formatter: (column, value) => formatOxideValue(column.oxide, value),
   });
@@ -2264,7 +2322,7 @@ function renderIonSummaryTable(table, elements) {
     table,
     headerLabels: (column) => column.ionHeaderLabel,
     valueKey: (column) => column.element,
-    rowLabel: "Gelöste Ionen",
+    rowLabel: t("water.rowDissolvedIons"),
     rowLabelClass: "row-label--ion",
     valueMap: elementMap,
     formatter: (column, value) => formatNutrientValue(column.element, value),
@@ -2337,7 +2395,7 @@ function formatTraceValue(value) {
     maxDecimals = 3;
   }
 
-  const formatter = new Intl.NumberFormat("de-DE", {
+  const formatter = new Intl.NumberFormat(i18n.getLocale(), {
     minimumFractionDigits: 0,
     maximumFractionDigits: maxDecimals,
   });
@@ -2461,13 +2519,13 @@ async function fetchJson(url, errorMessage) {
 }
 
 function fetchFertilizers() {
-  return fetchJson(`${apiBase()}/fertilizers`, "Fehler beim Laden der Dünger-Liste");
+  return fetchJson(`${apiBase()}/fertilizers`, t("errors.loadFertilizers"));
 }
 
 async function fetchFertilizerCompKeys() {
   const data = await fetchJson(
     `${apiBase()}/schema/fertilizer-comp-keys`,
-    "Fehler beim Laden der Dünger-Schema"
+    t("errors.loadFertilizerSchema")
   );
   if (Array.isArray(data)) {
     return data;
@@ -2479,24 +2537,24 @@ async function fetchFertilizerCompKeys() {
 }
 
 function fetchMolarMasses() {
-  return fetchJson(`${apiBase()}/molar-masses`, "Fehler beim Laden der Molmassen");
+  return fetchJson(`${apiBase()}/molar-masses`, t("errors.loadMolarMasses"));
 }
 
 function fetchWaterProfiles() {
-  return fetchJson(`${apiBase()}/water-profiles`, "Fehler beim Laden der Wasserprofile");
+  return fetchJson(`${apiBase()}/water-profiles`, t("errors.loadWaterProfiles"));
 }
 
 function fetchWaterProfileData(filename) {
   return fetchJson(
     `${apiBase()}/water-profiles/${encodeURIComponent(filename)}`,
-    "Fehler beim Laden des Wasserprofils"
+    t("errors.loadWaterProfile")
   );
 }
 
 async function saveWaterProfile() {
   const name = waterProfileNameInput.value.trim();
   if (!name) {
-    reportError(null, "Bitte einen Profilnamen angeben.");
+    reportError(null, t("errors.profileNameRequired"));
     return;
   }
   const waterPayload = buildWaterPayloadForApi(waterValues);
@@ -2513,28 +2571,28 @@ async function saveWaterProfile() {
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(data.detail || "Speichern fehlgeschlagen");
+    throw new Error(data.detail || t("errors.saveFailed"));
   }
 }
 
 function fetchDefaultRecipe() {
-  return fetchJson(`${apiBase()}/recipes/default`, "Fehler beim Laden des Default-Rezepts");
+  return fetchJson(`${apiBase()}/recipes/default`, t("errors.loadDefaultRecipe"));
 }
 
 function fetchRecipes() {
-  return fetchJson(`${apiBase()}/recipes`, "Fehler beim Laden der Recipes");
+  return fetchJson(`${apiBase()}/recipes`, t("errors.loadRecipes"));
 }
 
 async function fetchSolverConfigDefinitions() {
   const data = await fetchJson(
     `${apiBase()}/schema/solver-config`,
-    "Fehler beim Laden der Solver-Konfiguration"
+    t("errors.loadSolverConfig")
   );
   return normalizeSolverConfigDefinitions(data?.definitions || []);
 }
 
 function fetchRecipeData(filename) {
-  return fetchJson(`${apiBase()}/recipes/${encodeURIComponent(filename)}`, "Fehler beim Laden des Recipes");
+  return fetchJson(`${apiBase()}/recipes/${encodeURIComponent(filename)}`, t("errors.loadRecipe"));
 }
 
 async function saveRecipeData(payload) {
@@ -2545,18 +2603,18 @@ async function saveRecipeData(payload) {
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(data.detail || "Recipe speichern fehlgeschlagen");
+    throw new Error(data.detail || t("errors.saveRecipeFailed"));
   }
 }
 
 function fetchNutrientSolutions() {
-  return fetchJson(`${apiBase()}/nutrient-solutions`, "Fehler beim Laden der Nutrient Solutions");
+  return fetchJson(`${apiBase()}/nutrient-solutions`, t("errors.loadNutrientSolutions"));
 }
 
 function fetchNutrientSolutionData(filename) {
   return fetchJson(
     `${apiBase()}/nutrient-solutions/${encodeURIComponent(filename)}`,
-    "Fehler beim Laden der Nutrient Solution"
+    t("errors.loadNutrientSolution")
   );
 }
 
@@ -2568,7 +2626,7 @@ async function saveNutrientSolutionData(payload) {
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(data.detail || "Nutrient Solution speichern fehlgeschlagen");
+    throw new Error(data.detail || t("errors.saveNutrientSolutionFailed"));
   }
 }
 
@@ -2582,7 +2640,7 @@ async function calculate(payloadOverride = null) {
 
   if (!response.ok) {
     const data = await response.json();
-    throw new Error(data.detail || "Berechnung fehlgeschlagen");
+    throw new Error(data.detail || t("errors.calculateFailed"));
   }
 
   return response.json();
@@ -2598,7 +2656,7 @@ async function solveRecipe() {
 
   if (!response.ok) {
     const data = await response.json();
-    throw new Error(data.detail || "Solver fehlgeschlagen");
+    throw new Error(data.detail || t("errors.solveFailed"));
   }
 
   return response.json();
@@ -2695,7 +2753,7 @@ function renderCalculation(data) {
   const waterEc = data.ec_water || {};
   renderEcPair(waterEc.ec_mS_per_cm || {}, ecWater18Value, ecWater25Value);
   updateLiveResultBar(data);
-  setApiStatus("API bereit", "ready");
+  setApiStatus(t("status.apiReady"), "ready");
 }
 
 function applyRecipe(recipe) {
@@ -2865,7 +2923,7 @@ function renderWaterProfileOptions() {
   waterProfileSelect.innerHTML = "";
   const empty = document.createElement("option");
   empty.value = "";
-  empty.textContent = "-- auswählen --";
+  empty.textContent = t("common.selectEmpty");
   waterProfileSelect.appendChild(empty);
 
   waterProfiles.forEach((profile) => {
@@ -2874,6 +2932,30 @@ function renderWaterProfileOptions() {
     option.textContent = profile.name || profile.filename;
     waterProfileSelect.appendChild(option);
   });
+}
+
+function refreshLocalizedUi() {
+  i18n.applyDomTranslations();
+  updateLitersDisplay();
+  refreshApiStatusLabel();
+  updateLiveResultBar();
+  setProfileMode(currentProfileMode);
+  renderWaterProfileOptions();
+  renderSelectionTable();
+  renderCalculatorTable();
+  renderWaterTable();
+  renderFertilizerEditor();
+  renderSolverAllowedOptions();
+  renderSolverFixedTable();
+  renderSolverTargetsTable();
+  renderSolverResults(lastSolveResult);
+  if (lastCalculation) {
+    renderCalculation(lastCalculation);
+  } else {
+    renderWaterSummaryTable(waterSummaryTable, {});
+    renderOxideSummaryTable(oxideSummaryTable, {});
+    renderIonSummaryTable(ionSummaryTable, {});
+  }
 }
 
 function buildRecipePayload(name, fertilizers, liters, ureaAsNh4, phosphateSpecies) {
@@ -2941,11 +3023,11 @@ function restoreSolverAllowedFromStorage(context = solverAllowedContext) {
 
 async function init() {
   let hasStoredAllowed = false;
-  setApiStatus("Lade Daten", "loading");
+  setApiStatus(t("status.loadingData"), "loading");
   try {
     solverConfigDefinitions = await fetchSolverConfigDefinitions();
   } catch (error) {
-    reportError(error, "Fehler beim Laden der Solver-Defaults");
+    reportError(error, t("errors.loadSolverDefaults"));
     solverConfigDefinitions = [...FALLBACK_SOLVER_CONFIG_DEFINITIONS];
   }
   applySolverConfig();
@@ -2953,13 +3035,13 @@ async function init() {
   try {
     fertilizerEditorPreferredKeys = await fetchFertilizerCompKeys();
   } catch (error) {
-    reportError(error, "Fehler beim Laden der Dünger-Schema");
+    reportError(error, t("errors.loadFertilizerSchema"));
     fertilizerEditorPreferredKeys = [];
   }
   try {
     fertilizerOptions = await fetchFertilizers();
   } catch (error) {
-    reportError(error, "Fehler beim Laden der Dünger-Liste");
+    reportError(error, t("errors.loadFertilizers"));
     fertilizerOptions = [];
   }
   setFertilizerEditorData(fertilizerOptions);
@@ -2973,14 +3055,14 @@ async function init() {
   try {
     molarMasses = await fetchMolarMasses();
   } catch (error) {
-    reportError(error, "Fehler beim Laden der Molmassen");
+    reportError(error, t("errors.loadMolarMasses"));
     molarMasses = {};
   }
 
   try {
     waterProfiles = await fetchWaterProfiles();
   } catch (error) {
-    reportError(error, "Fehler beim Laden der Wasserprofile");
+    reportError(error, t("errors.loadWaterProfiles"));
     waterProfiles = [];
   }
 
@@ -2989,14 +3071,14 @@ async function init() {
   try {
     recipeProfiles = await fetchRecipes();
   } catch (error) {
-    reportError(error, "Fehler beim Laden der Recipes");
+    reportError(error, t("errors.loadRecipes"));
     recipeProfiles = [];
   }
 
   try {
     nutrientSolutions = await fetchNutrientSolutions();
   } catch (error) {
-    reportError(error, "Fehler beim Laden der Nutrient Solutions");
+    reportError(error, t("errors.loadNutrientSolutions"));
     nutrientSolutions = [];
   }
 
@@ -3024,9 +3106,9 @@ async function init() {
       const data = await calculate();
       renderCalculation(data);
     } catch (error) {
-      reportError(error, "Berechnung fehlgeschlagen");
+      reportError(error, t("errors.calculateFailed"));
     }
-    setApiStatus("API bereit", "ready");
+    setApiStatus(t("status.apiReady"), "ready");
     return;
   }
 
@@ -3051,7 +3133,7 @@ async function init() {
     renderSolverAllowedOptions();
     renderSolverFixedTable();
   }
-  setApiStatus("API bereit", "ready");
+  setApiStatus(t("status.apiReady"), "ready");
 }
 
 addRowButton.addEventListener("click", addFertilizerRow);
@@ -3062,7 +3144,7 @@ calculateButton.addEventListener("click", async () => {
     renderCalculation(data);
     lsSet(LAST_SOLUTION_CALCULATED_KEY, buildSolutionSnapshot());
   } catch (error) {
-    reportError(error, "Berechnung fehlgeschlagen");
+    reportError(error, t("errors.calculateFailed"));
   }
 });
 
@@ -3190,7 +3272,7 @@ solveButton.addEventListener("click", async () => {
   if (!solverAllowedFertilizers.length) {
     reportError(
       null,
-      "Keine Solver-Dünger ausgewählt. Bitte erst über ›Aus Rechner übernehmen‹ oder den Suchpicker Dünger freigeben."
+      t("solver.noAllowed")
     );
     return;
   }
@@ -3201,7 +3283,7 @@ solveButton.addEventListener("click", async () => {
       applySolverResultToCalculator({ switchToCalculator: false });
     }
   } catch (error) {
-    reportError(error, "Solver fehlgeschlagen");
+    reportError(error, t("errors.solveFailed"));
   }
 });
 
@@ -3239,7 +3321,7 @@ const applyRecipeProfile = async (recipe, context = "") => {
 loadProfileButton.addEventListener("click", async () => {
   const selection = profileSelect.value;
   if (!selection) {
-    reportError(null, "Bitte ein Profil auswählen.");
+    reportError(null, t("errors.profileRequired"));
     return;
   }
   try {
@@ -3253,7 +3335,7 @@ loadProfileButton.addEventListener("click", async () => {
       await applyRecipeProfile(recipe, selection);
     }
   } catch (error) {
-    reportError(error, "Fehler beim Laden des Profils");
+    reportError(error, t("errors.loadProfile"));
   }
 });
 
@@ -3266,14 +3348,14 @@ resetProfileButton.addEventListener("click", async () => {
       await applyRecipeProfile(recipe, "default.yml");
     }
   } catch (error) {
-    reportError(error, "Reset fehlgeschlagen");
+    reportError(error, t("errors.resetFailed"));
   }
 });
 
 saveProfileButton.addEventListener("click", async () => {
   const name = profileNameInput.value.trim();
   if (!name) {
-    reportError(null, "Bitte einen Profilnamen angeben.");
+    reportError(null, t("errors.profileNameRequired"));
     return;
   }
   try {
@@ -3295,18 +3377,18 @@ saveProfileButton.addEventListener("click", async () => {
     }
     renderProfileOptions();
   } catch (error) {
-    reportError(error, "Speichern fehlgeschlagen");
+    reportError(error, t("errors.saveFailed"));
   }
 });
 
 saveSolverAsRecipeButton.addEventListener("click", async () => {
   const name = profileNameInput.value.trim();
   if (!name) {
-    reportError(null, "Bitte einen Profilnamen angeben.");
+    reportError(null, t("errors.profileNameRequired"));
     return;
   }
   if (!lastSolveResult) {
-    reportError(null, "Bitte zuerst ein Zielprofil berechnen.");
+    reportError(null, t("solver.noResult"));
     return;
   }
   try {
@@ -3315,7 +3397,7 @@ saveSolverAsRecipeButton.addEventListener("click", async () => {
     recipeProfiles = await fetchRecipes();
     renderProfileOptions();
   } catch (error) {
-    reportError(error, "Recipe speichern fehlgeschlagen");
+    reportError(error, t("errors.saveRecipeFailed"));
   }
 });
 
@@ -3332,14 +3414,14 @@ if (applySolverToCalculatorInlineButton) {
 loadWaterProfileButton.addEventListener("click", async () => {
   const selection = waterProfileSelect.value;
   if (!selection) {
-    reportError(null, "Bitte ein Wasserprofil auswählen.");
+    reportError(null, t("errors.waterProfileRequired"));
     return;
   }
   try {
     const profile = await fetchWaterProfileData(selection);
     applyWaterProfile(profile);
   } catch (error) {
-    reportError(error, "Fehler beim Laden des Wasserprofils");
+    reportError(error, t("errors.loadWaterProfile"));
   }
 });
 
@@ -3348,7 +3430,7 @@ resetWaterProfileButton.addEventListener("click", async () => {
     const profile = await fetchWaterProfileData("default");
     applyWaterProfile(profile);
   } catch (error) {
-    reportError(error, "Fehler beim Laden des Wasserprofils");
+    reportError(error, t("errors.loadWaterProfile"));
   }
 });
 
@@ -3358,7 +3440,7 @@ saveWaterProfileButton.addEventListener("click", async () => {
     waterProfiles = await fetchWaterProfiles();
     renderWaterProfileOptions();
   } catch (error) {
-    reportError(error, "Speichern fehlgeschlagen");
+    reportError(error, t("errors.saveFailed"));
   }
 });
 
@@ -3375,6 +3457,7 @@ waterUnitToggle.addEventListener("change", (event) => {
 summaryView = lsGet(SUMMARY_VIEW_KEY, "ion");
 ionNitrogenExpanded = lsGet(ION_NITROGEN_EXPANDED_KEY, false);
 initializeThemeControl();
+initializeLanguageControl();
 setSummaryView(summaryView);
 
 initializeFertilizerTables();
@@ -3385,4 +3468,5 @@ updateCalculatorScaleDisplay();
 renderSolverTargetsTable();
 showShellView("fertilizers", { scroll: false });
 updateSolverResultActions();
+window.addEventListener("horticalc:localechange", refreshLocalizedUi);
 init();

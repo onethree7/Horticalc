@@ -7,11 +7,11 @@ def test_sidebar_uses_primary_workflow_menu_with_collapsible_guide() -> None:
 
     workflow_block = content.split('data-testid="workflow-nav"', 1)[1].split("</section>", 1)[0]
 
-    assert "Hauptmenü" in workflow_block
+    assert 'data-i18n="workflow.menu"' in workflow_block
     assert 'class="workflow-step-index"' in workflow_block
     assert 'class="workflow-step-hint"' in workflow_block
     assert '<details class="rail-guide" data-testid="workflow-guide">' in workflow_block
-    assert "<summary>Ablauf kurz</summary>" in workflow_block
+    assert 'data-i18n="workflow.shortGuide"' in workflow_block
     assert '<section class="rail-card rail-guide"' not in content
 
 

@@ -37,6 +37,7 @@ const calculatorScaleUpButton = document.querySelector("#calculatorScaleUp");
 const calculatorScaleValue = document.querySelector("#calculatorScaleValue");
 const configLitersInput = document.querySelector("#configLiters");
 const configLitersStatus = document.querySelector("#configLitersStatus");
+const themeSelect = document.querySelector("#themeSelect");
 
 const waterSummaryTable = document.querySelector("#waterSummaryTable");
 const oxideSummaryTable = document.querySelector("#oxideSummaryTable");
@@ -105,6 +106,16 @@ const apiStatus = document.querySelector("#apiStatus");
 const liveLastCalc = document.querySelector("#liveLastCalc");
 
 const DEFAULT_LITERS = 10.0;
+const DEFAULT_THEME = "horticalc-dark";
+const THEME_STORAGE_KEY = "horticalc.theme";
+const THEME_OPTIONS = new Set([
+  DEFAULT_THEME,
+  "horticalc-light",
+  "high-contrast",
+  "solaris-console",
+  "vt-green",
+  "blue-matrix",
+]);
 
 let fertilizerOptions = [];
 const selectedFertilizers = [{ name: "", form: "", weight: "" }];
@@ -351,6 +362,30 @@ function lsSet(key, value) {
   } catch (error) {
     // ignore storage errors
   }
+}
+
+function normalizeTheme(theme) {
+  return THEME_OPTIONS.has(theme) ? theme : DEFAULT_THEME;
+}
+
+function applyTheme(theme) {
+  const nextTheme = normalizeTheme(theme);
+  document.body.dataset.theme = nextTheme;
+  if (themeSelect) {
+    themeSelect.value = nextTheme;
+  }
+  return nextTheme;
+}
+
+function initializeThemeControl() {
+  const activeTheme = applyTheme(lsGet(THEME_STORAGE_KEY, DEFAULT_THEME));
+  lsSet(THEME_STORAGE_KEY, activeTheme);
+  if (!themeSelect) {
+    return;
+  }
+  themeSelect.addEventListener("change", (event) => {
+    lsSet(THEME_STORAGE_KEY, applyTheme(event.target.value));
+  });
 }
 
 function parseDecimalInput(raw) {
@@ -3339,6 +3374,7 @@ waterUnitToggle.addEventListener("change", (event) => {
 
 summaryView = lsGet(SUMMARY_VIEW_KEY, "ion");
 ionNitrogenExpanded = lsGet(ION_NITROGEN_EXPANDED_KEY, false);
+initializeThemeControl();
 setSummaryView(summaryView);
 
 initializeFertilizerTables();

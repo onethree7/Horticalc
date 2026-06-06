@@ -64,6 +64,11 @@ def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
     assert 'data-testid="rail-config-controls"' in content
     assert 'id="configLiters"' in content
     assert 'id="configLitersStatus"' in content
+    assert 'id="themeSelect"' in content
+    assert "Horticalc Dark" in content
+    assert "Solaris Console" in content
+    rail_config_block = content.split('data-testid="rail-config-controls"', 1)[1].split("</section>", 1)[0]
+    assert "Darstellung auswählen" in rail_config_block
     assert 'id="osmosisPercent"' in content
     assert 'id="waterUnitToggle"' in content
     assert "Solver Advanced Config" not in content
@@ -196,6 +201,14 @@ def test_framed_shell_styles_present() -> None:
     assert ".live-metric--camg" in content
     assert ".live-ec" in content
     assert ".live-ion-ratios" in content
+    assert ".rail-theme-control" in content
+    assert '.app-body[data-theme="horticalc-light"]' in content
+    assert '.app-body[data-theme="high-contrast"]' in content
+    assert '.app-body[data-theme="solaris-console"]' in content
+    assert '.app-body[data-theme="vt-green"]' in content
+    assert '.app-body[data-theme="blue-matrix"]' in content
+    assert "--app-table-row-odd" in content
+    assert "--app-live-primary" in content
     assert "scrollbar-gutter: stable" in content
     assert "--app-min-width" not in content
     assert "min-width: calc(var(--app-min-width)" not in content
@@ -208,6 +221,17 @@ def test_framed_shell_styles_present() -> None:
     assert "@media (max-width: 980px)" in content
     assert ".recipe-wheel" not in content
     assert ".wheel-" not in content
+
+
+def test_theme_selector_persists_browser_design_state() -> None:
+    app_js = _read_frontend_file("app.js")
+
+    assert 'const THEME_STORAGE_KEY = "horticalc.theme";' in app_js
+    assert 'const DEFAULT_THEME = "horticalc-dark";' in app_js
+    assert 'document.body.dataset.theme = nextTheme;' in app_js
+    assert "function initializeThemeControl()" in app_js
+    assert "lsGet(THEME_STORAGE_KEY, DEFAULT_THEME)" in app_js
+    assert "lsSet(THEME_STORAGE_KEY, applyTheme(event.target.value));" in app_js
 
 
 def test_fertilizer_editor_sticky_columns_size_from_visible_content() -> None:
@@ -231,10 +255,10 @@ def test_fertilizer_editor_sticky_columns_size_from_visible_content() -> None:
 def test_fertilizer_editor_sticky_columns_paint_opaque_backgrounds() -> None:
     styles = _read_frontend_file("styles.css")
 
-    assert "#fertilizerEditorTable th {\n  background: #202c30;" in styles
-    assert "#fertilizerEditorTable input {\n  border-color: rgba(174, 183, 166, 0.16);\n  background: #0a100f;" in styles
-    assert "#fertilizerEditorTable tbody tr:nth-child(odd) td:nth-child(-n + 4) {\n  background: #141b14;" in styles
-    assert "#fertilizerEditorTable tbody tr:nth-child(even) td:nth-child(-n + 4) {\n  background: #0e1410;" in styles
+    assert "#fertilizerEditorTable th {\n  background: var(--app-fert-editor-head-bg);" in styles
+    assert "#fertilizerEditorTable input {\n  border-color: rgba(174, 183, 166, 0.16);\n  background: var(--app-fert-editor-input-bg);" in styles
+    assert "#fertilizerEditorTable tbody tr:nth-child(odd) td:nth-child(-n + 4) {\n  background: var(--app-table-row-odd);" in styles
+    assert "#fertilizerEditorTable tbody tr:nth-child(even) td:nth-child(-n + 4) {\n  background: var(--app-table-row-even);" in styles
 
 
 def test_live_result_bar_uses_consistent_high_visibility_type() -> None:

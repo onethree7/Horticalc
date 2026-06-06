@@ -24,6 +24,14 @@ The active navigation has four user-facing areas:
 The older visible mode bar is not the user workflow. Some hidden radio inputs
 remain only to keep existing JavaScript paths stable.
 
+The `Konfiguration` card in `frontend/index.html` contains the global batch
+liters input and a `Design` selector. `frontend/app.js` applies the selected
+theme to `document.body.dataset.theme` and stores it in `localStorage` under
+`horticalc.theme`. `frontend/styles.css` defines the available visual themes:
+Horticalc Dark, Horticalc Light, High Contrast, Solaris Console, VT Green, and
+Blue Matrix. Theme selection is browser-only presentation state and is not sent
+to recipes, solver payloads, or API routes.
+
 The live sidebar in `frontend/index.html` and `frontend/app.js` displays the
 latest calculation's NPK totals, compact P-normalized and NPK-only bubbles,
 the ion-based `Ca:Mg` ratio, centered EC solution/water values, and compact
@@ -95,6 +103,7 @@ The UI stores small workflow state in `localStorage`:
 - Last calculated solution snapshot.
 - Solver allowed fertilizer selections by context.
 - Solver auto-apply preference.
+- Selected visual theme.
 
 Solver config is intentionally not restored from saved solution snapshots and
 is not automatically applied from loaded recipes. The UI fetches the backend

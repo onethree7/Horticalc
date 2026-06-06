@@ -483,8 +483,8 @@ main {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(12, 14, 16, 0.55);
+  border: 1px solid var(--app-segmented-border);
+  background: var(--app-segmented-bg);
   padding: 0.2rem;
   gap: 0.2rem;
 }
@@ -492,7 +492,7 @@ main {
 .segmented-btn {
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--app-segmented-text);
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
   font-size: var(--text-xs);
@@ -503,13 +503,13 @@ main {
 }
 
 .segmented-btn.is-active {
-  background: rgba(83, 122, 255, 0.25);
-  color: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(83, 122, 255, 0.45);
+  background: var(--app-segmented-active-bg);
+  color: var(--app-segmented-active-text);
+  border: 1px solid var(--app-segmented-active-border);
 }
 
 .segmented-btn:focus-visible {
-  outline: 2px solid rgba(83, 122, 255, 0.7);
+  outline: 2px solid var(--app-focus);
   outline-offset: 2px;
 }
 
@@ -631,8 +631,8 @@ main {
 
 
 #waterValuesTable input.is-helper {
-  color: rgba(255, 255, 255, 0.55);
-  background: #0b111a;
+  color: var(--app-helper-text);
+  background: var(--app-helper-bg);
 }
 
 .water-settings {
@@ -696,10 +696,11 @@ main {
 .table-badge {
   font-size: var(--text-xs);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  letter-spacing: 0;
+  color: var(--app-table-badge-text);
+  border: 1px solid var(--app-table-badge-border);
   border-radius: 999px;
+  background: var(--app-table-badge-bg);
   padding: 0 var(--space-2);
 }
 
@@ -717,9 +718,9 @@ main {
 
 .compact-label {
   font-size: var(--text-xs);
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--app-compact-label);
 }
 
 .compact-ion-table {
@@ -746,7 +747,8 @@ main {
 
 .compact-ion-table th {
   text-align: left;
-  background: #1a2230;
+  background: var(--app-table-head-bg);
+  color: var(--app-table-head-text);
 }
 
 .compact-ion-cell {
@@ -768,6 +770,7 @@ main {
 .compact-balance-tile {
   padding: var(--space-1) var(--space-2);
   border: 1px solid #2b3543;
+  background: var(--app-balance-tile-bg);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -776,7 +779,7 @@ main {
 }
 
 .compact-balance-label {
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--app-balance-label);
   font-size: var(--text-xs);
 }
 
@@ -1069,6 +1072,7 @@ main {
 
 /* Horticalc framed app shell */
 :root {
+  --app-color-scheme: dark;
   --app-bg: #10120f;
   --app-panel: #171a15;
   --app-panel-soft: #1d211a;
@@ -1082,11 +1086,524 @@ main {
   --app-solver: #b67cff;
   --app-solver-glow: #41e7ff;
   --app-manual: #f0a62b;
+  --app-body-bg: linear-gradient(180deg, rgba(25, 29, 23, 0.96), rgba(12, 14, 12, 1) 34rem), var(--app-bg);
+  --app-shell-bg:
+    radial-gradient(circle at 0% 0%, rgba(155, 211, 106, 0.08), transparent 30%),
+    linear-gradient(145deg, rgba(18, 25, 20, 0.98), rgba(8, 11, 10, 0.98));
+  --app-shell-border: rgba(174, 183, 166, 0.16);
+  --app-shell-shadow: 0 24px 58px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  --app-rail-bg: linear-gradient(180deg, rgba(22, 28, 20, 0.98), rgba(12, 15, 13, 0.98));
+  --app-rail-shadow: 0 12px 30px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  --app-scrollbar-thumb: #4e5d43;
+  --app-scrollbar-track: #11140f;
+  --app-card-bg:
+    radial-gradient(circle at 88% 12%, rgba(155, 211, 106, 0.1), transparent 36%),
+    rgba(12, 18, 16, 0.72);
+  --app-config-bg:
+    radial-gradient(circle at 90% 8%, rgba(65, 231, 255, 0.1), transparent 34%),
+    rgba(12, 18, 16, 0.72);
+  --app-workflow-bg:
+    radial-gradient(circle at 88% 12%, rgba(76, 199, 176, 0.1), transparent 36%),
+    rgba(12, 18, 16, 0.72);
+  --app-brand-bg:
+    radial-gradient(circle at 20% 20%, rgba(155, 211, 106, 0.16), transparent 46%),
+    rgba(12, 18, 16, 0.76);
+  --app-workspace-block-bg: linear-gradient(145deg, rgba(27, 36, 34, 0.92), rgba(16, 20, 18, 0.98)), rgba(23, 26, 21, 0.96);
+  --app-subpanel-bg: rgba(11, 16, 15, 0.28);
+  --app-table-wrap-bg: linear-gradient(145deg, rgba(20, 31, 33, 0.58), rgba(13, 17, 14, 0.8));
+  --app-table-head-bg: rgba(38, 49, 37, 0.92);
+  --app-table-head-text: #eef8e8;
+  --app-table-card-bg:
+    radial-gradient(circle at 88% 22%, rgba(76, 199, 176, 0.1), transparent 34%),
+    rgba(16, 23, 22, 0.88);
+  --app-table-card-border: rgba(174, 183, 166, 0.16);
+  --app-table-badge-bg: rgba(155, 211, 106, 0.08);
+  --app-table-badge-border: rgba(174, 183, 166, 0.15);
+  --app-table-badge-text: var(--app-muted);
+  --app-table-row-odd: rgba(20, 27, 20, 0.72);
+  --app-table-row-even: rgba(14, 20, 16, 0.72);
+  --app-table-row-hover: rgba(41, 61, 31, 0.64);
+  --app-input-bg: #10130f;
+  --app-input-border: #3a4334;
+  --app-helper-bg: #0b111a;
+  --app-helper-text: rgba(255, 255, 255, 0.58);
+  --app-button-outline-border: #3d4737;
+  --app-button-outline-text: #dfe8d7;
+  --app-button-outline-hover: rgba(155, 211, 106, 0.1);
+  --app-button-primary-border: rgba(155, 211, 106, 0.7);
+  --app-button-primary-bg: rgba(86, 126, 50, 0.34);
+  --app-button-primary-text: #ecffdc;
+  --app-button-primary-hover: rgba(155, 211, 106, 0.2);
+  --app-focus: rgba(155, 211, 106, 0.72);
+  --app-heading-text: #f2f5ee;
+  --app-heading-icon-bg:
+    radial-gradient(circle at 50% 42%, rgba(65, 231, 255, 0.26), transparent 56%),
+    linear-gradient(145deg, rgba(76, 199, 176, 0.16), rgba(155, 211, 106, 0.08));
+  --app-workflow-step-bg: linear-gradient(145deg, rgba(23, 34, 27, 0.9), rgba(12, 18, 16, 0.92));
+  --app-workflow-step-hover: rgba(36, 51, 30, 0.82);
+  --app-workflow-step-border: rgba(174, 183, 166, 0.16);
+  --app-workflow-step-active-border: rgba(155, 211, 106, 0.72);
+  --app-workflow-active-bg: linear-gradient(145deg, rgba(61, 91, 42, 0.92), rgba(25, 49, 39, 0.94));
+  --app-workflow-active-text: #f4ffe8;
+  --app-solver-step-bg: linear-gradient(145deg, rgba(51, 30, 75, 0.72), rgba(14, 35, 39, 0.72));
+  --app-solver-step-active-bg: linear-gradient(145deg, rgba(92, 45, 145, 0.9), rgba(20, 73, 86, 0.84));
+  --app-live-bg:
+    radial-gradient(circle at 90% 0%, rgba(76, 199, 176, 0.12), transparent 34%),
+    rgba(12, 18, 17, 0.78);
+  --app-live-tile-bg: linear-gradient(145deg, rgba(27, 38, 36, 0.72), rgba(12, 16, 14, 0.86));
+  --app-live-primary: #9df068;
+  --app-live-secondary: #41e7ff;
+  --app-live-ratio: #d9a3ff;
+  --app-live-warning: #ffd166;
+  --app-segmented-bg: rgba(16, 19, 15, 0.78);
+  --app-segmented-border: rgba(174, 183, 166, 0.18);
+  --app-segmented-text: var(--app-muted);
+  --app-segmented-active-bg: rgba(76, 199, 176, 0.2);
+  --app-segmented-active-border: rgba(76, 199, 176, 0.5);
+  --app-segmented-active-text: var(--app-heading-text);
+  --app-compact-label: var(--app-muted);
+  --app-balance-tile-bg: var(--app-table-row-even);
+  --app-balance-label: var(--app-muted);
+  --app-fert-editor-head-bg: #202c30;
+  --app-fert-editor-input-bg: #0a100f;
   --app-sticky-offset: 1rem;
   --content-max-width: 1480px;
 }
 
+.app-body[data-theme="horticalc-light"] {
+  --app-color-scheme: light;
+  --app-bg: #dfe5dc;
+  --app-panel: #edf1e9;
+  --app-panel-soft: #e3e9df;
+  --app-border: #9eaa9a;
+  --app-text: #20271f;
+  --app-muted: #5f695b;
+  --app-green: #537d42;
+  --app-teal: #3d7e79;
+  --app-amber: #89672e;
+  --app-red: #9c4d45;
+  --app-solver: #68608c;
+  --app-solver-glow: #407d8b;
+  --app-manual: #8c6428;
+  --app-body-bg: linear-gradient(180deg, #e9eee5, #d8e0d5 34rem), var(--app-bg);
+  --app-shell-bg:
+    radial-gradient(circle at 0% 0%, rgba(83, 125, 66, 0.08), transparent 30%),
+    linear-gradient(145deg, rgba(239, 243, 235, 0.98), rgba(213, 222, 210, 0.98));
+  --app-shell-border: rgba(67, 78, 62, 0.24);
+  --app-shell-shadow: 0 18px 44px rgba(54, 73, 49, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  --app-rail-bg: linear-gradient(180deg, rgba(232, 238, 228, 0.98), rgba(211, 222, 208, 0.98));
+  --app-rail-shadow: 0 10px 26px rgba(70, 88, 65, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  --app-scrollbar-thumb: #83917e;
+  --app-scrollbar-track: #d0d9cc;
+  --app-card-bg:
+    radial-gradient(circle at 88% 12%, rgba(83, 125, 66, 0.08), transparent 36%),
+    rgba(229, 235, 225, 0.82);
+  --app-config-bg:
+    radial-gradient(circle at 90% 8%, rgba(61, 126, 121, 0.09), transparent 34%),
+    rgba(226, 233, 223, 0.86);
+  --app-workflow-bg:
+    radial-gradient(circle at 88% 12%, rgba(61, 126, 121, 0.09), transparent 36%),
+    rgba(226, 233, 223, 0.86);
+  --app-brand-bg:
+    radial-gradient(circle at 20% 20%, rgba(83, 125, 66, 0.13), transparent 46%),
+    rgba(226, 233, 223, 0.86);
+  --app-workspace-block-bg: linear-gradient(145deg, rgba(232, 237, 228, 0.98), rgba(216, 225, 212, 0.98));
+  --app-subpanel-bg: rgba(207, 218, 204, 0.58);
+  --app-table-wrap-bg: linear-gradient(145deg, rgba(224, 230, 220, 0.94), rgba(204, 215, 201, 0.9));
+  --app-table-head-bg: #bac8b6;
+  --app-table-head-text: #222a21;
+  --app-table-card-bg:
+    radial-gradient(circle at 88% 22%, rgba(61, 126, 121, 0.08), transparent 34%),
+    rgba(219, 228, 216, 0.9);
+  --app-table-card-border: rgba(74, 87, 70, 0.2);
+  --app-table-badge-bg: rgba(83, 125, 66, 0.08);
+  --app-table-badge-border: rgba(74, 87, 70, 0.22);
+  --app-table-badge-text: #4f5c4d;
+  --app-table-row-odd: rgba(229, 235, 225, 0.9);
+  --app-table-row-even: rgba(213, 223, 210, 0.9);
+  --app-table-row-hover: rgba(194, 211, 188, 0.95);
+  --app-input-bg: #e8eee5;
+  --app-input-border: #8c9a87;
+  --app-helper-bg: #c8d1c5;
+  --app-helper-text: #4b5648;
+  --app-button-outline-border: #87957f;
+  --app-button-outline-text: #293426;
+  --app-button-outline-hover: rgba(83, 125, 66, 0.12);
+  --app-button-primary-border: rgba(83, 125, 66, 0.52);
+  --app-button-primary-bg: rgba(112, 143, 96, 0.22);
+  --app-button-primary-text: #263722;
+  --app-button-primary-hover: rgba(112, 143, 96, 0.32);
+  --app-focus: rgba(61, 126, 121, 0.72);
+  --app-heading-text: #20271f;
+  --app-heading-icon-bg:
+    radial-gradient(circle at 50% 42%, rgba(61, 126, 121, 0.16), transparent 56%),
+    linear-gradient(145deg, rgba(61, 126, 121, 0.12), rgba(83, 125, 66, 0.08));
+  --app-workflow-step-bg: linear-gradient(145deg, rgba(222, 231, 219, 0.92), rgba(202, 214, 199, 0.92));
+  --app-workflow-step-hover: rgba(198, 214, 193, 0.92);
+  --app-workflow-step-border: rgba(74, 87, 70, 0.22);
+  --app-workflow-step-active-border: rgba(70, 105, 56, 0.5);
+  --app-workflow-active-bg: linear-gradient(145deg, rgba(115, 146, 97, 0.72), rgba(83, 133, 122, 0.68));
+  --app-workflow-active-text: #1f291d;
+  --app-solver-step-bg: linear-gradient(145deg, rgba(218, 216, 230, 0.9), rgba(203, 223, 221, 0.9));
+  --app-solver-step-active-bg: linear-gradient(145deg, rgba(120, 112, 157, 0.82), rgba(75, 132, 139, 0.76));
+  --app-live-bg:
+    radial-gradient(circle at 90% 0%, rgba(61, 126, 121, 0.1), transparent 34%),
+    rgba(218, 228, 215, 0.86);
+  --app-live-tile-bg: linear-gradient(145deg, rgba(224, 231, 221, 0.92), rgba(204, 216, 201, 0.9));
+  --app-live-primary: #416f31;
+  --app-live-secondary: #347a83;
+  --app-live-ratio: #625c8f;
+  --app-live-warning: #755a24;
+  --app-segmented-bg: rgba(204, 214, 200, 0.86);
+  --app-segmented-border: rgba(74, 87, 70, 0.22);
+  --app-segmented-text: #596454;
+  --app-segmented-active-bg: rgba(83, 125, 66, 0.18);
+  --app-segmented-active-border: rgba(83, 125, 66, 0.35);
+  --app-segmented-active-text: #20271f;
+  --app-compact-label: #586356;
+  --app-balance-tile-bg: rgba(213, 223, 210, 0.92);
+  --app-balance-label: #5d6859;
+  --app-fert-editor-head-bg: #b7c6b7;
+  --app-fert-editor-input-bg: #e8eee5;
+}
+
+.app-body[data-theme="high-contrast"] {
+  --app-bg: #000000;
+  --app-panel: #080808;
+  --app-panel-soft: #111111;
+  --app-border: #ffffff;
+  --app-text: #ffffff;
+  --app-muted: #d9d9d9;
+  --app-green: #90ff00;
+  --app-teal: #00f7ff;
+  --app-amber: #ffe100;
+  --app-red: #ff5c5c;
+  --app-solver: #d080ff;
+  --app-solver-glow: #00f7ff;
+  --app-manual: #ffe100;
+  --app-body-bg: #000000;
+  --app-shell-bg: #050505;
+  --app-shell-border: #ffffff;
+  --app-shell-shadow: none;
+  --app-rail-bg: #080808;
+  --app-rail-shadow: none;
+  --app-scrollbar-thumb: #ffffff;
+  --app-scrollbar-track: #000000;
+  --app-card-bg: #090909;
+  --app-config-bg: #090909;
+  --app-workflow-bg: #090909;
+  --app-brand-bg: #090909;
+  --app-workspace-block-bg: #080808;
+  --app-subpanel-bg: #050505;
+  --app-table-wrap-bg: #050505;
+  --app-table-card-bg: #080808;
+  --app-table-card-border: #ffffff;
+  --app-table-badge-bg: #111111;
+  --app-table-badge-border: #ffffff;
+  --app-table-badge-text: #ffffff;
+  --app-table-head-bg: #1f1f1f;
+  --app-table-head-text: #ffffff;
+  --app-table-row-odd: #000000;
+  --app-table-row-even: #101010;
+  --app-table-row-hover: #2a2a2a;
+  --app-input-bg: #000000;
+  --app-input-border: #ffffff;
+  --app-helper-bg: #111111;
+  --app-helper-text: #d9d9d9;
+  --app-button-outline-border: #ffffff;
+  --app-button-outline-text: #ffffff;
+  --app-button-outline-hover: #1f1f1f;
+  --app-focus: #ffe100;
+  --app-heading-text: #ffffff;
+  --app-heading-icon-bg: #111111;
+  --app-workflow-step-bg: #0a0a0a;
+  --app-workflow-step-hover: #1f1f1f;
+  --app-workflow-step-border: #e6e6e6;
+  --app-workflow-step-active-border: #ffe100;
+  --app-workflow-active-bg: #1c1c1c;
+  --app-workflow-active-text: #ffffff;
+  --app-solver-step-bg: #0a0a0a;
+  --app-solver-step-active-bg: #1c1c1c;
+  --app-live-bg: #090909;
+  --app-live-tile-bg: #050505;
+  --app-live-primary: #90ff00;
+  --app-live-secondary: #00f7ff;
+  --app-live-ratio: #d080ff;
+  --app-live-warning: #ffe100;
+  --app-segmented-bg: #000000;
+  --app-segmented-border: #ffffff;
+  --app-segmented-text: #ffffff;
+  --app-segmented-active-bg: #1f1f1f;
+  --app-segmented-active-border: #ffe100;
+  --app-segmented-active-text: #ffe100;
+  --app-compact-label: #d9d9d9;
+  --app-balance-tile-bg: #080808;
+  --app-balance-label: #d9d9d9;
+  --app-fert-editor-head-bg: #1f1f1f;
+  --app-fert-editor-input-bg: #000000;
+}
+
+.app-body[data-theme="solaris-console"] {
+  --app-bg: #191714;
+  --app-panel: #231f1a;
+  --app-panel-soft: #30291d;
+  --app-border: #6b5734;
+  --app-text: #fff2d7;
+  --app-muted: #d0b98a;
+  --app-green: #adc76f;
+  --app-teal: #5fc0ac;
+  --app-amber: #f0a020;
+  --app-red: #df715f;
+  --app-solver: #d49cff;
+  --app-solver-glow: #64d4cd;
+  --app-manual: #f0a020;
+  --app-body-bg: linear-gradient(180deg, #2a2118, #12100e 34rem), var(--app-bg);
+  --app-shell-bg:
+    radial-gradient(circle at 0% 0%, rgba(240, 160, 32, 0.11), transparent 30%),
+    linear-gradient(145deg, rgba(45, 36, 25, 0.98), rgba(18, 16, 14, 0.98));
+  --app-shell-border: rgba(240, 160, 32, 0.28);
+  --app-rail-bg: linear-gradient(180deg, rgba(45, 36, 25, 0.98), rgba(22, 19, 16, 0.98));
+  --app-scrollbar-thumb: #8c6a32;
+  --app-scrollbar-track: #17130f;
+  --app-card-bg:
+    radial-gradient(circle at 88% 12%, rgba(240, 160, 32, 0.1), transparent 36%),
+    rgba(34, 27, 19, 0.78);
+  --app-config-bg:
+    radial-gradient(circle at 90% 8%, rgba(95, 192, 172, 0.1), transparent 34%),
+    rgba(34, 27, 19, 0.78);
+  --app-workflow-bg:
+    radial-gradient(circle at 88% 12%, rgba(173, 199, 111, 0.1), transparent 36%),
+    rgba(34, 27, 19, 0.78);
+  --app-brand-bg:
+    radial-gradient(circle at 20% 20%, rgba(240, 160, 32, 0.14), transparent 46%),
+    rgba(34, 27, 19, 0.78);
+  --app-workspace-block-bg: linear-gradient(145deg, rgba(47, 37, 25, 0.94), rgba(24, 20, 16, 0.98));
+  --app-subpanel-bg: rgba(29, 23, 17, 0.5);
+  --app-table-wrap-bg: linear-gradient(145deg, rgba(44, 35, 25, 0.82), rgba(24, 20, 16, 0.88));
+  --app-table-card-bg:
+    radial-gradient(circle at 88% 22%, rgba(240, 160, 32, 0.09), transparent 34%),
+    rgba(39, 31, 22, 0.88);
+  --app-table-card-border: rgba(240, 160, 32, 0.22);
+  --app-table-badge-bg: rgba(240, 160, 32, 0.1);
+  --app-table-badge-border: rgba(240, 160, 32, 0.24);
+  --app-table-badge-text: #d0b98a;
+  --app-table-head-bg: #3d321f;
+  --app-table-head-text: #fff2d7;
+  --app-table-row-odd: rgba(35, 28, 20, 0.82);
+  --app-table-row-even: rgba(27, 22, 17, 0.82);
+  --app-table-row-hover: rgba(70, 54, 29, 0.8);
+  --app-input-bg: #17130f;
+  --app-input-border: #745a2f;
+  --app-helper-bg: #211a12;
+  --app-helper-text: #bfa978;
+  --app-button-outline-border: #8c6a32;
+  --app-button-outline-text: #ffe6b3;
+  --app-button-outline-hover: rgba(240, 160, 32, 0.14);
+  --app-focus: rgba(240, 160, 32, 0.76);
+  --app-heading-text: #fff8e8;
+  --app-workflow-step-bg: linear-gradient(145deg, rgba(49, 39, 27, 0.9), rgba(25, 20, 16, 0.92));
+  --app-workflow-step-hover: rgba(61, 45, 25, 0.88);
+  --app-workflow-step-border: rgba(240, 160, 32, 0.2);
+  --app-workflow-step-active-border: rgba(240, 160, 32, 0.52);
+  --app-workflow-active-bg: linear-gradient(145deg, rgba(128, 84, 23, 0.94), rgba(40, 96, 88, 0.9));
+  --app-workflow-active-text: #fff8e8;
+  --app-solver-step-bg: linear-gradient(145deg, rgba(63, 42, 70, 0.72), rgba(23, 54, 49, 0.72));
+  --app-solver-step-active-bg: linear-gradient(145deg, rgba(143, 73, 171, 0.9), rgba(36, 106, 99, 0.84));
+  --app-live-bg:
+    radial-gradient(circle at 90% 0%, rgba(240, 160, 32, 0.13), transparent 34%),
+    rgba(34, 27, 19, 0.78);
+  --app-live-tile-bg: linear-gradient(145deg, rgba(49, 38, 26, 0.78), rgba(24, 20, 16, 0.9));
+  --app-live-primary: #baf078;
+  --app-live-secondary: #64d4cd;
+  --app-live-ratio: #d49cff;
+  --app-live-warning: #ffd166;
+  --app-segmented-bg: rgba(35, 28, 20, 0.86);
+  --app-segmented-border: rgba(240, 160, 32, 0.2);
+  --app-segmented-text: #d0b98a;
+  --app-segmented-active-bg: rgba(240, 160, 32, 0.16);
+  --app-segmented-active-border: rgba(240, 160, 32, 0.32);
+  --app-segmented-active-text: #fff8e8;
+  --app-compact-label: #d0b98a;
+  --app-balance-tile-bg: rgba(35, 28, 20, 0.82);
+  --app-balance-label: #d0b98a;
+  --app-fert-editor-head-bg: #43331f;
+  --app-fert-editor-input-bg: #17130f;
+}
+
+.app-body[data-theme="vt-green"] {
+  --app-bg: #07100a;
+  --app-panel: #0d1a10;
+  --app-panel-soft: #122316;
+  --app-border: #2a6538;
+  --app-text: #e5ffdf;
+  --app-muted: #94c28d;
+  --app-green: #73ff5a;
+  --app-teal: #38d78c;
+  --app-amber: #d8d36c;
+  --app-red: #ff756b;
+  --app-solver: #a6ff8b;
+  --app-solver-glow: #57ffb0;
+  --app-manual: #d8d36c;
+  --app-body-bg: linear-gradient(180deg, #0c1b10, #030704 34rem), var(--app-bg);
+  --app-shell-bg:
+    radial-gradient(circle at 0% 0%, rgba(115, 255, 90, 0.1), transparent 30%),
+    linear-gradient(145deg, rgba(11, 25, 13, 0.98), rgba(3, 7, 4, 0.98));
+  --app-rail-bg: linear-gradient(180deg, rgba(13, 28, 15, 0.98), rgba(4, 9, 5, 0.98));
+  --app-scrollbar-thumb: #2f8a42;
+  --app-scrollbar-track: #061008;
+  --app-card-bg:
+    radial-gradient(circle at 88% 12%, rgba(115, 255, 90, 0.1), transparent 36%),
+    rgba(7, 18, 9, 0.78);
+  --app-config-bg:
+    radial-gradient(circle at 90% 8%, rgba(87, 255, 176, 0.1), transparent 34%),
+    rgba(7, 18, 9, 0.78);
+  --app-workflow-bg:
+    radial-gradient(circle at 88% 12%, rgba(56, 215, 140, 0.1), transparent 36%),
+    rgba(7, 18, 9, 0.78);
+  --app-brand-bg:
+    radial-gradient(circle at 20% 20%, rgba(115, 255, 90, 0.14), transparent 46%),
+    rgba(7, 18, 9, 0.78);
+  --app-workspace-block-bg: linear-gradient(145deg, rgba(10, 27, 13, 0.94), rgba(4, 10, 5, 0.98));
+  --app-subpanel-bg: rgba(5, 13, 6, 0.52);
+  --app-table-wrap-bg: linear-gradient(145deg, rgba(9, 25, 12, 0.82), rgba(4, 10, 5, 0.88));
+  --app-table-card-bg:
+    radial-gradient(circle at 88% 22%, rgba(115, 255, 90, 0.08), transparent 34%),
+    rgba(8, 20, 10, 0.88);
+  --app-table-card-border: rgba(115, 255, 90, 0.18);
+  --app-table-badge-bg: rgba(115, 255, 90, 0.08);
+  --app-table-badge-border: rgba(115, 255, 90, 0.2);
+  --app-table-badge-text: #94c28d;
+  --app-table-head-bg: #142f1a;
+  --app-table-head-text: #e5ffdf;
+  --app-table-row-odd: rgba(8, 20, 9, 0.82);
+  --app-table-row-even: rgba(5, 13, 6, 0.82);
+  --app-table-row-hover: rgba(26, 59, 27, 0.82);
+  --app-input-bg: #030704;
+  --app-input-border: #2a6538;
+  --app-helper-bg: #08140a;
+  --app-helper-text: #94c28d;
+  --app-button-outline-border: #2f8a42;
+  --app-button-outline-text: #d8ffd0;
+  --app-button-outline-hover: rgba(115, 255, 90, 0.12);
+  --app-focus: rgba(115, 255, 90, 0.75);
+  --app-heading-text: #f1ffed;
+  --app-workflow-step-bg: linear-gradient(145deg, rgba(13, 34, 16, 0.9), rgba(4, 12, 6, 0.92));
+  --app-workflow-step-hover: rgba(19, 45, 19, 0.88);
+  --app-workflow-step-border: rgba(115, 255, 90, 0.18);
+  --app-workflow-step-active-border: rgba(115, 255, 90, 0.45);
+  --app-workflow-active-bg: linear-gradient(145deg, rgba(42, 108, 35, 0.94), rgba(16, 82, 49, 0.9));
+  --app-workflow-active-text: #f1ffed;
+  --app-solver-step-bg: linear-gradient(145deg, rgba(25, 57, 27, 0.72), rgba(8, 43, 25, 0.72));
+  --app-solver-step-active-bg: linear-gradient(145deg, rgba(57, 139, 43, 0.9), rgba(21, 112, 67, 0.84));
+  --app-live-bg:
+    radial-gradient(circle at 90% 0%, rgba(115, 255, 90, 0.12), transparent 34%),
+    rgba(7, 18, 9, 0.78);
+  --app-live-tile-bg: linear-gradient(145deg, rgba(10, 30, 14, 0.78), rgba(4, 10, 5, 0.9));
+  --app-live-primary: #73ff5a;
+  --app-live-secondary: #57ffb0;
+  --app-live-ratio: #b0ff9b;
+  --app-live-warning: #d8d36c;
+  --app-segmented-bg: rgba(7, 18, 9, 0.86);
+  --app-segmented-border: rgba(115, 255, 90, 0.18);
+  --app-segmented-text: #94c28d;
+  --app-segmented-active-bg: rgba(115, 255, 90, 0.14);
+  --app-segmented-active-border: rgba(115, 255, 90, 0.28);
+  --app-segmented-active-text: #f1ffed;
+  --app-compact-label: #94c28d;
+  --app-balance-tile-bg: rgba(8, 20, 9, 0.82);
+  --app-balance-label: #94c28d;
+  --app-fert-editor-head-bg: #17351d;
+  --app-fert-editor-input-bg: #030704;
+}
+
+.app-body[data-theme="blue-matrix"] {
+  --app-bg: #0b1018;
+  --app-panel: #121a27;
+  --app-panel-soft: #172232;
+  --app-border: #33445f;
+  --app-text: #edf4ff;
+  --app-muted: #a9b7ca;
+  --app-green: #80c8ff;
+  --app-teal: #4bd3de;
+  --app-amber: #d9b96f;
+  --app-red: #e47b78;
+  --app-solver: #a9a7ff;
+  --app-solver-glow: #4bd3de;
+  --app-manual: #d9b96f;
+  --app-body-bg: linear-gradient(180deg, #121b29, #060a10 34rem), var(--app-bg);
+  --app-shell-bg:
+    radial-gradient(circle at 0% 0%, rgba(128, 200, 255, 0.1), transparent 30%),
+    linear-gradient(145deg, rgba(17, 27, 41, 0.98), rgba(6, 10, 16, 0.98));
+  --app-rail-bg: linear-gradient(180deg, rgba(19, 30, 45, 0.98), rgba(8, 13, 20, 0.98));
+  --app-scrollbar-thumb: #415c80;
+  --app-scrollbar-track: #09111c;
+  --app-card-bg:
+    radial-gradient(circle at 88% 12%, rgba(128, 200, 255, 0.1), transparent 36%),
+    rgba(12, 20, 31, 0.78);
+  --app-config-bg:
+    radial-gradient(circle at 90% 8%, rgba(75, 211, 222, 0.1), transparent 34%),
+    rgba(12, 20, 31, 0.78);
+  --app-workflow-bg:
+    radial-gradient(circle at 88% 12%, rgba(128, 200, 255, 0.1), transparent 36%),
+    rgba(12, 20, 31, 0.78);
+  --app-brand-bg:
+    radial-gradient(circle at 20% 20%, rgba(128, 200, 255, 0.14), transparent 46%),
+    rgba(12, 20, 31, 0.78);
+  --app-workspace-block-bg: linear-gradient(145deg, rgba(18, 30, 45, 0.94), rgba(8, 13, 20, 0.98));
+  --app-subpanel-bg: rgba(8, 15, 24, 0.52);
+  --app-table-wrap-bg: linear-gradient(145deg, rgba(15, 27, 42, 0.82), rgba(8, 13, 20, 0.88));
+  --app-table-card-bg:
+    radial-gradient(circle at 88% 22%, rgba(75, 211, 222, 0.08), transparent 34%),
+    rgba(13, 23, 36, 0.88);
+  --app-table-card-border: rgba(128, 200, 255, 0.18);
+  --app-table-badge-bg: rgba(128, 200, 255, 0.08);
+  --app-table-badge-border: rgba(128, 200, 255, 0.2);
+  --app-table-badge-text: #a9b7ca;
+  --app-table-head-bg: #1d3048;
+  --app-table-head-text: #edf4ff;
+  --app-table-row-odd: rgba(13, 23, 36, 0.82);
+  --app-table-row-even: rgba(8, 16, 26, 0.82);
+  --app-table-row-hover: rgba(28, 49, 75, 0.82);
+  --app-input-bg: #07101a;
+  --app-input-border: #33445f;
+  --app-helper-bg: #0d1927;
+  --app-helper-text: #a9b7ca;
+  --app-button-outline-border: #496384;
+  --app-button-outline-text: #e3efff;
+  --app-button-outline-hover: rgba(128, 200, 255, 0.12);
+  --app-focus: rgba(75, 211, 222, 0.76);
+  --app-heading-text: #f5f9ff;
+  --app-workflow-step-bg: linear-gradient(145deg, rgba(18, 32, 49, 0.9), rgba(8, 16, 26, 0.92));
+  --app-workflow-step-hover: rgba(24, 42, 64, 0.88);
+  --app-workflow-step-border: rgba(128, 200, 255, 0.18);
+  --app-workflow-step-active-border: rgba(75, 211, 222, 0.48);
+  --app-workflow-active-bg: linear-gradient(145deg, rgba(42, 92, 139, 0.94), rgba(21, 90, 101, 0.9));
+  --app-workflow-active-text: #f5f9ff;
+  --app-solver-step-bg: linear-gradient(145deg, rgba(42, 39, 81, 0.72), rgba(9, 43, 55, 0.72));
+  --app-solver-step-active-bg: linear-gradient(145deg, rgba(83, 77, 170, 0.9), rgba(24, 98, 112, 0.84));
+  --app-live-bg:
+    radial-gradient(circle at 90% 0%, rgba(75, 211, 222, 0.12), transparent 34%),
+    rgba(12, 20, 31, 0.78);
+  --app-live-tile-bg: linear-gradient(145deg, rgba(17, 31, 48, 0.78), rgba(8, 13, 20, 0.9));
+  --app-live-primary: #80c8ff;
+  --app-live-secondary: #4bd3de;
+  --app-live-ratio: #a9a7ff;
+  --app-live-warning: #d9b96f;
+  --app-segmented-bg: rgba(12, 20, 31, 0.86);
+  --app-segmented-border: rgba(128, 200, 255, 0.18);
+  --app-segmented-text: #a9b7ca;
+  --app-segmented-active-bg: rgba(75, 211, 222, 0.14);
+  --app-segmented-active-border: rgba(75, 211, 222, 0.3);
+  --app-segmented-active-text: #f5f9ff;
+  --app-compact-label: #a9b7ca;
+  --app-balance-tile-bg: rgba(13, 23, 36, 0.82);
+  --app-balance-label: #a9b7ca;
+  --app-fert-editor-head-bg: #20354f;
+  --app-fert-editor-input-bg: #07101a;
+}
+
 html {
+  color-scheme: var(--app-color-scheme);
   height: 100%;
   overflow: hidden;
   background: var(--app-bg);
@@ -1094,12 +1611,11 @@ html {
 
 .app-body {
   box-sizing: border-box;
+  color-scheme: var(--app-color-scheme);
   min-height: 100vh;
   padding-bottom: 0;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(25, 29, 23, 0.96), rgba(12, 14, 12, 1) 34rem),
-    var(--app-bg);
+  background: var(--app-body-bg);
   color: var(--app-text);
 }
 
@@ -1160,12 +1676,9 @@ html {
   overflow: hidden;
   border: 1px solid rgba(174, 183, 166, 0.16);
   border-radius: 12px;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(155, 211, 106, 0.08), transparent 30%),
-    linear-gradient(145deg, rgba(18, 25, 20, 0.98), rgba(8, 11, 10, 0.98));
-  box-shadow:
-    0 24px 58px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  border-color: var(--app-shell-border);
+  background: var(--app-shell-bg);
+  box-shadow: var(--app-shell-shadow);
 }
 
 .app-rail {
@@ -1182,12 +1695,9 @@ html {
   padding: var(--space-4);
   border: 1px solid var(--app-border);
   border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgba(22, 28, 20, 0.98), rgba(12, 15, 13, 0.98));
-  box-shadow:
-    0 12px 30px rgba(0, 0, 0, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.035);
-  scrollbar-color: #4e5d43 #11140f;
+  background: var(--app-rail-bg);
+  box-shadow: var(--app-rail-shadow);
+  scrollbar-color: var(--app-scrollbar-thumb) var(--app-scrollbar-track);
 }
 
 .rail-brand {
@@ -1198,9 +1708,7 @@ html {
   padding: var(--space-3);
   border: 1px solid rgba(155, 211, 106, 0.18);
   border-radius: 8px;
-  background:
-    radial-gradient(circle at 20% 20%, rgba(155, 211, 106, 0.16), transparent 46%),
-    rgba(12, 18, 16, 0.76);
+  background: var(--app-brand-bg);
 }
 
 .rail-brand > div {
@@ -1248,15 +1756,31 @@ html {
 }
 
 .rail-workflow {
-  background:
-    radial-gradient(circle at 88% 12%, rgba(76, 199, 176, 0.1), transparent 36%),
-    rgba(12, 18, 16, 0.72);
+  background: var(--app-workflow-bg);
 }
 
 .rail-config {
-  background:
-    radial-gradient(circle at 90% 8%, rgba(65, 231, 255, 0.1), transparent 34%),
-    rgba(12, 18, 16, 0.72);
+  background: var(--app-config-bg);
+}
+
+.rail-theme-control {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--app-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.rail-theme-control select {
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--app-input-border);
+  border-radius: var(--radius-1);
+  background: var(--app-input-bg);
+  color: var(--app-text);
+  font-size: var(--text-sm);
 }
 
 .rail-config-liters {
@@ -1357,7 +1881,7 @@ html {
   max-height: 22rem;
   overflow-y: auto;
   padding-right: var(--space-2);
-  scrollbar-color: #4e5d43 #11140f;
+  scrollbar-color: var(--app-scrollbar-thumb) var(--app-scrollbar-track);
 }
 
 .rail-guide {
@@ -1404,7 +1928,7 @@ html {
 
 .rail-guide-list strong {
   display: block;
-  color: #dfe8d7;
+  color: var(--app-heading-text);
   font-weight: 650;
 }
 
@@ -1427,10 +1951,9 @@ html {
   min-height: 3.5rem;
   width: 100%;
   padding: var(--space-3);
-  border: 1px solid rgba(174, 183, 166, 0.16);
+  border: 1px solid var(--app-workflow-step-border);
   border-radius: 8px;
-  background:
-    linear-gradient(145deg, rgba(23, 34, 27, 0.9), rgba(12, 18, 16, 0.92));
+  background: var(--app-workflow-step-bg);
   color: var(--app-text);
   text-align: left;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
@@ -1439,29 +1962,27 @@ html {
 
 .workflow-step:hover,
 .workflow-step:focus-visible {
-  background: rgba(36, 51, 30, 0.82);
-  border-color: rgba(155, 211, 106, 0.4);
+  background: var(--app-workflow-step-hover);
+  border-color: var(--app-workflow-step-active-border);
   transform: translateY(-1px);
 }
 
 .workflow-step:focus-visible {
-  outline: 2px solid rgba(155, 211, 106, 0.6);
+  outline: 2px solid var(--app-focus);
   outline-offset: 2px;
 }
 
 .workflow-step.is-active,
 .workflow-step[aria-current="page"] {
-  background:
-    linear-gradient(145deg, rgba(61, 91, 42, 0.92), rgba(25, 49, 39, 0.94));
-  border-color: rgba(155, 211, 106, 0.72);
-  color: #f4ffe8;
+  background: var(--app-workflow-active-bg);
+  border-color: var(--app-workflow-step-active-border);
+  color: var(--app-workflow-active-text);
   box-shadow: 0 0 0 2px rgba(155, 211, 106, 0.13);
 }
 
 .workflow-step--solver {
   border-color: rgba(182, 124, 255, 0.34);
-  background:
-    linear-gradient(145deg, rgba(51, 30, 75, 0.72), rgba(14, 35, 39, 0.72));
+  background: var(--app-solver-step-bg);
 }
 
 .workflow-step--editor {
@@ -1470,9 +1991,8 @@ html {
 
 .workflow-step--solver.is-active,
 .workflow-step--solver[aria-current="page"] {
-  border-color: rgba(65, 231, 255, 0.74);
-  background:
-    linear-gradient(145deg, rgba(92, 45, 145, 0.9), rgba(20, 73, 86, 0.84));
+  border-color: var(--app-workflow-step-active-border);
+  background: var(--app-solver-step-active-bg);
   box-shadow:
     0 0 0 2px rgba(182, 124, 255, 0.16),
     0 0 22px rgba(65, 231, 255, 0.16);
@@ -1521,7 +2041,7 @@ html {
 }
 
 .workflow-step-arrow {
-  color: rgba(255, 255, 255, 0.48);
+  color: var(--app-muted);
   font-size: 1.25rem;
   font-weight: 800;
   line-height: 1;
@@ -1529,13 +2049,14 @@ html {
 
 .workflow-step.is-active .workflow-step-index,
 .workflow-step[aria-current="page"] .workflow-step-index {
-  border-color: rgba(155, 211, 106, 0.62);
-  background: rgba(155, 211, 106, 0.22);
+  border-color: var(--app-workflow-step-active-border);
+  background: var(--app-segmented-active-bg);
+  color: var(--app-workflow-active-text);
 }
 
 .workflow-step.is-active .workflow-step-hint,
 .workflow-step[aria-current="page"] .workflow-step-hint {
-  color: #d8efc7;
+  color: var(--app-workflow-active-text);
 }
 
 .workflow-step--solver .workflow-step-index {
@@ -1552,9 +2073,7 @@ html {
   padding: var(--space-3);
   border: 1px solid rgba(174, 183, 166, 0.14);
   border-radius: 8px;
-  background:
-    radial-gradient(circle at 88% 12%, rgba(155, 211, 106, 0.1), transparent 36%),
-    rgba(12, 18, 16, 0.72);
+  background: var(--app-card-bg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
@@ -1565,7 +2084,7 @@ html {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--space-3);
-  color: #eaf4e5;
+  color: var(--app-heading-text);
   font-size: var(--text-xs);
   font-weight: 800;
   text-transform: uppercase;
@@ -1599,7 +2118,7 @@ html {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  scrollbar-color: #4e5d43 #11140f;
+  scrollbar-color: var(--app-scrollbar-thumb) var(--app-scrollbar-track);
 }
 
 [data-panel-anchor] {
@@ -1611,22 +2130,20 @@ html {
 .workspace .mode-panel > section.block {
   border-color: var(--app-border);
   border-radius: 12px;
-  background:
-    linear-gradient(145deg, rgba(27, 36, 34, 0.92), rgba(16, 20, 18, 0.98)),
-    rgba(23, 26, 21, 0.96);
+  background: var(--app-workspace-block-bg);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.035),
     0 12px 32px rgba(0, 0, 0, 0.24);
 }
 
 .workspace .block:focus {
-  outline: 2px solid rgba(155, 211, 106, 0.72);
+  outline: 2px solid var(--app-focus);
   outline-offset: 2px;
 }
 
 .workspace h2,
 .workspace h3 {
-  color: #f2f5ee;
+  color: var(--app-heading-text);
 }
 
 .workspace .block > h2:first-child,
@@ -1645,9 +2162,7 @@ html {
   flex: 0 0 auto;
   border: 1px solid rgba(76, 199, 176, 0.28);
   border-radius: 10px;
-  background:
-    radial-gradient(circle at 50% 42%, rgba(65, 231, 255, 0.26), transparent 56%),
-    linear-gradient(145deg, rgba(76, 199, 176, 0.16), rgba(155, 211, 106, 0.08));
+  background: var(--app-heading-icon-bg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
@@ -1668,8 +2183,8 @@ html {
 .solver-settings select,
 #solverAllowedSearch,
 #fertEditorSearch {
-  background: #10130f;
-  border-color: #3a4334;
+  background: var(--app-input-bg);
+  border-color: var(--app-input-border);
   color: var(--app-text);
 }
 
@@ -1688,8 +2203,7 @@ html {
 .solver-results .table-wrap {
   border: 1px solid rgba(174, 183, 166, 0.13);
   border-radius: 12px;
-  background:
-    linear-gradient(145deg, rgba(20, 31, 33, 0.58), rgba(13, 17, 14, 0.8));
+  background: var(--app-table-wrap-bg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.028);
 }
 
@@ -1704,27 +2218,27 @@ button,
 }
 
 .btn--outline {
-  border-color: #3d4737;
-  color: #dfe8d7;
+  border-color: var(--app-button-outline-border);
+  color: var(--app-button-outline-text);
 }
 
 .btn--outline:hover {
-  background: rgba(155, 211, 106, 0.1);
+  background: var(--app-button-outline-hover);
 }
 
 .btn--outline-primary {
-  border-color: rgba(155, 211, 106, 0.7);
-  color: #ecffdc;
-  background: rgba(86, 126, 50, 0.34);
+  border-color: var(--app-button-primary-border);
+  color: var(--app-button-primary-text);
+  background: var(--app-button-primary-bg);
 }
 
 .btn--outline-primary:hover {
-  background: rgba(155, 211, 106, 0.2);
+  background: var(--app-button-primary-hover);
 }
 
 .grid th {
-  background: rgba(38, 49, 37, 0.92);
-  color: #eef8e8;
+  background: var(--app-table-head-bg);
+  color: var(--app-table-head-text);
   text-transform: none;
 }
 
@@ -1733,7 +2247,7 @@ button,
 .compact-ion-table th,
 .compact-ion-table td,
 .compact-balance-tile {
-  border-color: #343b2f;
+  border-color: var(--app-border);
 }
 
 .grid th,
@@ -1746,35 +2260,34 @@ button,
 
 .grid tbody tr:nth-child(odd),
 #fertilizerEditorTable tbody tr:nth-child(odd) td:nth-child(-n + 4) {
-  background: rgba(20, 27, 20, 0.72);
+  background: var(--app-table-row-odd);
 }
 
 .grid tbody tr:nth-child(even),
 #fertilizerEditorTable tbody tr:nth-child(even) td:nth-child(-n + 4) {
-  background: rgba(14, 20, 16, 0.72);
+  background: var(--app-table-row-even);
 }
 
 .grid tbody tr:hover {
-  background: rgba(41, 61, 31, 0.64);
+  background: var(--app-table-row-hover);
 }
 
 .table-card {
-  border-color: rgba(174, 183, 166, 0.16);
+  border-color: var(--app-table-card-border);
   border-radius: 12px;
-  background:
-    radial-gradient(circle at 88% 22%, rgba(76, 199, 176, 0.1), transparent 34%),
-    rgba(16, 23, 22, 0.88);
+  background: var(--app-table-card-bg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
 .segmented {
-  border-color: rgba(174, 183, 166, 0.18);
-  background: rgba(16, 19, 15, 0.78);
+  border-color: var(--app-segmented-border);
+  background: var(--app-segmented-bg);
 }
 
 .segmented-btn.is-active {
-  border-color: rgba(76, 199, 176, 0.5);
-  background: rgba(76, 199, 176, 0.2);
+  border-color: var(--app-segmented-active-border);
+  background: var(--app-segmented-active-bg);
+  color: var(--app-segmented-active-text);
 }
 
 .water-controls,
@@ -1785,7 +2298,7 @@ button,
   padding: var(--space-3);
   border: 1px solid rgba(174, 183, 166, 0.1);
   border-radius: 12px;
-  background: rgba(11, 16, 15, 0.28);
+  background: var(--app-subpanel-bg);
 }
 
 .water-controls .water-controls,
@@ -1827,20 +2340,20 @@ button,
 }
 
 #fertilizerEditorTable th {
-  background: #202c30;
+  background: var(--app-fert-editor-head-bg);
 }
 
 #fertilizerEditorTable input {
   border-color: rgba(174, 183, 166, 0.16);
-  background: #0a100f;
+  background: var(--app-fert-editor-input-bg);
 }
 
 #fertilizerEditorTable tbody tr:nth-child(odd) td:nth-child(-n + 4) {
-  background: #141b14;
+  background: var(--app-table-row-odd);
 }
 
 #fertilizerEditorTable tbody tr:nth-child(even) td:nth-child(-n + 4) {
-  background: #0e1410;
+  background: var(--app-table-row-even);
 }
 
 #fertilizerEditorTable tbody tr.is-selected {
@@ -1850,7 +2363,7 @@ button,
 .table-wrap,
 .summary-scroll,
 .compact-table-wrap {
-  scrollbar-color: #4e5d43 #11140f;
+  scrollbar-color: var(--app-scrollbar-thumb) var(--app-scrollbar-track);
 }
 
 .live-bar {
@@ -1864,9 +2377,7 @@ button,
   padding: var(--space-3);
   border: 1px solid rgba(76, 199, 176, 0.18);
   border-radius: 8px;
-  background:
-    radial-gradient(circle at 90% 0%, rgba(76, 199, 176, 0.12), transparent 34%),
-    rgba(12, 18, 17, 0.78);
+  background: var(--app-live-bg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
   color: var(--app-muted);
   font-size: var(--text-sm);
@@ -1879,7 +2390,7 @@ button,
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--space-3);
-  color: #eaf4e5;
+  color: var(--app-heading-text);
   font-size: var(--text-xs);
   font-weight: 800;
   text-transform: uppercase;
@@ -1895,8 +2406,7 @@ button,
   padding: var(--space-3);
   border: 1px solid rgba(174, 183, 166, 0.14);
   border-radius: 8px;
-  background:
-    linear-gradient(145deg, rgba(27, 38, 36, 0.72), rgba(12, 16, 14, 0.86));
+  background: var(--app-live-tile-bg);
 }
 
 .live-metric-row {
@@ -1929,7 +2439,7 @@ button,
 .live-metric strong {
   min-width: 0;
   max-width: 100%;
-  color: #9df068;
+  color: var(--app-live-primary);
   overflow-wrap: anywhere;
   font-size: var(--live-value-size);
   font-weight: 800;
@@ -1938,11 +2448,11 @@ button,
 }
 
 .live-metric--pnorm strong {
-  color: #41e7ff;
+  color: var(--app-live-secondary);
 }
 
 .live-metric--ratio strong {
-  color: #d9a3ff;
+  color: var(--app-live-ratio);
 }
 
 .live-metric--npk strong {
@@ -1951,19 +2461,19 @@ button,
 }
 
 .live-metric--camg strong {
-  color: #ffd166;
+  color: var(--app-live-warning);
 }
 
 .live-ec,
 .live-ion-ratios {
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--app-text);
   overflow-x: auto;
 }
 
 .live-ec .metric-title,
 .live-ion-ratios .metric-title {
   margin-bottom: var(--space-2);
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--app-muted);
   text-transform: none;
   letter-spacing: 0;
   font-size: var(--live-label-size);
@@ -1997,7 +2507,7 @@ button,
 .live-ec .ec-value {
   display: block;
   min-width: 0;
-  color: #41e7ff;
+  color: var(--app-live-secondary);
   font-size: var(--live-value-size);
   font-weight: 800;
   line-height: 1.1;
@@ -2031,7 +2541,7 @@ button,
 
 .ion-ratio-pill strong {
   min-width: 0;
-  color: #ffd166;
+  color: var(--app-live-warning);
   overflow-wrap: anywhere;
   font-size: 0.95rem;
   font-weight: 800;

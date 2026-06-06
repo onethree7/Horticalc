@@ -37,12 +37,13 @@ selection are browser-only presentation state and are not sent to recipes,
 solver payloads, or API routes.
 
 The frontend language model is intentionally frontend-only. German is the
-fallback catalog in `frontend/i18n/de.js`, with English and Dutch in
-`frontend/i18n/en.js` and `frontend/i18n/nl.js`. Visible labels, placeholders,
-ARIA labels, status messages, empty states, and clipboard section labels use
-translation keys. Data contracts such as API route names, JSON keys, CSV fields
-like `Düngername`, element symbols, solver config keys, and units remain
-literal and are not translated.
+fallback catalog in `frontend/i18n/de.js`, with English, Dutch, Spanish, and
+Simplified Chinese in `frontend/i18n/en.js`, `frontend/i18n/nl.js`,
+`frontend/i18n/es.js`, and `frontend/i18n/zh.js`. Visible labels,
+placeholders, ARIA labels, status messages, empty states, and clipboard section
+labels use translation keys. Data contracts such as API route names, JSON keys,
+CSV fields like `Düngername`, element symbols, solver config keys, and units
+remain literal and are not translated.
 
 The live sidebar in `frontend/index.html` and `frontend/app.js` displays the
 latest calculation's NPK totals, compact P-normalized and NPK-only bubbles,
@@ -132,7 +133,7 @@ Tests rely on these categories of frontend contracts:
 - Solver copy/apply controls.
 - Summary tabs and output tables.
 - Reduced solver config controls from `/schema/solver-config`.
-- Frontend i18n catalogs with matching keys for `de`, `en`, and `nl`.
+- Frontend i18n catalogs with matching keys for `de`, `en`, `nl`, `es`, and `zh`.
 
 Before changing IDs or panel names, search tests and `frontend/app.js`.
 

@@ -32,6 +32,8 @@ window.HORTICALC_I18N.en = {
   "language.de": "Deutsch",
   "language.en": "English",
   "language.nl": "Nederlands",
+  "language.es": "Español",
+  "language.zh": "中文（简体）",
   "workflow.menu": "Main menu",
   "workflow.shortGuide": "Quick workflow",
   "workflow.editor": "Fertilizer editor",

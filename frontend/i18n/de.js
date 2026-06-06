@@ -32,6 +32,8 @@ window.HORTICALC_I18N.de = {
   "language.de": "Deutsch",
   "language.en": "English",
   "language.nl": "Nederlands",
+  "language.es": "Español",
+  "language.zh": "中文（简体）",
   "workflow.menu": "Hauptmenü",
   "workflow.shortGuide": "Ablauf kurz",
   "workflow.editor": "Dünger-Editor",

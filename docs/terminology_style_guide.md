@@ -27,13 +27,13 @@ German UI labels currently use:
 
 Frontend language catalogs use these UI workflow terms:
 
-| German | English | Dutch |
-| --- | --- | --- |
-| `Dünger-Editor` | `Fertilizer editor` | `Meststoffen-editor` |
-| `Wasserwerte` | `Water values` | `Waterwaarden` |
-| `Rechner` | `Calculator` | `Calculator` |
-| `Solver` | `Solver` | `Solver` |
-| `Zielprofil` | `Target profile` | `Doelprofiel` |
+| German | English | Dutch | Spanish | Simplified Chinese |
+| --- | --- | --- | --- | --- |
+| `Dünger-Editor` | `Fertilizer editor` | `Meststoffen-editor` | `Editor de fertilizantes` | `肥料编辑器` |
+| `Wasserwerte` | `Water values` | `Waterwaarden` | `Valores del agua` | `水质数值` |
+| `Rechner` | `Calculator` | `Calculator` | `Calculadora` | `计算器` |
+| `Solver` | `Solver` | `Solver` | `Solver` | `Solver` |
+| `Zielprofil` | `Target profile` | `Doelprofiel` | `Perfil objetivo` | `目标配置` |
 
 Do not translate data contract names in catalogs or docs when they refer to
 actual files, payloads, or keys. Examples: `Düngername`, `fertilizers_allowed`,

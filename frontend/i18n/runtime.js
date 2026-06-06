@@ -2,7 +2,7 @@
   const DEFAULT_LOCALE = "de";
   const LOCALE_STORAGE_KEY = "horticalc.locale";
   const catalogs = window.HORTICALC_I18N || {};
-  const supportedLocales = ["de", "en", "nl"];
+  const supportedLocales = ["de", "en", "nl", "es", "zh"];
 
   function isSupportedLocale(locale) {
     return supportedLocales.includes(locale) && catalogs[locale];

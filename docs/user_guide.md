@@ -31,9 +31,10 @@ found, it falls back to the system default browser.
 - `SOLVER`: solve target nutrient profiles into fertilizer grams.
 
 Use `Sprache` in the `Konfiguration` card to switch the frontend between
-German, English, and Dutch. The selection is stored in the browser as
-`horticalc.locale`. It changes visible UI text only; files, API keys, CSV
-headers, element symbols, and saved recipes keep their original data names.
+German, English, Dutch, Spanish, and Simplified Chinese. The selection is stored
+in the browser as `horticalc.locale`. It changes visible UI text only; files,
+API keys, CSV headers, element symbols, and saved recipes keep their original
+data names.
 
 ## Calculator Workflow
 

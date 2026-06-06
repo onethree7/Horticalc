@@ -61,7 +61,8 @@ right-aligned.
 
 The solver clipboard export in `frontend/app.js` includes the batch liters,
 osmosis percent, fertilizer grams, NPK metrics, EC, Solver target/achieved/delta
-values, and ion mg/L values.
+values, and ion mg/L values. It uses compact space-aligned columns for
+monospace copy/paste code blocks instead of tab-separated columns.
 
 The solver advanced config lives at the bottom of the Solver panel in
 `frontend/index.html`, includes the urea and phosphate solver options, is backed

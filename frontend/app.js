@@ -1566,19 +1566,49 @@ function formatClipboardIonLabel(key) {
   return key;
 }
 
+function buildClipboardRows(headers, rows, numericColumns = []) {
+  const allRows = headers ? [headers, ...rows] : rows;
+  const widths = allRows.reduce((currentWidths, row) => {
+    row.forEach((cell, index) => {
+      currentWidths[index] = Math.max(currentWidths[index] || 0, String(cell).length);
+    });
+    return currentWidths;
+  }, []);
+  const numericColumnSet = new Set(numericColumns);
+
+  return allRows.map((row) =>
+    row
+      .map((cell, index) => {
+        const value = String(cell);
+        return numericColumnSet.has(index)
+          ? value.padStart(widths[index])
+          : value.padEnd(widths[index]);
+      })
+      .join("  ")
+      .trimEnd()
+  );
+}
+
 function buildSolverClipboardText() {
   const fertilizers = Array.isArray(lastSolveResult?.fertilizers) ? lastSolveResult.fertilizers : [];
   const lines = ["Solver Ergebnis"];
-  lines.push(`Ansatz (L)\t${formatNumber(currentLiters)}`);
-  lines.push(`Osmose (%)\t${formatNumber(Number(osmosisPercentInput.value) || 0)}`);
+  lines.push(
+    ...buildClipboardRows(null, [
+      ["Ansatz (L)", formatNumber(currentLiters)],
+      ["Osmose (%)", formatNumber(Number(osmosisPercentInput.value) || 0)],
+    ], [1])
+  );
   lines.push("");
-  lines.push("Dünger\tGramm");
-
-  fertilizers.forEach((fert) => {
-    const name = fert.name || "";
-    const grams = formatNumber(Number(fert.grams), nutrientFormatter);
-    lines.push(`${name}\t${grams}`);
-  });
+  lines.push(
+    ...buildClipboardRows(
+      ["Dünger", "Gramm"],
+      fertilizers.map((fert) => [
+        fert.name || "",
+        formatNumber(Number(fert.grams), nutrientFormatter),
+      ]),
+      [1]
+    )
+  );
 
   const calculateData = {
     liters: currentLiters,
@@ -1594,42 +1624,53 @@ function buildSolverClipboardText() {
 
     lines.push("");
     lines.push("NPK GESAMT %");
-    lines.push(`NPK Gesamt (%)\t${npkMetrics.npk_all_pct || "-"}`);
-    lines.push(`NPK P-Norm\t${npkMetrics.npk_p_norm || "-"}`);
-    lines.push(`NPK Verhältnis (%)\t${npkMetrics.npk_npk_pct || "-"}`);
+    lines.push(
+      ...buildClipboardRows(null, [
+        ["NPK Gesamt (%)", npkMetrics.npk_all_pct || "-"],
+        ["NPK P-Norm", npkMetrics.npk_p_norm || "-"],
+        ["NPK Verhältnis (%)", npkMetrics.npk_npk_pct || "-"],
+      ], [1])
+    );
 
     lines.push("");
     lines.push("EC (mS/cm)");
-    lines.push(`EC 25°C\t${formatNumber(Number(ecValues["25.0"]))}`);
-    lines.push(`EC 18°C\t${formatNumber(Number(ecValues["18.0"]))}`);
+    lines.push(
+      ...buildClipboardRows(null, [
+        ["EC 25°C", formatNumber(Number(ecValues["25.0"]))],
+        ["EC 18°C", formatNumber(Number(ecValues["18.0"]))],
+      ], [1])
+    );
 
     lines.push("");
     lines.push("Solver Zielwerte (mg/L)");
-    lines.push("Element\tZiel\tErreicht\tDelta");
     const targets = lastSolveResult?.targets_mg_per_l || {};
     const achieved = lastSolveResult?.achieved_elements_mg_per_l || {};
     const errors = lastSolveResult?.errors_mg_per_l || {};
-    solverResultDisplayKeys(lastSolveResult).forEach((key) => {
+    const solverRows = solverResultDisplayKeys(lastSolveResult).map((key) => {
       const targetValue = Number(targets[key] ?? 0);
       const achievedValue = Number(achieved[key] ?? 0);
       const errorValue = Number.isFinite(errors[key])
         ? Number(errors[key])
         : achievedValue - targetValue;
-      lines.push([
+      return [
         formatClipboardIonLabel(key),
         targetValue > 0 ? formatNumber(targetValue, nutrientFormatter) : "-",
         formatNumber(achievedValue, nutrientFormatter),
         formatNumber(errorValue, nutrientFormatter),
-      ].join("\t"));
+      ];
     });
+    lines.push(
+      ...buildClipboardRows(["Element", "Ziel", "Erreicht", "Delta"], solverRows, [1, 2, 3])
+    );
 
     lines.push("");
     lines.push("Ionen (mg/L)");
-    summaryColumnOrder.forEach((column) => {
+    const ionRows = summaryColumnOrder.map((column) => {
       const key = column.element;
       const value = Number(ionValues[key]);
-      lines.push(`${formatClipboardIonLabel(key)}\t${formatNumber(value, nutrientFormatter)}`);
+      return [formatClipboardIonLabel(key), formatNumber(value, nutrientFormatter)];
     });
+    lines.push(...buildClipboardRows(null, ionRows, [1]));
 
     return lines.join("\n");
   });

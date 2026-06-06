@@ -56,7 +56,8 @@ Sluijsmann, and the active `osmosis_percent`.
 5. Click `Solver berechnen`.
 6. Copy the result or use `Im Rechner ansehen` to switch to the calculator. The
    clipboard text includes batch liters, osmosis percent, fertilizer grams, NPK,
-   EC, Solver target/achieved/delta values, and ion mg/L values.
+   EC, Solver target/achieved/delta values, and ion mg/L values. It is compact
+   space-aligned text for monospace copy/paste code blocks.
 7. Adjust the bottom `Erweitert` solver config, including urea, phosphate
    handling, and optional `S als Solver-Ziel`, only when needed.
 

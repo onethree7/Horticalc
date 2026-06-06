@@ -4,5 +4,5 @@ fastapi>=0.110.0
 pydantic>=2.13.4
 uvicorn>=0.27.0
 numpy>=1.26.0
-httpx>=0.26.0
+httpx>=0.28.1
 tzdata>=2024.1; platform_system=="Windows"

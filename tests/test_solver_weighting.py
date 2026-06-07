@@ -147,7 +147,7 @@ def test_default_n_total_portfolio_avoids_saloner_macro_collapse() -> None:
             "Compo Fetrilon Combi 1",
             "Yara Magnitra-L Magnesiumnitrat",
             "HAIFA monokaliumphosphat MKP",
-            "YaraTera KRISTALON ROT CALCIUM",
+            "Yara Tera KRISTALON ROT CALCIUM",
             "Agrolution Special 313 14-7-14+14CaO+TE",
             "S3 Kaliwasser 28 Be",
             "Peters Professional Combi Sol 6-18-36+3MgO+TE",

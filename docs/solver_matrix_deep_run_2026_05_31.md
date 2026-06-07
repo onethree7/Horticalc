@@ -159,7 +159,7 @@ Positive omission delta means the average score got worse when the fertilizer wa
 | `S3 Kaliwasser 28 Be` | 143.518 | 1571.153 | 1714.671 | 8 | Often useful |
 | `Yara Tera CALCINIT` | 139.353 | 1573.234 | 1712.587 | 9 | Often useful |
 | `Peters Professional Combi Sol 6-18-36+3MgO+TE` | 117.000 | 1584.405 | 1701.405 | 2 | Often useful |
-| `YaraTera KRISTALON ROT CALCIUM` | 38.069 | 1623.851 | 1661.920 | 4 | Mild positive average |
+| `Yara Tera KRISTALON ROT CALCIUM` | 38.069 | 1623.851 | 1661.920 | 4 | Mild positive average |
 | `HAIFA monokaliumphosphat MKP` | 17.615 | 1634.074 | 1651.688 | 9 | Mild positive average |
 | `Compo Hakaphos Soft16-8-22(+3) Spezial` | 5.761 | 1639.998 | 1645.758 | 4 | Mild positive average |
 | `Agrolution Special 313 14-7-14+14CaO+TE` | -60.752 | 1673.238 | 1612.486 | 7 | Context medicine, not broad food |

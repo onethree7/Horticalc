@@ -114,6 +114,7 @@ const THEME_OPTIONS = new Set([
   "horticalc-light",
   "high-contrast",
   "soil",
+  "gch-classic",
   "vt-green",
   "blue-matrix",
 ]);

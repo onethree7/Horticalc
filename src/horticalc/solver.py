@@ -6,9 +6,16 @@ from typing import Dict, List
 
 import numpy as np
 
-from .core import (
+from .chemistry import (
+    ALLOWED_TARGET_KEYS,
+    DEFAULT_PORTFOLIO_MACRO_KEYS,
+    DEFAULT_PORTFOLIO_MICRO_KEYS,
+    FERTILIZER_N_FORM_OUTPUT_KEYS,
+    N_FORM_KEYS,
     OTHER_ELEMENT_FORMS,
     OXIDE_ELEMENT_FORMS,
+)
+from .core import (
     _form_to_element,
     _oxide_to_element,
     compute_solution,
@@ -21,45 +28,13 @@ from .data_io import (
     load_water_profile_data,
 )
 from .paths import resolve_water_profile_path
-from .solver_config import SOLVER_CONFIG_DEFINITIONS
+from .solver_config import SOLVER_CONFIG_DEFAULTS
 
 
 ALWAYS_IGNORED_TARGETS = {"NA", "CL"}
 S_TARGETS = {"S", "SO4"}
-ALLOWED_TARGET_KEYS = {
-    "N_total",
-    "N_NH4",
-    "N_NO3",
-    "N_UREA",
-    "P",
-    "K",
-    "Ca",
-    "Mg",
-    "S",
-    "SO4",
-    "Fe",
-    "Mn",
-    "Cu",
-    "Zn",
-    "B",
-    "Mo",
-    "Si",
-    "Cl",
-    "Na",
-    "HCO3",
-}
-N_FORM_KEYS = {"N_NH4", "N_NO3", "N_UREA"}
-FERTILIZER_N_FORM_OUTPUT_KEYS = {
-    "NH4": "N_NH4",
-    "NO3": "N_NO3",
-    "UREA": "N_UREA",
-}
 NITROGEN_OBJECTIVE_MODES = {"as_targets", "n_total_only", "n_forms_only"}
-DEFAULT_SOLVER_CONFIG = {
-    str(definition["key"]): definition.get("default") for definition in SOLVER_CONFIG_DEFINITIONS
-}
-DEFAULT_PORTFOLIO_MACRO_KEYS = ("P", "K", "Ca", "Mg", "Si")
-DEFAULT_PORTFOLIO_MICRO_KEYS = ("Fe", "Mn", "Cu", "Zn", "B", "Mo")
+DEFAULT_SOLVER_CONFIG = dict(SOLVER_CONFIG_DEFAULTS)
 
 
 @dataclass
@@ -392,22 +367,34 @@ def _uses_default_solver_portfolio(solver_config: Dict[str, object]) -> bool:
     return True
 
 
-def _rms_percent_error(
+def _solver_config_value(solver_config: Dict[str, object], key: str, coerce):
+    return coerce(solver_config.get(key, DEFAULT_SOLVER_CONFIG[key]))
+
+
+def _percent_errors(
     keys: list[str],
     targets_raw: Dict[str, float],
     achieved_elements: Dict[str, float],
-) -> float:
-    if not keys:
-        return 0.0
-    squared_errors: list[float] = []
+) -> list[float]:
+    errors: list[float] = []
     for key in keys:
         target_value = float(targets_raw.get(key, 0.0))
         if target_value == 0.0:
             continue
         achieved_value = float(achieved_elements.get(key, 0.0))
-        squared_errors.append(((achieved_value - target_value) / target_value * 100.0) ** 2)
-    if not squared_errors:
+        errors.append((achieved_value - target_value) / target_value * 100.0)
+    return errors
+
+
+def _rms_percent_error(
+    keys: list[str],
+    targets_raw: Dict[str, float],
+    achieved_elements: Dict[str, float],
+) -> float:
+    errors = _percent_errors(keys, targets_raw, achieved_elements)
+    if not errors:
         return 0.0
+    squared_errors = [error**2 for error in errors]
     return float(np.sqrt(sum(squared_errors) / len(squared_errors)))
 
 
@@ -416,14 +403,7 @@ def _max_percent_error(
     targets_raw: Dict[str, float],
     achieved_elements: Dict[str, float],
 ) -> float:
-    errors: list[float] = []
-    for key in keys:
-        target_value = float(targets_raw.get(key, 0.0))
-        if target_value == 0.0:
-            continue
-        achieved_value = float(achieved_elements.get(key, 0.0))
-        errors.append(abs((achieved_value - target_value) / target_value * 100.0))
-    return max(errors, default=0.0)
+    return max((abs(error) for error in _percent_errors(keys, targets_raw, achieved_elements)), default=0.0)
 
 
 def _default_portfolio_score(
@@ -591,43 +571,24 @@ def solve_recipe_data(
         or {}
     )
     solver_config = recipe.get("solver_config") or {}
-    relative_weighting = bool(solver_config.get("relative_weighting", DEFAULT_SOLVER_CONFIG["relative_weighting"]))
-    overshoot_penalty = float(solver_config.get("overshoot_penalty", DEFAULT_SOLVER_CONFIG["overshoot_penalty"]))
-    irls_max_outer_iter = int(solver_config.get("irls_max_outer_iter", DEFAULT_SOLVER_CONFIG["irls_max_outer_iter"]))
-    scale_eps_mg_per_l = float(solver_config.get("scale_eps_mg_per_l", DEFAULT_SOLVER_CONFIG["scale_eps_mg_per_l"]))
-    singleton_supplier_enabled = bool(
-        solver_config.get("singleton_supplier_enabled", DEFAULT_SOLVER_CONFIG["singleton_supplier_enabled"])
+    relative_weighting = _solver_config_value(solver_config, "relative_weighting", bool)
+    overshoot_penalty = _solver_config_value(solver_config, "overshoot_penalty", float)
+    irls_max_outer_iter = _solver_config_value(solver_config, "irls_max_outer_iter", int)
+    scale_eps_mg_per_l = _solver_config_value(solver_config, "scale_eps_mg_per_l", float)
+    singleton_supplier_enabled = _solver_config_value(solver_config, "singleton_supplier_enabled", bool)
+    singleton_share_threshold = _solver_config_value(solver_config, "singleton_share_threshold", float)
+    singleton_max_regress_pp = _solver_config_value(solver_config, "singleton_max_regress_pp", float)
+    singleton_underfill_enabled = _solver_config_value(solver_config, "singleton_underfill_enabled", bool)
+    singleton_underfill_share_threshold = _solver_config_value(
+        solver_config,
+        "singleton_underfill_share_threshold",
+        float,
     )
-    singleton_share_threshold = float(
-        solver_config.get("singleton_share_threshold", DEFAULT_SOLVER_CONFIG["singleton_share_threshold"])
-    )
-    singleton_max_regress_pp = float(
-        solver_config.get("singleton_max_regress_pp", DEFAULT_SOLVER_CONFIG["singleton_max_regress_pp"])
-    )
-    singleton_underfill_enabled = bool(
-        solver_config.get("singleton_underfill_enabled", DEFAULT_SOLVER_CONFIG["singleton_underfill_enabled"])
-    )
-    singleton_underfill_share_threshold = float(
-        solver_config.get(
-            "singleton_underfill_share_threshold",
-            DEFAULT_SOLVER_CONFIG["singleton_underfill_share_threshold"],
-        )
-    )
-    singleton_underfill_max_iter = int(
-        solver_config.get("singleton_underfill_max_iter", DEFAULT_SOLVER_CONFIG["singleton_underfill_max_iter"])
-    )
-    nitrogen_objective_mode = str(
-        solver_config.get("nitrogen_objective_mode", DEFAULT_SOLVER_CONFIG["nitrogen_objective_mode"])
-    )
-    s_objective_enabled = bool(
-        solver_config.get("s_objective_enabled", DEFAULT_SOLVER_CONFIG["s_objective_enabled"])
-    )
-    n_total_governor_enabled = bool(
-        solver_config.get("n_total_governor_enabled", DEFAULT_SOLVER_CONFIG["n_total_governor_enabled"])
-    )
-    n_total_governor_weight = float(
-        solver_config.get("n_total_governor_weight", DEFAULT_SOLVER_CONFIG["n_total_governor_weight"])
-    )
+    singleton_underfill_max_iter = _solver_config_value(solver_config, "singleton_underfill_max_iter", int)
+    nitrogen_objective_mode = _solver_config_value(solver_config, "nitrogen_objective_mode", str)
+    s_objective_enabled = _solver_config_value(solver_config, "s_objective_enabled", bool)
+    n_total_governor_enabled = _solver_config_value(solver_config, "n_total_governor_enabled", bool)
+    n_total_governor_weight = _solver_config_value(solver_config, "n_total_governor_weight", float)
     n_form_priority_weights = solver_config.get("n_form_priority_weights") or {}
     if s_objective_enabled:
         target_raw = _normalize_s_objective_target(target_raw, molar_masses)

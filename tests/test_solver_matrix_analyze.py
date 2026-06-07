@@ -1,22 +1,10 @@
 from __future__ import annotations
 
 import csv
-import importlib.util
 import json
-import sys
 from pathlib import Path
 
-
-ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location(
-    "solver_matrix_analyze",
-    ROOT / "scripts" / "solver_matrix_analyze.py",
-)
-solver_matrix_analyze = importlib.util.module_from_spec(SPEC)
-assert SPEC and SPEC.loader
-sys.modules["solver_matrix_analyze"] = solver_matrix_analyze
-SPEC.loader.exec_module(solver_matrix_analyze)
-
+import scripts.solver_matrix_analyze as solver_matrix_analyze
 
 FIELDS = [
     "profile_id",
@@ -42,7 +30,6 @@ FIELDS = [
     "ignored_targets",
 ]
 
-
 def _write_run(run_dir: Path, rows: list[dict[str, object]]) -> None:
     run_dir.mkdir()
     summary = {
@@ -66,7 +53,6 @@ def _write_run(run_dir: Path, rows: list[dict[str, object]]) -> None:
                 if not isinstance(normalized[field], str):
                     normalized[field] = json.dumps(normalized[field])
             writer.writerow(normalized)
-
 
 def test_analyze_run_extracts_feature_and_fertilizer_effects(tmp_path: Path) -> None:
     run_dir = tmp_path / "run"
@@ -133,7 +119,6 @@ def test_analyze_run_extracts_feature_and_fertilizer_effects(tmp_path: Path) -> 
     fert_effect = analysis["fertilizer_effect_base_by_mode"]["n_total_only"]
     fert_a = next(row for row in fert_effect if row["fertilizer"] == "Fert A")
     assert fert_a["omission_delta"] == 20.0
-
 
 def test_write_markdown_report(tmp_path: Path) -> None:
     run_dir = tmp_path / "run"

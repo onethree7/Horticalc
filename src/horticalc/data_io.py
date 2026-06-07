@@ -58,6 +58,11 @@ def _load_yaml(path: Path) -> dict:
         return yaml.safe_load(f) or {}
 
 
+def _save_yaml(path: Path, payload: dict) -> None:
+    with path.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(payload, f, sort_keys=True, allow_unicode=True)
+
+
 def _float_mapping(data: dict) -> Dict[str, float]:
     return {str(k): float(v) for k, v in data.items()}
 
@@ -322,8 +327,7 @@ def save_water_profile(
         "mg_per_l": {str(k): float(v) for k, v in mg_per_l.items()},
         "osmosis_percent": float(osmosis_percent),
     }
-    with path.open("w", encoding="utf-8") as f:
-        yaml.safe_dump(payload, f, sort_keys=True, allow_unicode=True)
+    _save_yaml(path, payload)
 
 
 def load_recipe(path: Path) -> dict:
@@ -351,11 +355,8 @@ def save_nutrient_solution(
         "source": source,
         "targets_mg_per_l": {str(k): float(v) for k, v in targets_mg_per_l.items()},
     }
-    with path.open("w", encoding="utf-8") as f:
-        yaml.safe_dump(payload, f, sort_keys=True, allow_unicode=True)
+    _save_yaml(path, payload)
 
 
 def save_recipe(path: Path, data: dict) -> None:
-    payload = dict(data)
-    with path.open("w", encoding="utf-8") as f:
-        yaml.safe_dump(payload, f, sort_keys=True, allow_unicode=True)
+    _save_yaml(path, dict(data))

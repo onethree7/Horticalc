@@ -3,6 +3,8 @@
   const LOCALE_STORAGE_KEY = "horticalc.locale";
   const catalogs = window.HORTICALC_I18N || {};
   const supportedLocales = ["de", "en", "nl", "es", "zh"];
+  const qs = (selector, root = document) => root.querySelector(selector);
+  const qsa = (selector, root = document) => root.querySelectorAll(selector);
 
   function isSupportedLocale(locale) {
     return supportedLocales.includes(locale) && catalogs[locale];
@@ -46,16 +48,16 @@
   }
 
   function applyDomTranslations(root = document) {
-    root.querySelectorAll("[data-i18n]").forEach((element) => {
+    qsa("[data-i18n]", root).forEach((element) => {
       element.textContent = t(element.dataset.i18n);
     });
-    root.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+    qsa("[data-i18n-placeholder]", root).forEach((element) => {
       element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder));
     });
-    root.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
+    qsa("[data-i18n-aria-label]", root).forEach((element) => {
       element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
     });
-    root.querySelectorAll("[data-i18n-title]").forEach((element) => {
+    qsa("[data-i18n-title]", root).forEach((element) => {
       element.setAttribute("title", t(element.dataset.i18nTitle));
     });
   }
@@ -66,7 +68,7 @@
     if (persist) {
       writeStoredLocale(currentLocale);
     }
-    const select = document.querySelector("#languageSelect");
+    const select = qs("#languageSelect");
     if (select) {
       select.value = currentLocale;
     }

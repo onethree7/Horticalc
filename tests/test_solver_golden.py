@@ -1,16 +1,11 @@
-import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
-
 from horticalc.solver import solve_recipe
-
 
 def _percent_error(actual: float, target: float) -> float:
     if target == 0.0:
         return abs(actual)
     return abs(actual - target) / abs(target) * 100.0
-
 
 def test_solver_golden_solution_close() -> None:
     recipe_path = Path(__file__).resolve().parents[1] / "recipes" / "solve_golden.yml"

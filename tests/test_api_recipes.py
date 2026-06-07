@@ -1,16 +1,17 @@
-import sys
-from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
-
-from api.app import app
+import api.app as api_app
 from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS
 
 
+def test_yaml_filename_normalizes_route_input() -> None:
+    assert api_app._yaml_filename("../secret.yml") == "secret.yml"
+    assert api_app._yaml_filename("My Recipe") == "My_Recipe.yml"
+
+
 def test_recipes_filters_solver_and_default() -> None:
-    client = TestClient(app)
+    client = TestClient(api_app.app)
     response = client.get("/recipes")
 
     assert response.status_code == 200
@@ -20,9 +21,8 @@ def test_recipes_filters_solver_and_default() -> None:
     assert not any(name.startswith("solve_") for name in filenames)
     assert "golden.yml" in filenames
 
-
 def test_recipe_payload_persists_fertilizers_allowed() -> None:
-    client = TestClient(app)
+    client = TestClient(api_app.app)
     payload = {
         "name": "api_recipe_allowed_roundtrip",
         "liters": 10,
@@ -40,9 +40,8 @@ def test_recipe_payload_persists_fertilizers_allowed() -> None:
     recipe = get_response.json()
     assert recipe.get("fertilizers_allowed") == ["Calcinit", "Hakaphos Rot"]
 
-
 def test_recipe_payload_persists_solver_config() -> None:
-    client = TestClient(app)
+    client = TestClient(api_app.app)
     payload = {
         "name": "api_recipe_solver_config_roundtrip",
         "liters": 30,
@@ -63,9 +62,8 @@ def test_recipe_payload_persists_solver_config() -> None:
     recipe = get_response.json()
     assert recipe.get("solver_config") == payload["solver_config"]
 
-
 def test_solver_config_schema_matches_backend_definitions() -> None:
-    client = TestClient(app)
+    client = TestClient(api_app.app)
     response = client.get("/schema/solver-config")
 
     assert response.status_code == 200

@@ -2,8 +2,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
+from .chemistry import (
+    COMP_COLS,
+    FORM_ELEMENT_RULES,
+    N_MOLECULE_FORMS,
+    OTHER_ELEMENT_FORMS,
+    OXIDE_ELEMENT_FORMS,
+    OXIDE_ELEMENT_RULES,
+    OXIDE_FORM_COLS,
+    WATER_PROFILE_KEYS,
+)
 from .data_io import (
     Fertilizer,
     load_fertilizers,
@@ -13,84 +23,6 @@ from .data_io import (
 )
 from .paths import resolve_water_profile_path
 from .sluijsmann import compute_sluijsmann
-
-
-COMP_COLS: List[str] = [
-    # N forms (as element N fraction in fertilizers)
-    "NO3", "NH4", "UREA",
-    # oxides
-    "P2O5", "K2O", "CaO", "MgO", "Na2O",
-    # anions / other
-    "SO4", "Cl", "CO3", "HCO3", "SiO2",
-    # trace elements
-    "Fe", "Mn", "Cu", "Zn", "B", "Mo",
-]
-
-OXIDE_FORM_COLS: List[str] = [
-    "P2O5",
-    "K2O",
-    "CaO",
-    "MgO",
-    "Na2O",
-    "SO4",
-    "Fe",
-    "Mn",
-    "Cu",
-    "Zn",
-    "B",
-    "Mo",
-    "Cl",
-    "CO3",
-    "HCO3",
-    "SiO2",
-]
-
-WATER_PROFILE_KEYS: List[str] = [
-    "NH4",
-    "NO3",
-    "P2O5",
-    "K2O",
-    "CaO",
-    "MgO",
-    "Na2O",
-    "SO4",
-    "Cl",
-    "SiO2",
-    "HCO3",
-    "Fe",
-    "Mn",
-    "Cu",
-    "Zn",
-    "B",
-    "Mo",
-]
-
-OXIDE_ELEMENT_RULES: dict[str, tuple[str, float]] = {
-    "P2O5": ("P", 2.0),
-    "K2O": ("K", 2.0),
-    "CaO": ("Ca", 1.0),
-    "MgO": ("Mg", 1.0),
-    "Na2O": ("Na", 2.0),
-}
-
-FORM_ELEMENT_RULES: dict[str, tuple[str, float]] = {
-    "SO4": ("S", 1.0),
-    "CO3": ("C", 1.0),
-    "SiO2": ("Si", 1.0),
-    "Cl": ("Cl", 1.0),
-    "Fe": ("Fe", 1.0),
-    "Mn": ("Mn", 1.0),
-    "Cu": ("Cu", 1.0),
-    "Zn": ("Zn", 1.0),
-    "B": ("B", 1.0),
-    "Mo": ("Mo", 1.0),
-}
-
-N_MOLECULE_FORMS: tuple[str, ...] = ("NH4", "NO3")
-
-OXIDE_ELEMENT_FORMS: tuple[str, ...] = tuple(OXIDE_ELEMENT_RULES)
-
-OTHER_ELEMENT_FORMS: tuple[str, ...] = tuple(FORM_ELEMENT_RULES)
 
 
 def _mm(mm: Dict[str, float], key: str) -> float:
@@ -251,7 +183,11 @@ def _compute_nitrogen(
     fert_nh4_mg_l_as_nh4 = _n_element_to_molecule(n_fert_from_nh4, mm, "NH4") if n_fert_from_nh4 else 0.0
     fert_no3_mg_l_as_no3 = _n_element_to_molecule(n_fert_from_no3, mm, "NO3") if n_fert_from_no3 else 0.0
     urea_mg_l = _urea_element_to_molecule(n_fert_from_urea, mm) if n_fert_from_urea else 0.0
-    urea_as_nh4_mg_l = _n_element_to_molecule(n_fert_from_urea, mm, "NH4") if (urea_as_nh4 and n_fert_from_urea) else 0.0
+    urea_as_nh4_mg_l = (
+        _n_element_to_molecule(n_fert_from_urea, mm, "NH4")
+        if (urea_as_nh4 and n_fert_from_urea)
+        else 0.0
+    )
     if urea_as_nh4:
         urea_mg_l = 0.0
 

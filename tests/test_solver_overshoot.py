@@ -1,11 +1,7 @@
-import sys
-from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
 from horticalc.data_io import Fertilizer, load_molar_masses
 from horticalc.solver import solve_recipe_data
-
 
 def test_water_profile_overshoot_remains_visible_in_errors() -> None:
     molar_masses = load_molar_masses()

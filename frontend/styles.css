@@ -755,40 +755,6 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
-.compact-balance-grid {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.compact-item {
-  font-size: var(--text-sm);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.compact-balance-tile {
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid #2b3543;
-  background: var(--app-balance-tile-bg);
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.compact-balance-label {
-  color: var(--app-balance-label);
-  font-size: var(--text-xs);
-}
-
-.compact-balance-value {
-  color: var(--app-text);
-  font-weight: 700;
-  text-align: right;
-}
-
 .compact label,
 .compact .hint,
 .compact .inline-hint {
@@ -823,13 +789,6 @@ main {
 
 .solver-auto-apply {
   min-height: 1.8rem;
-}
-
-.solver-main-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: var(--space-4);
-  align-items: start;
 }
 
 .solver-comparison-grid,
@@ -912,17 +871,6 @@ main {
 
 .solver-results-empty.is-hidden {
   display: none;
-}
-
-.solver-columns {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: var(--space-4);
-}
-
-.solver-column h3 {
-  margin-top: 0;
-  font-size: 1rem;
 }
 
 .solver-picker {
@@ -1085,7 +1033,6 @@ main {
   --app-red: #d66f5e;
   --app-solver: #b67cff;
   --app-solver-glow: #41e7ff;
-  --app-manual: #f0a62b;
   --app-body-bg: linear-gradient(180deg, rgba(25, 29, 23, 0.96), rgba(12, 14, 12, 1) 34rem), var(--app-bg);
   --app-shell-bg:
     radial-gradient(circle at 0% 0%, rgba(155, 211, 106, 0.08), transparent 30%),
@@ -1184,7 +1131,6 @@ main {
   --app-red: #9c4d45;
   --app-solver: #68608c;
   --app-solver-glow: #407d8b;
-  --app-manual: #8c6428;
   --app-body-bg: linear-gradient(180deg, #e9eee5, #d8e0d5 34rem), var(--app-bg);
   --app-shell-bg:
     radial-gradient(circle at 0% 0%, rgba(83, 125, 66, 0.08), transparent 30%),
@@ -1280,7 +1226,6 @@ main {
   --app-red: #ff5c5c;
   --app-solver: #d080ff;
   --app-solver-glow: #00f7ff;
-  --app-manual: #ffe100;
   --app-body-bg: #000000;
   --app-shell-bg: #050505;
   --app-shell-border: #ffffff;
@@ -1356,7 +1301,6 @@ main {
   --app-red: #df715f;
   --app-solver: #d49cff;
   --app-solver-glow: #64d4cd;
-  --app-manual: #f0a020;
   --app-body-bg: linear-gradient(180deg, #2a2118, #12100e 34rem), var(--app-bg);
   --app-shell-bg:
     radial-gradient(circle at 0% 0%, rgba(240, 160, 32, 0.11), transparent 30%),
@@ -1443,7 +1387,6 @@ main {
   --app-red: #c84448;
   --app-solver: #9b8aa8;
   --app-solver-glow: #bdd3bf;
-  --app-manual: #d57500;
   --app-body-bg: linear-gradient(180deg, #16210e 0, #16210e 5rem, #333333 5rem), var(--app-bg);
   --app-shell-bg:
     linear-gradient(180deg, rgba(36, 42, 22, 0.48), transparent 8rem),
@@ -1533,7 +1476,6 @@ main {
   --app-red: #ff756b;
   --app-solver: #a6ff8b;
   --app-solver-glow: #57ffb0;
-  --app-manual: #d8d36c;
   --app-body-bg: linear-gradient(180deg, #0c1b10, #030704 34rem), var(--app-bg);
   --app-shell-bg:
     radial-gradient(circle at 0% 0%, rgba(115, 255, 90, 0.1), transparent 30%),
@@ -1619,7 +1561,6 @@ main {
   --app-red: #e47b78;
   --app-solver: #a9a7ff;
   --app-solver-glow: #4bd3de;
-  --app-manual: #d9b96f;
   --app-body-bg: linear-gradient(180deg, #121b29, #060a10 34rem), var(--app-bg);
   --app-shell-bg:
     radial-gradient(circle at 0% 0%, rgba(128, 200, 255, 0.1), transparent 30%),
@@ -1913,7 +1854,6 @@ html {
 }
 
 .rail-config-grid label,
-.rail-advanced-config summary,
 .solver-advanced-config summary {
   color: var(--app-muted);
   font-size: var(--text-xs);
@@ -1931,7 +1871,6 @@ html {
   min-width: 0;
 }
 
-.rail-advanced-config,
 .solver-advanced-config {
   display: grid;
   gap: var(--space-3);
@@ -1948,14 +1887,12 @@ html {
   background: transparent;
 }
 
-.rail-advanced-config summary,
 .solver-advanced-config summary {
   cursor: pointer;
   color: #eaf4e5;
   text-transform: uppercase;
 }
 
-.rail-advanced-config[open] summary,
 .solver-advanced-config[open] summary {
   margin-bottom: var(--space-3);
 }
@@ -2335,8 +2272,7 @@ button,
 .grid th,
 .grid td,
 .compact-ion-table th,
-.compact-ion-table td,
-.compact-balance-tile {
+.compact-ion-table td {
   border-color: var(--app-border);
 }
 
@@ -2381,7 +2317,6 @@ button,
 }
 
 .water-controls,
-.solver-columns,
 .solver-results,
 .solver-lower-grid,
 .data-grid {
@@ -2391,18 +2326,12 @@ button,
   background: var(--app-subpanel-bg);
 }
 
-.water-controls .water-controls,
-.solver-columns .water-controls {
+.water-controls .water-controls {
   padding: 0;
   border: 0;
   background: transparent;
 }
 
-.solver-columns {
-  align-items: start;
-}
-
-.solver-column,
 .solver-results .table-wrap,
 .solver-lower-grid .table-wrap {
   min-width: 0;
@@ -2701,7 +2630,6 @@ button,
     min-height: 34rem;
   }
 
-  .solver-main-grid,
   .solver-comparison-grid,
   .solver-lower-grid {
     grid-template-columns: 1fr;

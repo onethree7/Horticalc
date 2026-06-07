@@ -7,7 +7,6 @@ import pytest
 from horticalc.data_io import Fertilizer, load_fertilizers, save_fertilizers
 from horticalc import paths
 
-
 def _write_fertilizers_csv(path: Path, rows: list[tuple[str, float]] | None = None) -> None:
     rows = rows or [("Test", 0.1)]
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -16,7 +15,6 @@ def _write_fertilizers_csv(path: Path, rows: list[tuple[str, float]] | None = No
         + "".join(f"{index},{name},fest,1,{value}\n" for index, (name, value) in enumerate(rows, start=1)),
         encoding="utf-8",
     )
-
 
 def test_portable_layout_uses_shipped_catalog_and_user_overlay(
     monkeypatch: pytest.MonkeyPatch,
@@ -52,7 +50,6 @@ def test_portable_layout_uses_shipped_catalog_and_user_overlay(
     assert "New Shipped" in reloaded
     assert "Remove Me" not in reloaded
 
-
 def test_legacy_user_fertilizers_migrates_custom_rows_and_accepts_shipped_updates(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -69,7 +66,6 @@ def test_legacy_user_fertilizers_migrates_custom_rows_and_accepts_shipped_update
     assert "New Shipped" in ferts
     assert not paths.user_fertilizers_path(tmp_path).exists()
     assert paths.user_fertilizers_path(tmp_path).with_suffix(".csv.legacy-backup").exists()
-
 
 def test_legacy_migration_uses_shipped_replace_aliases_to_avoid_duplicates(
     monkeypatch: pytest.MonkeyPatch,

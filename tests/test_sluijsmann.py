@@ -1,11 +1,6 @@
-import sys
 import unittest
-from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
 from horticalc.sluijsmann import compute_sluijsmann
-
 
 class SluijsmannTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -43,7 +38,6 @@ class SluijsmannTests(unittest.TestCase):
         self.assertAlmostEqual(result["E_mg_CaOeq_per_l"], 154.7776289368103, places=6)
         self.assertAlmostEqual(result["E_g_CaOeq_for_batch"], 1.5477762893681029, places=6)
         self.assertAlmostEqual(result["n"], 0.8, places=6)
-
 
 if __name__ == "__main__":
     unittest.main()

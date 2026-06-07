@@ -29,22 +29,11 @@ from horticalc.data_io import (  # noqa: E402
 )
 from horticalc.paths import logs_dir, resolve_water_profile_path, shipped_nutrient_solutions_dir  # noqa: E402
 from horticalc.solver import solve_recipe_data  # noqa: E402
+from horticalc.solver_config import MATRIX_BOOLEAN_SOLVER_DEFAULTS, MATRIX_BOOLEAN_SOLVER_KEYS  # noqa: E402
 
 
 DEFAULT_CASES_PATH = Path(__file__).with_name("solver_matrix_cases.yml")
 DEFAULT_OUT_DIR = logs_dir(ROOT) / "solver_matrix" / "dev"
-BOOLEAN_SOLVER_KEYS = (
-    "relative_weighting",
-    "singleton_supplier_enabled",
-    "singleton_underfill_enabled",
-    "n_total_governor_enabled",
-)
-BOOLEAN_DEFAULTS = {
-    "relative_weighting": False,
-    "singleton_supplier_enabled": False,
-    "singleton_underfill_enabled": True,
-    "n_total_governor_enabled": False,
-}
 IGNORED_OPTIMIZATION_TARGETS = {"S", "SO4", "NA", "CL"}
 MACRO_KEYS = {"N_total", "P", "K", "Ca", "Mg", "Si"}
 N_FORM_KEYS = {"N_NH4", "N_NO3", "N_UREA"}
@@ -336,19 +325,19 @@ def nitrogen_objective_modes(cases: dict[str, Any], override: str | None) -> lis
 
 def boolean_solver_configs(nitrogen_modes: list[str]) -> list[SolverConfigCase]:
     value_options = []
-    for key in BOOLEAN_SOLVER_KEYS:
-        default = BOOLEAN_DEFAULTS[key]
+    for key in MATRIX_BOOLEAN_SOLVER_KEYS:
+        default = MATRIX_BOOLEAN_SOLVER_DEFAULTS[key]
         value_options.append((default, not default))
 
     configs: list[SolverConfigCase] = []
     for nitrogen_mode in nitrogen_modes:
         for values in itertools.product(*value_options):
-            config = dict(zip(BOOLEAN_SOLVER_KEYS, values))
+            config = dict(zip(MATRIX_BOOLEAN_SOLVER_KEYS, values))
             config["nitrogen_objective_mode"] = nitrogen_mode
             changed_parts = [
                 f"{key}={str(value).lower()}"
                 for key, value in config.items()
-                if key in BOOLEAN_DEFAULTS and value != BOOLEAN_DEFAULTS[key]
+                if key in MATRIX_BOOLEAN_SOLVER_DEFAULTS and value != MATRIX_BOOLEAN_SOLVER_DEFAULTS[key]
             ]
             name = f"n_mode={nitrogen_mode}"
             if changed_parts:
@@ -389,7 +378,11 @@ def deep_refinement_configs(base: SolverConfigCase) -> list[SolverConfigCase]:
     return variants
 
 
-def base_run_budget(args: argparse.Namespace, profiles: list[TargetProfile], configs: list[SolverConfigCase]) -> int | None:
+def base_run_budget(
+    args: argparse.Namespace,
+    profiles: list[TargetProfile],
+    configs: list[SolverConfigCase],
+) -> int | None:
     if args.max_runs is None or args.max_runs <= 0:
         return None
     if args.preset != "deep" or not configs:
@@ -655,6 +648,38 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
     def max_runs_reached() -> bool:
         return args.max_runs is not None and args.max_runs > 0 and aggregate.total_runs >= args.max_runs
 
+    def run_unique_case(
+        profile: TargetProfile,
+        subset: tuple[str, ...],
+        config: SolverConfigCase,
+        *,
+        phase: str,
+    ) -> bool:
+        nonlocal stopped_early
+        if max_runs_reached():
+            stopped_early = True
+            return False
+        key = _run_key(profile.profile_id, subset, config)
+        if key in seen:
+            return True
+        seen.add(key)
+        row = solve_case(
+            profile=profile,
+            subset=subset,
+            config=config,
+            preset=args.preset,
+            phase=phase,
+            liters=liters,
+            water_profile_name=water_profile_name,
+            osmosis_percent=osmosis_percent,
+            water_profile_data=water_profile_data,
+            fertilizers=fertilizers,
+            molar_masses=molar_masses,
+        )
+        write_row(writer, jsonl_handle, row)
+        aggregate.update(row, subset, config)
+        return True
+
     with results_csv.open("w", encoding="utf-8", newline="") as csv_handle, results_jsonl.open(
         "w", encoding="utf-8"
     ) as jsonl_handle:
@@ -668,28 +693,8 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
                 if stopped_early:
                     break
                 for config in configs:
-                    if max_runs_reached():
-                        stopped_early = True
+                    if not run_unique_case(profile, subset, config, phase="base"):
                         break
-                    key = _run_key(profile.profile_id, subset, config)
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                    row = solve_case(
-                        profile=profile,
-                        subset=subset,
-                        config=config,
-                        preset=args.preset,
-                        phase="base",
-                        liters=liters,
-                        water_profile_name=water_profile_name,
-                        osmosis_percent=osmosis_percent,
-                        water_profile_data=water_profile_data,
-                        fertilizers=fertilizers,
-                        molar_masses=molar_masses,
-                    )
-                    write_row(writer, jsonl_handle, row)
-                    aggregate.update(row, subset, config)
 
         if args.preset == "deep" and not stopped_early:
             refinement_candidates = [
@@ -710,28 +715,8 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
                         refinement_configs
                     )
                 for config in refinement_configs:
-                    if max_runs_reached():
-                        stopped_early = True
+                    if not run_unique_case(profile, subset, config, phase="refine"):
                         break
-                    key = _run_key(profile.profile_id, subset, config)
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                    row = solve_case(
-                        profile=profile,
-                        subset=subset,
-                        config=config,
-                        preset=args.preset,
-                        phase="refine",
-                        liters=liters,
-                        water_profile_name=water_profile_name,
-                        osmosis_percent=osmosis_percent,
-                        water_profile_data=water_profile_data,
-                        fertilizers=fertilizers,
-                        molar_masses=molar_masses,
-                    )
-                    write_row(writer, jsonl_handle, row)
-                    aggregate.update(row, subset, config)
                 if stopped_early:
                     break
 

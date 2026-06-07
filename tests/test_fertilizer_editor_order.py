@@ -1,21 +1,9 @@
 from __future__ import annotations
 
-import importlib.util
-import sys
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.append(str(ROOT / "src"))
-
 from fastapi.testclient import TestClient
 
+import api.app as api_app
 from horticalc.core import COMP_COLS
-
-spec = importlib.util.spec_from_file_location("api_app", ROOT / "api" / "app.py")
-api_app = importlib.util.module_from_spec(spec)
-assert spec and spec.loader
-spec.loader.exec_module(api_app)
-
 
 def test_fertilizer_editor_n_form_order() -> None:
     client = TestClient(api_app.app)

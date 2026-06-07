@@ -1,11 +1,7 @@
 import csv
-import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
-
 from horticalc.data_io import Fertilizer, load_fertilizers, save_fertilizers
-
 
 def test_load_fertilizers_ignores_number_field(tmp_path: Path) -> None:
     csv_path = tmp_path / "fertilizers.csv"
@@ -19,7 +15,6 @@ def test_load_fertilizers_ignores_number_field(tmp_path: Path) -> None:
 
     assert fert.comp == {"NH4": 0.12}
 
-
 def test_load_fertilizers_accepts_ascii_name_header(tmp_path: Path) -> None:
     csv_path = tmp_path / "fertilizers.csv"
     with csv_path.open("w", encoding="utf-8", newline="") as f:
@@ -30,7 +25,6 @@ def test_load_fertilizers_accepts_ascii_name_header(tmp_path: Path) -> None:
     fertilizers = load_fertilizers(csv_path)
 
     assert fertilizers["Ascii Header"].comp == {"NO3": 0.11}
-
 
 def test_save_fertilizers_preserves_number_column(tmp_path: Path) -> None:
     csv_path = tmp_path / "fertilizers.csv"

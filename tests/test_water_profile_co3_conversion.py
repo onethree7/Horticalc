@@ -1,12 +1,8 @@
-import sys
-from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
 from horticalc.core import compute_solution
 from horticalc.data_io import Fertilizer, load_molar_masses
 from horticalc.solver import solve_recipe_data
-
 
 def test_co3_water_profile_converts_to_hco3_for_solution() -> None:
     molar_masses = load_molar_masses()
@@ -17,7 +13,6 @@ def test_co3_water_profile_converts_to_hco3_for_solution() -> None:
 
     assert result.water_elements_mg_l.get("HCO3", 0.0) > 0.0
     assert result.water_ions_mmol_l.get("HCO3-", 0.0) > 0.0
-
 
 def test_solve_recipe_data_includes_co3_derived_hco3() -> None:
     molar_masses = load_molar_masses()

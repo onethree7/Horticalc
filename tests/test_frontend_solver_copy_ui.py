@@ -1,18 +1,15 @@
-from pathlib import Path
+from tests.frontend_assets import read_frontend_file
 
 
 def test_solver_copy_button_present() -> None:
-    index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
-    content = index_html.read_text(encoding="utf-8")
+    content = read_frontend_file("index.html")
 
     assert 'id="copySolverResults"' in content
     assert 'data-i18n="solver.copyClipboard"' in content
     assert 'id="copySolverResultsStatus"' in content
 
-
 def test_solver_copy_logic_present() -> None:
-    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
-    content = app_js.read_text(encoding="utf-8")
+    content = read_frontend_file("app.js")
 
     assert "buildSolverClipboardText" in content
     assert "buildClipboardRows" in content

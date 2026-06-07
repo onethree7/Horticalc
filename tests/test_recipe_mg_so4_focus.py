@@ -1,13 +1,9 @@
-import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
-
 from horticalc.core import COMP_COLS, compute_solution
 from horticalc.data_io import load_fertilizers, load_molar_masses, load_recipe, load_water_profile_data
-
 
 def _expected_fertilizer_forms(recipe: dict, ferts: dict) -> dict:
     liters = float(recipe.get("liters") or 10.0)
@@ -24,7 +20,6 @@ def _expected_fertilizer_forms(recipe: dict, ferts: dict) -> dict:
                 continue
             forms[key] += eff_g * float(frac) * 1000.0 / liters
     return forms
-
 
 def test_mg_so4_focus_recipe_elements_and_balance() -> None:
     repo_root = Path(__file__).resolve().parents[1]

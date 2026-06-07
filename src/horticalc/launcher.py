@@ -190,12 +190,19 @@ def wait_for_health(
     )
 
 
+def _which_first(candidates: tuple[str, ...]) -> Path | None:
+    for candidate in candidates:
+        found = shutil.which(candidate)
+        if found:
+            return Path(found)
+    return None
+
+
 def find_browser_executable() -> Path | None:
     if os.name == "nt":
-        for candidate in WINDOWS_BROWSER_CANDIDATES:
-            found = shutil.which(candidate)
-            if found:
-                return Path(found)
+        browser = _which_first(WINDOWS_BROWSER_CANDIDATES)
+        if browser:
+            return browser
         for env_name, *parts in WINDOWS_BROWSER_LOCATIONS:
             base = os.environ.get(env_name)
             if not base:
@@ -204,11 +211,7 @@ def find_browser_executable() -> Path | None:
             if candidate.exists():
                 return candidate
         return None
-    for candidate in LINUX_BROWSER_CANDIDATES:
-        found = shutil.which(candidate)
-        if found:
-            return Path(found)
-    return None
+    return _which_first(LINUX_BROWSER_CANDIDATES)
 
 
 def create_profile_dir(root: Path) -> Path:
@@ -264,6 +267,20 @@ def stop_server(
     server.should_exit = True
     server_thread.join(timeout=timeout_seconds)
     remove_lockfile(lock_path)
+
+
+def require_server_health(
+    server: uvicorn.Server,
+    server_thread: threading.Thread,
+    lock_path: Path,
+    port: int,
+    log_file: Path,
+) -> None:
+    healthy, error_message = wait_for_health(port, HEALTH_TIMEOUT_SECONDS, server_thread)
+    if healthy:
+        return
+    stop_server(server, server_thread, lock_path)
+    fail_fast(error_message or "Server failed to start.", log_file)
 
 
 def main() -> None:
@@ -328,19 +345,11 @@ def main() -> None:
     try:
         if no_browser:
             logger.info("%s is set; waiting for /health without launching a browser.", NO_BROWSER_ENV)
-            healthy, error_message = wait_for_health(port, HEALTH_TIMEOUT_SECONDS, server_thread)
-            if not healthy:
-                stop_server(server, server_thread, lock_path)
-                fail_fast(error_message or "Server failed to start.", log_file)
-                return
+            require_server_health(server, server_thread, lock_path, port, log_file)
             server_thread.join()
             return
 
-        healthy, error_message = wait_for_health(port, HEALTH_TIMEOUT_SECONDS, server_thread)
-        if not healthy:
-            stop_server(server, server_thread, lock_path)
-            fail_fast(error_message or "Server failed to start.", log_file)
-            return
+        require_server_health(server, server_thread, lock_path, port, log_file)
 
         url = f"http://127.0.0.1:{port}/"
         browser = find_browser_executable()

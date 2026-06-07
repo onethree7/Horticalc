@@ -1,11 +1,9 @@
-from pathlib import Path
+from tests.frontend_assets import read_frontend_file
 
 
 def test_solver_ui_uses_reduced_solver_config_controls() -> None:
-    index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
-    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
-    html_content = index_html.read_text(encoding="utf-8")
-    js_content = app_js.read_text(encoding="utf-8")
+    html_content = read_frontend_file("index.html")
+    js_content = read_frontend_file("app.js")
 
     expected_controls = [
         "solverConfigRelativeWeighting",
@@ -24,21 +22,16 @@ def test_solver_ui_uses_reduced_solver_config_controls() -> None:
     assert "solverConfigMacroPriorityEnabled" not in html_content
     assert "solverConfigStageOptimizationEnabled" not in html_content
 
-
 def test_solver_ui_fetches_backend_solver_config_schema() -> None:
-    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
-    content = app_js.read_text(encoding="utf-8")
+    content = read_frontend_file("app.js")
 
     assert "/schema/solver-config" in content
     assert "fetchSolverConfigDefinitions" in content
     assert "normalizeSolverConfigDefinitions" in content
 
-
 def test_solver_ui_exposes_nitrogen_objective_checkbox() -> None:
-    index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
-    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
-    html_content = index_html.read_text(encoding="utf-8")
-    js_content = app_js.read_text(encoding="utf-8")
+    html_content = read_frontend_file("index.html")
+    js_content = read_frontend_file("app.js")
 
     assert 'id="solverConfigNitrogenObjectiveMode"' in html_content
     assert "N-total statt N-Formen" in html_content
@@ -46,29 +39,22 @@ def test_solver_ui_exposes_nitrogen_objective_checkbox() -> None:
     assert "n_total_only" in js_content
     assert "n_forms_only" in js_content
 
-
 def test_solver_ui_exposes_s_objective_toggle() -> None:
-    index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
-    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
-    html_content = index_html.read_text(encoding="utf-8")
-    js_content = app_js.read_text(encoding="utf-8")
+    html_content = read_frontend_file("index.html")
+    js_content = read_frontend_file("app.js")
 
     assert 'id="solverConfigSObjectiveEnabled"' in html_content
     assert 'data-i18n="solver.sAsTarget"' in html_content
     assert "s_objective_enabled" in js_content
 
-
 def test_solver_ui_merges_local_solver_config_fallbacks() -> None:
-    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
-    content = app_js.read_text(encoding="utf-8")
+    content = read_frontend_file("app.js")
 
     assert "FALLBACK_SOLVER_CONFIG_DEFINITIONS.forEach" in content
     assert "normalized.push({ ...definition })" in content
 
-
 def test_solver_advanced_config_lives_in_solver_panel() -> None:
-    index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
-    html_content = index_html.read_text(encoding="utf-8")
+    html_content = read_frontend_file("index.html")
 
     assert 'class="rail-advanced-config"' not in html_content
     assert 'class="solver-advanced-config"' in html_content
@@ -77,28 +63,28 @@ def test_solver_advanced_config_lives_in_solver_panel() -> None:
     assert html_content.index('class="solver-advanced-config"') < html_content.index('id="solverPhosphate"')
     assert html_content.index('id="solverTargetsResultsTable"') < html_content.index('class="solver-advanced-config"')
 
-
 def test_solver_ui_does_not_restore_hidden_solver_config_from_saved_solution() -> None:
-    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
-    content = app_js.read_text(encoding="utf-8")
+    content = read_frontend_file("app.js")
 
     assert "applySolverConfig(savedSolution.solver_config || {})" not in content
 
-
 def test_solver_ui_does_not_auto_apply_recipe_solver_config() -> None:
-    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
-    content = app_js.read_text(encoding="utf-8")
+    content = read_frontend_file("app.js")
 
     assert "if (recipe?.solver_config)" not in content
     assert "applySolverConfig(recipe.solver_config)" not in content
 
-
 def test_solver_ui_does_not_persist_solver_config_in_recipe_or_snapshot() -> None:
-    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
-    content = app_js.read_text(encoding="utf-8")
+    content = read_frontend_file("app.js")
 
-    build_recipe_block = content.split("function buildRecipePayload(", 1)[1].split("function buildRecipePayloadFromSelection", 1)[0]
-    build_snapshot_block = content.split("function buildSolutionSnapshot()", 1)[1].split("function restoreSolverAllowedFromStorage", 1)[0]
+    build_recipe_block = content.split("function buildRecipePayload(", 1)[1].split(
+        "function buildRecipePayloadFromSelection",
+        1,
+    )[0]
+    build_snapshot_block = content.split("function buildSolutionSnapshot()", 1)[1].split(
+        "function restoreSolverAllowedFromStorage",
+        1,
+    )[0]
 
     assert "solver_config" not in build_recipe_block
     assert "solver_config" not in build_snapshot_block

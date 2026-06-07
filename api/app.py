@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
@@ -11,8 +12,8 @@ from pydantic import BaseModel, Field
 
 import yaml
 
+from horticalc.chemistry import ALLOWED_TARGET_KEYS, ALLOWED_WATER_KEYS, COMP_COLS
 from horticalc.core import (
-    COMP_COLS,
     augment_water_profile_with_elements,
     compute_solution,
     normalize_water_profile,
@@ -35,11 +36,17 @@ from horticalc.paths import (
     default_recipe_path,
     ensure_portable_layout,
 )
-from horticalc.solver import ALLOWED_TARGET_KEYS, solve_recipe_data
+from horticalc.solver import solve_recipe_data
 from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS
 
 
-app = FastAPI(title="Horticalc API", version="0.1.0")
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    load_app_data()
+    yield
+
+
+app = FastAPI(title="Horticalc API", version="0.1.0", lifespan=lifespan)
 
 
 FERTILIZERS: Dict[str, Fertilizer] = {}
@@ -142,36 +149,6 @@ class RecipePayload(BaseModel):
     solver_config: Dict[str, Any] = Field(default_factory=dict)
 
 
-ALLOWED_WATER_KEYS = {
-    "NH4",
-    "NO3",
-    "PO4",
-    "P",
-    "SO4",
-    "S",
-    "K",
-    "Ca",
-    "Mg",
-    "Na",
-    "Cl",
-    "HCO3",
-    "CO3",
-    "CaCO3",
-    "KH",
-    "Fe",
-    "Mn",
-    "Cu",
-    "Zn",
-    "B",
-    "Mo",
-    "SiO2",
-    "P2O5",
-    "K2O",
-    "CaO",
-    "MgO",
-    "Na2O",
-}
-
 def sanitize_water_profile(mg_per_l: Dict[str, float]) -> Dict[str, float]:
     sanitized: Dict[str, float] = {}
     for key, value in mg_per_l.items():
@@ -195,8 +172,69 @@ async def _parse_request_payload(request: Request) -> dict:
     return await request.json()
 
 
+def _model_dump(model: BaseModel) -> dict:
+    return model.model_dump()
+
+
 def _safe_filename(name: str) -> str:
     return "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in name).strip("_")
+
+
+def _yaml_filename(name: str) -> str:
+    stem = name[:-4] if name.endswith(".yml") else name
+    return f"{_safe_filename(stem)}.yml"
+
+
+def _required_name(value: str, detail: str) -> str:
+    name = value.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail=detail)
+    return name
+
+
+def _saved_yaml_path(directory: Path, name: str, empty_name_detail: str) -> Path:
+    safe_name = _safe_filename(name)
+    if not safe_name:
+        raise HTTPException(status_code=400, detail=empty_name_detail)
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory / f"{safe_name}.yml"
+
+
+def _named_yaml_entries(
+    directory: Path,
+    loader: Callable[[Path], dict],
+    skip: Callable[[Path], bool] | None = None,
+) -> List[dict]:
+    if not directory.exists():
+        return []
+    entries = []
+    for path in sorted(directory.glob("*.yml")):
+        if skip and skip(path):
+            continue
+        data = loader(path)
+        entries.append(
+            {
+                "name": data.get("name") or path.stem,
+                "filename": path.name,
+            }
+        )
+    return entries
+
+
+def _validated_float_mapping(
+    values: Dict[str, Any],
+    allowed_keys: set[str],
+    invalid_key_prefix: str,
+) -> Dict[str, float]:
+    result: Dict[str, float] = {}
+    for key, value in values.items():
+        if key not in allowed_keys:
+            raise HTTPException(status_code=400, detail=f"{invalid_key_prefix}: {key}")
+        try:
+            result[key] = float(value)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=f"Invalid value for {key}") from exc
+    return result
 
 
 def _require_path(getter: Callable[[], Path | None], name: str) -> Path:
@@ -212,7 +250,6 @@ def _ensure_initialized() -> None:
         load_app_data()
 
 
-@app.on_event("startup")
 def load_app_data() -> None:
     layout = ensure_portable_layout()
     global FERTILIZERS, MOLAR_MASSES, WATER_PROFILES_DIR, NUTRIENT_SOLUTIONS_DIR, DEFAULT_RECIPE_PATH, RECIPES_DIR
@@ -292,25 +329,13 @@ def put_fertilizers(payload: List[FertilizerPayload]) -> dict:
 @app.get("/water-profiles")
 def water_profiles() -> List[dict]:
     water_profiles_dir = _require_path(lambda: WATER_PROFILES_DIR, "Water profiles")
-    if not water_profiles_dir.exists():
-        return []
-    profiles = []
-    for path in sorted(water_profiles_dir.glob("*.yml")):
-        data = load_water_profile_data(path)
-        profiles.append(
-            {
-                "name": data.get("name") or path.stem,
-                "filename": path.name,
-            }
-        )
-    return profiles
+    return _named_yaml_entries(water_profiles_dir, load_water_profile_data)
 
 
 @app.get("/water-profiles/{profile_name}")
 def water_profile(profile_name: str) -> dict:
     water_profiles_dir = _require_path(lambda: WATER_PROFILES_DIR, "Water profiles")
-    filename = profile_name if profile_name.endswith(".yml") else f"{profile_name}.yml"
-    profile_path = water_profiles_dir / filename
+    profile_path = water_profiles_dir / _yaml_filename(profile_name)
     if not profile_path.exists():
         raise HTTPException(status_code=404, detail="Water profile not found")
     data = load_water_profile_data(profile_path)
@@ -323,25 +348,13 @@ def water_profile(profile_name: str) -> dict:
 @app.get("/nutrient-solutions")
 def nutrient_solutions() -> List[dict]:
     nutrient_solutions_dir = _require_path(lambda: NUTRIENT_SOLUTIONS_DIR, "Nutrient solutions")
-    if not nutrient_solutions_dir.exists():
-        return []
-    solutions = []
-    for path in sorted(nutrient_solutions_dir.glob("*.yml")):
-        data = load_nutrient_solution_data(path)
-        solutions.append(
-            {
-                "name": data.get("name") or path.stem,
-                "filename": path.name,
-            }
-        )
-    return solutions
+    return _named_yaml_entries(nutrient_solutions_dir, load_nutrient_solution_data)
 
 
 @app.get("/nutrient-solutions/{solution_name}")
 def nutrient_solution(solution_name: str) -> dict:
     nutrient_solutions_dir = _require_path(lambda: NUTRIENT_SOLUTIONS_DIR, "Nutrient solutions")
-    filename = solution_name if solution_name.endswith(".yml") else f"{solution_name}.yml"
-    solution_path = nutrient_solutions_dir / filename
+    solution_path = nutrient_solutions_dir / _yaml_filename(solution_name)
     if not solution_path.exists():
         raise HTTPException(status_code=404, detail="Nutrient Solution not found")
     return load_nutrient_solution_data(solution_path)
@@ -353,20 +366,11 @@ async def save_profile(request: Request) -> dict:
     payload = await _parse_request_payload(request)
 
     profile = WaterProfilePayload(**payload)
-    name = profile.name.strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="Profile name is required")
+    name = _required_name(profile.name, "Profile name is required")
 
-    mg_per_l: Dict[str, float] = {}
-    for key, value in profile.mg_per_l.items():
-        if key not in ALLOWED_WATER_KEYS:
-            raise HTTPException(status_code=400, detail=f"Invalid water key: {key}")
-        try:
-            mg_per_l[key] = float(value)
-        except (TypeError, ValueError) as exc:
-            raise HTTPException(status_code=400, detail=f"Invalid value for {key}") from exc
-
-    mg_per_l = sanitize_water_profile(mg_per_l)
+    mg_per_l = sanitize_water_profile(
+        _validated_float_mapping(profile.mg_per_l, ALLOWED_WATER_KEYS, "Invalid water key")
+    )
 
     osmosis_percent = profile.osmosis_percent if profile.osmosis_percent is not None else 0
     try:
@@ -376,13 +380,8 @@ async def save_profile(request: Request) -> dict:
     if not 0 <= osmosis_percent <= 100:
         raise HTTPException(status_code=400, detail="osmosis_percent must be between 0 and 100")
 
-    safe_name = _safe_filename(name)
-    if not safe_name:
-        raise HTTPException(status_code=400, detail="Profile name results in empty filename")
-
     water_profiles_dir = _require_path(lambda: WATER_PROFILES_DIR, "Water profiles")
-    profile_path = water_profiles_dir / f"{safe_name}.yml"
-    water_profiles_dir.mkdir(parents=True, exist_ok=True)
+    profile_path = _saved_yaml_path(water_profiles_dir, name, "Profile name results in empty filename")
     save_water_profile(
         profile_path,
         name=name,
@@ -399,26 +398,20 @@ async def save_nutrient_solution_profile(request: Request) -> dict:
     payload = await _parse_request_payload(request)
 
     solution = NutrientSolutionPayload(**payload)
-    name = solution.name.strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="Nutrient Solution name is required")
+    name = _required_name(solution.name, "Nutrient Solution name is required")
 
-    targets_mg_per_l: Dict[str, float] = {}
-    for key, value in solution.targets_mg_per_l.items():
-        if key not in ALLOWED_TARGET_KEYS:
-            raise HTTPException(status_code=400, detail=f"Invalid target key: {key}")
-        try:
-            targets_mg_per_l[key] = float(value)
-        except (TypeError, ValueError) as exc:
-            raise HTTPException(status_code=400, detail=f"Invalid value for {key}") from exc
-
-    safe_name = _safe_filename(name)
-    if not safe_name:
-        raise HTTPException(status_code=400, detail="Nutrient Solution name results in empty filename")
+    targets_mg_per_l = _validated_float_mapping(
+        solution.targets_mg_per_l,
+        ALLOWED_TARGET_KEYS,
+        "Invalid target key",
+    )
 
     nutrient_solutions_dir = _require_path(lambda: NUTRIENT_SOLUTIONS_DIR, "Nutrient solutions")
-    solution_path = nutrient_solutions_dir / f"{safe_name}.yml"
-    nutrient_solutions_dir.mkdir(parents=True, exist_ok=True)
+    solution_path = _saved_yaml_path(
+        nutrient_solutions_dir,
+        name,
+        "Nutrient Solution name results in empty filename",
+    )
     save_nutrient_solution(
         solution_path,
         name=name,
@@ -445,29 +438,17 @@ def default_recipe() -> dict:
 @app.get("/recipes")
 def recipes() -> List[dict]:
     recipes_dir = _require_path(lambda: RECIPES_DIR, "Recipes")
-    if not recipes_dir.exists():
-        return []
-    recipes_out = []
-    for path in sorted(recipes_dir.glob("*.yml")):
-        if path.stem.startswith("solve_"):
-            continue
-        if path.name == "default.yml":
-            continue
-        data = load_recipe(path)
-        recipes_out.append(
-            {
-                "name": data.get("name") or path.stem,
-                "filename": path.name,
-            }
-        )
-    return recipes_out
+    return _named_yaml_entries(
+        recipes_dir,
+        load_recipe,
+        skip=lambda path: path.stem.startswith("solve_") or path.name == "default.yml",
+    )
 
 
 @app.get("/recipes/{recipe_name}")
 def recipe(recipe_name: str) -> dict:
     recipes_dir = _require_path(lambda: RECIPES_DIR, "Recipes")
-    filename = recipe_name if recipe_name.endswith(".yml") else f"{recipe_name}.yml"
-    recipe_path = recipes_dir / filename
+    recipe_path = recipes_dir / _yaml_filename(recipe_name)
     if not recipe_path.exists():
         raise HTTPException(status_code=404, detail="Recipe not found")
     return load_recipe(recipe_path)
@@ -479,18 +460,12 @@ async def save_recipe_profile(request: Request) -> dict:
     payload = await _parse_request_payload(request)
 
     recipe = RecipePayload(**payload)
-    name = recipe.name.strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="Recipe name is required")
-
-    safe_name = _safe_filename(name)
-    if not safe_name:
-        raise HTTPException(status_code=400, detail="Recipe name results in empty filename")
+    name = _required_name(recipe.name, "Recipe name is required")
 
     payload_out = {
         "name": name,
         "liters": recipe.liters,
-        "fertilizers": [entry.dict() for entry in recipe.fertilizers],
+        "fertilizers": [_model_dump(entry) for entry in recipe.fertilizers],
         "fertilizers_allowed": [str(name) for name in recipe.fertilizers_allowed if str(name).strip()],
         "urea_as_nh4": recipe.urea_as_nh4,
         "phosphate_species": recipe.phosphate_species,
@@ -503,8 +478,7 @@ async def save_recipe_profile(request: Request) -> dict:
         payload_out["osmosis_percent"] = recipe.osmosis_percent
 
     recipes_dir = _require_path(lambda: RECIPES_DIR, "Recipes")
-    recipe_path = recipes_dir / f"{safe_name}.yml"
-    recipes_dir.mkdir(parents=True, exist_ok=True)
+    recipe_path = _saved_yaml_path(recipes_dir, name, "Recipe name results in empty filename")
     save_recipe(recipe_path, payload_out)
     return {"status": "ok", "filename": recipe_path.name}
 
@@ -516,32 +490,25 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
     osmosis_percent = 0.0
     if payload.water_profile_name:
         water_profiles_dir = _require_path(lambda: WATER_PROFILES_DIR, "Water profiles")
-        filename = (
-            payload.water_profile_name
-            if payload.water_profile_name.endswith(".yml")
-            else f"{payload.water_profile_name}.yml"
-        )
-        profile_path = water_profiles_dir / filename
+        profile_path = water_profiles_dir / _yaml_filename(payload.water_profile_name)
         if not profile_path.exists():
             raise HTTPException(status_code=404, detail="Water profile not found")
         profile = load_water_profile_data(profile_path)
         mg_per_l = profile.get("mg_per_l") or {}
-        for key in mg_per_l:
-            if key not in ALLOWED_WATER_KEYS:
-                raise HTTPException(status_code=400, detail=f"Invalid water key: {key}")
-        water_mg_l = sanitize_water_profile(mg_per_l)
+        water_mg_l = sanitize_water_profile(
+            _validated_float_mapping(mg_per_l, ALLOWED_WATER_KEYS, "Invalid water key")
+        )
         osmosis_percent = float(profile.get("osmosis_percent") or 0)
     elif payload.water_mg_l:
-        for key, _ in payload.water_mg_l.items():
-            if key not in ALLOWED_WATER_KEYS:
-                raise HTTPException(status_code=400, detail=f"Invalid water key: {key}")
-        water_mg_l = sanitize_water_profile(payload.water_mg_l)
+        water_mg_l = sanitize_water_profile(
+            _validated_float_mapping(payload.water_mg_l, ALLOWED_WATER_KEYS, "Invalid water key")
+        )
         if payload.osmosis_percent is not None:
             osmosis_percent = float(payload.osmosis_percent)
 
     recipe = {
         "liters": payload.liters,
-        "fertilizers": [entry.dict() for entry in payload.fertilizers],
+        "fertilizers": [_model_dump(entry) for entry in payload.fertilizers],
         "urea_as_nh4": payload.urea_as_nh4,
         "phosphate_species": payload.phosphate_species,
     }
@@ -573,15 +540,9 @@ def solve(payload: SolveRequest) -> SolveResponse:
         if "osmosis_percent" not in water_profile_data:
             water_profile_data["osmosis_percent"] = 0.0
 
-    targets: Dict[str, float] = {}
-    for key, value in payload.targets.items():
-        if key not in ALLOWED_TARGET_KEYS:
-            raise HTTPException(status_code=400, detail=f"Invalid target key: {key}")
-        targets[key] = value
-
     recipe = {
         "liters": payload.liters,
-        "targets": targets,
+        "targets": _validated_float_mapping(payload.targets, ALLOWED_TARGET_KEYS, "Invalid target key"),
         "fertilizers_allowed": payload.fertilizers_allowed,
         "fixed_grams": payload.fixed_grams,
         "urea_as_nh4": payload.urea_as_nh4,

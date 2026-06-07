@@ -1,16 +1,9 @@
-from pathlib import Path
 import re
 
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
-def _read_frontend_file(name: str) -> str:
-    return (ROOT / "frontend" / name).read_text(encoding="utf-8")
-
+from tests.frontend_assets import read_frontend_file
 
 def test_horticalc_shell_replaces_visible_mode_menu() -> None:
-    content = _read_frontend_file("index.html")
+    content = read_frontend_file("index.html")
 
     assert 'id="modeSection"' not in content
     assert 'aria-label="Modus-Auswahl"' not in content
@@ -22,9 +15,8 @@ def test_horticalc_shell_replaces_visible_mode_menu() -> None:
     assert "recipe-wheel" not in content
     assert "wheel-" not in content
 
-
 def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
-    content = _read_frontend_file("index.html")
+    content = read_frontend_file("index.html")
     expected_steps = [
         'data-shell-view="editor"',
         'data-shell-view="water"',
@@ -112,9 +104,8 @@ def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
     assert content.index('data-testid="workflow-nav"') < content.index('data-testid="workflow-guide"')
     assert content.index('data-testid="live-bar"') < content.index('data-testid="workspace-scroll-frame"')
 
-
 def test_critical_frontend_ids_remain_available() -> None:
-    content = _read_frontend_file("index.html")
+    content = read_frontend_file("index.html")
     required_ids = [
         "calculatorMode",
         "solverMode",
@@ -142,17 +133,15 @@ def test_critical_frontend_ids_remain_available() -> None:
     for element_id in required_ids:
         assert f'id="{element_id}"' in content
 
-
 def test_frontend_has_no_duplicate_ids() -> None:
-    content = _read_frontend_file("index.html")
+    content = read_frontend_file("index.html")
     ids = re.findall(r'id="([^"]+)"', content)
     duplicates = sorted({element_id for element_id in ids if ids.count(element_id) > 1})
 
     assert duplicates == []
 
-
 def test_app_js_shell_helpers_are_top_level_and_initialized() -> None:
-    content = _read_frontend_file("app.js")
+    content = read_frontend_file("app.js")
 
     for helper in [
         "function bindShellNavigation()",
@@ -177,9 +166,8 @@ def test_app_js_shell_helpers_are_top_level_and_initialized() -> None:
     assert 'labelKey: "workflow.calculatorUpper"' in content
     assert 'labelKey: "workflow.solverUpper"' in content
 
-
 def test_framed_shell_styles_present() -> None:
-    content = _read_frontend_file("styles.css")
+    content = read_frontend_file("styles.css")
 
     assert ".app-shell" in content
     assert ".app-rail" in content
@@ -192,7 +180,7 @@ def test_framed_shell_styles_present() -> None:
     assert ".workflow-step.is-active" in content
     assert ".solver-workbench" in content
     assert ".solver-picker" in content
-    assert ".solver-main-grid" in content
+    assert ".solver-comparison-grid" in content
     assert ".workspace" in content
     assert "overflow-y: auto" in content
     assert ".live-bar" in content
@@ -224,9 +212,8 @@ def test_framed_shell_styles_present() -> None:
     assert ".recipe-wheel" not in content
     assert ".wheel-" not in content
 
-
 def test_theme_selector_persists_browser_design_state() -> None:
-    app_js = _read_frontend_file("app.js")
+    app_js = read_frontend_file("app.js")
 
     assert 'const THEME_STORAGE_KEY = "horticalc.theme";' in app_js
     assert 'const DEFAULT_THEME = "horticalc-dark";' in app_js
@@ -235,10 +222,9 @@ def test_theme_selector_persists_browser_design_state() -> None:
     assert "lsGet(THEME_STORAGE_KEY, DEFAULT_THEME)" in app_js
     assert "lsSet(THEME_STORAGE_KEY, applyTheme(event.target.value));" in app_js
 
-
 def test_fertilizer_editor_sticky_columns_size_from_visible_content() -> None:
-    styles = _read_frontend_file("styles.css")
-    app_js = _read_frontend_file("app.js")
+    styles = read_frontend_file("styles.css")
+    app_js = read_frontend_file("app.js")
 
     assert "--fert-editor-index-width" in styles
     assert "--fert-editor-form-width" in styles
@@ -253,19 +239,27 @@ def test_fertilizer_editor_sticky_columns_size_from_visible_content() -> None:
     assert "calc(${formWidthCh + 1}ch + (var(--space-2) * 2))" in app_js
     assert "calc(${weightWidthCh + 1}ch + (var(--space-2) * 2))" in app_js
 
-
 def test_fertilizer_editor_sticky_columns_paint_opaque_backgrounds() -> None:
-    styles = _read_frontend_file("styles.css")
+    styles = read_frontend_file("styles.css")
 
     assert "#fertilizerEditorTable th {\n  background: var(--app-fert-editor-head-bg);" in styles
-    assert "#fertilizerEditorTable input {\n  border-color: rgba(174, 183, 166, 0.16);\n  background: var(--app-fert-editor-input-bg);" in styles
-    assert "#fertilizerEditorTable tbody tr:nth-child(odd) td:nth-child(-n + 4) {\n  background: var(--app-table-row-odd);" in styles
-    assert "#fertilizerEditorTable tbody tr:nth-child(even) td:nth-child(-n + 4) {\n  background: var(--app-table-row-even);" in styles
-
+    assert (
+        "#fertilizerEditorTable input {\n"
+        "  border-color: rgba(174, 183, 166, 0.16);\n"
+        "  background: var(--app-fert-editor-input-bg);"
+    ) in styles
+    assert (
+        "#fertilizerEditorTable tbody tr:nth-child(odd) td:nth-child(-n + 4) {\n"
+        "  background: var(--app-table-row-odd);"
+    ) in styles
+    assert (
+        "#fertilizerEditorTable tbody tr:nth-child(even) td:nth-child(-n + 4) {\n"
+        "  background: var(--app-table-row-even);"
+    ) in styles
 
 def test_live_result_bar_uses_consistent_high_visibility_type() -> None:
-    styles = _read_frontend_file("styles.css")
-    index = _read_frontend_file("index.html")
+    styles = read_frontend_file("styles.css")
+    index = read_frontend_file("index.html")
 
     assert "--live-value-size: 1.18rem" in styles
     assert ".live-metric strong" in styles
@@ -279,9 +273,8 @@ def test_live_result_bar_uses_consistent_high_visibility_type() -> None:
     assert 'data-i18n="live.ionRatios"' in index
     assert "Ca:Mg Ratio (mg/L)" in index
 
-
 def test_sidebar_omits_co3_si_ratio_chip() -> None:
-    app_js = _read_frontend_file("app.js")
+    app_js = read_frontend_file("app.js")
     render_block = app_js.split("function renderIonRatios", 1)[1].split("function renderCalculation", 1)[0]
 
     assert '"CO3:Si"' not in render_block

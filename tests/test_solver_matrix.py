@@ -1,21 +1,10 @@
 from __future__ import annotations
 
-import importlib.util
 import json
-import sys
-from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.append(str(ROOT / "src"))
-
-SPEC = importlib.util.spec_from_file_location("solver_matrix", ROOT / "scripts" / "solver_matrix.py")
-solver_matrix = importlib.util.module_from_spec(SPEC)
-assert SPEC and SPEC.loader
-sys.modules["solver_matrix"] = solver_matrix
-SPEC.loader.exec_module(solver_matrix)
-
+import scripts.solver_matrix as solver_matrix
 
 def test_resolve_allowed_fertilizers_rejects_whitespace_with_hint() -> None:
     fertilizers = {
@@ -32,7 +21,6 @@ def test_resolve_allowed_fertilizers_rejects_whitespace_with_hint() -> None:
     message = str(exc_info.value)
     assert "without surrounding whitespace" in message
     assert "'Compo Fetrilon Combi 1'" in message
-
 
 def test_score_solution_follows_solver_objective_elements() -> None:
     targets = {
@@ -61,7 +49,6 @@ def test_score_solution_follows_solver_objective_elements() -> None:
     assert score["ignored_score"] > same_without_ignored_overshoot["ignored_score"]
     assert score["composite_score"] == same_without_ignored_overshoot["composite_score"]
 
-
 def test_score_solution_scores_zero_target_when_solver_objective_includes_it() -> None:
     score = solver_matrix.score_solution(
         {"K": 0.0},
@@ -74,7 +61,6 @@ def test_score_solution_scores_zero_target_when_solver_objective_includes_it() -
     assert score["elements"]["K"]["score"] == 100.0
     assert score["composite_score"] == 300.0
 
-
 def test_score_solution_scores_hco3_when_solver_objective_includes_it() -> None:
     score = solver_matrix.score_solution(
         {"HCO3": 10.0},
@@ -86,7 +72,6 @@ def test_score_solution_scores_hco3_when_solver_objective_includes_it() -> None:
     assert score["elements"]["HCO3"]["score"] == 50.0
     assert score["composite_score"] == 25.0
 
-
 def test_boolean_solver_configs_include_requested_nitrogen_modes() -> None:
     configs = solver_matrix.boolean_solver_configs(["n_total_only", "n_forms_only"])
 
@@ -96,7 +81,6 @@ def test_boolean_solver_configs_include_requested_nitrogen_modes() -> None:
         "n_forms_only",
     }
     assert all(config.name.startswith("n_mode=") for config in configs)
-
 
 def test_boolean_solver_configs_start_with_current_simple_default() -> None:
     first = solver_matrix.boolean_solver_configs(["n_total_only"])[0]
@@ -110,7 +94,6 @@ def test_boolean_solver_configs_start_with_current_simple_default() -> None:
     }
     assert first.name == "n_mode=n_total_only"
 
-
 def test_sample_subsets_for_cap_keeps_full_subset() -> None:
     subsets = solver_matrix.fertilizer_subsets(["A", "B", "C", "D"], "matrix")
 
@@ -118,7 +101,6 @@ def test_sample_subsets_for_cap_keeps_full_subset() -> None:
 
     assert len(sampled) == 4
     assert sampled[-1] == ("A", "B", "C", "D")
-
 
 def test_solver_matrix_quick_smoke(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     exit_code = solver_matrix.main(
@@ -149,7 +131,6 @@ def test_solver_matrix_quick_smoke(tmp_path: Path, capsys: pytest.CaptureFixture
     assert summary["failed_runs"] == 0
     assert "Hoagland_Arnon_1950_Solution1_Nitrate" in summary["best_by_profile"]
 
-
 def test_solver_matrix_max_runs_stops_early(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     exit_code = solver_matrix.main(
         [
@@ -171,7 +152,6 @@ def test_solver_matrix_max_runs_stops_early(tmp_path: Path, capsys: pytest.Captu
     summary = json.loads((tmp_path / "summary.json").read_text(encoding="utf-8"))
     assert summary["total_runs"] == 1
     assert summary["stopped_early"] is True
-
 
 def test_solver_matrix_cap_samples_subsets_across_profiles(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     exit_code = solver_matrix.main(

@@ -66,8 +66,10 @@ Solver flow:
 
 ## AppRoot And Portable Data
 
-`app_root()` is the repository root in development and the executable folder in
-packaged releases. Runtime writes are portable and stay under AppRoot:
+`app_root()` is the repository root in development, the executable folder in
+PyInstaller releases, and the install prefix for wheel installs when the
+packaged `frontend/`, `data/`, and `recipes/` assets are present. Runtime
+writes are portable and stay under AppRoot:
 
 ```text
 AppRoot/

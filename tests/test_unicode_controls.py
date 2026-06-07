@@ -1,7 +1,6 @@
 import subprocess
 import sys
 
-
 def test_no_unicode_control_characters() -> None:
     result = subprocess.run(
         [sys.executable, "scripts/check_unicode_controls.py"],

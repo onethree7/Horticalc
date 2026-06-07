@@ -1,11 +1,7 @@
-import sys
-from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
 from horticalc.core import compute_solution
 from horticalc.data_io import load_fertilizers, load_molar_masses
-
 
 def test_phosphate_species_keeps_p_totals_but_changes_ion_label() -> None:
     ferts = load_fertilizers()

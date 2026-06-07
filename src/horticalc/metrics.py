@@ -4,30 +4,11 @@ from dataclasses import asdict, is_dataclass
 from decimal import Decimal, ROUND_HALF_UP
 from typing import TYPE_CHECKING, Mapping
 
+from .chemistry import OXIDE_TOTAL_KEYS
+
 if TYPE_CHECKING:
     from .core import CalcResult
 
-
-OXIDE_TOTAL_KEYS = [
-    "N_NH4",
-    "N_NO3",
-    "N_UREA",
-    "P2O5",
-    "K2O",
-    "CaO",
-    "MgO",
-    "Na2O",
-    "SO4",
-    "Cl",
-    "Fe",
-    "Mn",
-    "Cu",
-    "Zn",
-    "B",
-    "Mo",
-    "CO3",
-    "SiO2",
-]
 
 def round0(value: float) -> int:
     return int(Decimal(str(value)).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
@@ -124,29 +105,33 @@ def format_npks(result: CalcResult | Mapping[str, object]) -> dict[str, str | di
     def form_mg_l(form_key: str) -> float:
         return float(oxides.get(form_key, 0.0) or 0.0)
 
+    oxide_ratio_pairs = [
+        ("N:K", n_total, element_mg_l("K")),
+        ("CaO:K2O", cao, k2o),
+        ("MgO:CaO", mgo, cao),
+        ("Na2O:MgO", form_mg_l("Na2O"), mgo),
+        ("SO4:P2O5", form_mg_l("SO4"), p2o5),
+        ("P2O5:K2O", p2o5, k2o),
+        ("Fe:MgO", element_mg_l("Fe"), mgo),
+        ("CO3:SiO2", form_mg_l("CO3"), form_mg_l("SiO2")),
+    ]
+    ion_ratio_pairs = [
+        ("N:K", element_mg_l("N"), element_mg_l("K")),
+        ("Ca:K", element_mg_l("Ca"), element_mg_l("K")),
+        ("Ca:Mg", element_mg_l("Ca"), element_mg_l("Mg")),
+        ("Na:Mg", element_mg_l("Na"), element_mg_l("Mg")),
+        ("SO4:P", form_mg_l("SO4"), element_mg_l("P")),
+        ("P:K", element_mg_l("P"), element_mg_l("K")),
+        ("Fe:Mg", element_mg_l("Fe"), element_mg_l("Mg")),
+        ("CO3:Si", form_mg_l("CO3"), element_mg_l("Si")),
+    ]
     npk_ratios = {
-        "N:K": ratio_string("N:K", n_total, float(elements.get("K", 0.0) or 0.0)),
-        "CaO:K2O": ratio_string("CaO:K2O", cao, k2o),
-        "MgO:CaO": ratio_string("MgO:CaO", mgo, cao),
-        "Na2O:MgO": ratio_string("Na2O:MgO", float(oxides.get("Na2O", 0.0) or 0.0), mgo),
-        "SO4:P2O5": ratio_string("SO4:P2O5", float(oxides.get("SO4", 0.0) or 0.0), p2o5),
-        "P2O5:K2O": ratio_string("P2O5:K2O", p2o5, k2o),
-        "Fe:MgO": ratio_string("Fe:MgO", float(elements.get("Fe", 0.0) or 0.0), mgo),
-        "CO3:SiO2": ratio_string(
-            "CO3:SiO2",
-            float(oxides.get("CO3", 0.0) or 0.0),
-            float(oxides.get("SiO2", 0.0) or 0.0),
-        ),
+        label: ratio_string(label, numerator, denominator)
+        for label, numerator, denominator in oxide_ratio_pairs
     }
     npk_ratios_ion = {
-        "N:K": ratio_string("N:K", element_mg_l("N"), element_mg_l("K")),
-        "Ca:K": ratio_string("Ca:K", element_mg_l("Ca"), element_mg_l("K")),
-        "Ca:Mg": ratio_string("Ca:Mg", element_mg_l("Ca"), element_mg_l("Mg")),
-        "Na:Mg": ratio_string("Na:Mg", element_mg_l("Na"), element_mg_l("Mg")),
-        "SO4:P": ratio_string("SO4:P", form_mg_l("SO4"), element_mg_l("P")),
-        "P:K": ratio_string("P:K", element_mg_l("P"), element_mg_l("K")),
-        "Fe:Mg": ratio_string("Fe:Mg", element_mg_l("Fe"), element_mg_l("Mg")),
-        "CO3:Si": ratio_string("CO3:Si", form_mg_l("CO3"), element_mg_l("Si")),
+        label: ratio_string(label, numerator, denominator)
+        for label, numerator, denominator in ion_ratio_pairs
     }
 
     return {

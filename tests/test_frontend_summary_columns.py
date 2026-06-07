@@ -1,9 +1,8 @@
-from pathlib import Path
+from tests.frontend_assets import read_frontend_file
 
 
 def test_ion_summary_has_expandable_nitrogen_columns():
-    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
-    content = app_js.read_text(encoding="utf-8")
+    content = read_frontend_file("app.js")
 
     assert "N-Σ" in content
     assert "N_NO3" in content
@@ -11,10 +10,8 @@ def test_ion_summary_has_expandable_nitrogen_columns():
     assert "N_UREA" in content
     assert "ionNToggle" in content
 
-
 def test_ion_balance_uses_sum_symbols_for_charge_totals():
-    app_js = Path(__file__).resolve().parents[1] / "frontend" / "app.js"
-    content = app_js.read_text(encoding="utf-8")
+    content = read_frontend_file("app.js")
 
     assert 'cations_meq_per_l: "Σ+"' in content
     assert 'anions_meq_per_l: "Σ-"' in content

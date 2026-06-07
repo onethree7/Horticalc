@@ -1,9 +1,8 @@
-from pathlib import Path
+from tests.frontend_assets import read_frontend_file
 
 
 def test_icon_button_classes_applied_to_compact_controls():
-    index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
-    content = index_html.read_text(encoding="utf-8")
+    content = read_frontend_file("index.html")
 
     assert 'id="addFertilizerRow" class="btn btn--outline btn--icon icon-button"' in content
     assert 'id="removeFertilizerRow" class="btn btn--outline btn--icon icon-button"' in content
@@ -14,9 +13,7 @@ def test_icon_button_classes_applied_to_compact_controls():
     assert 'id="fertEditorAddRow" class="btn btn--outline btn--icon icon-button"' in content
     assert 'id="fertEditorDeleteRow" class="btn btn--outline btn--icon icon-button"' in content
 
-
 def test_icon_button_styles_are_scoped():
-    styles_css = Path(__file__).resolve().parents[1] / "frontend" / "styles.css"
-    content = styles_css.read_text(encoding="utf-8")
+    content = read_frontend_file("styles.css")
 
     assert ".inline-actions .icon-button" in content

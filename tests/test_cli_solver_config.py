@@ -1,16 +1,12 @@
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
-
 import horticalc.__main__ as cli
 from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS
-
 
 def test_solver_config_definitions_use_data_backed_defaults() -> None:
     defaults = {definition["key"]: definition["default"] for definition in SOLVER_CONFIG_DEFINITIONS}
@@ -21,7 +17,6 @@ def test_solver_config_definitions_use_data_backed_defaults() -> None:
     assert defaults["singleton_underfill_enabled"] is True
     assert "macro_priority_enabled" not in defaults
     assert "stage_optimization_enabled" not in defaults
-
 
 def test_solve_cli_passes_solver_config_overrides(monkeypatch, capsys, tmp_path) -> None:
     recipe_path = tmp_path / "recipe.yml"
@@ -66,7 +61,6 @@ def test_solve_cli_passes_solver_config_overrides(monkeypatch, capsys, tmp_path)
         "n_form_priority_weights": {"N_NO3": 3.0},
     }
 
-
 def test_solve_cli_keeps_solver_config_optional(monkeypatch, capsys, tmp_path) -> None:
     recipe_path = tmp_path / "recipe.yml"
     recipe_path.write_text("targets: {}\n", encoding="utf-8")
@@ -83,7 +77,6 @@ def test_solve_cli_keeps_solver_config_optional(monkeypatch, capsys, tmp_path) -
 
     assert json.loads(capsys.readouterr().out) == {"ok": True}
     assert captured["solver_config_overrides"] == {}
-
 
 def test_solve_cli_rejects_non_object_solver_config_json(capsys, tmp_path) -> None:
     recipe_path = tmp_path / "recipe.yml"

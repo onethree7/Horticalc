@@ -9,15 +9,15 @@ import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 
-BOOLEAN_SOLVER_KEYS = (
-    "relative_weighting",
-    "singleton_supplier_enabled",
-    "singleton_underfill_enabled",
-    "n_total_governor_enabled",
-)
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from horticalc.solver_config import MATRIX_BOOLEAN_SOLVER_KEYS  # noqa: E402
 
 
 @dataclass
@@ -212,7 +212,7 @@ def analyze_run(run_dir: Path, *, baseline_dir: Path | None = None, top_limit: i
 
             if phase == "base":
                 solver_config = _loads(row.get("solver_config", ""), {})
-                for key in BOOLEAN_SOLVER_KEYS:
+                for key in MATRIX_BOOLEAN_SOLVER_KEYS:
                     value = "true" if bool(solver_config.get(key)) else "false"
                     base_flag_effects[mode][key][value].add(score)
                 _stat_bucket(config_base_stats, row.get("config_name", ""), score)

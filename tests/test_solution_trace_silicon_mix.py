@@ -1,13 +1,9 @@
-import sys
 import unittest
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
 from horticalc.core import compute_solution
 from horticalc.data_io import load_fertilizers, load_molar_masses, load_recipe, load_water_profile_data
 from horticalc.ec import compute_ec
-
 
 class TestSolutionTraceSiliconMix(unittest.TestCase):
     def test_trace_silicon_mix_snapshot(self) -> None:
@@ -64,7 +60,6 @@ class TestSolutionTraceSiliconMix(unittest.TestCase):
             "ec_uS_per_cm": {key: round(value, 6) for key, value in ec["ec_uS_per_cm"].items()},
         }
         self.assertEqual(expected_ec, actual_ec)
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,23 +1,11 @@
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-import importlib.util
-
 import yaml
 from fastapi.testclient import TestClient
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.append(str(ROOT / "src"))
-
-spec = importlib.util.spec_from_file_location("api_app", ROOT / "api" / "app.py")
-api_app = importlib.util.module_from_spec(spec)
-assert spec and spec.loader
-spec.loader.exec_module(api_app)
-api_app.RecipeRequest.model_rebuild(_types_namespace=api_app.__dict__)
-api_app.CalculationResponse.model_rebuild(_types_namespace=api_app.__dict__)
-
+import api.app as api_app
 
 class TestCalculateWaterKeys(unittest.TestCase):
     def setUp(self) -> None:
@@ -97,7 +85,6 @@ class TestCalculateWaterKeys(unittest.TestCase):
             api_app.WATER_PROFILES_DIR = original_dir
 
         self.assertEqual(response.status_code, 200)
-
 
 if __name__ == "__main__":
     unittest.main()

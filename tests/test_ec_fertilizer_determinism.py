@@ -1,11 +1,7 @@
-import sys
-from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
 from horticalc.core import compute_solution
 from horticalc.data_io import load_fertilizers, load_molar_masses
-
 
 def _recipe_for_grams(grams: float) -> dict:
     return {
@@ -15,10 +11,8 @@ def _recipe_for_grams(grams: float) -> dict:
         "phosphate_species": "H2PO4",
     }
 
-
 def _fertilizer_ec_25c(result: dict) -> float:
     return result["ec_fertilizer"]["ec_mS_per_cm"]["25.0"]
-
 
 def test_ec_fertilizer_increases_and_is_deterministic() -> None:
     ferts = load_fertilizers()

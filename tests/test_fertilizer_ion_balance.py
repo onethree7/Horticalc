@@ -1,12 +1,7 @@
-import sys
 import unittest
-from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
 from horticalc.core import _compute_ion_balance, compute_solution
 from horticalc.data_io import load_fertilizers, load_molar_masses
-
 
 def _ion_charge(label: str) -> int:
     if "^" in label:
@@ -24,7 +19,6 @@ def _ion_charge(label: str) -> int:
         return -1
     else:
         raise ValueError(f"Unrecognized ion charge format: {label}")
-
 
 class TestFertilizerIonBalance(unittest.TestCase):
     def test_ion_balance_reports_raw_cbe_and_din_formula(self) -> None:
@@ -134,7 +128,6 @@ class TestFertilizerIonBalance(unittest.TestCase):
         self.assertGreaterEqual(result.fertilizer_ions_meq_l["NH4+"], 0.0)
         for trace_label in ("Fe", "Mn", "Cu", "Zn", "B", "Mo"):
             self.assertNotIn(trace_label, result.fertilizer_ions_meq_l)
-
 
 if __name__ == "__main__":
     unittest.main()

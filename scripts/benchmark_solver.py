@@ -4,7 +4,8 @@ import argparse
 import time
 from pathlib import Path
 
-from horticalc.data_io import load_fertilizers, load_molar_masses, load_nutrient_solution_data, repo_root
+from horticalc.data_io import load_fertilizers, load_molar_masses, load_nutrient_solution_data
+from horticalc.paths import repo_root
 from horticalc.solver import solve_recipe_data
 
 DEFAULT_SOLUTION = (

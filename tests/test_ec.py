@@ -1,10 +1,6 @@
 import math
-import sys
-from pathlib import Path
 
 import pytest
-
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
 from horticalc.ec import (
     MCCLESKEY_PARAMS,
@@ -15,7 +11,6 @@ from horticalc.ec import (
     _mccleskey_k,
 )
 
-
 def test_parse_ion_key() -> None:
     assert parse_ion_key("Ca+2") == ("Ca2+", 2)
     assert parse_ion_key("SO4^2-") == ("SO4^2-", -2)
@@ -24,13 +19,11 @@ def test_parse_ion_key() -> None:
     assert parse_ion_key("CO3^2-") == ("CO3^2-", -2)
     assert parse_ion_key("H2PO4-") == ("H2PO4-", -1)
 
-
 def test_mccleskey_k_matches_k0_at_zero_strength() -> None:
     temp_c = 25.0
     for ion, params in MCCLESKEY_PARAMS.items():
         expected = params.k0[0] * temp_c * temp_c + params.k0[1] * temp_c + params.k0[2]
         assert _mccleskey_k(params, temp_c, 0.0) == pytest.approx(expected, rel=0, abs=1e-12)
-
 
 def test_mccleskey_k_small_strength_example() -> None:
     temp_c = 25.0
@@ -41,13 +34,11 @@ def test_mccleskey_k_small_strength_example() -> None:
     expected = k0 - (A * math.sqrt(ionic_strength)) / (1 + params.B * math.sqrt(ionic_strength))
     assert _mccleskey_k(params, temp_c, ionic_strength) == pytest.approx(expected, rel=0, abs=1e-12)
 
-
 def test_ionic_strength() -> None:
     molalities = {"Ca2+": 0.001, "Cl-": 0.001}
     charges = {"Ca2+": 2, "Cl-": -1}
     expected = 0.0025
     assert _ionic_strength(molalities, charges) == pytest.approx(expected, rel=0, abs=1e-12)
-
 
 def test_fallback_h2po4() -> None:
     ions = {"H2PO4-": 1.0}
@@ -67,7 +58,6 @@ def test_fallback_h2po4() -> None:
     lambda_18 = lambda_25 * (1 + 0.022 * (18.0 - 25.0))
     contrib_18 = lambda_18 * 0.001
     assert result["contrib_mS_per_cm"]["18.0"]["H2PO4-"] == pytest.approx(contrib_18, rel=0, abs=1e-9)
-
 
 def test_transport_numbers_sum_to_one() -> None:
     ions = {"K+": 10.0, "NO3-": 10.0}

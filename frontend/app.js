@@ -1,110 +1,113 @@
-const fertilizerSelectTableWrap = document.querySelector("#fertilizerSelectTableWrap");
-const calculatorTableWrap = document.querySelector("#calculatorTableWrap");
-const calculateButton = document.querySelector("#calculateBtn");
-const addRowButton = document.querySelector("#addFertilizerRow");
-const removeRowButton = document.querySelector("#removeFertilizerRow");
-const waterTableBody = document.querySelector("#waterValuesTable tbody");
-const waterProfileSelect = document.querySelector("#waterProfileSelect");
-const waterProfileNameInput = document.querySelector("#waterProfileName");
-const loadWaterProfileButton = document.querySelector("#loadWaterProfile");
-const saveWaterProfileButton = document.querySelector("#saveWaterProfile");
-const resetWaterProfileButton = document.querySelector("#resetWaterProfile");
-const osmosisPercentInput = document.querySelector("#osmosisPercent");
-const waterUnitToggle = document.querySelector("#waterUnitToggle");
-const waterSection = document.querySelector("#waterSection");
-const npkAllPctValue = document.querySelector("#npkAllPct");
-const npkPNormValue = document.querySelector("#npkPNorm");
-const npkNpkPctValue = document.querySelector("#npkNpkPct");
-const caMgRatioValue = document.querySelector("#caMgRatio");
-const ionRatioList = document.querySelector("#ionRatioList");
-const ec18Value = document.querySelector("#ec18Value");
-const ec25Value = document.querySelector("#ec25Value");
-const ecWater18Value = document.querySelector("#ecWater18Value");
-const ecWater25Value = document.querySelector("#ecWater25Value");
-const profileSectionTitle = document.querySelector("#profileSectionTitle");
-const profileSectionHint = document.querySelector("#profileSectionHint");
-const profileSection = document.querySelector("#profileSection");
-const profileSelect = document.querySelector("#profileSelect");
-const loadProfileButton = document.querySelector("#loadProfile");
-const resetProfileButton = document.querySelector("#resetProfile");
-const profileNameInput = document.querySelector("#profileName");
-const saveProfileButton = document.querySelector("#saveProfile");
-const solverProfileActions = document.querySelector("#solverProfileActions");
-const saveSolverAsRecipeButton = document.querySelector("#saveSolverAsRecipe");
-const applySolverToCalculatorButton = document.querySelector("#applySolverToCalculator");
-const calculatorScaleDownButton = document.querySelector("#calculatorScaleDown");
-const calculatorScaleUpButton = document.querySelector("#calculatorScaleUp");
-const calculatorScaleValue = document.querySelector("#calculatorScaleValue");
-const configLitersInput = document.querySelector("#configLiters");
-const configLitersStatus = document.querySelector("#configLitersStatus");
-const themeSelect = document.querySelector("#themeSelect");
-const languageSelect = document.querySelector("#languageSelect");
+const qs = (selector, root = document) => root.querySelector(selector);
+const qsa = (selector, root = document) => root.querySelectorAll(selector);
 
-const waterSummaryTable = document.querySelector("#waterSummaryTable");
-const oxideSummaryTable = document.querySelector("#oxideSummaryTable");
-const ionSummaryTable = document.querySelector("#ionSummaryTable");
-const waterSummaryBadge = document.querySelector("#waterSummaryBadge");
-const oxideSummaryBadge = document.querySelector("#oxideSummaryBadge");
-const ionSummaryBadge = document.querySelector("#ionSummaryBadge");
-const summaryViewToggle = document.querySelector("#summaryViewToggle");
-const summaryPanels = document.querySelectorAll(".summary-panel[data-summary-panel]");
-const ionMeqList = document.querySelector("#ionMeqList");
-const ionBalanceList = document.querySelector("#ionBalanceList");
-const modeToggleInputs = document.querySelectorAll('input[name="modeToggle"]');
-const calculatorMode = document.querySelector("#calculatorMode");
-const solverMode = document.querySelector("#solverMode");
-const fertilizerEditorMode = document.querySelector("#fertilizerEditorMode");
-const solverTargetsTable = document.querySelector("#solverTargetsTable tbody");
-const solverAllowedFertilizersSelect = document.querySelector("#solverAllowedFertilizers");
-const solverAllowedSearchInput = document.querySelector("#solverAllowedSearch");
-const solverAllowedCount = document.querySelector("#solverAllowedCount");
-const solverAllowedClearButton = document.querySelector("#solverAllowedClear");
-const solverAllowedFromRecipeButton = document.querySelector("#solverAllowedFromRecipe");
-const solverAllowedAllButton = document.querySelector("#solverAllowedAll");
-const solverAllowedHideInactiveInput = document.querySelector("#solverAllowedHideInactive");
-const solverOverridesDetails = document.querySelector("#solverOverrides");
-const solverOverrideSummary = document.querySelector("#solverOverrideSummary");
-const solverFixedTable = document.querySelector("#solverFixedTable tbody");
-const solverFertilizersTable = document.querySelector("#solverFertilizersTable tbody");
-const solverTargetsResultsTableEl = document.querySelector("#solverTargetsResultsTable");
-const solverTargetsResultsTable = document.querySelector("#solverTargetsResultsTable tbody");
-const solverTargetsResultsEmpty = document.querySelector("#solverTargetsResultsEmpty");
-const solverTargetScaleDownButton = document.querySelector("#solverTargetScaleDown");
-const solverTargetScaleUpButton = document.querySelector("#solverTargetScaleUp");
-const solverTargetScaleValue = document.querySelector("#solverTargetScaleValue");
-const solveButton = document.querySelector("#solveBtn");
-const copySolverResultsButton = document.querySelector("#copySolverResults");
-const copySolverResultsStatus = document.querySelector("#copySolverResultsStatus");
-const solverAutoApplyInput = document.querySelector("#solverAutoApply");
-const solverApplyStatus = document.querySelector("#solverApplyStatus");
-const applySolverToCalculatorInlineButton = document.querySelector("#applySolverToCalculatorInline");
-const solverUreaToggle = document.querySelector("#solverUreaToggle");
-const solverPhosphateSelect = document.querySelector("#solverPhosphate");
+const fertilizerSelectTableWrap = qs("#fertilizerSelectTableWrap");
+const calculatorTableWrap = qs("#calculatorTableWrap");
+const calculateButton = qs("#calculateBtn");
+const addRowButton = qs("#addFertilizerRow");
+const removeRowButton = qs("#removeFertilizerRow");
+const waterTableBody = qs("#waterValuesTable tbody");
+const waterProfileSelect = qs("#waterProfileSelect");
+const waterProfileNameInput = qs("#waterProfileName");
+const loadWaterProfileButton = qs("#loadWaterProfile");
+const saveWaterProfileButton = qs("#saveWaterProfile");
+const resetWaterProfileButton = qs("#resetWaterProfile");
+const osmosisPercentInput = qs("#osmosisPercent");
+const waterUnitToggle = qs("#waterUnitToggle");
+const waterSection = qs("#waterSection");
+const npkAllPctValue = qs("#npkAllPct");
+const npkPNormValue = qs("#npkPNorm");
+const npkNpkPctValue = qs("#npkNpkPct");
+const caMgRatioValue = qs("#caMgRatio");
+const ionRatioList = qs("#ionRatioList");
+const ec18Value = qs("#ec18Value");
+const ec25Value = qs("#ec25Value");
+const ecWater18Value = qs("#ecWater18Value");
+const ecWater25Value = qs("#ecWater25Value");
+const profileSectionTitle = qs("#profileSectionTitle");
+const profileSectionHint = qs("#profileSectionHint");
+const profileSection = qs("#profileSection");
+const profileSelect = qs("#profileSelect");
+const loadProfileButton = qs("#loadProfile");
+const resetProfileButton = qs("#resetProfile");
+const profileNameInput = qs("#profileName");
+const saveProfileButton = qs("#saveProfile");
+const solverProfileActions = qs("#solverProfileActions");
+const saveSolverAsRecipeButton = qs("#saveSolverAsRecipe");
+const applySolverToCalculatorButton = qs("#applySolverToCalculator");
+const calculatorScaleDownButton = qs("#calculatorScaleDown");
+const calculatorScaleUpButton = qs("#calculatorScaleUp");
+const calculatorScaleValue = qs("#calculatorScaleValue");
+const configLitersInput = qs("#configLiters");
+const configLitersStatus = qs("#configLitersStatus");
+const themeSelect = qs("#themeSelect");
+const languageSelect = qs("#languageSelect");
+
+const waterSummaryTable = qs("#waterSummaryTable");
+const oxideSummaryTable = qs("#oxideSummaryTable");
+const ionSummaryTable = qs("#ionSummaryTable");
+const waterSummaryBadge = qs("#waterSummaryBadge");
+const oxideSummaryBadge = qs("#oxideSummaryBadge");
+const ionSummaryBadge = qs("#ionSummaryBadge");
+const summaryViewToggle = qs("#summaryViewToggle");
+const summaryPanels = qsa(".summary-panel[data-summary-panel]");
+const ionMeqList = qs("#ionMeqList");
+const ionBalanceList = qs("#ionBalanceList");
+const modeToggleInputs = qsa('input[name="modeToggle"]');
+const calculatorMode = qs("#calculatorMode");
+const solverMode = qs("#solverMode");
+const fertilizerEditorMode = qs("#fertilizerEditorMode");
+const solverTargetsTable = qs("#solverTargetsTable tbody");
+const solverAllowedFertilizersSelect = qs("#solverAllowedFertilizers");
+const solverAllowedSearchInput = qs("#solverAllowedSearch");
+const solverAllowedCount = qs("#solverAllowedCount");
+const solverAllowedClearButton = qs("#solverAllowedClear");
+const solverAllowedFromRecipeButton = qs("#solverAllowedFromRecipe");
+const solverAllowedAllButton = qs("#solverAllowedAll");
+const solverAllowedHideInactiveInput = qs("#solverAllowedHideInactive");
+const solverOverridesDetails = qs("#solverOverrides");
+const solverOverrideSummary = qs("#solverOverrideSummary");
+const solverFixedTable = qs("#solverFixedTable tbody");
+const solverFertilizersTable = qs("#solverFertilizersTable tbody");
+const solverTargetsResultsTableEl = qs("#solverTargetsResultsTable");
+const solverTargetsResultsTable = qs("#solverTargetsResultsTable tbody");
+const solverTargetsResultsEmpty = qs("#solverTargetsResultsEmpty");
+const solverTargetScaleDownButton = qs("#solverTargetScaleDown");
+const solverTargetScaleUpButton = qs("#solverTargetScaleUp");
+const solverTargetScaleValue = qs("#solverTargetScaleValue");
+const solveButton = qs("#solveBtn");
+const copySolverResultsButton = qs("#copySolverResults");
+const copySolverResultsStatus = qs("#copySolverResultsStatus");
+const solverAutoApplyInput = qs("#solverAutoApply");
+const solverApplyStatus = qs("#solverApplyStatus");
+const applySolverToCalculatorInlineButton = qs("#applySolverToCalculatorInline");
+const solverUreaToggle = qs("#solverUreaToggle");
+const solverPhosphateSelect = qs("#solverPhosphate");
 const solverConfigControls = {
-  relative_weighting: document.querySelector("#solverConfigRelativeWeighting"),
-  nitrogen_objective_mode: document.querySelector("#solverConfigNitrogenObjectiveMode"),
-  overshoot_penalty: document.querySelector("#solverConfigOvershootPenalty"),
-  irls_max_outer_iter: document.querySelector("#solverConfigIrlsMaxOuterIter"),
-  scale_eps_mg_per_l: document.querySelector("#solverConfigScaleEpsMgPerL"),
-  s_objective_enabled: document.querySelector("#solverConfigSObjectiveEnabled"),
-  singleton_supplier_enabled: document.querySelector("#solverConfigSingletonSupplierEnabled"),
-  singleton_share_threshold: document.querySelector("#solverConfigSingletonShareThreshold"),
-  singleton_max_regress_pp: document.querySelector("#solverConfigSingletonMaxRegressPp"),
-  singleton_underfill_enabled: document.querySelector("#solverConfigSingletonUnderfillEnabled"),
-  singleton_underfill_share_threshold: document.querySelector("#solverConfigSingletonUnderfillShareThreshold"),
-  singleton_underfill_max_iter: document.querySelector("#solverConfigSingletonUnderfillMaxIter"),
-  n_total_governor_enabled: document.querySelector("#solverConfigNTotalGovernorEnabled"),
-  n_total_governor_weight: document.querySelector("#solverConfigNTotalGovernorWeight"),
+  relative_weighting: qs("#solverConfigRelativeWeighting"),
+  nitrogen_objective_mode: qs("#solverConfigNitrogenObjectiveMode"),
+  overshoot_penalty: qs("#solverConfigOvershootPenalty"),
+  irls_max_outer_iter: qs("#solverConfigIrlsMaxOuterIter"),
+  scale_eps_mg_per_l: qs("#solverConfigScaleEpsMgPerL"),
+  s_objective_enabled: qs("#solverConfigSObjectiveEnabled"),
+  singleton_supplier_enabled: qs("#solverConfigSingletonSupplierEnabled"),
+  singleton_share_threshold: qs("#solverConfigSingletonShareThreshold"),
+  singleton_max_regress_pp: qs("#solverConfigSingletonMaxRegressPp"),
+  singleton_underfill_enabled: qs("#solverConfigSingletonUnderfillEnabled"),
+  singleton_underfill_share_threshold: qs("#solverConfigSingletonUnderfillShareThreshold"),
+  singleton_underfill_max_iter: qs("#solverConfigSingletonUnderfillMaxIter"),
+  n_total_governor_enabled: qs("#solverConfigNTotalGovernorEnabled"),
+  n_total_governor_weight: qs("#solverConfigNTotalGovernorWeight"),
 };
-const solverConfigResetDefaultsButton = document.querySelector("#solverConfigResetDefaults");
-const fertilizerEditorTableWrap = document.querySelector("#fertilizerEditorTableWrap");
-const fertEditorSearchInput = document.querySelector("#fertEditorSearch");
-const fertEditorAddRowButton = document.querySelector("#fertEditorAddRow");
-const fertEditorDeleteRowButton = document.querySelector("#fertEditorDeleteRow");
-const fertEditorLoadButton = document.querySelector("#fertEditorLoad");
-const fertEditorSaveButton = document.querySelector("#fertEditorSave");
-const apiStatus = document.querySelector("#apiStatus");
-const liveLastCalc = document.querySelector("#liveLastCalc");
+const solverConfigResetDefaultsButton = qs("#solverConfigResetDefaults");
+const fertilizerEditorTableWrap = qs("#fertilizerEditorTableWrap");
+const fertEditorSearchInput = qs("#fertEditorSearch");
+const fertEditorAddRowButton = qs("#fertEditorAddRow");
+const fertEditorDeleteRowButton = qs("#fertEditorDeleteRow");
+const fertEditorLoadButton = qs("#fertEditorLoad");
+const fertEditorSaveButton = qs("#fertEditorSave");
+const apiStatus = qs("#apiStatus");
+const liveLastCalc = qs("#liveLastCalc");
 
 const DEFAULT_LITERS = 10.0;
 const DEFAULT_THEME = "horticalc-dark";
@@ -715,9 +718,8 @@ function syncModeRadio(mode) {
 }
 
 function setActiveShellView(view) {
-  const config = shellViewConfigs[view] || shellViewConfigs.fertilizers;
   activeShellView = view;
-  document.querySelectorAll("[data-shell-view]").forEach((button) => {
+  qsa("[data-shell-view]").forEach((button) => {
     const isActive = button.dataset.shellView === view;
     button.classList.toggle("is-active", isActive);
     if (isActive) {
@@ -729,7 +731,7 @@ function setActiveShellView(view) {
 }
 
 function scrollToPanelAnchor(anchor, shouldFocus = true) {
-  const target = document.querySelector(`[data-panel-anchor="${anchor}"]`);
+  const target = qs(`[data-panel-anchor="${anchor}"]`);
   if (!target) {
     return;
   }
@@ -761,7 +763,7 @@ function showShellView(view, options = {}) {
 }
 
 function bindShellNavigation() {
-  document.querySelectorAll("[data-shell-view]").forEach((button) => {
+  qsa("[data-shell-view]").forEach((button) => {
     if (button.dataset.shellBound === "true") {
       return;
     }
@@ -937,6 +939,19 @@ function applyCalculatorScaleFactor(nextFactor) {
   scheduleRecalculate();
 }
 
+function bindScaleButtons(downButton, upButton, currentFactor, applyFactor) {
+  if (downButton) {
+    downButton.addEventListener("click", () => {
+      applyFactor(currentFactor() - SCALE_STEP);
+    });
+  }
+  if (upButton) {
+    upButton.addEventListener("click", () => {
+      applyFactor(currentFactor() + SCALE_STEP);
+    });
+  }
+}
+
 function buildFertilizerCompKeys(fertilizers) {
   const keySet = new Set();
   const keyLookup = new Map();
@@ -982,7 +997,7 @@ function focusEditorInput(rowIndex, field, compKey) {
   if (compKey) {
     selector += `[data-comp-key="${compKey}"]`;
   }
-  const input = fertilizerEditorTableWrap.querySelector(selector);
+  const input = qs(selector, fertilizerEditorTableWrap);
   if (input) {
     input.focus();
   }
@@ -993,7 +1008,7 @@ function setSelectedEditorRow(editorIndex) {
   if (!fertilizerEditorTable) {
     return;
   }
-  const rows = Array.from(fertilizerEditorTable.querySelectorAll("tr[data-editor-index]"));
+  const rows = Array.from(qsa("tr[data-editor-index]", fertilizerEditorTable));
   rows.forEach((row) => {
     row.classList.toggle("is-selected", Number(row.dataset.editorIndex) === editorIndex);
   });
@@ -1010,7 +1025,7 @@ function handleEditorEnterKey(event) {
   if (!row || Number.isNaN(colIndex)) {
     return;
   }
-  const nextInRow = row.querySelector(`input[data-col-index="${colIndex + 1}"]`);
+  const nextInRow = qs(`input[data-col-index="${colIndex + 1}"]`, row);
   if (nextInRow) {
     nextInRow.focus();
     return;
@@ -1019,7 +1034,7 @@ function handleEditorEnterKey(event) {
   if (!nextRow) {
     return;
   }
-  const nextRowInput = nextRow.querySelector(`input[data-col-index="${colIndex}"]`);
+  const nextRowInput = qs(`input[data-col-index="${colIndex}"]`, nextRow);
   if (nextRowInput) {
     nextRowInput.focus();
   }
@@ -1305,7 +1320,7 @@ function getVisibleSolverAllowedOptions() {
 
 function setSolverAllowedRowState(row, checked) {
   row.classList.toggle("is-selected", checked);
-  const checkbox = row.querySelector('input[type="checkbox"]');
+  const checkbox = qs('input[type="checkbox"]', row);
   if (checkbox) {
     checkbox.checked = checked;
   }
@@ -1923,7 +1938,7 @@ function renderWaterTable() {
 }
 
 function updateWaterInputValue(key) {
-  const input = waterTableBody.querySelector(`input[data-water-key="${key}"]`);
+  const input = qs(`input[data-water-key="${key}"]`, waterTableBody);
   if (!input) {
     return;
   }
@@ -1978,7 +1993,7 @@ function getMolarMass(key) {
   return Number.isFinite(value) ? value : null;
 }
 
-function mgToMol(key, value) {
+function convertWaterUnitValue(key, value, convert) {
   if (!Number.isFinite(value)) {
     return 0;
   }
@@ -1989,21 +2004,15 @@ function mgToMol(key, value) {
   if (!mm) {
     return value;
   }
-  return value / mm;
+  return convert(value, mm);
+}
+
+function mgToMol(key, value) {
+  return convertWaterUnitValue(key, value, (mgValue, mm) => mgValue / mm);
 }
 
 function molToMg(key, value) {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  if (key === "KH") {
-    return value;
-  }
-  const mm = getMolarMass(key);
-  if (!mm) {
-    return value;
-  }
-  return value * mm;
+  return convertWaterUnitValue(key, value, (molValue, mm) => molValue * mm);
 }
 
 function unitLabelForKey(key) {
@@ -2019,8 +2028,7 @@ function scheduleRecalculate() {
   }
   recalculateTimer = setTimeout(async () => {
     try {
-      const data = await calculate();
-      renderCalculation(data);
+      await calculateAndRender();
     } catch (error) {
       reportError(error, t("errors.calculateFailed"));
     }
@@ -2332,7 +2340,7 @@ function renderIonSummaryTable(table, elements) {
   });
   table.classList.toggle("is-n-expanded", ionNitrogenExpanded);
   table.classList.toggle("is-n-collapsed", !ionNitrogenExpanded);
-  const toggleButton = table.querySelector("[data-ion-n-toggle]");
+  const toggleButton = qs("[data-ion-n-toggle]", table);
   if (toggleButton) {
     toggleButton.addEventListener("click", () => {
       ionNitrogenExpanded = !ionNitrogenExpanded;
@@ -2352,7 +2360,7 @@ function setSummaryView(nextView) {
   lsSet(SUMMARY_VIEW_KEY, view);
 
   if (summaryViewToggle) {
-    summaryViewToggle.querySelectorAll("button[data-summary-view]").forEach((button) => {
+    qsa("button[data-summary-view]", summaryViewToggle).forEach((button) => {
       const isActive = button.dataset.summaryView === view;
       button.classList.toggle("is-active", isActive);
       button.setAttribute("aria-selected", isActive ? "true" : "false");
@@ -2366,14 +2374,14 @@ function setSummaryView(nextView) {
   });
 
   if (summaryViewToggle) {
-    const activePanel = document.querySelector(`.summary-panel[data-summary-panel="${view}"]`);
-    const activeTitle = activePanel?.querySelector(".table-card-title");
+    const activePanel = qs(`.summary-panel[data-summary-panel="${view}"]`);
+    const activeTitle = activePanel ? qs(".table-card-title", activePanel) : null;
     if (activeTitle && !activeTitle.contains(summaryViewToggle)) {
       activeTitle.prepend(summaryViewToggle);
     }
   }
 
-  const summaryScroll = document.querySelector("#summaryScroll");
+  const summaryScroll = qs("#summaryScroll");
   if (summaryScroll) {
     summaryScroll.scrollLeft = 0;
   }
@@ -2519,6 +2527,19 @@ async function fetchJson(url, errorMessage) {
   return response.json();
 }
 
+async function postJson(url, payload, errorMessage) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || errorMessage);
+  }
+  return response.json();
+}
+
 function fetchFertilizers() {
   return fetchJson(`${apiBase()}/fertilizers`, t("errors.loadFertilizers"));
 }
@@ -2565,15 +2586,7 @@ async function saveWaterProfile() {
     mg_per_l: waterPayload,
     osmosis_percent: Number(osmosisPercentInput.value) || 0,
   };
-  const response = await fetch(`${apiBase()}/water-profiles`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.detail || t("errors.saveFailed"));
-  }
+  await postJson(`${apiBase()}/water-profiles`, payload, t("errors.saveFailed"));
 }
 
 function fetchDefaultRecipe() {
@@ -2597,15 +2610,7 @@ function fetchRecipeData(filename) {
 }
 
 async function saveRecipeData(payload) {
-  const response = await fetch(`${apiBase()}/recipes`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.detail || t("errors.saveRecipeFailed"));
-  }
+  await postJson(`${apiBase()}/recipes`, payload, t("errors.saveRecipeFailed"));
 }
 
 function fetchNutrientSolutions() {
@@ -2620,47 +2625,23 @@ function fetchNutrientSolutionData(filename) {
 }
 
 async function saveNutrientSolutionData(payload) {
-  const response = await fetch(`${apiBase()}/nutrient-solutions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.detail || t("errors.saveNutrientSolutionFailed"));
-  }
+  await postJson(`${apiBase()}/nutrient-solutions`, payload, t("errors.saveNutrientSolutionFailed"));
 }
 
 async function calculate(payloadOverride = null) {
   const payload = payloadOverride || buildPayload();
-  const response = await fetch(`${apiBase()}/calculate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  return postJson(`${apiBase()}/calculate`, payload, t("errors.calculateFailed"));
+}
 
-  if (!response.ok) {
-    const data = await response.json();
-    throw new Error(data.detail || t("errors.calculateFailed"));
-  }
-
-  return response.json();
+async function calculateAndRender(payloadOverride = null) {
+  const data = await calculate(payloadOverride);
+  renderCalculation(data);
+  return data;
 }
 
 async function solveRecipe() {
   const payload = buildSolvePayload();
-  const response = await fetch(`${apiBase()}/solve`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const data = await response.json();
-    throw new Error(data.detail || t("errors.solveFailed"));
-  }
-
-  return response.json();
+  return postJson(`${apiBase()}/solve`, payload, t("errors.solveFailed"));
 }
 
 function renderEcPair(ecValues, el18, el25) {
@@ -3104,8 +3085,7 @@ async function init() {
     renderWaterTable();
     applyRecipe({ fertilizers: savedSolution.fertilizers || [] });
     try {
-      const data = await calculate();
-      renderCalculation(data);
+      await calculateAndRender();
     } catch (error) {
       reportError(error, t("errors.calculateFailed"));
     }
@@ -3123,8 +3103,7 @@ async function init() {
   try {
     const recipe = await fetchDefaultRecipe();
     applyRecipe(recipe);
-    const data = await calculate();
-    renderCalculation(data);
+    await calculateAndRender();
   } catch (error) {
     renderSelectionTable();
     renderCalculatorTable();
@@ -3141,8 +3120,7 @@ addRowButton.addEventListener("click", addFertilizerRow);
 removeRowButton.addEventListener("click", removeFertilizerRow);
 calculateButton.addEventListener("click", async () => {
   try {
-    const data = await calculate();
-    renderCalculation(data);
+    await calculateAndRender();
     lsSet(LAST_SOLUTION_CALCULATED_KEY, buildSolutionSnapshot());
   } catch (error) {
     reportError(error, t("errors.calculateFailed"));
@@ -3214,29 +3192,18 @@ if (solverAutoApplyInput) {
   solverAutoApplyInput.addEventListener("change", persistSolverAutoApplyPreference);
 }
 
-if (solverTargetScaleDownButton) {
-  solverTargetScaleDownButton.addEventListener("click", () => {
-    applySolverTargetScaleFactor(solverTargetScaleFactor - SCALE_STEP);
-  });
-}
-
-if (solverTargetScaleUpButton) {
-  solverTargetScaleUpButton.addEventListener("click", () => {
-    applySolverTargetScaleFactor(solverTargetScaleFactor + SCALE_STEP);
-  });
-}
-
-if (calculatorScaleDownButton) {
-  calculatorScaleDownButton.addEventListener("click", () => {
-    applyCalculatorScaleFactor(calculatorScaleFactor - SCALE_STEP);
-  });
-}
-
-if (calculatorScaleUpButton) {
-  calculatorScaleUpButton.addEventListener("click", () => {
-    applyCalculatorScaleFactor(calculatorScaleFactor + SCALE_STEP);
-  });
-}
+bindScaleButtons(
+  solverTargetScaleDownButton,
+  solverTargetScaleUpButton,
+  () => solverTargetScaleFactor,
+  applySolverTargetScaleFactor
+);
+bindScaleButtons(
+  calculatorScaleDownButton,
+  calculatorScaleUpButton,
+  () => calculatorScaleFactor,
+  applyCalculatorScaleFactor
+);
 
 if (configLitersInput) {
   configLitersInput.addEventListener("input", (event) => {

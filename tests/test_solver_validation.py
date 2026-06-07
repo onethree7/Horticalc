@@ -1,13 +1,8 @@
-import sys
-from pathlib import Path
 
 import pytest
 
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
-
 from horticalc.data_io import Fertilizer, load_molar_masses
 from horticalc.solver import solve_recipe_data
-
 
 def test_solve_recipe_data_rejects_invalid_target_key() -> None:
     molar_masses = load_molar_masses()
@@ -24,7 +19,6 @@ def test_solve_recipe_data_rejects_invalid_target_key() -> None:
     with pytest.raises(ValueError, match="Invalid target key: K2O"):
         solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
 
-
 def test_solve_recipe_data_rejects_non_positive_liters() -> None:
     molar_masses = load_molar_masses()
     ferts = {
@@ -39,7 +33,6 @@ def test_solve_recipe_data_rejects_non_positive_liters() -> None:
 
     with pytest.raises(ValueError, match="liters must be > 0"):
         solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
-
 
 def test_solve_recipe_data_rejects_negative_fixed_grams() -> None:
     molar_masses = load_molar_masses()
@@ -56,7 +49,6 @@ def test_solve_recipe_data_rejects_negative_fixed_grams() -> None:
 
     with pytest.raises(ValueError, match="fixed_grams must be >= 0: K test"):
         solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
-
 
 def test_solve_recipe_data_rejects_fixed_grams_outside_allowed_list() -> None:
     molar_masses = load_molar_masses()
@@ -75,7 +67,6 @@ def test_solve_recipe_data_rejects_fixed_grams_outside_allowed_list() -> None:
     with pytest.raises(ValueError, match="fixed_grams not in fertilizers_allowed"):
         solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
 
-
 def test_solve_recipe_data_does_not_use_water_elements_as_targets() -> None:
     molar_masses = load_molar_masses()
     ferts = {
@@ -90,7 +81,6 @@ def test_solve_recipe_data_does_not_use_water_elements_as_targets() -> None:
 
     with pytest.raises(ValueError, match="No solvable targets defined"):
         solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
-
 
 def test_solve_recipe_data_can_solve_hco3_from_direct_hco3_composition() -> None:
     molar_masses = load_molar_masses()

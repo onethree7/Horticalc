@@ -53,6 +53,35 @@ Composition keys are defined by `COMP_COLS` in `src/horticalc/core.py`:
 
 `Gewicht` is a `weight_factor` and multiplies effective fertilizer grams.
 
+### Dose Units, Mass, And Liquid Fertilizers
+
+Recipes and solver results use the API field `grams` because this is the
+canonical field name in `api/app.py`, `src/horticalc/core.py`, and
+`src/horticalc/solver.py`. In practice, the value is the user-facing fertilizer
+dose:
+
+- For solid fertilizers, enter and measure the value as grams.
+- For liquid fertilizers, enter and measure the value as milliliters when
+  `Gewicht` stores the product density in `g/mL`.
+
+The calculation core in `compute_solution()` converts the dose to effective
+product mass before applying composition fractions:
+
+```text
+effective product mass in g = dose * Gewicht
+nutrient mg/L = dose * Gewicht * composition_fraction * 1000 / liters
+```
+
+Composition fractions are mass fractions for the product. For example, `0.04`
+means four percent by product mass. A liquid fertilizer with `Gewicht = 1.136`
+therefore turns a solver result of `10` into `10 mL` in practice, while the
+calculation uses `10 * 1.136 = 11.36 g` product mass internally. If dosing the
+same liquid by scale instead of volume, weigh `dose * Gewicht` grams.
+
+This means the UI/API label `grams` is literal for solids and historical for
+liquids. The chemistry remains mass-normalized because the density factor is
+applied before nutrient contributions are computed.
+
 ## Water Profiles
 
 Water profile YAML:

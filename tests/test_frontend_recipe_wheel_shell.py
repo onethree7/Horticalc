@@ -67,7 +67,7 @@ def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
     assert 'id="themeSelect"' in content
     assert 'id="languageSelect"' in content
     assert "Horticalc Dark" in content
-    assert "Solaris Console" in content
+    assert "Soil" in content
     rail_config_block = content.split('data-testid="rail-config-controls"', 1)[1].split("</section>", 1)[0]
     assert 'data-i18n-aria-label="aria.theme"' in rail_config_block
     assert 'data-i18n-aria-label="aria.language"' in rail_config_block
@@ -206,7 +206,7 @@ def test_framed_shell_styles_present() -> None:
     assert ".rail-theme-control" in content
     assert '.app-body[data-theme="horticalc-light"]' in content
     assert '.app-body[data-theme="high-contrast"]' in content
-    assert '.app-body[data-theme="solaris-console"]' in content
+    assert '.app-body[data-theme="soil"]' in content
     assert '.app-body[data-theme="vt-green"]' in content
     assert '.app-body[data-theme="blue-matrix"]' in content
     assert "--app-table-row-odd" in content

@@ -32,7 +32,7 @@ applies the selected theme to `document.body.dataset.theme` and stores it in
 selected language under `horticalc.locale`, updates `document.documentElement.lang`,
 and applies `data-i18n` attributes from the static catalogs. `frontend/styles.css`
 defines the available visual themes: Horticalc Dark, Horticalc Light, High
-Contrast, Solaris Console, VT Green, and Blue Matrix. Theme and language
+Contrast, Soil, VT Green, and Blue Matrix. Theme and language
 selection are browser-only presentation state and are not sent to recipes,
 solver payloads, or API routes.
 

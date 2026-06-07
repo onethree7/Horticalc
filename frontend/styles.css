@@ -1343,7 +1343,7 @@ main {
   --app-fert-editor-input-bg: #000000;
 }
 
-.app-body[data-theme="solaris-console"] {
+.app-body[data-theme="soil"] {
   --app-bg: #191714;
   --app-panel: #231f1a;
   --app-panel-soft: #30291d;

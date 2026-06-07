@@ -113,7 +113,7 @@ const THEME_OPTIONS = new Set([
   DEFAULT_THEME,
   "horticalc-light",
   "high-contrast",
-  "solaris-console",
+  "soil",
   "vt-green",
   "blue-matrix",
 ]);

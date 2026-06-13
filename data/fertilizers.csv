@@ -50,6 +50,7 @@ Compo Basfoliar Fruits SL,Flüssig,1.55,0.0,0.0,0.4,0.15,0.0,0.05,0.0,0.0,0.0005
 Compo Basfoliar Root Boster SL,Flüssig,1.2,0.045,0.155,0.05,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"Blatt/Boden, Aminosäure"
 Compo Basfoliar Top-N SL,Flüssig,1.25,0.28,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"Blatt, Langzeit"
 Compo Basfoliar Turf Complete SL,Flüssig,1.4,0.075,0.015,0.04,0.06,0.0,0.02,0.0,0.0,0.0005,0.0001,5e-05,5e-05,0.0,8e-05,0.0,0.0,0.0,0.0,0.0,"Blatt/Boden,Langzeit"
+Compo Blattgrün-Turbo Eisenchelat Fe-EDTA 13%,Pulver,1,0,0,0,0,0,0,0,0,0.13,0,0,0,0,0,0,0,0,0,0,"Quelle Produktseite: https://www.compo.de/produkte/duenger-blattpflege/universalduenger/compo-blattgruen-turbo | Eisenchelat 13% | Fe-EDTA / Natriumferedetat | CAS 15708-41-5"
 Compo Complete Pflanzendünger 6-4-6(+1.3CaO+2MgO+TE),Flüssig,1.257,0.015,0.045,0.04,0.06,0.013,0.02,0,0,0.00093,0.00013,0.00003,0.00003,0.00014,0.00001,0,0,0,0,0,"Quelle: eigenes Flaschenlabel 2026 | COMPO COMPLETE Pflanzendünger | PFC 1(C)(I)(b)(i) | N-P-K(+CaO+MgO) 6-4-6(+1.3+2) | Nettomasse 1257 g = 1 L | B/Cu/Fe/Mn/Mo/Zn wasserlöslich; Cu/Fe/Mn/Zn als EDTA-Chelat | Online-Abgleich: ältere/Shop-Daten teils 6+4+6(+2) mit 2% CaO, daher CaO vom aktuellen Flaschenlabel übernommen"
 Compo Easy Start TE-Max ,Pulver,1.0,0.11,0.0,0.48,0.0,0.0,0.0,0.0,0.0,0.006,0.001,0.0,0.01,0.0,0.0,0.01,0.0,0.0,0.0,0.0,"Boden, Spurennährstoffe"
 Compo Fetrilon 13 ,Pulver,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.13,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"Boden, Eisenchelat"
@@ -59,6 +60,7 @@ Compo Hakaphos Azerka 20-7-10(+3),Pulver,1.0,0.119,0.081,0.07,0.1,0.0,0.03,0.0,0
 Compo Hakaphos Basis3 3-15-36(+4),Pulver,1.0,0.0,0.03,0.15,0.36,0.0,0.04,0.0,0.0,0.002,0.0005,0.0002,0.00015,0.0001,1e-05,0.005,0.0,0.0,0.0,0.0,Weiches Wasser
 Compo Hakaphos Basis5 5-20-30(+5),Pulver,1.0,0.01,0.04,0.2,0.3,0.0,0.05,0.0,0.0,0.002,0.001,0.0006,0.00025,0.0003,3e-05,0.005,0.0,0.0,0.0,0.0,Weiches Wasser
 Compo Hakaphos Blau 15-10-15(+2),Pulver,1.0,0.11,0.04,0.1,0.15,0.0,0.02,0.0,0.0,0.0005,0.0005,0.0002,0.0002,0.0001,1e-05,0.005,0.0,0.0,0.0,0.0,Hartes Wasser
+Compo Hakaphos Blumenprofi 11-14-17(+2MgO+TE),Pulver,1,0.095,0.015,0.14,0.17,0,0.02,0,0,0.0011,0.0016,0.0016,0.0006,0.0003,0.00023,0,0,0,0,0,"Quelle Deklaration: https://assets.dehner.de/docs/hakaphos_blumenprofi_(hb)_produktinfo_11-12_adl_3_5717.pdf | Aktuelle Produktseite: https://www.compo.de/produkte/duenger-blattpflege/universalduenger/compo-blumenprofi | NPK(MgO) 11-14-17(+2) mit TE | 1.5% NO3-N und 9.5% NH4-N | Cu Fe Mn und Zn als EDTA-Chelat | chloridarm; Cl nicht quantifiziert | SO4 nicht deklariert"
 Compo Hakaphos Gelb20-0-16(+1),Pulver,1.0,0.114,0.086,0.0,0.16,0.0,0.01,0.0,0.0,0.00075,0.0005,0.0002,0.00015,0.0001,1e-05,0.005,0.0,0.0,0.0,0.0,Hartes Wasser
 Compo Hakaphos Grün 20-5-10(+2),Pulver,1.0,0.13,0.07,0.05,0.1,0.0,0.02,0.0,0.0,0.0005,0.0005,0.0002,0.0002,0.0001,1e-05,0.005,0.0,0.0,0.0,0.0,Hartes Wasser
 Compo Hakaphos Rot 8-12-24(+4),Pulver,1.0,0.05,0.03,0.12,0.24,0.0,0.04,0.0,0.0,0.0005,0.0005,0.0002,0.0002,0.0001,1e-05,0.005,0.0,0.0,0.0,0.0,Hartes Wasser

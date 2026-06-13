@@ -339,6 +339,10 @@ main {
   width: 7rem;
 }
 
+.quantity-symbol {
+  font-style: italic;
+}
+
 .grid--form th:first-child,
 .grid--form td:first-child {
   text-align: center;

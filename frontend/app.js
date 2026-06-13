@@ -672,9 +672,14 @@ function initializeFertilizerTables() {
     headerCells: [
       { label: "#" },
       { labelKey: "editor.fertilizerName", label: "Düngername", colSpan: 2 },
-      { labelKey: "calculator.amountGrams", label: "Menge (g)" },
+      { label: "m [g]" },
     ],
   });
+  const amountHeader = calculator.table.querySelector("thead th:last-child");
+  const massSymbol = document.createElement("var");
+  massSymbol.className = "quantity-symbol";
+  massSymbol.textContent = "m";
+  amountHeader.replaceChildren(massSymbol, " [g]");
   calculatorTableWrap.appendChild(calculator.table);
   calculatorTable = calculator.tbody;
 }

@@ -149,7 +149,7 @@ window.HORTICALC_I18N.de = {
   "solver.overrideGrams": "Override (g)",
   "solver.amountsTitle": "Düngermengen",
   "solver.solve": "Solver berechnen",
-  "solver.autoApply": "Auto übernehmen",
+  "solver.autoApply": "Bei Berechnen automatisch in den Düngerrechner einfügen",
   "solver.copyClipboard": "In Zwischenablage kopieren",
   "solver.advanced": "Erweitert",
   "solver.ureaAsNh4": "Harnstoff als NH4 behandeln",

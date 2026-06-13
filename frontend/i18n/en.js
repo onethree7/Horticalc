@@ -149,7 +149,7 @@ window.HORTICALC_I18N.en = {
   "solver.overrideGrams": "Override (g)",
   "solver.amountsTitle": "Fertilizer amounts",
   "solver.solve": "Run solver",
-  "solver.autoApply": "Auto apply",
+  "solver.autoApply": "Automatically insert into the fertilizer calculator when solving",
   "solver.copyClipboard": "Copy to clipboard",
   "solver.advanced": "Advanced",
   "solver.ureaAsNh4": "Treat urea as NH4",

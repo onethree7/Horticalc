@@ -149,7 +149,7 @@ window.HORTICALC_I18N.nl = {
   "solver.overrideGrams": "Override (g)",
   "solver.amountsTitle": "Meststofhoeveelheden",
   "solver.solve": "Solver berekenen",
-  "solver.autoApply": "Automatisch overnemen",
+  "solver.autoApply": "Bij berekenen automatisch in de meststoffencalculator invoegen",
   "solver.copyClipboard": "Naar klembord kopieren",
   "solver.advanced": "Geavanceerd",
   "solver.ureaAsNh4": "Ureum als NH4 behandelen",

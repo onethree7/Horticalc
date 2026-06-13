@@ -57,9 +57,10 @@ Sluijsmann, and the active `osmosis_percent`.
    selected fertilizers, and `Auswahl leeren` to reset the allowed list.
 3. Leave `Override / fixe Menge (g, optional)` collapsed unless a fertilizer
    must be held at a fixed gram amount.
-4. Keep `Auto übernehmen` enabled in the lower action row when the calculator
-   and live sidebar should update after each solve.
-5. Click `Solver berechnen`.
+4. In `Erweitert`, keep `Bei Berechnen automatisch in den Düngerrechner
+   einfügen` enabled when the calculator and live sidebar should update after
+   each solve.
+5. Click `Solver berechnen` in the Zielprofil-Rechner header.
 6. Copy the result or use `Im Rechner ansehen` to switch to the calculator. The
    clipboard text includes batch liters, osmosis percent, fertilizer grams, NPK,
    EC, Solver target/achieved/delta values, and ion mg/L values. It is compact

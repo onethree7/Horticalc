@@ -274,7 +274,10 @@
         </section>
 
         <section class="block" data-panel-anchor="calculate" data-testid="calculate-panel">
-          <h2 data-i18n="calculator.title">Hydroponic Solution Calculator</h2>
+          <div class="block-heading">
+            <h2 data-i18n="calculator.title">Hydroponic Solution Calculator</h2>
+            <button id="calculateBtn" class="btn btn--solver-primary" type="button" data-i18n="calculator.calculate">Berechnen</button>
+          </div>
           <p class="hint" data-i18n="calculator.hint">Mengen eingeben und Berechnung starten.</p>
           <div class="actions inline-actions">
             <button id="calculatorScaleDown" class="btn btn--outline btn--icon icon-button" type="button">-</button>
@@ -282,9 +285,6 @@
             <span class="inline-hint"><span data-i18n="calculator.scale">Skalierung</span> <span id="calculatorScaleValue">1.00x</span></span>
           </div>
           <div class="table-wrap" id="calculatorTableWrap"></div>
-          <div class="actions">
-            <button id="calculateBtn" class="btn btn--outline-primary" data-i18n="calculator.calculate">Berechnen</button>
-          </div>
           <div class="summary" data-panel-anchor="results" data-testid="results-panel">
             <div class="summary-scroll" id="summaryScroll">
               <div class="summary-tables">
@@ -345,7 +345,10 @@
 
       <div class="mode-panel is-hidden" id="solverMode" data-testid="solver-view">
         <section class="block" data-panel-anchor="solver">
-          <h2 data-i18n="solver.title">Zielprofil-Rechner</h2>
+          <div class="block-heading">
+            <h2 data-i18n="solver.title">Zielprofil-Rechner</h2>
+            <button id="solveBtn" class="btn btn--solver-primary" type="button" data-i18n="solver.solve">Solver berechnen</button>
+          </div>
           <p class="hint" data-i18n="solver.hint">Zielwerte setzen, Dünger freigeben und das Ergebnis direkt im Rechner prüfen.</p>
           <div class="solver-workbench">
             <div class="solver-results solver-comparison-grid">
@@ -450,11 +453,6 @@
             </div>
           </div>
           <div class="actions solver-actions">
-            <button id="solveBtn" class="btn btn--solver-primary" type="button" data-i18n="solver.solve">Solver berechnen</button>
-            <label class="toggle solver-auto-apply">
-              <input id="solverAutoApply" type="checkbox" checked />
-              <span data-i18n="solver.autoApply">Auto übernehmen</span>
-            </label>
             <button id="copySolverResults" class="btn btn--outline" type="button" data-i18n="solver.copyClipboard">In Zwischenablage kopieren</button>
             <button id="applySolverToCalculatorInline" class="btn btn--outline" type="button" data-i18n="profile.viewInCalculator">Im Rechner ansehen</button>
             <span class="inline-hint" id="copySolverResultsStatus" aria-live="polite"></span>
@@ -463,6 +461,10 @@
           <details class="solver-advanced-config">
             <summary data-i18n="solver.advanced">Erweitert</summary>
             <div class="solver-settings">
+              <label class="toggle solver-auto-apply">
+                <input id="solverAutoApply" type="checkbox" checked />
+                <span data-i18n="solver.autoApply">Bei Berechnen automatisch in den Düngerrechner einfügen</span>
+              </label>
               <label class="toggle">
                 <input id="solverUreaToggle" type="checkbox" />
                 <span data-i18n="solver.ureaAsNh4">Harnstoff als NH4 behandeln</span>

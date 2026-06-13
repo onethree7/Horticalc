@@ -149,7 +149,7 @@ window.HORTICALC_I18N.zh = {
   "solver.overrideGrams": "覆盖 (g)",
   "solver.amountsTitle": "肥料用量",
   "solver.solve": "运行 Solver",
-  "solver.autoApply": "自动应用",
+  "solver.autoApply": "计算时自动填入肥料计算器",
   "solver.copyClipboard": "复制到剪贴板",
   "solver.advanced": "高级",
   "solver.ureaAsNh4": "将尿素视为 NH4",

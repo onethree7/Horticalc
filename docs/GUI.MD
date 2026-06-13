@@ -69,10 +69,12 @@ Solver override grams live in the collapsed `solverOverrides` details panel.
 zero-override use out of the main flow.
 
 The solver can automatically apply a successful solve result to the calculator.
-The `solverAutoApply` checkbox lives in the lower Solver action row next to
-`Solver berechnen`, defaults on, stores its preference in `localStorage`, and
-uses the same `applyRecipe()` calculator path as loaded recipes so the live
-sidebar updates after the recalculation.
+The `solverAutoApply` checkbox lives in the collapsed advanced Solver options,
+defaults on, stores its preference in `localStorage`, and uses the same
+`applyRecipe()` calculator path as loaded recipes so the live sidebar updates
+after the recalculation. The primary Solver and calculator calculate buttons
+live in their respective panel headers; the Solver clipboard and explicit
+calculator-view actions remain below the result workbench.
 
 The solver result table always shows the standard nutrient rows after a solve;
 rows that were not active targets are muted so collateral nutrient changes are

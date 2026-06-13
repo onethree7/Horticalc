@@ -178,6 +178,7 @@ window.HORTICALC_I18N.zh = {
   "editor.fertilizerName": "肥料名称",
   "editor.nameRequired": "请输入肥料名称。",
   "editor.uniqueNames": "肥料名称必须唯一。",
+  "editor.resizeNameColumn": "调整肥料名称列宽",
   "errors.unknown": "未知错误",
   "errors.saveFailed": "保存失败",
   "errors.copyFailed": "复制失败",

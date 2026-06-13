@@ -178,6 +178,7 @@ window.HORTICALC_I18N.en = {
   "editor.fertilizerName": "Fertilizer name",
   "editor.nameRequired": "Please enter a fertilizer name.",
   "editor.uniqueNames": "Fertilizer names must be unique.",
+  "editor.resizeNameColumn": "Resize fertilizer name column",
   "errors.unknown": "Unknown error",
   "errors.saveFailed": "Save failed",
   "errors.copyFailed": "Copy failed",

@@ -344,6 +344,12 @@ main {
   font-style: italic;
 }
 
+#fertilizerEditorTable .quantity-symbol {
+  font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 400;
+}
+
 .grid--form th:first-child,
 .grid--form td:first-child {
   text-align: center;
@@ -391,8 +397,9 @@ main {
   border-collapse: separate;
   border-spacing: 0;
   --fert-editor-index-width: calc(1ch + (var(--space-2) * 2));
-  --fert-editor-liquid-width: calc(7ch + (var(--space-2) * 2));
-  --fert-editor-weight-width: calc(7ch + (var(--space-2) * 2));
+  --fert-editor-name-width: 18rem;
+  --fert-editor-liquid-width: 58px;
+  --fert-editor-weight-width: 52px;
 }
 
 #fertilizerEditorTable th,
@@ -408,12 +415,29 @@ main {
   width: var(--fert-editor-index-width);
 }
 
+#fertilizerEditorTable.grid--fertilizer-editor .col-name {
+  width: var(--fert-editor-name-width);
+}
+
 #fertilizerEditorTable.grid--fertilizer-editor .col-liquid {
   width: var(--fert-editor-liquid-width);
 }
 
 #fertilizerEditorTable.grid--fertilizer-editor .col-weight {
   width: var(--fert-editor-weight-width);
+}
+
+#fertilizerEditorTable th:nth-child(3) .table-sort-button,
+#fertilizerEditorTable th:nth-child(4) .table-sort-button {
+  padding-left: 4px;
+  padding-right: 4px;
+  text-align: center;
+}
+
+#fertilizerEditorTable td:nth-child(3),
+#fertilizerEditorTable td:nth-child(4) {
+  padding-left: 4px;
+  padding-right: 4px;
 }
 
 #fertilizerEditorTable thead th {
@@ -471,14 +495,45 @@ main {
 #fertilizerEditorTable td:nth-child(2) {
   position: sticky;
   left: var(--fert-editor-index-width);
+  min-width: var(--fert-editor-name-width);
+  width: var(--fert-editor-name-width);
   z-index: 7;
   background-clip: padding-box;
+}
+
+#fertilizerEditorTable th:nth-child(2) {
+  overflow: visible;
+}
+
+#fertilizerEditorTable .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 7px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 12;
+}
+
+#fertilizerEditorTable .column-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  left: 3px;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+#fertilizerEditorTable .column-resize-handle:hover::after {
+  background: currentColor;
 }
 
 #fertilizerEditorTable th:nth-child(3),
 #fertilizerEditorTable td:nth-child(3) {
   position: sticky;
-  left: calc(var(--fert-editor-index-width) + 18rem);
+  left: calc(var(--fert-editor-index-width) + var(--fert-editor-name-width));
   min-width: var(--fert-editor-liquid-width);
   width: var(--fert-editor-liquid-width);
   z-index: 7;
@@ -488,7 +543,7 @@ main {
 #fertilizerEditorTable th:nth-child(4),
 #fertilizerEditorTable td:nth-child(4) {
   position: sticky;
-  left: calc(var(--fert-editor-index-width) + 18rem + var(--fert-editor-liquid-width));
+  left: calc(var(--fert-editor-index-width) + var(--fert-editor-name-width) + var(--fert-editor-liquid-width));
   min-width: var(--fert-editor-weight-width);
   width: var(--fert-editor-weight-width);
   z-index: 7;
@@ -511,6 +566,17 @@ main {
 #fertilizerEditorTable td:nth-child(4),
 #fertilizerEditorTable th:nth-child(4) {
   box-shadow: 2px 0 0 #2b3543;
+}
+
+#fertilizerEditorTable th:nth-child(3),
+#fertilizerEditorTable td:nth-child(3) {
+  text-align: center;
+}
+
+#fertilizerEditorTable td:nth-child(4) input {
+  padding-left: 4px;
+  padding-right: 4px;
+  text-align: center;
 }
 
 #fertilizerEditorTable tbody tr.is-selected {

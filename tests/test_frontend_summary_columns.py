@@ -31,3 +31,8 @@ def test_fertilizer_editor_weight_header_uses_semantic_mass_symbol():
     assert 'amountHeader.replaceChildren' not in app_js
     assert ".quantity-symbol" in styles_css
     assert "font-style: italic;" in styles_css
+    assert '#fertilizerEditorTable .quantity-symbol' in styles_css
+    assert 'font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;' in styles_css
+    editor_mass_cell_css = styles_css.split("#fertilizerEditorTable td:nth-child(4) input", 1)[1].split("}", 1)[0]
+    assert "text-align: center;" in editor_mass_cell_css
+    assert "text-align: right;" not in editor_mass_cell_css

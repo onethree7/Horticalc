@@ -143,6 +143,7 @@ let fertilizerEditorRows = [];
 let fertilizerEditorSelectedIndex = 0;
 let fertilizerEditorFilter = "";
 let fertilizerEditorTable;
+let fertilizerEditorNameWidthPx = 288;
 let fertilizerEditorCompKeys = [];
 let fertilizerEditorSort = { key: "name", direction: "asc" };
 let summaryView = "ion";
@@ -1116,6 +1117,35 @@ function fertilizerEditorHeader(label, key, labelKey = null) {
   };
 }
 
+function addFertilizerNameColumnResizer(table) {
+  const header = table.querySelector("thead th:nth-child(2)");
+  if (!header) {
+    return;
+  }
+  const handle = document.createElement("span");
+  handle.className = "column-resize-handle";
+  handle.setAttribute("role", "separator");
+  handle.setAttribute("aria-orientation", "vertical");
+  handle.setAttribute("aria-label", t("editor.resizeNameColumn"));
+  handle.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const startX = event.clientX;
+    const startWidth = header.getBoundingClientRect().width;
+    const onPointerMove = (moveEvent) => {
+      fertilizerEditorNameWidthPx = Math.min(640, Math.max(180, startWidth + moveEvent.clientX - startX));
+      table.style.setProperty("--fert-editor-name-width", `${fertilizerEditorNameWidthPx}px`);
+    };
+    const onPointerUp = () => {
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerup", onPointerUp);
+    };
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerup", onPointerUp);
+  });
+  header.appendChild(handle);
+}
+
 function renderFertilizerEditor() {
   if (!fertilizerEditorTableWrap) {
     return;
@@ -1134,12 +1164,6 @@ function renderFertilizerEditor() {
     })
     .sort(compareFertilizerEditorRows);
   const indexDigitCount = String(Math.max(1, filteredRows.length)).length;
-  const liquidWidthCh = contentWidthCh([t("common.liquid"), t("common.solid")], t("common.liquid"), 4);
-  const weightWidthCh = contentWidthCh(
-    filteredRows.map(({ row }) => row.weight_factor),
-    "m [g]",
-    7
-  );
   const colgroupClasses = [
     "col-index",
     "col-name",
@@ -1162,6 +1186,8 @@ function renderFertilizerEditor() {
   });
   fertilizerEditorTableWrap.appendChild(table.table);
   fertilizerEditorTable = table.table;
+  fertilizerEditorTable.style.setProperty("--fert-editor-name-width", `${fertilizerEditorNameWidthPx}px`);
+  addFertilizerNameColumnResizer(fertilizerEditorTable);
   const massHeaderButton = fertilizerEditorTable.querySelector("thead th:nth-child(4) .table-sort-button");
   const massSymbol = document.createElement("var");
   massSymbol.className = "quantity-symbol";
@@ -1170,14 +1196,6 @@ function renderFertilizerEditor() {
   fertilizerEditorTable.style.setProperty(
     "--fert-editor-index-width",
     `calc(${indexDigitCount}ch + (var(--space-2) * 2))`
-  );
-  fertilizerEditorTable.style.setProperty(
-    "--fert-editor-liquid-width",
-    `calc(${liquidWidthCh + 1}ch + (var(--space-2) * 2))`
-  );
-  fertilizerEditorTable.style.setProperty(
-    "--fert-editor-weight-width",
-    `calc(${weightWidthCh + 1}ch + (var(--space-2) * 2))`
   );
 
   if (filteredRows.length) {

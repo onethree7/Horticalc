@@ -41,6 +41,11 @@ The calculator fertilizer-selection table labels the Boolean physical state as
 `Typ` and renders it as localized solid/liquid text. The adjacent
 `weight_factor` column is presented as `Masse`.
 
+In the fertilizer editor, the sticky `Flüssig` and `m [g]` columns use fixed
+compact widths. The sticky fertilizer-name column starts at `18rem` and has a
+drag handle on its right edge; resizing is limited to 180-640 pixels and only
+affects the editor table.
+
 The frontend language model is intentionally frontend-only. German is the
 fallback catalog in `frontend/i18n/de.js`, with English, Dutch, Spanish, and
 Simplified Chinese in `frontend/i18n/en.js`, `frontend/i18n/nl.js`,

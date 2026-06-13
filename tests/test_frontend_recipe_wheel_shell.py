@@ -230,14 +230,17 @@ def test_fertilizer_editor_sticky_columns_size_from_visible_content() -> None:
     assert "--fert-editor-liquid-width" in styles
     assert "--fert-editor-weight-width" in styles
     assert "left: var(--fert-editor-index-width)" in styles
-    assert "left: calc(var(--fert-editor-index-width) + 18rem)" in styles
-    assert "left: calc(var(--fert-editor-index-width) + 18rem + var(--fert-editor-liquid-width))" in styles
+    assert "--fert-editor-name-width: 18rem" in styles
+    assert "--fert-editor-liquid-width: 58px" in styles
+    assert "--fert-editor-weight-width: 52px" in styles
+    assert "left: calc(var(--fert-editor-index-width) + var(--fert-editor-name-width))" in styles
+    assert "left: calc(var(--fert-editor-index-width) + var(--fert-editor-name-width) + var(--fert-editor-liquid-width))" in styles
     assert "const indexDigitCount = String(Math.max(1, filteredRows.length)).length;" in app_js
-    assert 'const liquidWidthCh = contentWidthCh([t("common.liquid"), t("common.solid")], t("common.liquid"), 4);' in app_js
-    assert "const weightWidthCh = contentWidthCh(" in app_js
     assert "calc(${indexDigitCount}ch + (var(--space-2) * 2))" in app_js
-    assert "calc(${liquidWidthCh + 1}ch + (var(--space-2) * 2))" in app_js
-    assert "calc(${weightWidthCh + 1}ch + (var(--space-2) * 2))" in app_js
+    assert "addFertilizerNameColumnResizer" in app_js
+    assert 'table.style.setProperty("--fert-editor-name-width"' in app_js
+    assert "Math.min(640, Math.max(180" in app_js
+    assert '#fertilizerEditorTable th:nth-child(3) .table-sort-button' in styles
 
 def test_fertilizer_editor_sticky_columns_paint_opaque_backgrounds() -> None:
     styles = read_frontend_file("styles.css")

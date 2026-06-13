@@ -178,6 +178,7 @@ window.HORTICALC_I18N.es = {
   "editor.fertilizerName": "Nombre del fertilizante",
   "editor.nameRequired": "Introduce un nombre de fertilizante.",
   "editor.uniqueNames": "Los nombres de fertilizante deben ser únicos.",
+  "editor.resizeNameColumn": "Cambiar el ancho de la columna de fertilizante",
   "errors.unknown": "Error desconocido",
   "errors.saveFailed": "Error al guardar",
   "errors.copyFailed": "Error al copiar",

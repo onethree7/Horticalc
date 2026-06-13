@@ -178,6 +178,7 @@ window.HORTICALC_I18N.de = {
   "editor.fertilizerName": "Düngername",
   "editor.nameRequired": "Bitte einen Düngernamen angeben.",
   "editor.uniqueNames": "Düngernamen müssen eindeutig sein.",
+  "editor.resizeNameColumn": "Düngername-Spalte breiter oder schmaler ziehen",
   "errors.unknown": "Unbekannter Fehler",
   "errors.saveFailed": "Speichern fehlgeschlagen",
   "errors.copyFailed": "Kopieren fehlgeschlagen",

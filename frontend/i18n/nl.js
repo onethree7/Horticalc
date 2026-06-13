@@ -178,6 +178,7 @@ window.HORTICALC_I18N.nl = {
   "editor.fertilizerName": "Meststofnaam",
   "editor.nameRequired": "Voer een meststofnaam in.",
   "editor.uniqueNames": "Meststofnamen moeten uniek zijn.",
+  "editor.resizeNameColumn": "Breedte van meststofnaamkolom aanpassen",
   "errors.unknown": "Onbekende fout",
   "errors.saveFailed": "Opslaan mislukt",
   "errors.copyFailed": "Kopieren mislukt",

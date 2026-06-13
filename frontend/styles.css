@@ -347,6 +347,10 @@ main {
 #fertilizerEditorTable .quantity-symbol {
   font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
   font-style: italic;
+  font-weight: 700;
+}
+
+#fertilizerEditorTable .quantity-unit {
   font-weight: 400;
 }
 
@@ -1201,6 +1205,8 @@ main {
   --app-table-badge-text: var(--app-muted);
   --app-table-row-odd: rgba(20, 27, 20, 0.72);
   --app-table-row-even: rgba(14, 20, 16, 0.72);
+  --app-fert-editor-row-odd-bg: #141b14;
+  --app-fert-editor-row-even-bg: #0e1410;
   --app-table-row-hover: rgba(41, 61, 31, 0.64);
   --app-input-bg: #10130f;
   --app-input-border: #3a4334;
@@ -1299,6 +1305,8 @@ main {
   --app-table-badge-text: #4f5c4d;
   --app-table-row-odd: rgba(229, 235, 225, 0.9);
   --app-table-row-even: rgba(213, 223, 210, 0.9);
+  --app-fert-editor-row-odd-bg: #e5ebe1;
+  --app-fert-editor-row-even-bg: #d5dfd2;
   --app-table-row-hover: rgba(194, 211, 188, 0.95);
   --app-input-bg: #e8eee5;
   --app-input-border: #8c9a87;
@@ -1382,6 +1390,8 @@ main {
   --app-table-head-text: #ffffff;
   --app-table-row-odd: #000000;
   --app-table-row-even: #101010;
+  --app-fert-editor-row-odd-bg: #000000;
+  --app-fert-editor-row-even-bg: #101010;
   --app-table-row-hover: #2a2a2a;
   --app-input-bg: #000000;
   --app-input-border: #ffffff;
@@ -1467,6 +1477,8 @@ main {
   --app-table-head-text: #fff2d7;
   --app-table-row-odd: rgba(35, 28, 20, 0.82);
   --app-table-row-even: rgba(27, 22, 17, 0.82);
+  --app-fert-editor-row-odd-bg: #231c14;
+  --app-fert-editor-row-even-bg: #1b1611;
   --app-table-row-hover: rgba(70, 54, 29, 0.8);
   --app-input-bg: #17130f;
   --app-input-border: #745a2f;
@@ -1550,6 +1562,8 @@ main {
   --app-table-head-text: #c3e0bd;
   --app-table-row-odd: #272727;
   --app-table-row-even: #303030;
+  --app-fert-editor-row-odd-bg: #272727;
+  --app-fert-editor-row-even-bg: #303030;
   --app-table-row-hover: #353e21;
   --app-input-bg: #2d2d2d;
   --app-input-border: #4d4d4d;
@@ -1641,6 +1655,8 @@ main {
   --app-table-head-text: #e5ffdf;
   --app-table-row-odd: rgba(8, 20, 9, 0.82);
   --app-table-row-even: rgba(5, 13, 6, 0.82);
+  --app-fert-editor-row-odd-bg: #081409;
+  --app-fert-editor-row-even-bg: #050d06;
   --app-table-row-hover: rgba(26, 59, 27, 0.82);
   --app-input-bg: #030704;
   --app-input-border: #2a6538;
@@ -1726,6 +1742,8 @@ main {
   --app-table-head-text: #edf4ff;
   --app-table-row-odd: rgba(13, 23, 36, 0.82);
   --app-table-row-even: rgba(8, 16, 26, 0.82);
+  --app-fert-editor-row-odd-bg: #0d1724;
+  --app-fert-editor-row-even-bg: #08101a;
   --app-table-row-hover: rgba(28, 49, 75, 0.82);
   --app-input-bg: #07101a;
   --app-input-border: #33445f;
@@ -2500,11 +2518,11 @@ button,
 }
 
 #fertilizerEditorTable tbody tr:nth-child(odd) td:nth-child(-n + 4) {
-  background: var(--app-table-row-odd);
+  background: var(--app-fert-editor-row-odd-bg);
 }
 
 #fertilizerEditorTable tbody tr:nth-child(even) td:nth-child(-n + 4) {
-  background: var(--app-table-row-even);
+  background: var(--app-fert-editor-row-even-bg);
 }
 
 #fertilizerEditorTable tbody tr.is-selected {

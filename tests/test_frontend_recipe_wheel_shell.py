@@ -253,12 +253,14 @@ def test_fertilizer_editor_sticky_columns_paint_opaque_backgrounds() -> None:
     ) in styles
     assert (
         "#fertilizerEditorTable tbody tr:nth-child(odd) td:nth-child(-n + 4) {\n"
-        "  background: var(--app-table-row-odd);"
+        "  background: var(--app-fert-editor-row-odd-bg);"
     ) in styles
     assert (
         "#fertilizerEditorTable tbody tr:nth-child(even) td:nth-child(-n + 4) {\n"
-        "  background: var(--app-table-row-even);"
+        "  background: var(--app-fert-editor-row-even-bg);"
     ) in styles
+    assert styles.count("--app-fert-editor-row-odd-bg:") == 7
+    assert styles.count("--app-fert-editor-row-even-bg:") == 7
 
 def test_live_result_bar_uses_consistent_high_visibility_type() -> None:
     styles = read_frontend_file("styles.css")

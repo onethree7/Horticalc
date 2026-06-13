@@ -1192,7 +1192,10 @@ function renderFertilizerEditor() {
   const massSymbol = document.createElement("var");
   massSymbol.className = "quantity-symbol";
   massSymbol.textContent = "m";
-  massHeaderButton.replaceChildren(massSymbol, " [g]");
+  const massUnit = document.createElement("span");
+  massUnit.className = "quantity-unit";
+  massUnit.textContent = " [g]";
+  massHeaderButton.replaceChildren(massSymbol, massUnit);
   fertilizerEditorTable.style.setProperty(
     "--fert-editor-index-width",
     `calc(${indexDigitCount}ch + (var(--space-2) * 2))`

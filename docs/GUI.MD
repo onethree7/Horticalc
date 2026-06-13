@@ -44,7 +44,8 @@ The calculator fertilizer-selection table labels the Boolean physical state as
 In the fertilizer editor, the sticky `Flüssig` and `m [g]` columns use fixed
 compact widths. The sticky fertilizer-name column starts at `18rem` and has a
 drag handle on its right edge; resizing is limited to 180-640 pixels and only
-affects the editor table.
+affects the editor table. The four-column sticky base block uses theme-specific
+opaque row colors so horizontally scrolled nutrient values cannot show through.
 
 The frontend language model is intentionally frontend-only. German is the
 fallback catalog in `frontend/i18n/de.js`, with English, Dutch, Spanish, and

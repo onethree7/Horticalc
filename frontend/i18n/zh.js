@@ -75,7 +75,7 @@ window.HORTICALC_I18N.zh = {
   "common.achieved": "达到值",
   "common.delta": "Delta",
   "common.fertilizer": "肥料",
-  "common.grams": "克",
+  "common.grams": "克/毫升",
   "common.weight": "权重",
   "common.form": "形态",
   "common.name": "名称",

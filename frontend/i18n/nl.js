@@ -75,7 +75,7 @@ window.HORTICALC_I18N.nl = {
   "common.achieved": "Bereikt",
   "common.delta": "Delta",
   "common.fertilizer": "Meststof",
-  "common.grams": "Gram",
+  "common.grams": "Gram/ml",
   "common.weight": "Gewicht",
   "common.form": "Vorm",
   "common.name": "Naam",

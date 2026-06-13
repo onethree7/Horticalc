@@ -41,7 +41,8 @@ data names.
 1. Load or edit the fertilizer list if needed.
 2. Choose or enter water values.
 3. Choose a recipe profile or select fertilizer rows manually.
-4. Set grams and liters.
+4. Set fertilizer doses in grams for solids or milliliters for liquids, plus
+   the batch liters.
 5. Click `Berechnen` or let auto-recalculate refresh the output.
 
 The calculator output includes element totals, oxide totals, ions, ion balance,
@@ -62,8 +63,9 @@ Sluijsmann, and the active `osmosis_percent`.
    each solve.
 5. Click `Solver berechnen` in the Zielprofil-Rechner header.
 6. Copy the result or use `Im Rechner ansehen` to switch to the calculator. The
-   clipboard text includes batch liters, osmosis percent, fertilizer grams, NPK,
-   EC, Solver target/achieved/delta values, and ion mg/L values. It is compact
+   clipboard text includes batch liters, osmosis percent, fertilizer doses in
+   grams or milliliters, NPK, EC, Solver target/achieved/delta values, and ion
+   mg/L values. It is compact
    space-aligned text for monospace copy/paste code blocks.
 7. Adjust the bottom `Erweitert` solver config, including urea, phosphate
    handling, and optional `S als Solver-Ziel`, only when needed.

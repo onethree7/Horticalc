@@ -79,12 +79,13 @@ calculator-view actions remain below the result workbench.
 The solver result table always shows the standard nutrient rows after a solve;
 rows that were not active targets are muted so collateral nutrient changes are
 visible without implying they were optimized objectives. The fertilizer result
-table lets long product names wrap while keeping the grams column compact and
-right-aligned.
+table lets long product names wrap while keeping the `Gramm/ml` dose column
+compact and right-aligned. Solid doses are grams and liquid doses are
+milliliters.
 
 The solver clipboard export in `frontend/app.js` includes the batch liters,
-osmosis percent, fertilizer grams, NPK metrics, EC, Solver target/achieved/delta
-values, and ion mg/L values. It uses compact space-aligned columns for
+osmosis percent, fertilizer doses in grams or milliliters, NPK metrics, EC,
+Solver target/achieved/delta values, and ion mg/L values. It uses compact space-aligned columns for
 monospace copy/paste code blocks instead of tab-separated columns.
 
 The solver advanced config lives at the bottom of the Solver panel in

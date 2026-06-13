@@ -59,3 +59,15 @@ def test_frontend_i18n_keeps_data_contract_names_literal() -> None:
     assert "fertilizers_allowed" in app_js
     assert "N_total" in app_js
     assert "NO3" in app_js
+
+
+def test_fertilizer_dose_header_covers_solids_and_liquids() -> None:
+    catalogs = {locale: _catalog(locale) for locale in LOCALES}
+    index_html = read_frontend_file("index.html")
+
+    assert catalogs["de"]["common.grams"] == "Gramm/ml"
+    assert catalogs["en"]["common.grams"] == "Grams/ml"
+    assert catalogs["nl"]["common.grams"] == "Gram/ml"
+    assert catalogs["es"]["common.grams"] == "Gramos/ml"
+    assert catalogs["zh"]["common.grams"] == "克/毫升"
+    assert '<th data-i18n="common.grams">Gramm/ml</th>' in index_html

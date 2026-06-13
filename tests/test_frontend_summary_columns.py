@@ -25,6 +25,6 @@ def test_fertilizer_amount_header_uses_semantic_mass_symbol():
 
     assert 'document.createElement("var")' in app_js
     assert 'massSymbol.textContent = "m";' in app_js
-    assert 'amountHeader.replaceChildren(massSymbol, " [g]");' in app_js
+    assert 'amountHeader.replaceChildren(massSymbol, " [g/ml]");' in app_js
     assert ".quantity-symbol" in styles_css
     assert "font-style: italic;" in styles_css

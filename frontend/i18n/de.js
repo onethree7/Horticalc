@@ -75,7 +75,7 @@ window.HORTICALC_I18N.de = {
   "common.achieved": "Erreicht",
   "common.delta": "Delta",
   "common.fertilizer": "Dünger",
-  "common.grams": "Gramm",
+  "common.grams": "Gramm/ml",
   "common.weight": "Gewicht",
   "common.form": "Form",
   "common.name": "Name",

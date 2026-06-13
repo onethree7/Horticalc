@@ -16,8 +16,8 @@ FastAPI from the same origin as the API.
 
 The active navigation has four user-facing areas:
 
-- `DUENGER-EDITOR`: fertilizer CSV editing, liquid checkbox, search, and
-  add/delete rows.
+- `DUENGER-EDITOR`: fertilizer CSV editing, liquid checkbox, mass-factor column
+  labelled as italic `m [g]`, search, and add/delete rows.
 - `WASSERWERTE`: water profiles, osmosis percent, helper conversions, mg/L or mmol/L display.
 - `RECHNER`: recipe profiles, fertilizer grams, calculation output, details.
 - `SOLVER`: target values, compact searchable allowed-fertilizer picker,

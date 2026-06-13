@@ -19,12 +19,15 @@ def test_ion_balance_uses_sum_symbols_for_charge_totals():
     assert 'anions_meq_per_l: "E-"' not in content
 
 
-def test_fertilizer_amount_header_uses_semantic_mass_symbol():
+def test_fertilizer_editor_weight_header_uses_semantic_mass_symbol():
     app_js = read_frontend_file("app.js")
     styles_css = read_frontend_file("styles.css")
 
+    assert 'massHeaderButton = fertilizerEditorTable.querySelector(' in app_js
     assert 'document.createElement("var")' in app_js
     assert 'massSymbol.textContent = "m";' in app_js
-    assert 'amountHeader.replaceChildren(massSymbol, " [g/ml]");' in app_js
+    assert 'massHeaderButton.replaceChildren(massSymbol, " [g]");' in app_js
+    assert '{ labelKey: "common.grams", label: "Gramm/ml" }' in app_js
+    assert 'amountHeader.replaceChildren' not in app_js
     assert ".quantity-symbol" in styles_css
     assert "font-style: italic;" in styles_css

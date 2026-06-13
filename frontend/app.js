@@ -672,14 +672,9 @@ function initializeFertilizerTables() {
     headerCells: [
       { label: "#" },
       { labelKey: "editor.fertilizerName", label: "Düngername", colSpan: 2 },
-      { label: "m [g/ml]" },
+      { labelKey: "common.grams", label: "Gramm/ml" },
     ],
   });
-  const amountHeader = calculator.table.querySelector("thead th:last-child");
-  const massSymbol = document.createElement("var");
-  massSymbol.className = "quantity-symbol";
-  massSymbol.textContent = "m";
-  amountHeader.replaceChildren(massSymbol, " [g/ml]");
   calculatorTableWrap.appendChild(calculator.table);
   calculatorTable = calculator.tbody;
 }
@@ -1142,7 +1137,7 @@ function renderFertilizerEditor() {
   const liquidWidthCh = contentWidthCh([t("common.liquid"), t("common.solid")], t("common.liquid"), 4);
   const weightWidthCh = contentWidthCh(
     filteredRows.map(({ row }) => row.weight_factor),
-    t("common.weight"),
+    "m [g]",
     7
   );
   const colgroupClasses = [
@@ -1156,7 +1151,7 @@ function renderFertilizerEditor() {
     { label: "#" },
     fertilizerEditorHeader("Düngername", "name", "editor.fertilizerName"),
     fertilizerEditorHeader("Flüssig", "liquid", "common.liquid"),
-    fertilizerEditorHeader("Gewicht", "weight_factor", "common.weight"),
+    fertilizerEditorHeader("m [g]", "weight_factor"),
     ...fertilizerEditorCompKeys.map((key) => fertilizerEditorHeader(key, `comp:${key}`)),
   ];
   const table = createTable({
@@ -1167,6 +1162,11 @@ function renderFertilizerEditor() {
   });
   fertilizerEditorTableWrap.appendChild(table.table);
   fertilizerEditorTable = table.table;
+  const massHeaderButton = fertilizerEditorTable.querySelector("thead th:nth-child(4) .table-sort-button");
+  const massSymbol = document.createElement("var");
+  massSymbol.className = "quantity-symbol";
+  massSymbol.textContent = "m";
+  massHeaderButton.replaceChildren(massSymbol, " [g]");
   fertilizerEditorTable.style.setProperty(
     "--fert-editor-index-width",
     `calc(${indexDigitCount}ch + (var(--space-2) * 2))`

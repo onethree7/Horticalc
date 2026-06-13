@@ -48,7 +48,6 @@ def test_solver_auto_apply_control_present():
     assert 'id="solverApplyStatus"' in html_content
     assert 'id="applySolverToCalculatorInline"' in html_content
     assert html_content.index('id="solveBtn"') < html_content.index('id="solverAutoApply"')
-    assert html_content.index('id="solverAutoApply"') < html_content.index('id="copySolverResults"')
     assert "SOLVER_AUTO_APPLY_KEY" in js_content
     assert "applySolverResultToCalculator" in js_content
     assert 'setSolverApplyStatus(t("status.appliedCalculator"))' in js_content

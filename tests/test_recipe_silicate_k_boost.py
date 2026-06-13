@@ -14,7 +14,8 @@ def test_recipe_silicate_k_boost_si_k_totals() -> None:
 
     liters = 10.0
     k2o_mg_l = ((1.0 * 1.24 * 0.07) + (1.0 * 1.26 * 0.08) + (1.0 * 1.0 * 0.56)) * 1000.0 / liters
-    sio2_mg_l = ((1.0 * 1.24 * 0.10) + (1.0 * 1.26 * 0.21)) * 1000.0 / liters
+    # Vitanica Si declares 10% SiO3; the catalog stores its SiO2 equivalent.
+    sio2_mg_l = ((1.0 * 1.24 * 0.078971317) + (1.0 * 1.26 * 0.21)) * 1000.0 / liters
 
     mm = load_molar_masses()
     expected_k_mg_l = k2o_mg_l * (2 * mm["K"] / mm["K2O"])

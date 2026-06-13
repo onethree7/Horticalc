@@ -26,7 +26,7 @@ def test_load_fertilizers_accepts_ascii_name_header(tmp_path: Path) -> None:
 
     assert fertilizers["Ascii Header"].comp == {"NO3": 0.11}
 
-def test_save_fertilizers_preserves_number_column(tmp_path: Path) -> None:
+def test_save_fertilizers_removes_legacy_number_column(tmp_path: Path) -> None:
     csv_path = tmp_path / "fertilizers.csv"
     with csv_path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
@@ -46,5 +46,17 @@ def test_save_fertilizers_preserves_number_column(tmp_path: Path) -> None:
         reader = csv.DictReader(f)
         rows = list(reader)
 
-    assert rows[0]["Nr."] == "1"
+    assert reader.fieldnames == ["Düngername", "Form", "Gewicht", "NH4"]
     assert rows[0]["NH4"] == "0.12"
+
+
+def test_load_fertilizers_sorts_factory_and_user_names_together(tmp_path: Path) -> None:
+    csv_path = tmp_path / "fertilizers.csv"
+    with csv_path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Düngername", "Form", "Gewicht", "NO3"])
+        writer.writerow(["zeta", "fest", "1", "0.1"])
+        writer.writerow(["Ähre", "fest", "1", "0.2"])
+        writer.writerow(["Alpha", "fest", "1", "0.3"])
+
+    assert list(load_fertilizers(csv_path)) == ["Alpha", "zeta", "Ähre"]

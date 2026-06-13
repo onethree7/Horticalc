@@ -41,8 +41,12 @@ Required columns:
 - `Gewicht`
 
 All other numeric columns are interpreted as composition fractions. A value of
-`0.14` means 14 percent by mass. The field named `NR` or `Nr.` is treated as a
-row number and ignored during loading.
+`0.14` means 14 percent by mass. `NR` or `Nr.` is accepted only for legacy CSV
+compatibility and ignored during loading; newly written catalogs omit it.
+
+`load_fertilizers()` returns the fully merged shipped and user catalog sorted
+by normalized fertilizer name. The API, GUI, solver, and CLI therefore share
+the same default order. Source: `src/horticalc/data_io.py`.
 
 Composition keys are defined by `COMP_COLS` in `src/horticalc/core.py`:
 

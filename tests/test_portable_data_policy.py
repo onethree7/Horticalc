@@ -50,6 +50,18 @@ def test_portable_layout_uses_shipped_catalog_and_user_overlay(
     assert "New Shipped" in reloaded
     assert "Remove Me" not in reloaded
 
+
+def test_merged_catalog_is_sorted_after_user_overrides(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    shipped_csv = tmp_path / "data" / "fertilizers.csv"
+    _write_fertilizers_csv(shipped_csv, [("Zulu", 0.1), ("Bravo", 0.2)])
+    _write_fertilizers_csv(paths.user_fertilizer_overrides_path(tmp_path), [("Alpha", 0.3)])
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+
+    assert list(load_fertilizers()) == ["Alpha", "Bravo", "Zulu"]
+
 def test_legacy_user_fertilizers_migrates_custom_rows_and_accepts_shipped_updates(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

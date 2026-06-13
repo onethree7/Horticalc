@@ -21,7 +21,7 @@ class Fertilizer:
 
 
 FERTILIZER_NAME_FIELDS = ("Düngername", "Duengername")
-FERTILIZER_BASE_FIELDS = ["NR", "Düngername", "Form", "Gewicht"]
+FERTILIZER_BASE_FIELDS = ["Düngername", "Form", "Gewicht"]
 REPLACED_ROW_PATTERN = re.compile(r'replace existing row\s+"([^"]+)"', re.IGNORECASE)
 
 
@@ -121,6 +121,10 @@ def _merge_fertilizer_maps(*maps: Dict[str, Fertilizer]) -> Dict[str, Fertilizer
     return {fertilizer.name: fertilizer for fertilizer in merged_by_key.values()}
 
 
+def _sorted_fertilizer_map(fertilizers: Dict[str, Fertilizer]) -> Dict[str, Fertilizer]:
+    return dict(sorted(fertilizers.items(), key=lambda item: fertilizer_name_key(item[0])))
+
+
 def _disabled_fertilizer_keys(path: Path) -> set[str]:
     if not path.exists():
         return set()
@@ -185,7 +189,7 @@ def _migrate_legacy_user_fertilizers(root: Path) -> None:
 
 def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
     if csv_path is not None:
-        return _load_fertilizer_csv(csv_path)
+        return _sorted_fertilizer_map(_load_fertilizer_csv(csv_path))
 
     layout = paths.ensure_portable_layout()
     _migrate_legacy_user_fertilizers(layout.root)
@@ -199,11 +203,11 @@ def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
     disabled_keys = _disabled_fertilizer_keys(paths.user_disabled_fertilizers_path(layout.root))
     if disabled_keys:
         merged = {name: fert for name, fert in merged.items() if _fertilizer_key(fert) not in disabled_keys}
-    return merged
+    return _sorted_fertilizer_map(merged)
 
 
 def _header_for_fertilizers(fertilizers: Dict[str, Fertilizer], existing_header: list[str] | None = None) -> list[str]:
-    header = list(existing_header) if existing_header else None
+    header = [field for field in existing_header if not _is_number_field(field)] if existing_header else None
     comp_keys = set()
     for fert in fertilizers.values():
         comp_keys.update(fert.comp.keys())
@@ -225,7 +229,6 @@ def _write_fertilizer_csv(
 ) -> None:
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     header = _header_for_fertilizers(fertilizers, existing_header)
-    number_field = next((field for field in header if _is_number_field(field)), None)
     name_field = next((field for field in header if field in FERTILIZER_NAME_FIELDS), "Düngername")
 
     sorted_ferts = sorted(fertilizers.values(), key=lambda fert: fertilizer_name_key(fert.name))
@@ -233,10 +236,8 @@ def _write_fertilizer_csv(
     with csv_path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=header)
         writer.writeheader()
-        for index, fert in enumerate(sorted_ferts, start=1):
+        for fert in sorted_ferts:
             row = {key: "" for key in header}
-            if number_field:
-                row[number_field] = str(index)
             row[name_field] = fert.name
             row["Form"] = fert.form or "fest"
             row["Gewicht"] = format(fert.weight_factor or 1.0, ".10g")

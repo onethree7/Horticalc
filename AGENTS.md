@@ -48,7 +48,6 @@ The pre-rework documentation backup is intentionally ignored at
 Run the standard suite when relevant:
 
 ```bash
-python scripts/check_unicode_controls.py
 python -m pytest -q
 ```
 

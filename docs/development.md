@@ -39,7 +39,6 @@ python -m horticalc solve recipes/solve_golden.yml --pretty
 Standard verification:
 
 ```bash
-python scripts/check_unicode_controls.py
 python -m pytest -q
 ```
 
@@ -58,11 +57,10 @@ For documentation changes:
 ```bash
 rg -n "TODO|UNDECIDED|Task [0-9]|Implementation Roadmap" docs README.md --glob "!**/development.md" --glob "!**/documentation_maintenance.md"
 rg -n "GUI_PLAN|feature_osmosis|golden_example" docs README.md --glob "!**/audit_2026_06_01.md" --glob "!**/development.md" --glob "!**/documentation_maintenance.md"
-python scripts/check_unicode_controls.py
 ```
 
 The full test suite also protects frontend contracts, API schemas, portable
-data policy, solver defaults, Unicode controls, and release-facing behavior.
+data policy, solver defaults, and release-facing behavior.
 
 ## Generated And Ignored Files
 

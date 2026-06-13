@@ -130,7 +130,6 @@ Do not introduce writes to OS user directories, the registry, XDG paths,
 Standard:
 
 ```bash
-python scripts/check_unicode_controls.py
 python -m pytest -q
 ```
 

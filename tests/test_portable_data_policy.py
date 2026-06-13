@@ -11,8 +11,8 @@ def _write_fertilizers_csv(path: Path, rows: list[tuple[str, float]] | None = No
     rows = rows or [("Test", 0.1)]
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        "NR,Düngername,Form,Gewicht,N\n"
-        + "".join(f"{index},{name},fest,1,{value}\n" for index, (name, value) in enumerate(rows, start=1)),
+        "NR,Düngername,Liquid,Gewicht,N\n"
+        + "".join(f"{index},{name},0,1,{value}\n" for index, (name, value) in enumerate(rows, start=1)),
         encoding="utf-8",
     )
 
@@ -32,7 +32,7 @@ def test_portable_layout_uses_shipped_catalog_and_user_overlay(
     ferts = load_fertilizers()
     assert "Test" in ferts
 
-    ferts["Extra"] = Fertilizer(name="Extra", form="fest", weight_factor=1.0, comp={"N": 0.2})
+    ferts["Extra"] = Fertilizer(name="Extra", liquid=False, weight_factor=1.0, comp={"N": 0.2})
     del ferts["Remove Me"]
     save_fertilizers(ferts)
 
@@ -86,8 +86,8 @@ def test_legacy_migration_uses_shipped_replace_aliases_to_avoid_duplicates(
     shipped_csv = tmp_path / "data" / "fertilizers.csv"
     shipped_csv.parent.mkdir(parents=True, exist_ok=True)
     shipped_csv.write_text(
-        "NR,Düngername,Form,Gewicht,N,Quelle\n"
-        '1,New Name,fest,1,0.2,"IMPORT ACTION: replace existing row ""Old Name"""\n',
+        "NR,Düngername,Liquid,Gewicht,N,Quelle\n"
+        '1,New Name,0,1,0.2,"IMPORT ACTION: replace existing row ""Old Name"""\n',
         encoding="utf-8",
     )
     _write_fertilizers_csv(paths.user_fertilizers_path(tmp_path), [("Old Name", 0.1), ("User Custom", 0.5)])

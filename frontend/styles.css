@@ -323,7 +323,8 @@ main {
   width: 18rem;
 }
 
-.grid--fertilizer .col-form {
+.grid--fertilizer .col-form,
+.grid--fertilizer .col-liquid {
   width: 8rem;
 }
 
@@ -357,6 +358,10 @@ main {
   font-size: var(--text-sm);
 }
 
+.grid input[type="checkbox"] {
+  width: auto;
+}
+
 .grid--form input[type="number"] {
   max-width: 6rem;
   margin: 0 auto;
@@ -386,7 +391,7 @@ main {
   border-collapse: separate;
   border-spacing: 0;
   --fert-editor-index-width: calc(1ch + (var(--space-2) * 2));
-  --fert-editor-form-width: calc(4ch + (var(--space-2) * 2));
+  --fert-editor-liquid-width: calc(7ch + (var(--space-2) * 2));
   --fert-editor-weight-width: calc(7ch + (var(--space-2) * 2));
 }
 
@@ -403,8 +408,8 @@ main {
   width: var(--fert-editor-index-width);
 }
 
-#fertilizerEditorTable.grid--fertilizer-editor .col-form {
-  width: var(--fert-editor-form-width);
+#fertilizerEditorTable.grid--fertilizer-editor .col-liquid {
+  width: var(--fert-editor-liquid-width);
 }
 
 #fertilizerEditorTable.grid--fertilizer-editor .col-weight {
@@ -474,8 +479,8 @@ main {
 #fertilizerEditorTable td:nth-child(3) {
   position: sticky;
   left: calc(var(--fert-editor-index-width) + 18rem);
-  min-width: var(--fert-editor-form-width);
-  width: var(--fert-editor-form-width);
+  min-width: var(--fert-editor-liquid-width);
+  width: var(--fert-editor-liquid-width);
   z-index: 7;
   background-clip: padding-box;
 }
@@ -483,7 +488,7 @@ main {
 #fertilizerEditorTable th:nth-child(4),
 #fertilizerEditorTable td:nth-child(4) {
   position: sticky;
-  left: calc(var(--fert-editor-index-width) + 18rem + var(--fert-editor-form-width));
+  left: calc(var(--fert-editor-index-width) + 18rem + var(--fert-editor-liquid-width));
   min-width: var(--fert-editor-weight-width);
   width: var(--fert-editor-weight-width);
   z-index: 7;

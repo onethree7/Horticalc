@@ -14,7 +14,7 @@ from horticalc.solver import (
 )
 
 def test_fertilizer_contrib_respects_weight_factor() -> None:
-    fert = Fertilizer(name="K2O Test", form="solid", weight_factor=2.0, comp={"K2O": 0.5})
+    fert = Fertilizer(name="K2O Test", liquid=False, weight_factor=2.0, comp={"K2O": 0.5})
     mm = {"K": 39.0983, "K2O": 94.196}
 
     contrib = _fertilizer_element_contrib_per_g(fert, mm)

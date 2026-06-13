@@ -65,7 +65,7 @@ class FertilizerEntry(BaseModel):
 
 class FertilizerPayload(BaseModel):
     name: str
-    form: str | None = None
+    liquid: bool
     weight_factor: float | None = None
     comp: Dict[str, float] | None = None
 
@@ -282,7 +282,7 @@ def fertilizers() -> List[dict]:
     return [
         {
             "name": fert.name,
-            "form": fert.form,
+            "liquid": fert.liquid,
             "weight_factor": fert.weight_factor,
             "comp": fert.comp,
         }
@@ -304,7 +304,6 @@ def put_fertilizers(payload: List[FertilizerPayload]) -> dict:
             raise HTTPException(status_code=400, detail="Düngernamen müssen eindeutig sein")
         seen_names.add(name_key)
 
-        form = entry.form.strip() if entry.form and entry.form.strip() else "fest"
         weight = entry.weight_factor if entry.weight_factor is not None else 1.0
         if not math.isfinite(weight):
             raise HTTPException(status_code=400, detail="Ungültiger Gewichtswert")
@@ -318,7 +317,7 @@ def put_fertilizers(payload: List[FertilizerPayload]) -> dict:
                     continue
                 comp[key] = value
 
-        new_ferts[name] = Fertilizer(name=name, form=form, weight_factor=weight, comp=comp)
+        new_ferts[name] = Fertilizer(name=name, liquid=entry.liquid, weight_factor=weight, comp=comp)
 
     global FERTILIZERS
     FERTILIZERS = new_ferts

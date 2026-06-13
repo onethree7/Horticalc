@@ -6,7 +6,7 @@ from horticalc.solver import solve_recipe_data
 def test_water_profile_overshoot_remains_visible_in_errors() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "K-only": Fertilizer(name="K-only", form="solid", weight_factor=1.0, comp={"K2O": 1.0}),
+        "K-only": Fertilizer(name="K-only", liquid=False, weight_factor=1.0, comp={"K2O": 1.0}),
     }
     recipe = {
         "liters": 1.0,

@@ -25,7 +25,7 @@ static frontend from the same origin.
 [
   {
     "name": "Example",
-    "form": "fest",
+    "liquid": false,
     "weight_factor": 1.0,
     "comp": {"NO3": 0.1, "K2O": 0.2}
   }
@@ -34,7 +34,8 @@ static frontend from the same origin.
 
 Names are matched case-insensitively after whitespace normalization. The
 shipped catalog remains `data/fertilizers.csv`; the endpoint writes only user
-deltas under `user/`.
+deltas under `user/`. `liquid` is required and Boolean; the API does not accept
+localized form strings.
 
 ## Water Profiles
 

@@ -17,7 +17,7 @@ def test_co3_water_profile_converts_to_hco3_for_solution() -> None:
 def test_solve_recipe_data_includes_co3_derived_hco3() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "K-only": Fertilizer(name="K-only", form="solid", weight_factor=1.0, comp={"K2O": 1.0}),
+        "K-only": Fertilizer(name="K-only", liquid=False, weight_factor=1.0, comp={"K2O": 1.0}),
     }
     recipe = {
         "liters": 1.0,

@@ -37,7 +37,7 @@ Loaded by `load_fertilizers()` in `src/horticalc/data_io.py`.
 Required columns:
 
 - `Düngername` or `Duengername`
-- `Form`
+- `Liquid`
 - `Gewicht`
 
 All other numeric columns are interpreted as composition fractions. A value of
@@ -55,7 +55,10 @@ Composition keys are defined by `COMP_COLS` in `src/horticalc/core.py`:
 - `SO4`, `Cl`, `CO3`, `HCO3`, `SiO2`
 - `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`
 
-`Gewicht` is a `weight_factor` and multiplies effective fertilizer grams.
+`Liquid` is strictly `0` for a solid fertilizer or `1` for a liquid
+fertilizer. It is exposed by the API as the Boolean field `liquid`; localized
+labels are frontend presentation only. `Gewicht` is a `weight_factor` and
+multiplies the fertilizer dose to effective product mass.
 
 ### Dose Units, Mass, And Liquid Fertilizers
 
@@ -66,7 +69,7 @@ dose:
 
 - For solid fertilizers, enter and measure the value as grams.
 - For liquid fertilizers, enter and measure the value as milliliters when
-  `Gewicht` stores the product density in `g/mL`.
+  `Liquid = 1` and `Gewicht` stores the product density in `g/mL`.
 
 The calculation core in `compute_solution()` converts the dose to effective
 product mass before applying composition fractions:

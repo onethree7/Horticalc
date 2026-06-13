@@ -14,14 +14,14 @@ from . import paths
 @dataclass(frozen=True)
 class Fertilizer:
     name: str
-    form: str
+    liquid: bool
     weight_factor: float
     # composition fractions (mass fraction, e.g. 0.14 = 14%)
     comp: Dict[str, float]
 
 
 FERTILIZER_NAME_FIELDS = ("Düngername", "Duengername")
-FERTILIZER_BASE_FIELDS = ["Düngername", "Form", "Gewicht"]
+FERTILIZER_BASE_FIELDS = ["Düngername", "Liquid", "Gewicht"]
 REPLACED_ROW_PATTERN = re.compile(r'replace existing row\s+"([^"]+)"', re.IGNORECASE)
 
 
@@ -42,7 +42,16 @@ def _is_number_field(field: str | None) -> bool:
 def _is_base_fertilizer_field(field: str | None) -> bool:
     if field is None:
         return False
-    return _is_number_field(field) or field in (*FERTILIZER_NAME_FIELDS, "Form", "Gewicht")
+    return _is_number_field(field) or field in (*FERTILIZER_NAME_FIELDS, "Liquid", "Gewicht")
+
+
+def _fertilizer_is_liquid(row: dict[str, str | None]) -> bool:
+    liquid = str(row.get("Liquid") or "").strip().casefold()
+    if liquid == "1":
+        return True
+    if liquid == "0":
+        return False
+    raise ValueError(f"Liquid must be 0 or 1: {row.get('Liquid')}")
 
 
 def _fertilizer_name_from_row(row: dict[str, str | None]) -> str:
@@ -71,11 +80,17 @@ def _load_fertilizer_csv(csv_path: Path) -> Dict[str, Fertilizer]:
     ferts: Dict[str, Fertilizer] = {}
     with csv_path.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
+        fields = set(reader.fieldnames or [])
+        if not fields.intersection(FERTILIZER_NAME_FIELDS):
+            raise ValueError("Fertilizer CSV requires Düngername or Duengername")
+        for required_field in ("Liquid", "Gewicht"):
+            if required_field not in fields:
+                raise ValueError(f"Fertilizer CSV requires {required_field}")
         for row in reader:
             name = _fertilizer_name_from_row(row)
             if not name:
                 continue
-            form = (row.get("Form") or "").strip() or "fest"
+            liquid = _fertilizer_is_liquid(row)
             weight = float(row.get("Gewicht") or 1.0)
 
             comp: Dict[str, float] = {}
@@ -93,7 +108,7 @@ def _load_fertilizer_csv(csv_path: Path) -> Dict[str, Fertilizer]:
                     continue
                 comp[k] = value
 
-            ferts[name] = Fertilizer(name=name, form=form, weight_factor=weight, comp=comp)
+            ferts[name] = Fertilizer(name=name, liquid=liquid, weight_factor=weight, comp=comp)
 
     return ferts
 
@@ -136,7 +151,7 @@ def _disabled_fertilizer_keys(path: Path) -> set[str]:
 
 
 def _fertilizers_equal(left: Fertilizer, right: Fertilizer) -> bool:
-    if left.form != right.form:
+    if left.liquid != right.liquid:
         return False
     if abs(float(left.weight_factor) - float(right.weight_factor)) > 1e-12:
         return False
@@ -208,6 +223,11 @@ def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
 
 def _header_for_fertilizers(fertilizers: Dict[str, Fertilizer], existing_header: list[str] | None = None) -> list[str]:
     header = [field for field in existing_header if not _is_number_field(field)] if existing_header else None
+    if header is not None:
+        header = [field for field in header if field != "Form"]
+    if header is not None and "Liquid" not in header:
+        weight_index = header.index("Gewicht") if "Gewicht" in header else len(header)
+        header.insert(weight_index, "Liquid")
     comp_keys = set()
     for fert in fertilizers.values():
         comp_keys.update(fert.comp.keys())
@@ -239,7 +259,7 @@ def _write_fertilizer_csv(
         for fert in sorted_ferts:
             row = {key: "" for key in header}
             row[name_field] = fert.name
-            row["Form"] = fert.form or "fest"
+            row["Liquid"] = "1" if fert.liquid else "0"
             row["Gewicht"] = format(fert.weight_factor or 1.0, ".10g")
             for key in header:
                 if _is_base_fertilizer_field(key):

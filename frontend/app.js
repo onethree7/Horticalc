@@ -123,7 +123,7 @@ const THEME_OPTIONS = new Set([
 ]);
 
 let fertilizerOptions = [];
-const selectedFertilizers = [{ name: "", form: "", weight: "" }];
+const selectedFertilizers = [{ name: "", liquid: false, weight: "" }];
 const fertilizerAmounts = [0];
 let molarMasses = {};
 let waterProfiles = [];
@@ -654,11 +654,11 @@ function initializeFertilizerTables() {
   const selectTable = createTable({
     id: "fertilizerSelectTable",
     className: "grid grid--form grid--fertilizer",
-    colgroupClasses: ["col-index", "col-name", "col-form", "col-weight"],
+    colgroupClasses: ["col-index", "col-name", "col-liquid", "col-weight"],
     headerCells: [
       { label: "#" },
       { labelKey: "calculator.fertilizerDropdown", label: "Dünger (Dropdown)" },
-      { labelKey: "common.form", label: "Form" },
+      { labelKey: "common.liquid", label: "Flüssig" },
       { labelKey: "common.weight", label: "Gewicht" },
     ],
   });
@@ -998,7 +998,7 @@ function buildFertilizerCompKeys(fertilizers) {
 function setFertilizerEditorData(fertilizers) {
   fertilizerEditorRows = (fertilizers || []).map((fert) => ({
     name: fert.name || "",
-    form: fert.form || "",
+    liquid: Boolean(fert.liquid),
     weight_factor: Number.isFinite(fert.weight_factor) ? fert.weight_factor : null,
     comp: { ...(fert.comp || {}) },
   }));
@@ -1073,6 +1073,9 @@ function fertilizerEditorSortValue(row, key) {
   if (key === "weight_factor") {
     return row.weight_factor === null ? Number.NaN : Number(row.weight_factor);
   }
+  if (key === "liquid") {
+    return row.liquid ? 1 : 0;
+  }
   return String(row[key] || "").trim();
 }
 
@@ -1136,7 +1139,7 @@ function renderFertilizerEditor() {
     })
     .sort(compareFertilizerEditorRows);
   const indexDigitCount = String(Math.max(1, filteredRows.length)).length;
-  const formWidthCh = contentWidthCh(filteredRows.map(({ row }) => row.form), t("common.form"), 4);
+  const liquidWidthCh = contentWidthCh([t("common.liquid"), t("common.solid")], t("common.liquid"), 4);
   const weightWidthCh = contentWidthCh(
     filteredRows.map(({ row }) => row.weight_factor),
     t("common.weight"),
@@ -1145,14 +1148,14 @@ function renderFertilizerEditor() {
   const colgroupClasses = [
     "col-index",
     "col-name",
-    "col-form",
+    "col-liquid",
     "col-weight",
     ...fertilizerEditorCompKeys.map(() => "col-nutrient"),
   ];
   const headerCells = [
     { label: "#" },
     fertilizerEditorHeader("Düngername", "name", "editor.fertilizerName"),
-    fertilizerEditorHeader("Form", "form", "common.form"),
+    fertilizerEditorHeader("Flüssig", "liquid", "common.liquid"),
     fertilizerEditorHeader("Gewicht", "weight_factor", "common.weight"),
     ...fertilizerEditorCompKeys.map((key) => fertilizerEditorHeader(key, `comp:${key}`)),
   ];
@@ -1169,8 +1172,8 @@ function renderFertilizerEditor() {
     `calc(${indexDigitCount}ch + (var(--space-2) * 2))`
   );
   fertilizerEditorTable.style.setProperty(
-    "--fert-editor-form-width",
-    `calc(${formWidthCh + 1}ch + (var(--space-2) * 2))`
+    "--fert-editor-liquid-width",
+    `calc(${liquidWidthCh + 1}ch + (var(--space-2) * 2))`
   );
   fertilizerEditorTable.style.setProperty(
     "--fert-editor-weight-width",
@@ -1210,19 +1213,19 @@ function renderFertilizerEditor() {
     tr.appendChild(nameCell);
     colIndex += 1;
 
-    const formCell = document.createElement("td");
-    const formInput = document.createElement("input");
-    formInput.type = "text";
-    formInput.value = row.form || "";
-    formInput.dataset.rowIndex = index;
-    formInput.dataset.field = "form";
-    formInput.dataset.colIndex = colIndex;
-    formInput.addEventListener("input", (event) => {
-      row.form = event.target.value;
+    const liquidCell = document.createElement("td");
+    const liquidInput = document.createElement("input");
+    liquidInput.type = "checkbox";
+    liquidInput.checked = Boolean(row.liquid);
+    liquidInput.dataset.rowIndex = index;
+    liquidInput.dataset.field = "liquid";
+    liquidInput.dataset.colIndex = colIndex;
+    liquidInput.addEventListener("change", (event) => {
+      row.liquid = event.target.checked;
     });
-    formInput.addEventListener("keydown", handleEditorEnterKey);
-    formCell.appendChild(formInput);
-    tr.appendChild(formCell);
+    liquidInput.addEventListener("keydown", handleEditorEnterKey);
+    liquidCell.appendChild(liquidInput);
+    tr.appendChild(liquidCell);
     colIndex += 1;
 
     const weightCell = document.createElement("td");
@@ -1305,7 +1308,6 @@ async function saveFertilizerEditor() {
     }
     seen.add(name);
 
-    const form = row.form.trim() || "fest";
     const weight = Number.isFinite(row.weight_factor) ? row.weight_factor : 1.0;
     const comp = {};
     Object.entries(row.comp || {}).forEach(([key, value]) => {
@@ -1315,7 +1317,7 @@ async function saveFertilizerEditor() {
     });
     payload.push({
       name,
-      form,
+      liquid: Boolean(row.liquid),
       weight_factor: weight,
       comp,
     });
@@ -1346,7 +1348,7 @@ async function reloadFertilizerEditor() {
 }
 
 function addFertilizerEditorRow() {
-  fertilizerEditorRows.push({ name: "", form: "", weight_factor: null, comp: {} });
+  fertilizerEditorRows.push({ name: "", liquid: false, weight_factor: null, comp: {} });
   fertilizerEditorSelectedIndex = fertilizerEditorRows.length - 1;
   renderFertilizerEditor();
   focusEditorInput(fertilizerEditorSelectedIndex, "name");
@@ -1381,7 +1383,7 @@ function solverAllowedMatchesFilter(fert) {
   if (!query) {
     return true;
   }
-  return [fert.name, fert.form, String(fert.weight_factor ?? "")]
+  return [fert.name, fert.liquid ? t("common.liquid") : t("common.solid"), String(fert.weight_factor ?? "")]
     .some((value) => String(value || "").toLowerCase().includes(query));
 }
 
@@ -1901,7 +1903,7 @@ function renderSelectionTable() {
       const match = fertilizerOptions.find((opt) => opt.name === value);
       selectedFertilizers[i] = {
         name: value,
-        form: match ? match.form : "",
+        liquid: Boolean(match?.liquid),
         weight: match ? match.weight_factor : "",
       };
       renderSelectionTable();
@@ -1911,13 +1913,17 @@ function renderSelectionTable() {
     select.value = selectedFertilizers[i].name;
     selectCell.appendChild(select);
 
-    const formCell = document.createElement("td");
-    formCell.textContent = selectedFertilizers[i].form || "-";
+    const liquidCell = document.createElement("td");
+    liquidCell.textContent = selectedFertilizers[i].name
+      ? selectedFertilizers[i].liquid
+        ? t("common.liquid")
+        : t("common.solid")
+      : "-";
 
     const weightCell = document.createElement("td");
     weightCell.textContent = selectedFertilizers[i].weight || "-";
 
-    row.append(indexCell, selectCell, formCell, weightCell);
+    row.append(indexCell, selectCell, liquidCell, weightCell);
     return row;
   });
 }
@@ -2825,7 +2831,7 @@ function applyRecipe(recipe) {
     const grams = Math.max(0, Number(entry.grams) || 0);
     selectedFertilizers.push({
       name,
-      form: match ? match.form : "",
+      liquid: Boolean(match?.liquid),
       weight: match ? match.weight_factor : "",
     });
     fertilizerAmounts.push(grams);
@@ -2833,7 +2839,7 @@ function applyRecipe(recipe) {
   });
 
   if (!selectedFertilizers.length) {
-    selectedFertilizers.push({ name: "", form: "", weight: "" });
+    selectedFertilizers.push({ name: "", liquid: false, weight: "" });
     fertilizerAmounts.push(0);
     calculatorBaseAmounts.push(0);
   }
@@ -2953,7 +2959,7 @@ function applyWaterProfile(profile) {
 }
 
 function addFertilizerRow() {
-  selectedFertilizers.push({ name: "", form: "", weight: "" });
+  selectedFertilizers.push({ name: "", liquid: false, weight: "" });
   fertilizerAmounts.push(0);
   calculatorBaseAmounts.push(0);
   renderSelectionTable();

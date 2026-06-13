@@ -7,7 +7,7 @@ from horticalc.solver import solve_recipe_data
 def test_solve_recipe_data_rejects_invalid_target_key() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "K2O test": Fertilizer("K2O test", "fest", 1.0, {"K2O": 1.0}),
+        "K2O test": Fertilizer("K2O test", False, 1.0, {"K2O": 1.0}),
     }
     recipe = {
         "liters": 1,
@@ -22,7 +22,7 @@ def test_solve_recipe_data_rejects_invalid_target_key() -> None:
 def test_solve_recipe_data_rejects_non_positive_liters() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "K test": Fertilizer("K test", "fest", 1.0, {"K2O": 1.0}),
+        "K test": Fertilizer("K test", False, 1.0, {"K2O": 1.0}),
     }
     recipe = {
         "liters": 0,
@@ -37,7 +37,7 @@ def test_solve_recipe_data_rejects_non_positive_liters() -> None:
 def test_solve_recipe_data_rejects_negative_fixed_grams() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "K test": Fertilizer("K test", "fest", 1.0, {"K2O": 1.0}),
+        "K test": Fertilizer("K test", False, 1.0, {"K2O": 1.0}),
     }
     recipe = {
         "liters": 1,
@@ -53,8 +53,8 @@ def test_solve_recipe_data_rejects_negative_fixed_grams() -> None:
 def test_solve_recipe_data_rejects_fixed_grams_outside_allowed_list() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "K test": Fertilizer("K test", "fest", 1.0, {"K2O": 1.0}),
-        "Other": Fertilizer("Other", "fest", 1.0, {"K2O": 1.0}),
+        "K test": Fertilizer("K test", False, 1.0, {"K2O": 1.0}),
+        "Other": Fertilizer("Other", False, 1.0, {"K2O": 1.0}),
     }
     recipe = {
         "liters": 1,
@@ -70,7 +70,7 @@ def test_solve_recipe_data_rejects_fixed_grams_outside_allowed_list() -> None:
 def test_solve_recipe_data_does_not_use_water_elements_as_targets() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "K test": Fertilizer("K test", "fest", 1.0, {"K2O": 1.0}),
+        "K test": Fertilizer("K test", False, 1.0, {"K2O": 1.0}),
     }
     recipe = {
         "liters": 1,
@@ -85,7 +85,7 @@ def test_solve_recipe_data_does_not_use_water_elements_as_targets() -> None:
 def test_solve_recipe_data_can_solve_hco3_from_direct_hco3_composition() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "HCO3 test": Fertilizer("HCO3 test", "fest", 1.0, {"HCO3": 1.0}),
+        "HCO3 test": Fertilizer("HCO3 test", False, 1.0, {"HCO3": 1.0}),
     }
     recipe = {
         "liters": 1,

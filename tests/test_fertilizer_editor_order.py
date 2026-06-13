@@ -30,3 +30,19 @@ def test_fertilizer_editor_headers_are_sortable() -> None:
     assert ".table-sort-button" in styles
     assert 'th[aria-sort="ascending"]' in styles
     assert 'th[aria-sort="descending"]' in styles
+
+
+def test_fertilizer_api_uses_liquid_boolean_schema() -> None:
+    client = TestClient(api_app.app)
+    response = client.get("/fertilizers")
+
+    assert response.status_code == 200
+    assert response.json()
+    assert all(isinstance(entry["liquid"], bool) for entry in response.json())
+    assert all("form" not in entry for entry in response.json())
+    assert set(api_app.FertilizerPayload.model_fields) == {
+        "name",
+        "liquid",
+        "weight_factor",
+        "comp",
+    }

@@ -16,7 +16,8 @@ FastAPI from the same origin as the API.
 
 The active navigation has four user-facing areas:
 
-- `DUENGER-EDITOR`: fertilizer CSV editing, search, add/delete rows.
+- `DUENGER-EDITOR`: fertilizer CSV editing, liquid checkbox, search, and
+  add/delete rows.
 - `WASSERWERTE`: water profiles, osmosis percent, helper conversions, mg/L or mmol/L display.
 - `RECHNER`: recipe profiles, fertilizer grams, calculation output, details.
 - `SOLVER`: target values, compact searchable allowed-fertilizer picker,
@@ -42,7 +43,7 @@ Simplified Chinese in `frontend/i18n/en.js`, `frontend/i18n/nl.js`,
 `frontend/i18n/es.js`, and `frontend/i18n/zh.js`. Visible labels,
 placeholders, ARIA labels, status messages, empty states, and clipboard section
 labels use translation keys. Data contracts such as API route names, JSON keys,
-CSV fields like `Düngername`, element symbols, solver config keys, and units
+CSV fields like `Düngername` and `Liquid`, element symbols, solver config keys, and units
 remain literal and are not translated.
 
 The live sidebar in `frontend/index.html` and `frontend/app.js` displays the

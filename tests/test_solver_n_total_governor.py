@@ -17,7 +17,7 @@ def test_n_total_governor_prioritizes_n_total_target() -> None:
 def test_objective_includes_n_total_with_forms() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "NO3-only": Fertilizer(name="NO3-only", form="solid", weight_factor=1.0, comp={"NO3": 1.0}),
+        "NO3-only": Fertilizer(name="NO3-only", liquid=False, weight_factor=1.0, comp={"NO3": 1.0}),
     }
     recipe = {
         "liters": 1.0,
@@ -38,7 +38,7 @@ def test_objective_includes_n_total_with_forms() -> None:
 def test_default_nitrogen_objective_mode_is_n_total_only() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "NO3-only": Fertilizer(name="NO3-only", form="solid", weight_factor=1.0, comp={"NO3": 1.0}),
+        "NO3-only": Fertilizer(name="NO3-only", liquid=False, weight_factor=1.0, comp={"NO3": 1.0}),
     }
     recipe = {
         "liters": 1.0,
@@ -57,7 +57,7 @@ def test_default_nitrogen_objective_mode_is_n_total_only() -> None:
 def test_nitrogen_objective_mode_n_total_only_excludes_forms() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "NO3-only": Fertilizer(name="NO3-only", form="solid", weight_factor=1.0, comp={"NO3": 1.0}),
+        "NO3-only": Fertilizer(name="NO3-only", liquid=False, weight_factor=1.0, comp={"NO3": 1.0}),
     }
     recipe = {
         "liters": 1.0,
@@ -76,7 +76,7 @@ def test_nitrogen_objective_mode_n_total_only_excludes_forms() -> None:
 def test_nitrogen_objective_mode_n_forms_only_excludes_total_and_keeps_zero_forms() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "NO3-only": Fertilizer(name="NO3-only", form="solid", weight_factor=1.0, comp={"NO3": 1.0}),
+        "NO3-only": Fertilizer(name="NO3-only", liquid=False, weight_factor=1.0, comp={"NO3": 1.0}),
     }
     recipe = {
         "liters": 1.0,
@@ -95,7 +95,7 @@ def test_nitrogen_objective_mode_n_forms_only_excludes_total_and_keeps_zero_form
 def test_nitrogen_objective_mode_rejects_unknown_value() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "NO3-only": Fertilizer(name="NO3-only", form="solid", weight_factor=1.0, comp={"NO3": 1.0}),
+        "NO3-only": Fertilizer(name="NO3-only", liquid=False, weight_factor=1.0, comp={"NO3": 1.0}),
     }
     recipe = {
         "liters": 1.0,
@@ -114,8 +114,8 @@ def test_nitrogen_objective_mode_rejects_unknown_value() -> None:
 def test_s_target_is_ignored_by_default() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "SO4-only": Fertilizer(name="SO4-only", form="solid", weight_factor=1.0, comp={"SO4": 1.0}),
-        "K-only": Fertilizer(name="K-only", form="solid", weight_factor=1.0, comp={"K2O": 1.0}),
+        "SO4-only": Fertilizer(name="SO4-only", liquid=False, weight_factor=1.0, comp={"SO4": 1.0}),
+        "K-only": Fertilizer(name="K-only", liquid=False, weight_factor=1.0, comp={"K2O": 1.0}),
     }
     recipe = {
         "liters": 1.0,
@@ -132,7 +132,7 @@ def test_s_target_is_ignored_by_default() -> None:
 def test_s_target_can_be_enabled_as_solver_objective() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "SO4-only": Fertilizer(name="SO4-only", form="solid", weight_factor=1.0, comp={"SO4": 1.0}),
+        "SO4-only": Fertilizer(name="SO4-only", liquid=False, weight_factor=1.0, comp={"SO4": 1.0}),
     }
     recipe = {
         "liters": 1.0,
@@ -150,7 +150,7 @@ def test_s_target_can_be_enabled_as_solver_objective() -> None:
 def test_so4_target_is_converted_to_s_when_s_objective_is_enabled() -> None:
     molar_masses = load_molar_masses()
     ferts = {
-        "SO4-only": Fertilizer(name="SO4-only", form="solid", weight_factor=1.0, comp={"SO4": 1.0}),
+        "SO4-only": Fertilizer(name="SO4-only", liquid=False, weight_factor=1.0, comp={"SO4": 1.0}),
     }
     recipe = {
         "liters": 1.0,

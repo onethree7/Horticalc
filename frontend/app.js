@@ -658,8 +658,8 @@ function initializeFertilizerTables() {
     headerCells: [
       { label: "#" },
       { labelKey: "calculator.fertilizerDropdown", label: "Dünger (Dropdown)" },
-      { labelKey: "common.liquid", label: "Flüssig" },
-      { labelKey: "common.weight", label: "Gewicht" },
+      { labelKey: "common.productType", label: "Typ" },
+      { labelKey: "common.mass", label: "Masse" },
     ],
   });
   fertilizerSelectTableWrap.appendChild(selectTable.table);

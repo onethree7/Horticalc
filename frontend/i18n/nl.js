@@ -77,6 +77,8 @@ window.HORTICALC_I18N.nl = {
   "common.fertilizer": "Meststof",
   "common.grams": "Gram/ml",
   "common.weight": "Gewicht",
+  "common.productType": "Type",
+  "common.mass": "Massa",
   "common.liquid": "Vloeibaar",
   "common.solid": "Vast",
   "common.name": "Naam",

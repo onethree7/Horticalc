@@ -71,3 +71,13 @@ def test_fertilizer_dose_header_covers_solids_and_liquids() -> None:
     assert catalogs["es"]["common.grams"] == "Gramos/ml"
     assert catalogs["zh"]["common.grams"] == "克/毫升"
     assert '<th data-i18n="common.grams">Gramm/ml</th>' in index_html
+
+
+def test_calculator_fertilizer_metadata_uses_clear_labels() -> None:
+    catalogs = {locale: _catalog(locale) for locale in LOCALES}
+    app_js = read_frontend_file("app.js")
+
+    assert catalogs["de"]["common.productType"] == "Typ"
+    assert catalogs["de"]["common.mass"] == "Masse"
+    assert '{ labelKey: "common.productType", label: "Typ" }' in app_js
+    assert '{ labelKey: "common.mass", label: "Masse" }' in app_js

@@ -77,6 +77,8 @@ window.HORTICALC_I18N.zh = {
   "common.fertilizer": "肥料",
   "common.grams": "克/毫升",
   "common.weight": "权重",
+  "common.productType": "类型",
+  "common.mass": "质量",
   "common.liquid": "液体",
   "common.solid": "固体",
   "common.name": "名称",

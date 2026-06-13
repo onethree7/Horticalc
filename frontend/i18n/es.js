@@ -77,6 +77,8 @@ window.HORTICALC_I18N.es = {
   "common.fertilizer": "Fertilizante",
   "common.grams": "Gramos/ml",
   "common.weight": "Peso",
+  "common.productType": "Tipo",
+  "common.mass": "Masa",
   "common.liquid": "Líquido",
   "common.solid": "Sólido",
   "common.name": "Nombre",

@@ -77,6 +77,8 @@ window.HORTICALC_I18N.de = {
   "common.fertilizer": "Dünger",
   "common.grams": "Gramm/ml",
   "common.weight": "Gewicht",
+  "common.productType": "Typ",
+  "common.mass": "Masse",
   "common.liquid": "Flüssig",
   "common.solid": "Fest",
   "common.name": "Name",

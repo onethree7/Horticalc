@@ -394,6 +394,37 @@ main {
   background-clip: padding-box;
 }
 
+#fertilizerEditorTable th.is-sortable {
+  padding: 0;
+}
+
+.table-sort-button {
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-weight: inherit;
+  text-align: inherit;
+  white-space: nowrap;
+}
+
+.table-sort-button:hover,
+.table-sort-button:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+#fertilizerEditorTable th[aria-sort="ascending"] .table-sort-button::after {
+  content: " \2191";
+}
+
+#fertilizerEditorTable th[aria-sort="descending"] .table-sort-button::after {
+  content: " \2193";
+}
+
 #fertilizerEditorTable th:nth-child(1),
 #fertilizerEditorTable td:nth-child(1) {
   position: sticky;
@@ -920,7 +951,9 @@ main {
   min-width: 0;
   min-height: 2.15rem;
   padding-inline: var(--space-2);
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
 }
 
 .solver-picker-toggle {

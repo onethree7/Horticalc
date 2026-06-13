@@ -31,6 +31,7 @@ NO_BROWSER_ENV = "HORTICALC_NO_BROWSER"
 KEEP_SERVER_ENV = "HORTICALC_KEEP_SERVER"
 FALLBACK_GRACE_SECONDS = 5.0
 PROFILE_DIR_NAME = "browser_profiles"
+SESSION_DIR_NAME = "launcher_sessions"
 
 WINDOWS_BROWSER_CANDIDATES = (
     "msedge.exe",
@@ -165,7 +166,11 @@ def write_lockfile(path: Path, port: int, pid: int | None = None) -> None:
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
-def remove_lockfile(path: Path) -> None:
+def remove_lockfile(path: Path, expected_pid: int | None = None) -> None:
+    if expected_pid is not None:
+        payload = read_lockfile(path)
+        if payload is None or payload.get("pid") != expected_pid:
+            return
     try:
         path.unlink(missing_ok=True)
     except OSError:
@@ -258,6 +263,89 @@ def cleanup_profile_dir(profile_dir: Path) -> None:
     shutil.rmtree(profile_dir, ignore_errors=True)
 
 
+def launcher_session_dir(root: Path) -> Path:
+    path = root / "user" / SESSION_DIR_NAME
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def create_launcher_session(root: Path, pid: int | None = None) -> Path:
+    owner_pid = pid or os.getpid()
+    path = launcher_session_dir(root) / f"session-{owner_pid}-{time.time_ns()}.json"
+    path.write_text(json.dumps({"pid": owner_pid}), encoding="utf-8")
+    return path
+
+
+def _pid_is_running(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        try:
+            import ctypes
+
+            process = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)
+            if not process:
+                return False
+            ctypes.windll.kernel32.CloseHandle(process)
+            return True
+        except (AttributeError, OSError):
+            return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
+def active_launcher_sessions(root: Path) -> list[Path]:
+    active: list[Path] = []
+    for path in launcher_session_dir(root).glob("session-*.json"):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            pid = payload.get("pid")
+        except (OSError, json.JSONDecodeError):
+            pid = None
+        if isinstance(pid, int) and _pid_is_running(pid):
+            active.append(path)
+        else:
+            path.unlink(missing_ok=True)
+    return active
+
+
+def wait_for_launcher_sessions(root: Path, grace_seconds: float = FALLBACK_GRACE_SECONDS) -> None:
+    empty_since: float | None = None
+    while empty_since is None or time.monotonic() - empty_since < grace_seconds:
+        if active_launcher_sessions(root):
+            empty_since = None
+        elif empty_since is None:
+            empty_since = time.monotonic()
+        time.sleep(0.1)
+
+
+def wait_for_app_window(
+    url: str,
+    root: Path,
+    profile_dir: Path,
+    logger: logging.Logger,
+    browser: Path,
+) -> bool:
+    session_path = create_launcher_session(root)
+    browser_proc = launch_app_window(url, profile_dir, logger, browser)
+    if browser_proc is None:
+        remove_lockfile(session_path)
+        return False
+    try:
+        browser_proc.wait()
+    finally:
+        remove_lockfile(session_path)
+        cleanup_profile_dir(profile_dir)
+    return True
+
+
 def stop_server(
     server: uvicorn.Server,
     server_thread: threading.Thread,
@@ -266,7 +354,7 @@ def stop_server(
 ) -> None:
     server.should_exit = True
     server_thread.join(timeout=timeout_seconds)
-    remove_lockfile(lock_path)
+    remove_lockfile(lock_path, expected_pid=os.getpid())
 
 
 def require_server_health(
@@ -313,7 +401,7 @@ def main() -> None:
         browser = find_browser_executable()
         if browser:
             profile_dir = create_profile_dir(root)
-            if launch_app_window(url, profile_dir, logger, browser) is None:
+            if not wait_for_app_window(url, root, profile_dir, logger, browser):
                 cleanup_profile_dir(profile_dir)
                 webbrowser.open(url)
         else:
@@ -338,7 +426,7 @@ def main() -> None:
     server = uvicorn.Server(config)
 
     write_lockfile(lock_path, port)
-    atexit.register(remove_lockfile, lock_path)
+    atexit.register(remove_lockfile, lock_path, os.getpid())
     server_thread = threading.Thread(target=server.run, name="uvicorn-server", daemon=True)
     server_thread.start()
 
@@ -354,8 +442,7 @@ def main() -> None:
         url = f"http://127.0.0.1:{port}/"
         browser = find_browser_executable()
         profile_dir = create_profile_dir(root)
-        browser_proc = launch_app_window(url, profile_dir, logger, browser)
-        if browser_proc is None:
+        if browser is None or not wait_for_app_window(url, root, profile_dir, logger, browser):
             cleanup_profile_dir(profile_dir)
             logger.warning("No supported Chromium-based browser found; falling back to system default.")
             webbrowser.open(url)
@@ -368,11 +455,8 @@ def main() -> None:
             stop_server(server, server_thread, lock_path)
             return
 
-        try:
-            browser_proc.wait()
-        finally:
-            cleanup_profile_dir(profile_dir)
-
+        logger.info("App window closed; waiting for other launcher sessions.")
+        wait_for_launcher_sessions(root)
         stop_server(server, server_thread, lock_path)
     except KeyboardInterrupt:
         logger.info("Shutdown requested.")

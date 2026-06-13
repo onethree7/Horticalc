@@ -35,7 +35,7 @@ flowchart LR
 | Persistence IO | `src/horticalc/data_io.py` | Loads and saves CSV/YAML data. |
 | API | `api/app.py` | Exposes JSON/YAML routes and serves the frontend. |
 | UI | `frontend/index.html`, `frontend/app.js`, `frontend/styles.css` | Static app frame, workflows, and browser state. |
-| Launcher | `src/horticalc/launcher.py` | Starts API, waits for health, opens browser, manages lockfile. |
+| Launcher | `src/horticalc/launcher.py` | Starts API, waits for health, opens browser, and manages the owner lock plus active launcher sessions. |
 | Packaging | `scripts/packaging/*`, `.github/workflows/release.yml` | Builds and smoke-tests onedir release artifacts. |
 
 ## Request Flow
@@ -85,6 +85,12 @@ they are writable, and copies shipped YAML defaults into user space if missing.
 The fertilizer catalog stays in `data/fertilizers.csv`; `data_io.py` applies
 `user/fertilizers_overrides.csv` and `user/fertilizers_disabled.txt` as an
 overlay so shipped catalog updates are visible after app updates.
+
+The launcher lock records the backend owner's PID. Each Chromium app window
+also gets a PID-backed session file under `user/launcher_sessions/`. The backend
+owner waits until all live launcher sessions have ended, plus a short grace
+period for immediate reopen, before stopping the server. Lock cleanup is
+owner-aware so an older launcher cannot delete a newer owner's lock.
 
 ## Current Boundaries
 

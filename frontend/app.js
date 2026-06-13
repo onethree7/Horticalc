@@ -144,6 +144,7 @@ let fertilizerEditorSelectedIndex = 0;
 let fertilizerEditorFilter = "";
 let fertilizerEditorTable;
 let fertilizerEditorCompKeys = [];
+let fertilizerEditorSort = { key: "name", direction: "asc" };
 let summaryView = "ion";
 let ionNitrogenExpanded = false;
 let fertilizerEditorPreferredKeys = [];
@@ -619,10 +620,22 @@ function createTable({ id, className, colgroupClasses, headerCells }) {
   const headerRow = document.createElement("tr");
   headerCells.forEach((cell) => {
     const th = document.createElement("th");
-    if (cell.labelKey) {
-      th.dataset.i18n = cell.labelKey;
+    const label = cell.labelKey ? t(cell.labelKey) : cell.label;
+    if (cell.onClick) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "table-sort-button";
+      button.textContent = label;
+      button.addEventListener("click", cell.onClick);
+      th.classList.add("is-sortable");
+      th.setAttribute("aria-sort", cell.sortDirection || "none");
+      th.appendChild(button);
+    } else {
+      if (cell.labelKey) {
+        th.dataset.i18n = cell.labelKey;
+      }
+      th.textContent = label;
     }
-    th.textContent = cell.labelKey ? t(cell.labelKey) : cell.label;
     if (cell.colSpan) {
       th.colSpan = cell.colSpan;
     }
@@ -1048,6 +1061,58 @@ function contentWidthCh(values, headerLabel, minimumCh = 1) {
   return Math.max(minimumCh, maxLength);
 }
 
+function fertilizerEditorSortValue(row, key) {
+  if (key.startsWith("comp:")) {
+    return Number(row.comp?.[key.slice(5)]);
+  }
+  if (key === "weight_factor") {
+    return row.weight_factor === null ? Number.NaN : Number(row.weight_factor);
+  }
+  return String(row[key] || "").trim();
+}
+
+function compareFertilizerEditorRows(left, right) {
+  const { key, direction } = fertilizerEditorSort;
+  const leftValue = fertilizerEditorSortValue(left.row, key);
+  const rightValue = fertilizerEditorSortValue(right.row, key);
+  const leftMissing = leftValue === "" || (typeof leftValue === "number" && !Number.isFinite(leftValue));
+  const rightMissing = rightValue === "" || (typeof rightValue === "number" && !Number.isFinite(rightValue));
+  if (leftMissing !== rightMissing) {
+    return leftMissing ? 1 : -1;
+  }
+  let comparison = 0;
+  if (typeof leftValue === "number" && typeof rightValue === "number") {
+    comparison = leftValue - rightValue;
+  } else {
+    comparison = String(leftValue).localeCompare(String(rightValue), i18n.getLocale?.() || undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+  }
+  if (comparison === 0) {
+    comparison = left.index - right.index;
+  }
+  return direction === "desc" ? -comparison : comparison;
+}
+
+function setFertilizerEditorSort(key) {
+  fertilizerEditorSort = {
+    key,
+    direction: fertilizerEditorSort.key === key && fertilizerEditorSort.direction === "asc" ? "desc" : "asc",
+  };
+  renderFertilizerEditor();
+}
+
+function fertilizerEditorHeader(label, key, labelKey = null) {
+  const active = fertilizerEditorSort.key === key;
+  return {
+    label,
+    labelKey,
+    onClick: () => setFertilizerEditorSort(key),
+    sortDirection: active ? `${fertilizerEditorSort.direction}ending` : "none",
+  };
+}
+
 function renderFertilizerEditor() {
   if (!fertilizerEditorTableWrap) {
     return;
@@ -1063,7 +1128,8 @@ function renderFertilizerEditor() {
         return true;
       }
       return row.name.toLowerCase().includes(filterValue);
-    });
+    })
+    .sort(compareFertilizerEditorRows);
   const indexDigitCount = String(Math.max(1, filteredRows.length)).length;
   const formWidthCh = contentWidthCh(filteredRows.map(({ row }) => row.form), t("common.form"), 4);
   const weightWidthCh = contentWidthCh(
@@ -1080,10 +1146,10 @@ function renderFertilizerEditor() {
   ];
   const headerCells = [
     { label: "#" },
-    { labelKey: "editor.fertilizerName", label: "Düngername" },
-    { labelKey: "common.form", label: "Form" },
-    { labelKey: "common.weight", label: "Gewicht" },
-    ...fertilizerEditorCompKeys.map((key) => ({ label: key })),
+    fertilizerEditorHeader("Düngername", "name", "editor.fertilizerName"),
+    fertilizerEditorHeader("Form", "form", "common.form"),
+    fertilizerEditorHeader("Gewicht", "weight_factor", "common.weight"),
+    ...fertilizerEditorCompKeys.map((key) => fertilizerEditorHeader(key, `comp:${key}`)),
   ];
   const table = createTable({
     id: "fertilizerEditorTable",

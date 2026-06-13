@@ -30,6 +30,9 @@ Source: `scripts/packaging/horticalc.spec`,
 - Port policy: scan `8000..8100`.
 - Health endpoint: `/health`.
 - Lockfile: `AppRoot/user/horticalc.lock.json`.
+- App-window sessions: PID-backed files in `AppRoot/user/launcher_sessions/`;
+  the backend stops only after all live sessions end and the reopen grace
+  period expires.
 - Logs: `AppRoot/logs/launcher.log`.
 - Preferred browser: Edge, Chrome, or Chromium in app mode.
 - Browser fallback: system default browser.

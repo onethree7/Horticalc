@@ -96,5 +96,5 @@ Unknown ion labels are reported in `coverage.ignored_ions` and warnings.
 ## Verification
 
 ```bash
-python -m pytest tests/test_ec.py tests/test_ec_fertilizer_determinism.py -q
+python scripts/test.py tests/test_ec.py tests/test_ec_fertilizer_determinism.py -q
 ```

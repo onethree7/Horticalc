@@ -60,7 +60,7 @@ rg -n "GUI_PLAN|feature_osmosis|golden_example" docs README.md --glob "!**/audit
 Full verification:
 
 ```bash
-python -m pytest -q
+python scripts/test.py
 ```
 
 Before merging, read `docs/index.md` and confirm every linked file exists.

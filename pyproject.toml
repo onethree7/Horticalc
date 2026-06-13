@@ -12,6 +12,12 @@ dependencies = [
   "tzdata>=2024.1; platform_system == \"Windows\"",
 ]
 
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.28.1",
+  "pytest>=8",
+]
+
 [project.scripts]
 horticalc = "horticalc.__main__:main"
 horticalc-launcher = "horticalc.launcher:main"

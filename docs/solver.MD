@@ -134,7 +134,7 @@ python -m horticalc solve recipes/solve_golden.yml --solver-config n_form_priori
 ## Verification
 
 ```bash
-python -m pytest tests/test_solver_golden.py tests/test_solver_weighting.py -q
-python -m pytest tests/test_solver_n_total_governor.py tests/test_cli_solver_config.py -q
-python -m pytest tests/test_solver_matrix.py -q
+python scripts/test.py tests/test_solver_golden.py tests/test_solver_weighting.py -q
+python scripts/test.py tests/test_solver_n_total_governor.py tests/test_cli_solver_config.py -q
+python scripts/test.py tests/test_solver_matrix.py -q
 ```

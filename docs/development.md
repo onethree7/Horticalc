@@ -6,8 +6,7 @@ From the repository root:
 
 ```bash
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 ```
 
 On bash-like shells, replace `.\.venv\Scripts\python.exe` with the active
@@ -39,15 +38,18 @@ python -m horticalc solve recipes/solve_golden.yml --pretty
 Standard verification:
 
 ```bash
-python -m pytest -q
+python scripts/test.py
 ```
+
+The test entrypoint creates `.venv` if needed, installs `.[dev]` when pytest is
+missing, and always executes pytest with the repository virtual environment.
 
 Focused examples:
 
 ```bash
-python -m pytest tests/test_frontend_serving.py -q
-python -m pytest tests/test_solver_golden.py tests/test_solver_weighting.py -q
-python -m pytest tests/test_portable_data_policy.py tests/test_launcher_smoke.py -q
+python scripts/test.py tests/test_frontend_serving.py -q
+python scripts/test.py tests/test_solver_golden.py tests/test_solver_weighting.py -q
+python scripts/test.py tests/test_portable_data_policy.py tests/test_launcher_smoke.py -q
 ```
 
 ## Docs Checks

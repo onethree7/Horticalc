@@ -45,11 +45,17 @@ The pre-rework documentation backup is intentionally ignored at
 
 ## Standard Verification
 
-Run the standard suite when relevant:
+Run the standard suite when relevant. Use the repository test entrypoint; do
+not probe with bare `python -m pytest`. The entrypoint creates `.venv` when
+needed and installs the declared development dependencies only when pytest is
+missing:
 
 ```bash
-python -m pytest -q
+python scripts/test.py
 ```
+
+Pass pytest arguments after the script name for focused runs, for example
+`python scripts/test.py tests/test_ec.py -q`.
 
 For docs-only changes, also check links and stale references:
 

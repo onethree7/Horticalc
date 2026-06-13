@@ -10,24 +10,27 @@ fertilizer grams.
 From the repository root:
 
 ```bash
-python -m pip install -r requirements.txt
-python -m pip install -e .
-python -m uvicorn api.app:app --host 127.0.0.1 --port 8000
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.venv\Scripts\python.exe -m uvicorn api.app:app --host 127.0.0.1 --port 8000
 ```
+
+On Linux or macOS, use `.venv/bin/python` instead. Contributors can also run
+`python scripts/test.py`; it bootstraps the local environment when necessary.
 
 Open `http://127.0.0.1:8000/`.
 
 The launcher path starts the same local app and opens a browser window:
 
 ```bash
-python -m horticalc.launcher
+.venv\Scripts\python.exe -m horticalc.launcher
 ```
 
 CLI examples:
 
 ```bash
-python -m horticalc recipes/golden.yml --pretty
-python -m horticalc solve recipes/solve_golden.yml --pretty
+.venv\Scripts\python.exe -m horticalc recipes/golden.yml --pretty
+.venv\Scripts\python.exe -m horticalc solve recipes/solve_golden.yml --pretty
 ```
 
 ## Documentation

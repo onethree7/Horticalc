@@ -142,8 +142,8 @@ Before changing IDs or panel names, search tests and `frontend/app.js`.
 ## Verification
 
 ```bash
-python -m pytest tests/test_frontend_serving.py tests/test_frontend_recipe_wheel_shell.py -q
-python -m pytest tests/test_frontend_solver_config_ui.py tests/test_frontend_allowed_fertilizers_ui.py -q
+python scripts/test.py tests/test_frontend_serving.py tests/test_frontend_recipe_wheel_shell.py -q
+python scripts/test.py tests/test_frontend_solver_config_ui.py tests/test_frontend_allowed_fertilizers_ui.py -q
 ```
 
 For visual work, also run the API and inspect `http://127.0.0.1:8000/` in a

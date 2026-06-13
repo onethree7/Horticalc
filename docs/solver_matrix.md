@@ -156,5 +156,5 @@ Product code must not depend on the matrix. To remove it:
 ## Verification
 
 ```bash
-python -m pytest tests/test_solver_matrix.py tests/test_solver_matrix_analyze.py -q
+python scripts/test.py tests/test_solver_matrix.py tests/test_solver_matrix_analyze.py -q
 ```

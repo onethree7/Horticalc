@@ -130,7 +130,7 @@ Do not introduce writes to OS user directories, the registry, XDG paths,
 Standard:
 
 ```bash
-python -m pytest -q
+python scripts/test.py
 ```
 
 Packaging smoke:

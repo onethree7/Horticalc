@@ -24,19 +24,12 @@ plant people.
 - Store fertilizers, water profiles, targets, and recipes in editable files.
 - Use the same calculation engine through the GUI, CLI, or API.
 
-## GUI
+## Getting Started
 
-The GUI is intended for interactive recipe work. It runs locally in a browser
-window and includes four main areas:
-
-- **Fertilizer editor:** inspect and edit fertilizer composition data.
-- **Water values:** manage water profiles and RO-water mixing.
-- **Calculator:** build recipes and inspect their nutrient results.
-- **Solver:** enter target values and calculate matching fertilizer doses.
-
-The GUI is useful when developing a recipe, comparing products, adjusting
-water values, or exploring how each fertilizer changes the final solution. It
-also supports German, English, Dutch, Spanish, and Simplified Chinese.
+Horticalc includes an interactive browser GUI and a YAML-to-JSON command-line
+interface. The **[user guide](docs/user_guide.md)** explains when to use each
+one, how to start the GUI on Windows or Linux, and how to run calculator and
+solver recipes from the CLI.
 
 ## Scientific Approach
 
@@ -55,67 +48,6 @@ does not currently model every chemical equilibrium, precipitation reaction,
 or biological response. More detail is available in
 [`docs/EC.md`](docs/EC.md), [`docs/solver.MD`](docs/solver.MD), and
 [`docs/data_model.md`](docs/data_model.md).
-
-## Start The GUI
-
-Horticalc requires Python 3.10 or newer when running from source.
-
-### Windows
-
-From PowerShell in the repository root:
-
-```powershell
-py -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e .
-.\.venv\Scripts\python.exe -m horticalc.launcher
-```
-
-### Linux
-
-From a terminal in the repository root:
-
-```bash
-python3 -m venv .venv
-./.venv/bin/python -m pip install -e .
-./.venv/bin/python -m horticalc.launcher
-```
-
-The launcher starts the local FastAPI server and opens Horticalc in Edge,
-Chrome, Chromium, or the default browser. Packaged releases can instead be
-started with `Horticalc.exe` on Windows or `./horticalc` on Linux.
-
-## CLI
-
-The CLI reads YAML recipes and writes JSON results. It is useful for scripts,
-repeatable comparisons, automated experiments, and version-controlled recipes.
-
-Calculate a recipe:
-
-```bash
-python -m horticalc recipes/golden.yml --pretty
-```
-
-Solve a target profile:
-
-```bash
-python -m horticalc solve recipes/solve_golden.yml --pretty
-```
-
-Use a different water profile:
-
-```bash
-python -m horticalc recipes/golden.yml --load-water 65936 --pretty
-```
-
-Write the result to a file:
-
-```bash
-python -m horticalc recipes/golden.yml \
-  --out solutions/example_output.json --pretty
-```
-
-On Windows, use `.\.venv\Scripts\python.exe` in place of `python` when the
-virtual environment is not activated. On Linux, use `./.venv/bin/python`.
 
 ## Technology
 

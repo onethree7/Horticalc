@@ -1,84 +1,113 @@
 # User Guide
 
-## Start The App
+## TL;DR Quick Start
 
-Development server:
+Download the latest release, extract the archive, and start Horticalc:
+
+- **Windows:** run `Horticalc.exe`.
+- **Linux:** run `./horticalc`.
+
+The app opens in your browser. That's it.
+
+Horticalc can be used through its local browser GUI or from the command line.
+Both interfaces use the same calculation core.
+
+## Choose An Interface
+
+Use the **GUI** for interactive work: editing fertilizers and water values,
+building recipes, comparing results, and exploring solver targets.
+
+Use the **CLI** for repeatable calculations, scripts, automated comparisons,
+and recipes stored in version control. It reads YAML and writes JSON.
+
+## Start The GUI
+
+Running from source requires Python 3.10 or newer and a writable checkout of
+the repository.
+
+### Windows
+
+From PowerShell in the repository root:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\python.exe -m horticalc.launcher
+```
+
+### Linux
+
+From a terminal in the repository root:
 
 ```bash
-python -m pip install -r requirements.txt
-python -m pip install -e .
+python3 -m venv .venv
+./.venv/bin/python -m pip install -e .
+./.venv/bin/python -m horticalc.launcher
+```
+
+The launcher starts a server on `127.0.0.1`, waits for its health check, and
+opens Horticalc in Edge, Chrome, or Chromium when available. Otherwise, it uses
+the system browser.
+
+For a packaged release, extract the complete archive to a writable folder and
+run `Horticalc.exe` on Windows or `./horticalc` on Linux. Keep the executable
+beside the included `_internal/`, `frontend/`, `data/`, and `recipes/` folders.
+
+### Development Server
+
+To run the server directly instead of using the launcher:
+
+```bash
 python -m uvicorn api.app:app --host 127.0.0.1 --port 8000
 ```
 
-Open `http://127.0.0.1:8000/`.
+Then open `http://127.0.0.1:8000/`.
 
-Launcher:
+## GUI Areas
 
-```bash
-python -m horticalc.launcher
-```
+- **Fertilizer editor:** inspect and edit fertilizer products and composition
+  values.
+- **Water values:** load, edit, save, and mix water profiles with reverse-
+  osmosis water.
+- **Calculator:** select fertilizers and doses, calculate a recipe, and inspect
+  its nutrient, ion, ratio, balance, and EC results.
+- **Solver:** enter a nutrient target and calculate matching fertilizer doses.
 
-The launcher starts the local server on `127.0.0.1`, waits for `/health`, and
-opens a Chromium-based app window when possible. If no supported browser is
-found, it falls back to the system default browser.
-
-## UI Areas
-
-- `DUENGER-EDITOR`: edit fertilizer products and composition values.
-- `WASSERWERTE`: load, edit, save, and reset water profiles; set osmosis
-  percent; view mg/L or mmol/L helper values.
-- `RECHNER`: calculate a nutrient solution from selected fertilizers and grams.
-- `SOLVER`: solve target nutrient profiles into fertilizer grams.
-
-Use `Sprache` in the `Konfiguration` card to switch the frontend between
-German, English, Dutch, Spanish, and Simplified Chinese. The selection is stored
-in the browser as `horticalc.locale`. It changes visible UI text only; files,
-API keys, CSV headers, element symbols, and saved recipes keep their original
-data names.
+The GUI supports German, English, Dutch, Spanish, and Simplified Chinese. The
+language setting changes interface text but not recipe keys, element symbols,
+CSV columns, or API fields.
 
 ## Calculator Workflow
 
 1. Load or edit the fertilizer list if needed.
-2. Choose or enter water values.
-3. Choose a recipe profile or select fertilizer rows manually.
-4. Set fertilizer doses in grams for solids or milliliters for liquids, plus
-   the batch liters.
-5. Click `Berechnen` or let auto-recalculate refresh the output.
+2. Select a water profile or enter water values.
+3. Load a recipe or select fertilizers manually.
+4. Enter the batch volume and fertilizer doses. Solids use grams; liquids use
+   milliliters when their catalog entry includes the correct density factor.
+5. Calculate and inspect the result tables and summary sidebar.
 
-The calculator output includes element totals, oxide totals, ions, ion balance,
-fertilizer-only contribution, water-only contribution, EC, NPK metrics,
-Sluijsmann, and the active `osmosis_percent`.
+Results include element and oxide totals, ions, ion balance, fertilizer-only
+and water-only contributions, EC, NPK metrics, nutrient ratios, and Sluijsmann.
 
 ## Solver Workflow
 
-1. Load a nutrient solution target profile or enter target values manually.
-2. Search and tick allowed fertilizers in the Solver picker, or use
-   `Aus Rechner übernehmen` to add the current calculator fertilizer selection.
-   Use `Alle` to allow every fertilizer, `Nur aktive` to temporarily show only
-   selected fertilizers, and `Auswahl leeren` to reset the allowed list.
-3. Leave `Override / fixe Menge (g, optional)` collapsed unless a fertilizer
-   must be held at a fixed gram amount.
-4. In `Erweitert`, keep `Bei Berechnen automatisch in den Düngerrechner
-   einfügen` enabled when the calculator and live sidebar should update after
-   each solve.
-5. Click `Solver berechnen` in the Zielprofil-Rechner header.
-6. Copy the result or use `Im Rechner ansehen` to switch to the calculator. The
-   clipboard text includes batch liters, osmosis percent, fertilizer doses in
-   grams or milliliters, NPK, EC, Solver target/achieved/delta values, and ion
-   mg/L values. It is compact
-   space-aligned text for monospace copy/paste code blocks.
-7. Adjust the bottom `Erweitert` solver config, including urea, phosphate
-   handling, and optional `S als Solver-Ziel`, only when needed.
+1. Load a target profile or enter target values.
+2. Select the fertilizers the solver may use.
+3. Add fixed doses only when a fertilizer amount must remain unchanged.
+4. Calculate the solution.
+5. Review target, achieved, and difference values, then copy the result or
+   apply it to the calculator.
 
-The solver optimizes only `objective_elements`, but the Solver result table
-still shows the standard nutrient rows. Rows that were not active targets are
-muted so collateral nutrient changes remain visible.
-
-`S`/`SO4` targets are visible in reports but ignored by default. Enable
-`S als Solver-Ziel` in `Erweitert` when sulfur demand should actively influence
-the fertilizer selection.
+The solver only optimizes the nutrients listed in `objective_elements` in its
+result. Other displayed nutrients show side effects of the proposed recipe.
+Sulfur targets are report-only by default; enable the sulfur objective in the
+advanced solver settings when sulfur should affect the fit.
 
 ## CLI
+
+Run these examples from the repository root after installing Horticalc. If the
+virtual environment is not active, replace `python` with
+`.\.venv\Scripts\python.exe` on Windows or `./.venv/bin/python` on Linux.
 
 Calculate a recipe:
 
@@ -92,20 +121,27 @@ Solve a target recipe:
 python -m horticalc solve recipes/solve_golden.yml --pretty
 ```
 
-Use a water profile:
+Override the recipe's water profile:
 
 ```bash
 python -m horticalc recipes/golden.yml --load-water 65936 --pretty
 ```
 
-Write JSON output:
+Write JSON output to a file:
 
 ```bash
-python -m horticalc recipes/golden.yml --out solutions/example_output.json --pretty
+python -m horticalc recipes/golden.yml \
+  --out solutions/example_output.json --pretty
 ```
 
-Override solver config for one CLI run:
+Override a solver setting for one run:
 
 ```bash
-python -m horticalc solve recipes/solve_golden.yml --nitrogen-objective-mode n_forms_only --pretty
+python -m horticalc solve recipes/solve_golden.yml \
+  --nitrogen-objective-mode n_forms_only --pretty
 ```
+
+Use `python -m horticalc --help` or `python -m horticalc solve --help` for all
+available options. Recipe fields, units, and output keys are documented in the
+[data model](data_model.md), with solver behavior covered in
+[solver.MD](solver.MD).

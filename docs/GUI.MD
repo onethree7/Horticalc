@@ -37,6 +37,17 @@ Contrast, Soil, VT Green, and Blue Matrix. Theme and language
 selection are browser-only presentation state and are not sent to recipes,
 solver payloads, or API routes.
 
+The workflow menu and primary workspace headings reuse one inline SVG icon
+sprite from `frontend/index.html`. Its seven reduced scientific monoline
+symbols use `currentColor` for primary strokes and `--app-teal` for restrained
+accents, so the same paths adapt to every visual theme. Workflow icons retain small
+step-number badges, while translated heading text remains separate from the
+decorative SVG markup. The fertilizer-components symbol is a connected
+five-atom molecule, and the ion-balance symbol uses a conventional beam scale
+with hanging pans. The other primary workflow
+symbols are literal fertilizer bags, a tap-water faucet, a calculator, and a
+target reticle containing one leaf.
+
 The calculator fertilizer-selection table labels the Boolean physical state as
 `Typ` and renders it as localized solid/liquid text. The adjacent
 `weight_factor` column is presented as `Masse`.

@@ -4,9 +4,45 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Horticalc GUI</title>
-    <link rel="stylesheet" href="styles.css?v=i18n8" />
+    <link rel="stylesheet" href="styles.css?v=icons6" />
   </head>
   <body class="compact app-body">
+    <svg class="icon-sprite" aria-hidden="true" focusable="false">
+      <symbol id="icon-editor" viewBox="0 0 24 24">
+        <path class="icon-accent icon-fertilizer-bag-back" d="M14 9 15 5h4l1 4c2 2 3 5 3 8 0 3-1.5 5-4.5 5H14v-6c0-3 0-5-1-7h1Zm1 0h5" />
+        <path class="icon-fertilizer-bags" d="M4 7 5 3h6l1 4c2 2 3 5 3 9 0 4-2 6-6 6H7c-4 0-6-2-6-6 0-4 1-7 3-9Zm1 0h7" />
+      </symbol>
+      <symbol id="icon-water" viewBox="0 0 24 24">
+        <path class="icon-tap" d="M4 9h13a4 4 0 0 1 4 4v2h-5v-2H8v3H3V9h1Zm3 0V6h7v3M9 6V3m-3 0h6" />
+        <path class="icon-accent" d="M18.5 17.5s-2 2.1-2 3.3a2 2 0 0 0 4 0c0-1.2-2-3.3-2-3.3Z" />
+      </symbol>
+      <symbol id="icon-recipe" viewBox="0 0 24 24">
+        <path d="M5 3h9l4 4v14H5V3Zm9 0v4h4" />
+        <path class="icon-accent" d="M9 10h5M9 13h3M10 17h4l-1-2h-2l-1 2Z" />
+      </symbol>
+      <symbol id="icon-components" viewBox="0 0 24 24">
+        <path class="icon-molecule-bonds" d="m7 8 5 4m0 0 5-6m-5 6 5 7M7 8l-2 10M7 8l10-2" />
+        <circle class="icon-molecule-atom" cx="7" cy="8" r="3" />
+        <circle class="icon-accent icon-molecule-atom" cx="17" cy="6" r="2.5" />
+        <circle class="icon-molecule-atom" cx="12" cy="12" r="3.2" />
+        <circle class="icon-accent icon-molecule-atom" cx="5" cy="18" r="2.5" />
+        <circle class="icon-molecule-atom" cx="17" cy="19" r="3" />
+      </symbol>
+      <symbol id="icon-calculator" viewBox="0 0 24 24">
+        <path class="icon-calculator-body" d="M5 2h14v20H5V2Zm3 3h8v4H8V5Z" />
+        <path class="icon-accent" d="M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01" />
+      </symbol>
+      <symbol id="icon-solver" viewBox="0 0 24 24">
+        <circle class="icon-target" cx="12" cy="12" r="8" />
+        <path class="icon-target" d="M12 1v4M12 19v4M1 12h4M19 12h4" />
+        <path class="icon-accent icon-target-leaf" d="M9 15c0-4 2.5-6 6.5-6 0 4-2.5 6-6.5 6Zm0 0 5-5" />
+      </symbol>
+      <symbol id="icon-balance" viewBox="0 0 24 24">
+        <path d="M12 4v16M7 20h10M4 7h16M7 7v5M17 7v5M3.5 12h7c-.4 2.2-1.7 3.5-3.5 3.5S3.9 14.2 3.5 12Zm10 0h7c-.4 2.2-1.7 3.5-3.5 3.5s-3.1-1.3-3.5-3.5Z" />
+        <circle cx="12" cy="5" r="1.5" />
+        <path class="icon-accent" d="M5.5 10h3M7 8.5v3M15.5 10h3" />
+      </symbol>
+    </svg>
     <div class="sr-only" id="modeStateControls" aria-hidden="true">
       <label>
         <input type="radio" name="modeToggle" value="calculator" checked />
@@ -31,8 +67,8 @@
         <div class="rail-brand" data-testid="rail-brand">
           <span class="rail-logo" aria-hidden="true">
             <svg viewBox="0 0 32 32" focusable="false">
-              <path d="M5 18c7-1 13-7 16-14 5 7 4 15-1 20-4 4-10 5-15 2 1-3 3-6 6-9-3 1-5 3-6 5v-4Z" />
-              <path d="M17 27c2-5 5-9 10-12" />
+              <path class="brand-leaf-shape" d="M5 25C5 12 13 5 27 4c0 14-7 23-18 23-1.5 0-2.8-.7-4-2Z" />
+              <path class="brand-leaf-vein" d="M7 25c4-7 9-12 17-17M13 18l-1-6M17 14l6-1" />
             </svg>
           </span>
           <div>
@@ -84,7 +120,10 @@
           </div>
           <nav class="workflow-nav" aria-label="Workflow Schritte" data-i18n-aria-label="aria.workflowSteps">
             <button class="workflow-step workflow-step--editor" type="button" data-shell-view="editor" data-testid="workflow-editor">
-              <span class="workflow-step-index" aria-hidden="true">1</span>
+              <span class="workflow-step-index" aria-hidden="true">
+                <svg class="app-icon"><use href="#icon-editor"></use></svg>
+                <span class="workflow-step-number">1</span>
+              </span>
               <span class="workflow-step-copy">
                 <span class="workflow-step-title" data-i18n="workflow.editor">Dünger-Editor</span>
                 <span class="workflow-step-hint" data-i18n="workflow.editorHint">Datenbank pflegen</span>
@@ -92,7 +131,10 @@
               <span class="workflow-step-arrow" aria-hidden="true">›</span>
             </button>
             <button class="workflow-step" type="button" data-shell-view="water" data-testid="workflow-water">
-              <span class="workflow-step-index" aria-hidden="true">2</span>
+              <span class="workflow-step-index" aria-hidden="true">
+                <svg class="app-icon"><use href="#icon-water"></use></svg>
+                <span class="workflow-step-number">2</span>
+              </span>
               <span class="workflow-step-copy">
                 <span class="workflow-step-title" data-i18n="workflow.water">Wasserwerte</span>
                 <span class="workflow-step-hint" data-i18n="workflow.waterHint">Profile und Osmose</span>
@@ -100,7 +142,10 @@
               <span class="workflow-step-arrow" aria-hidden="true">›</span>
             </button>
             <button class="workflow-step is-active" type="button" data-shell-view="fertilizers" data-testid="workflow-fertilizers">
-              <span class="workflow-step-index" aria-hidden="true">3</span>
+              <span class="workflow-step-index" aria-hidden="true">
+                <svg class="app-icon"><use href="#icon-calculator"></use></svg>
+                <span class="workflow-step-number">3</span>
+              </span>
               <span class="workflow-step-copy">
                 <span class="workflow-step-title" data-i18n="workflow.calculator">Rechner</span>
                 <span class="workflow-step-hint" data-i18n="workflow.calculatorHint">Rezept von Hand bauen</span>
@@ -108,7 +153,10 @@
               <span class="workflow-step-arrow" aria-hidden="true">›</span>
             </button>
             <button class="workflow-step workflow-step--solver" type="button" data-shell-view="solver" data-testid="workflow-solver">
-              <span class="workflow-step-index" aria-hidden="true">4</span>
+              <span class="workflow-step-index" aria-hidden="true">
+                <svg class="app-icon"><use href="#icon-solver"></use></svg>
+                <span class="workflow-step-number">4</span>
+              </span>
               <span class="workflow-step-copy">
                 <span class="workflow-step-title" data-i18n="workflow.solver">Solver</span>
                 <span class="workflow-step-hint" data-i18n="workflow.solverHint">Zielprofil automatisch lösen</span>
@@ -188,7 +236,10 @@
 
       <section class="workspace" data-testid="workspace-scroll-frame">
       <section class="block water-section is-hidden" id="waterSection" data-panel-anchor="water" data-testid="water-view">
-        <h2 data-i18n="water.title">Wasserwerte</h2>
+        <div class="section-heading">
+          <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-water"></use></svg></span>
+          <h2 data-i18n="water.title">Wasserwerte</h2>
+        </div>
         <div class="water-content" id="waterContent">
           <p class="hint" data-i18n="water.hint">Profile lokal speichern/laden und Osmose-Anteil berücksichtigen.</p>
           <div class="water-controls">
@@ -237,7 +288,10 @@
       </section>
 
       <section class="block" id="profileSection" data-panel-anchor="profile" data-testid="profile-panel">
-        <h2 id="profileSectionTitle" data-i18n="profile.recipeTitle">Rezeptverwaltung</h2>
+        <div class="section-heading">
+          <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-recipe"></use></svg></span>
+          <h2 id="profileSectionTitle" data-i18n="profile.recipeTitle">Rezeptverwaltung</h2>
+        </div>
         <p class="hint" id="profileSectionHint" data-i18n="profile.recipeHint">Rezepte lokal speichern oder laden.</p>
         <div class="water-controls">
           <div class="water-control-group">
@@ -264,7 +318,10 @@
 
       <div class="mode-panel" id="calculatorMode" data-testid="calculator-view">
         <section class="block" data-panel-anchor="fertilizers" data-testid="fertilizer-selection-panel">
-          <h2 data-i18n="calculator.fertilizerComponents">Düngerkomponenten</h2>
+          <div class="section-heading">
+            <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-components"></use></svg></span>
+            <h2 data-i18n="calculator.fertilizerComponents">Düngerkomponenten</h2>
+          </div>
           <div class="actions inline-actions">
             <button id="addFertilizerRow" class="btn btn--outline btn--icon icon-button" type="button">+</button>
             <button id="removeFertilizerRow" class="btn btn--outline btn--icon icon-button" type="button">-</button>
@@ -275,7 +332,10 @@
 
         <section class="block" data-panel-anchor="calculate" data-testid="calculate-panel">
           <div class="block-heading">
-            <h2 data-i18n="calculator.title">Hydroponic Solution Calculator</h2>
+            <div class="section-heading">
+              <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-calculator"></use></svg></span>
+              <h2 data-i18n="calculator.title">Hydroponic Solution Calculator</h2>
+            </div>
             <button id="calculateBtn" class="btn btn--solver-primary" type="button" data-i18n="calculator.calculate">Berechnen</button>
           </div>
           <p class="hint" data-i18n="calculator.hint">Mengen eingeben und Berechnung starten.</p>
@@ -323,7 +383,10 @@
         </section>
 
         <section class="block" data-panel-anchor="details" data-testid="details-panel">
-          <h2 data-i18n="calculator.ionBalance">Ionenbilanz</h2>
+          <div class="section-heading">
+            <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-balance"></use></svg></span>
+            <h2 data-i18n="calculator.ionBalance">Ionenbilanz</h2>
+          </div>
             <div class="data-grid">
               <div class="table-card compact-card">
                 <div class="table-card-title">
@@ -346,7 +409,10 @@
       <div class="mode-panel is-hidden" id="solverMode" data-testid="solver-view">
         <section class="block" data-panel-anchor="solver">
           <div class="block-heading">
-            <h2 data-i18n="solver.title">Zielprofil-Rechner</h2>
+            <div class="section-heading">
+              <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-solver"></use></svg></span>
+              <h2 data-i18n="solver.title">Zielprofil-Rechner</h2>
+            </div>
             <button id="solveBtn" class="btn btn--solver-primary" type="button" data-i18n="solver.solve">Solver berechnen</button>
           </div>
           <p class="hint" data-i18n="solver.hint">Zielwerte setzen, Dünger freigeben und das Ergebnis direkt im Rechner prüfen.</p>
@@ -542,7 +608,10 @@
 
       <div class="mode-panel is-hidden" id="fertilizerEditorMode" data-testid="fertilizer-editor-view">
         <section class="block" data-panel-anchor="editor">
-          <h2 data-i18n="editor.title">Dünger-Editor</h2>
+          <div class="section-heading">
+            <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-editor"></use></svg></span>
+            <h2 data-i18n="editor.title">Dünger-Editor</h2>
+          </div>
           <p class="hint" data-i18n="editor.percentHint">
             Werte als Prozent eingeben (z.B. 15 für 15%). Speicherung erfolgt als Bruch (0.15) in der CSV.
           </p>

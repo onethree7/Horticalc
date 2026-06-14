@@ -152,6 +152,46 @@ main {
   margin: 0;
 }
 
+.icon-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.app-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.app-icon .icon-accent {
+  stroke: var(--app-teal);
+}
+
+.app-icon .icon-label {
+  fill: currentColor;
+  stroke: none;
+  font-size: 4px;
+  font-weight: 900;
+  letter-spacing: -0.25px;
+}
+
+.app-icon .icon-fertilizer-bag-back {
+  fill: var(--app-teal);
+  fill-opacity: 0.12;
+}
+
+.app-icon .icon-target-leaf {
+  fill: var(--app-teal);
+}
+
 .block-heading .btn--solver-primary {
   flex: 0 0 auto;
   min-height: 2.15rem;
@@ -1918,6 +1958,17 @@ html {
   stroke-width: 1.8;
 }
 
+.rail-logo .brand-leaf-shape {
+  fill: currentColor;
+  stroke: none;
+}
+
+.rail-logo .brand-leaf-vein {
+  fill: none;
+  stroke: var(--app-panel);
+  stroke-width: 1.7;
+}
+
 .rail-brand h1 {
   margin: 0;
   color: var(--app-text);
@@ -2121,7 +2172,7 @@ html {
 
 .workflow-step {
   display: grid;
-  grid-template-columns: 1.85rem minmax(0, 1fr) auto;
+  grid-template-columns: 2.15rem minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-3);
   min-width: 0;
@@ -2176,15 +2227,36 @@ html {
 }
 
 .workflow-step-index {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 1.85rem;
-  height: 1.85rem;
+  width: 2.15rem;
+  height: 2.15rem;
   border: 1px solid rgba(155, 211, 106, 0.28);
   border-radius: 7px;
   background: rgba(155, 211, 106, 0.1);
-  color: #c8f6a5;
-  font-size: var(--text-xs);
+  color: var(--app-green);
+}
+
+.workflow-step-index .app-icon {
+  width: 1.82rem;
+  height: 1.82rem;
+}
+
+.workflow-step-number {
+  position: absolute;
+  top: -0.28rem;
+  right: -0.28rem;
+  display: grid;
+  place-items: center;
+  min-width: 0.9rem;
+  height: 0.9rem;
+  padding: 0 0.16rem;
+  border: 1px solid var(--app-workflow-step-border);
+  border-radius: 999px;
+  background: var(--app-panel);
+  color: var(--app-text);
+  font-size: 0.56rem;
   font-weight: 900;
   line-height: 1;
 }
@@ -2226,6 +2298,13 @@ html {
 
 .workflow-step.is-active .workflow-step-index,
 .workflow-step[aria-current="page"] .workflow-step-index {
+  border-color: var(--app-workflow-step-active-border);
+  background: var(--app-segmented-active-bg);
+  color: var(--app-workflow-active-text);
+}
+
+.workflow-step.is-active .workflow-step-number,
+.workflow-step[aria-current="page"] .workflow-step-number {
   border-color: var(--app-workflow-step-active-border);
   background: var(--app-segmented-active-bg);
   color: var(--app-workflow-active-text);
@@ -2323,24 +2402,40 @@ html {
   color: var(--app-heading-text);
 }
 
-.workspace .block > h2:first-child,
-.workspace .block > h3:first-child {
+.section-heading {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  min-width: 0;
+}
+
+.workspace .block > .section-heading:first-child {
   margin-bottom: var(--space-3);
+}
+
+.section-heading h2,
+.section-heading h3 {
+  min-width: 0;
+  margin: 0;
   font-size: 1.22rem;
 }
 
-.workspace .block > h2:first-child::before {
-  content: "";
+.heading-icon {
+  display: grid;
+  place-items: center;
   width: 2.4rem;
   height: 2.4rem;
   flex: 0 0 auto;
   border: 1px solid rgba(76, 199, 176, 0.28);
   border-radius: 10px;
   background: var(--app-heading-icon-bg);
+  color: var(--app-green);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.heading-icon .app-icon {
+  width: 2.02rem;
+  height: 2.02rem;
 }
 
 .workspace .hint,

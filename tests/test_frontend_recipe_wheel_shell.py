@@ -140,6 +140,51 @@ def test_frontend_has_no_duplicate_ids() -> None:
 
     assert duplicates == []
 
+def test_theme_adaptive_icon_sprite_is_reused_by_workflow_and_headings() -> None:
+    content = read_frontend_file("index.html")
+    styles = read_frontend_file("styles.css")
+    symbol_ids = [
+        "icon-editor",
+        "icon-water",
+        "icon-recipe",
+        "icon-components",
+        "icon-calculator",
+        "icon-solver",
+        "icon-balance",
+    ]
+
+    for symbol_id in symbol_ids:
+        assert content.count(f'id="{symbol_id}"') == 1
+        assert f'href="#{symbol_id}"' in content
+
+    assert content.count('class="workflow-step-number"') == 4
+    assert content.count('class="heading-icon"') == 7
+    assert '<h2 data-i18n="water.title">Wasserwerte</h2>' in content
+    assert '<h2 data-i18n="calculator.title">Hydroponic Solution Calculator</h2>' in content
+    assert '<h2 data-i18n="solver.title">Zielprofil-Rechner</h2>' in content
+    assert '.app-icon .icon-accent' in styles
+    assert 'stroke: var(--app-teal);' in styles
+    assert 'width: 1.82rem;' in styles
+    assert 'width: 2.02rem;' in styles
+    assert 'class="icon-fertilizer-bags"' in content
+    assert "NPK</text>" not in content
+    assert 'class="icon-tap"' in content
+    assert 'class="icon-calculator-body"' in content
+    assert 'class="icon-accent icon-target-leaf"' in content
+    assert 'class="icon-molecule-bonds"' in content
+    assert content.count('icon-molecule-atom') == 5
+    assert "NaCl" not in content
+    assert '.workspace .block > h2:first-child::before' not in styles
+
+def test_brand_window_uses_single_clean_leaf() -> None:
+    content = read_frontend_file("index.html")
+    styles = read_frontend_file("styles.css")
+
+    assert 'class="brand-leaf-shape"' in content
+    assert 'class="brand-leaf-vein"' in content
+    assert '.rail-logo .brand-leaf-shape' in styles
+    assert '.rail-logo .brand-leaf-vein' in styles
+
 def test_app_js_shell_helpers_are_top_level_and_initialized() -> None:
     content = read_frontend_file("app.js")
 

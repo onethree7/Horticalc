@@ -8,6 +8,11 @@ def test_sidebar_uses_primary_workflow_menu_with_collapsible_guide() -> None:
 
     assert 'data-i18n="workflow.menu"' in workflow_block
     assert 'class="workflow-step-index"' in workflow_block
+    assert workflow_block.count('class="workflow-step-number"') == 4
+    assert 'href="#icon-editor"' in workflow_block
+    assert 'href="#icon-water"' in workflow_block
+    assert 'href="#icon-calculator"' in workflow_block
+    assert 'href="#icon-solver"' in workflow_block
     assert 'class="workflow-step-hint"' in workflow_block
     assert '<details class="rail-guide" data-testid="workflow-guide">' in workflow_block
     assert 'data-i18n="workflow.shortGuide"' in workflow_block
@@ -17,5 +22,6 @@ def test_sidebar_navigation_styles_wrap_button_text() -> None:
     content = read_frontend_file("styles.css")
 
     assert ".workflow-step-title,\n.workflow-step-hint,\n.workflow-step-arrow" in content
+    assert ".workflow-step-number" in content
     assert "overflow-wrap: anywhere;" in content
     assert ".rail-brand,\n  .rail-workflow {\n    grid-column: 1 / -1;" in content

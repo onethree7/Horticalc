@@ -250,6 +250,11 @@ const nutrientFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
   useGrouping: false,
 });
+const fertilizerTraceFormatter = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 4,
+  useGrouping: false,
+});
 const ionFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
@@ -1602,7 +1607,7 @@ function renderSolverResults(data) {
       const nameCell = document.createElement("td");
       nameCell.textContent = fert.name;
       const gramsCell = document.createElement("td");
-      gramsCell.textContent = formatNumber(Number(fert.grams), nutrientFormatter);
+      gramsCell.textContent = formatFertilizerGrams(Number(fert.grams));
       row.append(nameCell, gramsCell);
       solverFertilizersTable.appendChild(row);
     });
@@ -1794,7 +1799,7 @@ function buildSolverClipboardText() {
       [t("common.fertilizer"), t("common.grams")],
       fertilizers.map((fert) => [
         fert.name || "",
-        formatNumber(Number(fert.grams), nutrientFormatter),
+        formatFertilizerGrams(Number(fert.grams)),
       ]),
       [1]
     )
@@ -1969,8 +1974,8 @@ function renderCalculatorTable() {
     const input = document.createElement("input");
     input.type = "number";
     input.min = "0";
-    input.step = "0.01";
-    input.value = fertilizerAmounts[i];
+    input.step = "any";
+    input.value = formatFertilizerGramsInput(fertilizerAmounts[i]);
     input.addEventListener("input", (event) => {
       const rawValue = Math.max(0, Number(event.target.value) || 0);
       fertilizerAmounts[i] = rawValue;
@@ -2078,6 +2083,31 @@ function formatNumber(value, formatter = numberFormatter) {
     return formatter.format(value);
   }
   return "-";
+}
+
+function formatFertilizerGrams(value) {
+  if (!Number.isFinite(value)) {
+    return "-";
+  }
+  if (value === 0 || Math.abs(value) >= 0.01) {
+    return nutrientFormatter.format(value);
+  }
+
+  const formatted = fertilizerTraceFormatter.format(value);
+  return formatted === "0" ? "<0.0001" : formatted;
+}
+
+function formatFertilizerGramsInput(value) {
+  if (!Number.isFinite(Number(value))) {
+    return "0";
+  }
+  const numericValue = Number(value);
+  if (numericValue === 0 || Math.abs(numericValue) >= 0.01) {
+    return String(numericValue);
+  }
+
+  const formatted = fertilizerTraceFormatter.format(numericValue);
+  return formatted === "0" ? String(numericValue) : formatted;
 }
 
 function reportError(error, fallbackMessage = t("errors.unknown")) {

@@ -92,7 +92,11 @@ rows that were not active targets are muted so collateral nutrient changes are
 visible without implying they were optimized objectives. The fertilizer result
 table lets long product names wrap while keeping the `Gramm/ml` dose column
 compact and right-aligned. Solid doses are grams and liquid doses are
-milliliters.
+milliliters. Doses below `0.01` use up to four decimal places in Solver results,
+the Solver clipboard export, and calculator inputs so a positive trace dose is
+not displayed as zero. Values below the display precision are labelled
+`<0.0001` in read-only Solver output while calculator inputs retain the numeric
+value.
 
 The solver clipboard export in `frontend/app.js` includes the batch liters,
 osmosis percent, fertilizer doses in grams or milliliters, NPK metrics, EC,

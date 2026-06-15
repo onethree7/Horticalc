@@ -1,0 +1,47 @@
+name: Sapkota 2019 Lettuce N3
+crop: Lettuce (Buttercrunch and Black Seeded Simpson)
+growth_stage: 30-day floating hydroponic production
+cultivation_system: Aerated floating hydroponics
+solution_role: experimental_treatment
+strength_fraction: 1.0
+source: Sapkota et al. (2019), best-performing N3 treatment, table 1
+reference:
+  authors: S. Sapkota, S. Sapkota, and Z. Liu
+  title: Effects of Nutrient Composition and Lettuce Cultivar on Crop Production in Hydroponic Culture
+  publication: Horticulturae 5, 72
+  year: 2019
+  doi_or_isbn: 10.3390/horticulturae5040072
+  page: 3
+  table: 1
+  source_type: primary_paper
+  source_url: https://doi.org/10.3390/horticulturae5040072
+  accessed: 2026-06-15
+original_basis:
+  type: elements
+  units: ppm (mg/L)
+  includes_source_water: false
+  hydrate_forms_documented: false
+  element_mg_per_l:
+    N_total: 250.0
+    P: 56.0
+    K: 300.0
+    Ca: 250.0
+    Mg: 45.0
+    B: 0.4
+    Zn: 0.35
+conversion_notes:
+  - Original N3 table values are N 250, K 300, Ca 250, P 56, Mg 45, B 0.4, and Zn 0.35 ppm.
+  - The paper identifies N3 as the highest-yielding treatment for both tested cultivars.
+  - Nitrogen form is not assigned because table 1 reports only total N, even though the listed nitrogen sources are nitrate salts.
+  - S, Na, Cl, Cu, and Mo were explicitly excluded by the authors; unreported Fe and Mn are also omitted rather than assumed zero.
+verification:
+  independent_recalculation: true
+  source_basis_checked: 2026-06-15
+targets_mg_per_l:
+  N_total: 250.0
+  P: 56.0
+  K: 300.0
+  Ca: 250.0
+  Mg: 45.0
+  B: 0.4
+  Zn: 0.35

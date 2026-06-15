@@ -1,10 +1,10 @@
-name: Knop 1865 Original
+name: Crone Solution 1902 Original
 crop: General experimental water culture
 growth_stage: Unspecified
 cultivation_system: Water culture
 solution_role: experimental_treatment
 strength_fraction: 1.0
-source: Knop formulation reproduced by Hoagland and Arnon (1950), Circular 347, table 1
+source: Crone formulation reproduced by Hoagland and Arnon (1950), Circular 347, table 1
 reference:
   authors: D. R. Hoagland and D. I. Arnon
   title: The Water-Culture Method for Growing Plants without Soil
@@ -20,30 +20,30 @@ original_basis:
   includes_source_water: false
   hydrate_forms_documented: false
   element_mmol_per_l:
-    N_NO3: 11.729054028
+    N_NO3: 9.89088377
     N_NH4: 0.0
     N_UREA: 0.0
-    P: 1.469663838
-    K: 3.447840592
-    Ca: 4.875438637
-    Mg: 1.661576703
-    S: 1.661576703
+    P: 3.269629347
+    K: 9.89088377
+    Ca: 4.254313251
+    Mg: 2.076970879
+    S: 3.913307725
+    Fe: 1.657645077
 conversion_notes:
-  - The legacy filename is retained so saved recipes and scripts keep resolving.
-  - The date is corrected from 1861 to the 1865 Knop formulation identified by Circular 347.
   - Formula masses use the formulas exactly as printed because hydrate forms are not stated.
-  - Fe is omitted because the source specifies only a non-quantitative trace of FePO4.
-  - The table recommends a later B/Mn/Zn/Cu/Mo supplement for best results; it is not part of the 1865 original formulation.
+  - Fe is retained because the cited table specifies FePO4 quantitatively.
+  - The table recommends a later B/Mn/Zn/Cu/Mo supplement for best results; it is not part of the 1902 original formulation.
 verification:
   independent_recalculation: true
   source_basis_checked: 2026-06-14
 targets_mg_per_l:
-  N_total: 164.285341
-  N_NO3: 164.285341
+  N_total: 138.538642
+  N_NO3: 138.538642
   N_NH4: 0.0
   N_UREA: 0.0
-  P: 45.521018
-  K: 134.804706
-  Ca: 195.39783
-  Mg: 40.384622
-  S: 53.278457
+  P: 101.272721
+  K: 386.716741
+  Ca: 170.504366
+  Mg: 50.480777
+  S: 125.480212
+  Fe: 92.571189

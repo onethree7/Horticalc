@@ -1,9 +1,52 @@
-name: Long Ashton Nutrient Solution (LANS) Nitrate Type
-source: User provided dataset
+name: Long Ashton Nutrient Solution (LANS), Nitrate Type
+crop: General research plants
+growth_stage: Unspecified
+cultivation_system: Sand or water culture
+solution_role: experimental_treatment
+strength_fraction: 1.0
+source: Hewitt (1966), Sand and Water Culture Methods, 2nd edition
+reference:
+  authors: E. J. Hewitt
+  title: Sand and Water Culture Methods Used in the Study of Plant Nutrition
+  publication: Commonwealth Bureau of Horticulture and Plantation Crops Technical Communication 22
+  year: 1966
+  edition: 2
+  table: 30A
+  source_type: scientific_book
+  source_url: https://www.cabidigitallibrary.org/doi/full/10.5555/19531603279
+  accessed: 2026-06-14
+original_basis:
+  type: elements
+  units: mg/L
+  includes_source_water: false
+  hydrate_forms_documented: true
+  element_mg_per_l:
+    N_total: 168.0
+    N_NO3: 168.0
+    N_NH4: 0.0
+    N_UREA: 0.0
+    P: 41.0
+    K: 156.0
+    Ca: 160.0
+    Mg: 36.0
+    Na: 31.0
+    S: 48.0
+    Fe: 2.8
+    Mn: 0.55
+    Zn: 0.065
+    Cu: 0.064
+    B: 0.54
+    Mo: 0.048
+conversion_notes:
+  - Values are the published elemental composition; omitted species are not converted to zero.
+verification:
+  independent_recalculation: true
+  source_basis_checked: 2026-06-14
+  table_identification_checked: 2026-06-15
 targets_mg_per_l:
   N_total: 168.0
-  N_NH4: 0.0
   N_NO3: 168.0
+  N_NH4: 0.0
   N_UREA: 0.0
   P: 41.0
   K: 156.0
@@ -11,10 +54,9 @@ targets_mg_per_l:
   Mg: 36.0
   Na: 31.0
   S: 48.0
-  Si: 0.0
-  Cl: 0.0
   Fe: 2.8
   Mn: 0.55
+  Zn: 0.065
   Cu: 0.064
   B: 0.54
-  HCO3: 0.0
+  Mo: 0.048

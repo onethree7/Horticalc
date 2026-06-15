@@ -76,7 +76,6 @@ ALLOWED_TARGET_KEYS = {
     "Ca",
     "Mg",
     "S",
-    "SO4",
     *TRACE_ELEMENT_KEYS,
     "Si",
     "Cl",

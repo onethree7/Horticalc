@@ -15,6 +15,8 @@ historical report.
 
 - [API reference](api_reference.md): FastAPI routes and payload shapes.
 - [Data model](data_model.md): persisted files, units, conversions, and output fields.
+- [Nutrient solution profiles](nutrient_solution_profiles.md): cited formulations
+  and conversion rules.
 - [GUI](GUI.MD): current frontend shell and workflow behavior.
 - [Solver](solver.MD): solver objective semantics, defaults, and configuration.
 - [EC model](EC.md): electrical conductivity calculation.

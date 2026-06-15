@@ -1,0 +1,50 @@
+name: Gong 2024 Lettuce Validation T1
+crop: Lettuce (Lactuca sativa L. cv. Italian Bolting-resistant)
+growth_stage: 30-day hydroponic validation
+cultivation_system: Hydroponic culture
+solution_role: experimental_treatment
+strength_fraction: 1.0
+source: Gong et al. (2024), validated T1 formulation, tables 7-8
+reference:
+  authors: B. Gong, X. Ren, W. Hao, J. Li, S. Hou, K. Yang, X. Wu, and H. Gao
+  title: Response Surface Methodology for Development of Nutrient Solution Formula for Hydroponic Lettuce Based on the Micro-Elements Fertilizer Requirements at Different Growth Stages
+  publication: Agronomy 14, 1160
+  year: 2024
+  doi_or_isbn: 10.3390/agronomy14061160
+  page: 8-9
+  table: 7-8
+  source_type: primary_paper
+  source_url: https://doi.org/10.3390/agronomy14061160
+  accessed: 2026-06-15
+original_basis:
+  type: derived_ions
+  units: mmol/L elemental ions derived stoichiometrically from validation T1
+  includes_source_water: false
+  hydrate_forms_documented: false
+  element_mmol_per_l:
+    N_NO3: 17.6
+    N_NH4: 2.7
+    N_UREA: 0.0
+    P: 2.7
+    K: 6.4
+    Ca: 5.6
+    Mg: 7.1
+    S: 7.1
+conversion_notes:
+  - The solver profile stores only the ionic result; the published compound-level T1 values and stoichiometric audit are recorded in docs/nutrient_solution_profiles.md.
+  - Table 7 T1 implies 20.3 mmol/L total N, not the nominal 22.0 mmol/L printed in optimization table 6; this profile follows the actually validated T1 formulation.
+  - T1 produced the highest validation shoot fresh weight, 301.02 g, and exceeded the Hoagland control by 40.67 percent.
+  - Micronutrients are omitted because the publication does not provide a complete numeric micronutrient composition for T1.
+verification:
+  independent_recalculation: true
+  source_basis_checked: 2026-06-15
+targets_mg_per_l:
+  N_NO3: 246.51792
+  N_NH4: 37.81809
+  N_UREA: 0.0
+  P: 83.629157
+  K: 250.22912
+  Ca: 224.4368
+  Mg: 172.5655
+  S: 227.6615
+  N_total: 284.33601

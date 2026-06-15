@@ -147,7 +147,7 @@ def test_s_target_can_be_enabled_as_solver_objective() -> None:
     assert result.fertilizers[0]["name"] == "SO4-only"
     assert result.fertilizers[0]["grams"] > 0
 
-def test_so4_target_is_converted_to_s_when_s_objective_is_enabled() -> None:
+def test_so4_is_not_an_allowed_solver_target() -> None:
     molar_masses = load_molar_masses()
     ferts = {
         "SO4-only": Fertilizer(name="SO4-only", liquid=False, weight_factor=1.0, comp={"SO4": 1.0}),
@@ -159,9 +159,9 @@ def test_so4_target_is_converted_to_s_when_s_objective_is_enabled() -> None:
         "solver_config": {"s_objective_enabled": True},
     }
 
-    result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
-
-    assert "S" in result.objective_elements
-    assert "SO4" not in result.objective_elements
-    assert result.targets_mg_l["S"] == 30.0 * molar_masses["S"] / molar_masses["SO4"]
-    assert result.fertilizers[0]["grams"] > 0
+    try:
+        solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
+    except ValueError as exc:
+        assert "Invalid target key: SO4" in str(exc)
+    else:
+        raise AssertionError("Expected SO4 solver target to fail")

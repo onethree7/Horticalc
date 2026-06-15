@@ -18,7 +18,8 @@ Use it to compare solver quality across:
 
 The benchmark scores the same `objective_elements` returned by
 `solve_recipe_data()`. It does not independently decide that report-only
-targets such as `S`, `SO4`, `Na`, or `Cl` are optimization errors.
+targets such as `S`, `Na`, or `Cl` are optimization errors, and `SO4` is not an
+accepted target key.
 
 ## Files
 

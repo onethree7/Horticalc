@@ -149,10 +149,24 @@ Target profile YAML:
 ```yaml
 name: Example Target
 source: ""
+crop: Example crop
+cultivation_system: Water culture
+solution_role: experimental_treatment
+reference:
+  authors: Example Author
+  title: Example publication
+  year: 2026
+  source_url: https://example.invalid/source
+original_basis:
+  type: ions
+  units: mmol/L
+  element_mmol_per_l:
+    N_NO3: 10
+    S: 2
 targets_mg_per_l:
-  N_total: 160
-  P: 30
-  K: 180
+  N_total: 140.067
+  N_NO3: 140.067
+  S: 64.13
 ```
 
 Targets are element mg/L. The accepted solver target keys live in
@@ -160,6 +174,25 @@ Targets are element mg/L. The accepted solver target keys live in
 `K2O` and `P2O5` are fertilizer composition keys, not target keys. Some target
 keys may be reported but ignored by the solver objective; see
 [Solver](solver.MD).
+
+Shipped scientific profiles also carry crop/system context, a structured
+reference, the original concentration basis, conversion notes, and verification
+metadata. `load_nutrient_solution_data()` preserves these fields for API reads.
+`nutrient_solution_targets_from_basis()` recalculates documented mmol/L and
+umol/L source values to elemental mg/L. Unknown nutrients are omitted instead
+of being encoded as zero. See
+[Nutrient solution profiles](nutrient_solution_profiles.md).
+
+Nutrient-solution target profiles are not fertilizer recipes. They must not
+contain compound quantities, stock-solution instructions, or substance masses.
+Those belong to calculator recipes or fertilizer data. Scientific target YAMLs
+may retain citations, crop and system context, reported elemental/ionic
+concentrations, and conversion or uncertainty notes.
+
+The target key `S` is elemental sulfur. A source value reported as sulfate or
+`SO3` must be converted toward elemental `S` using molar masses. `SO4` remains
+a fertilizer composition, water-profile, and ion-output form; it is not an
+accepted solver target key.
 
 ## Calculation Output
 

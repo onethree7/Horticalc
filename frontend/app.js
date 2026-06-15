@@ -185,7 +185,6 @@ const solverTargetDefinitions = [
   { key: "Ca", label: "Ca" },
   { key: "Mg", label: "Mg" },
   { key: "S", label: "S" },
-  { key: "SO4", label: "SO4" },
   { key: "Fe", label: "Fe" },
   { key: "Mn", label: "Mn" },
   { key: "Cu", label: "Cu" },

@@ -1,10 +1,10 @@
-name: Knop 1865 Original
+name: Pfeffer Solution 1900 Original
 crop: General experimental water culture
 growth_stage: Unspecified
 cultivation_system: Water culture
 solution_role: experimental_treatment
 strength_fraction: 1.0
-source: Knop formulation reproduced by Hoagland and Arnon (1950), Circular 347, table 1
+source: Pfeffer formulation reproduced by Hoagland and Arnon (1950), Circular 347, table 1
 reference:
   authors: D. R. Hoagland and D. I. Arnon
   title: The Water-Culture Method for Growing Plants without Soil
@@ -24,16 +24,15 @@ original_basis:
     N_NH4: 0.0
     N_UREA: 0.0
     P: 1.469663838
-    K: 3.447840592
+    K: 6.130665016
     Ca: 4.875438637
     Mg: 1.661576703
     S: 1.661576703
+    Cl: 2.682824424
 conversion_notes:
-  - The legacy filename is retained so saved recipes and scripts keep resolving.
-  - The date is corrected from 1861 to the 1865 Knop formulation identified by Circular 347.
   - Formula masses use the formulas exactly as printed because hydrate forms are not stated.
-  - Fe is omitted because the source specifies only a non-quantitative trace of FePO4.
-  - The table recommends a later B/Mn/Zn/Cu/Mo supplement for best results; it is not part of the 1865 original formulation.
+  - Fe is omitted because the cited table specifies only a non-quantitative small amount of FeCl3.
+  - The table recommends a later B/Mn/Zn/Cu/Mo supplement for best results; it is not part of the 1900 original formulation.
 verification:
   independent_recalculation: true
   source_basis_checked: 2026-06-14
@@ -43,7 +42,8 @@ targets_mg_per_l:
   N_NH4: 0.0
   N_UREA: 0.0
   P: 45.521018
-  K: 134.804706
+  K: 239.69858
   Ca: 195.39783
   Mg: 40.384622
   S: 53.278457
+  Cl: 95.106126

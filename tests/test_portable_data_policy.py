@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -99,3 +100,48 @@ def test_legacy_migration_uses_shipped_replace_aliases_to_avoid_duplicates(
     assert "Old Name" not in ferts
     assert "User Custom" in ferts
     assert "Old Name" not in paths.user_fertilizer_overrides_path(tmp_path).read_text(encoding="utf-8")
+
+
+def test_untouched_legacy_nutrient_solution_is_refreshed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    filename = "Legacy.yml"
+    shipped = tmp_path / "data" / "nutrient_solutions" / filename
+    user = tmp_path / "user" / "nutrient_solutions" / filename
+    legacy_bytes = b"name: Legacy\nsource: old\n"
+    shipped.parent.mkdir(parents=True)
+    user.parent.mkdir(parents=True)
+    shipped.write_bytes(b"name: Refreshed\nsource: cited\n")
+    user.write_bytes(legacy_bytes.replace(b"\n", b"\r\n"))
+    monkeypatch.setattr(
+        paths,
+        "LEGACY_NUTRIENT_SOLUTION_HASHES",
+        {filename: sha256(legacy_bytes).hexdigest()},
+    )
+
+    paths._refresh_legacy_nutrient_solution_defaults(shipped.parent, user.parent)
+
+    assert user.read_bytes() == shipped.read_bytes()
+
+
+def test_edited_legacy_nutrient_solution_is_not_overwritten(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    filename = "Legacy.yml"
+    shipped = tmp_path / "data" / "nutrient_solutions" / filename
+    user = tmp_path / "user" / "nutrient_solutions" / filename
+    shipped.parent.mkdir(parents=True)
+    user.parent.mkdir(parents=True)
+    shipped.write_bytes(b"name: Refreshed\nsource: cited\n")
+    user.write_bytes(b"name: User edit\nsource: custom\n")
+    monkeypatch.setattr(
+        paths,
+        "LEGACY_NUTRIENT_SOLUTION_HASHES",
+        {filename: sha256(b"name: Legacy\nsource: old\n").hexdigest()},
+    )
+
+    paths._refresh_legacy_nutrient_solution_defaults(shipped.parent, user.parent)
+
+    assert user.read_bytes() == b"name: User edit\nsource: custom\n"

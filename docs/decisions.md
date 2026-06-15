@@ -81,7 +81,7 @@ Source: `api/app.py`, `frontend/`, `tests/test_frontend_solver_config_ui.py`,
 - Default `relative_weighting`: `false`.
 - Default `singleton_supplier_enabled`: `false`.
 - Default `singleton_underfill_enabled`: `true`.
-- Report-only ignored target keys: `S`, `SO4`, `Na`, `Cl`.
+- Report-only ignored target keys: `S`, `Na`, `Cl`. `SO4` is not a target key.
 - Solver matrix scoring follows `result.objective_elements`.
 
 Source: `src/horticalc/solver_config.py`, `src/horticalc/solver.py`,

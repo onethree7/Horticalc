@@ -1,20 +1,63 @@
-name: Yoshida Rice Solution 1976 (Common Variant)
-source: User provided dataset
+name: Yoshida Rice Solution 1976
+crop: Rice
+growth_stage: Unspecified
+cultivation_system: Water culture
+solution_role: experimental_treatment
+strength_fraction: 1.0
+source: Yoshida et al. (1976), Laboratory Manual for Physiological Studies of Rice, 3rd edition
+reference:
+  authors: S. Yoshida, D. A. Forno, J. H. Cock, and K. A. Gomez
+  title: Laboratory Manual for Physiological Studies of Rice
+  publication: International Rice Research Institute
+  year: 1976
+  doi_or_isbn: 978-9711040352
+  source_type: institutional_manual
+  source_url: https://books.irri.org/9711040352_content.pdf
+  accessed: 2026-06-14
+original_basis:
+  type: derived_ions
+  units: elemental mmol/L for macro elements; elemental mg/L for trace elements
+  includes_source_water: false
+  hydrate_forms_documented: true
+  element_mmol_per_l:
+    N_NO3: 1.427351376
+    N_NH4: 1.427351376
+    N_UREA: 0.0
+    P: 0.322900995
+    K: 1.024336161
+    Ca: 0.997945539
+    Mg: 1.643171612
+    S: 2.155339692
+    Na: 0.322900995
+    Cl: 1.995891078
+  element_mg_per_l:
+    Fe: 2.0
+    Mn: 0.5
+    Zn: 0.01
+    Cu: 0.01
+    B: 0.2
+    Mo: 0.05
+conversion_notes:
+  - The legacy filename is retained, but the profile is the canonical 1976 composition rather than the previous unexplained common variant.
+  - Sulfur is the sum of sulfur from K2SO4 and MgSO4.7H2O and is stored as elemental S, not SO4 mass.
+verification:
+  independent_recalculation: true
+  source_basis_checked: 2026-06-14
 targets_mg_per_l:
-  N_total: 40.0592
-  N_NH4: 20.0296
-  N_NO3: 20.0296
+  N_total: 39.984965
+  N_NO3: 19.992483
+  N_NH4: 19.992483
   N_UREA: 0.0
-  P: 9.9116
-  K: 103.22
-  Ca: 40.078
-  Mg: 39.86
-  Na: 7.357
-  S: 94.9124
-  Si: 0.0
-  Cl: 71.473
-  Fe: 5.585
-  Mn: 0.438955
-  Cu: 0.009532
-  B: 0.015026
-  HCO3: 0.0
+  P: 10.001459
+  K: 40.049803
+  Ca: 39.995661
+  Mg: 39.937286
+  Na: 7.423419
+  S: 69.110967
+  Cl: 70.754339
+  Fe: 2.0
+  Mn: 0.5
+  Zn: 0.01
+  Cu: 0.01
+  B: 0.2
+  Mo: 0.05

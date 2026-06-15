@@ -1,20 +1,63 @@
-name: Hoagland Arnon 1950 Solution 1 (Nitrate)
-source: User provided dataset
+name: Hoagland and Arnon 1950 Solution 1 (Nitrate)
+crop: General whole-plant water culture
+growth_stage: Unspecified
+cultivation_system: Water culture
+solution_role: experimental_treatment
+strength_fraction: 1.0
+source: Hoagland and Arnon (1950), Circular 347, tables 1-2 and 6
+reference:
+  authors: D. R. Hoagland and D. I. Arnon
+  title: The Water-Culture Method for Growing Plants without Soil
+  publication: California Agricultural Experiment Station Circular 347
+  year: 1950
+  table: 1, 2, and 6
+  source_type: institutional_manual
+  source_url: https://www.nutricaodeplantas.agr.br/site/downloads/hoagland_arnon.pdf
+  accessed: 2026-06-14
+original_basis:
+  type: ions
+  units: mmol/L for macro elements; umol/L for trace elements
+  includes_source_water: false
+  hydrate_forms_documented: true
+  element_mmol_per_l:
+    N_NO3: 14.0
+    N_NH4: 0.0
+    N_UREA: 0.0
+    P: 1.0
+    K: 6.0
+    Ca: 4.0
+    Mg: 2.0
+    S: 2.0
+    Na: 0.0
+    Cl: 0.02
+  trace_element_umol_per_l:
+    Fe: 40.0
+    Mn: 9.15
+    Zn: 0.77
+    Cu: 0.32
+    B: 46.3
+    Mo: 0.11
+conversion_notes:
+  - Targets are elemental mg/L; sulfate is converted to elemental S by molar amount.
+  - Trace concentrations use the complete Hoagland composition reproduced and tested by van Delden et al. (2020), DOI 10.1186/s13007-020-00606-4.
+verification:
+  independent_recalculation: true
+  source_basis_checked: 2026-06-14
 targets_mg_per_l:
-  N_total: 210.101
+  N_total: 196.0938
+  N_NO3: 196.0938
   N_NH4: 0.0
-  N_NO3: 210.101
   N_UREA: 0.0
-  P: 30.974
-  K: 234.59
-  Ca: 200.39
+  P: 30.973762
+  K: 234.5898
+  Ca: 160.312
   Mg: 48.61
-  Na: 0.0
   S: 64.13
-  Si: 0.0
-  Cl: 0.0
-  Fe: 0.0
-  Mn: 0.5
-  Cu: 0.02
-  B: 0.5
-  HCO3: 0.0
+  Na: 0.0
+  Cl: 0.709
+  Fe: 2.2338
+  Mn: 0.502683
+  Zn: 0.050343
+  Cu: 0.020335
+  B: 0.500549
+  Mo: 0.010556

@@ -1,9 +1,9 @@
-name: Long Ashton Nutrient Solution (LANS) Nitrate Type
-source: User provided dataset
+name: Long Ashton Nutrient Solution (LANS), Nitrate Type
+source: Hewitt (1966), 2nd ed., table 30A
 targets_mg_per_l:
   N_total: 168.0
-  N_NH4: 0.0
   N_NO3: 168.0
+  N_NH4: 0.0
   N_UREA: 0.0
   P: 41.0
   K: 156.0
@@ -11,10 +11,9 @@ targets_mg_per_l:
   Mg: 36.0
   Na: 31.0
   S: 48.0
-  Si: 0.0
-  Cl: 0.0
   Fe: 2.8
   Mn: 0.55
+  Zn: 0.065
   Cu: 0.064
   B: 0.54
-  HCO3: 0.0
+  Mo: 0.048

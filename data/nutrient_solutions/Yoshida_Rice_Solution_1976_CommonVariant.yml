@@ -1,20 +1,21 @@
-name: Yoshida Rice Solution 1976 (Common Variant)
-source: User provided dataset
+name: Yoshida Rice Solution 1976
+source: Yoshida et al. (1976), 3rd ed., ISBN 978-9711040352
+note: Elemental mg/L calculated from source mmol/L values; reported trace nutrients retained as mg/L.
 targets_mg_per_l:
-  N_total: 40.0592
-  N_NH4: 20.0296
-  N_NO3: 20.0296
+  N_total: 39.984965
+  N_NO3: 19.992483
+  N_NH4: 19.992483
   N_UREA: 0.0
-  P: 9.9116
-  K: 103.22
-  Ca: 40.078
-  Mg: 39.86
-  Na: 7.357
-  S: 94.9124
-  Si: 0.0
-  Cl: 71.473
-  Fe: 5.585
-  Mn: 0.438955
-  Cu: 0.009532
-  B: 0.015026
-  HCO3: 0.0
+  P: 10.001459
+  K: 40.049803
+  Ca: 39.995661
+  Mg: 39.937286
+  Na: 7.423419
+  S: 69.110967
+  Cl: 70.754339
+  Fe: 2.0
+  Mn: 0.5
+  Zn: 0.01
+  Cu: 0.01
+  B: 0.2
+  Mo: 0.05

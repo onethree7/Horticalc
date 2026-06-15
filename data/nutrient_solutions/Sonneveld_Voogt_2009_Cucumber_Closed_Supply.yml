@@ -1,0 +1,19 @@
+name: Sonneveld and Voogt 2009 Cucumber Closed-System Supply
+source: Sonneveld and Voogt (2009), table 12.6, DOI 10.1007/978-90-481-2532-6
+note: Elemental mg/L calculated from source mmol/L and umol/L values.
+targets_mg_per_l:
+  N_total: 178.585425
+  N_NO3: 164.578725
+  N_NH4: 14.0067
+  N_UREA: 0.0
+  P: 38.717202
+  K: 254.13895
+  Ca: 110.2145
+  Mg: 24.305
+  S: 32.065
+  Fe: 0.837675
+  Mn: 0.54938
+  Zn: 0.3269
+  Cu: 0.04766
+  B: 0.270275
+  Mo: 0.04798

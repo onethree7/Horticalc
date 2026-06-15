@@ -1,0 +1,19 @@
+name: De La Rosa 2025 Lettuce T4 High-Potassium Proportion
+source: de la Rosa-Rodriguez et al. (2025), T4, table 1, DOI 10.47163/agrociencia.v59i8.3444
+note: Elemental mg/L calculated from source mmol/L charge concentrations; reported micronutrients retained as mg/L.
+targets_mg_per_l:
+  Fe: 2.25
+  Mn: 1.11
+  Zn: 0.18
+  Cu: 0.09
+  B: 0.21
+  Mo: 0.06
+  N_NO3: 126.0603
+  N_NH4: 0.0
+  N_UREA: 0.0
+  P: 23.230322
+  K: 249.251663
+  Ca: 113.721325
+  Mg: 30.648605
+  S: 84.170625
+  N_total: 126.0603

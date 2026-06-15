@@ -1,0 +1,10 @@
+name: Sapkota 2019 Lettuce N3
+source: Sapkota et al. (2019), N3, table 1, DOI 10.3390/horticulturae5040072
+targets_mg_per_l:
+  N_total: 250.0
+  P: 56.0
+  K: 300.0
+  Ca: 250.0
+  Mg: 45.0
+  B: 0.4
+  Zn: 0.35

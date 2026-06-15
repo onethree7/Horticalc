@@ -71,6 +71,10 @@ Save payload:
 Allowed target keys are defined in `src/horticalc/solver.py` as
 `ALLOWED_TARGET_KEYS` and reused by `api/app.py`.
 
+GET responses expose only the runtime contract: `name`, `source`, and
+`targets_mg_per_l`. Optional shipped-profile conversion notes are not returned
+by the API. POST/PUT uses the same three-field contract.
+
 ## Recipes
 
 | Method | Path | Purpose |

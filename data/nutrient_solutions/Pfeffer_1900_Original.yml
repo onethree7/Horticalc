@@ -1,4 +1,4 @@
-name: Knop 1865 Original
+name: Pfeffer Solution 1900 Original
 source: Hoagland and Arnon (1950), Circular 347, table 1
 note: Elemental mg/L calculated stoichiometrically from the cited formulation.
 targets_mg_per_l:
@@ -7,7 +7,8 @@ targets_mg_per_l:
   N_NH4: 0.0
   N_UREA: 0.0
   P: 45.521018
-  K: 134.804706
+  K: 239.69858
   Ca: 195.39783
   Mg: 40.384622
   S: 53.278457
+  Cl: 95.106126

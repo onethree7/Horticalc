@@ -1,0 +1,21 @@
+name: Half-Strength Hoagland and Arnon Solution 2 for Arabidopsis 2020
+source: van Delden et al. (2020), tables 1 and 3-4, DOI 10.1186/s13007-020-00606-4
+note: Elemental mg/L calculated from source mmol/L and umol/L values.
+targets_mg_per_l:
+  N_total: 105.05025
+  N_NO3: 98.0469
+  N_NH4: 7.00335
+  N_UREA: 0.0
+  P: 15.486881
+  K: 117.2949
+  Ca: 80.156
+  Mg: 24.305
+  S: 32.065
+  Na: 0.0
+  Cl: 0.709
+  Fe: 2.2338
+  Mn: 0.502683
+  Zn: 0.050343
+  Cu: 0.020335
+  B: 0.500549
+  Mo: 0.010556

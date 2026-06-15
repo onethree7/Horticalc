@@ -1,0 +1,13 @@
+name: Sonneveld and Voogt 2009 Tomato Closed-System Supply
+source: Sonneveld and Voogt (2009), table 12.4, DOI 10.1007/978-90-481-2532-6
+note: Elemental mg/L calculated from source mmol/L values.
+targets_mg_per_l:
+  N_total: 164.578725
+  N_NO3: 150.572025
+  N_NH4: 14.0067
+  N_UREA: 0.0
+  P: 38.717202
+  K: 254.13895
+  Ca: 110.2145
+  Mg: 24.305
+  S: 48.0975

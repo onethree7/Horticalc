@@ -32,7 +32,7 @@ from .solver_config import SOLVER_CONFIG_DEFAULTS
 
 
 ALWAYS_IGNORED_TARGETS = {"NA", "CL"}
-S_TARGETS = {"S", "SO4"}
+S_TARGETS = {"S"}
 NITROGEN_OBJECTIVE_MODES = {"as_targets", "n_total_only", "n_forms_only"}
 DEFAULT_SOLVER_CONFIG = dict(SOLVER_CONFIG_DEFAULTS)
 
@@ -100,14 +100,6 @@ def _normalize_targets(targets: Dict[str, float]) -> Dict[str, float]:
             raise ValueError(f"Invalid target value for {key_text}: {value!r}")
         cleaned[key_text] = target_value
     return cleaned
-
-
-def _normalize_s_objective_target(targets: Dict[str, float], mm: Dict[str, float]) -> Dict[str, float]:
-    normalized = dict(targets)
-    so4_value = normalized.pop("SO4", None)
-    if so4_value is not None and "S" not in normalized:
-        normalized["S"] = float(so4_value) * mm["S"] / mm["SO4"]
-    return normalized
 
 
 def _objective_keys(
@@ -590,8 +582,6 @@ def solve_recipe_data(
     n_total_governor_enabled = _solver_config_value(solver_config, "n_total_governor_enabled", bool)
     n_total_governor_weight = _solver_config_value(solver_config, "n_total_governor_weight", float)
     n_form_priority_weights = solver_config.get("n_form_priority_weights") or {}
-    if s_objective_enabled:
-        target_raw = _normalize_s_objective_target(target_raw, molar_masses)
     objective_keys = _objective_keys(
         target_raw,
         allow_n_total_with_forms=True,
@@ -599,7 +589,7 @@ def solve_recipe_data(
         s_objective_enabled=s_objective_enabled,
     )
     if not objective_keys:
-        raise ValueError("No solvable targets defined (Na/Cl are ignored; S/SO4 require s_objective_enabled).")
+        raise ValueError("No solvable targets defined (Na/Cl are ignored; S requires s_objective_enabled).")
 
     allowed_names = [str(name) for name in recipe.get("fertilizers_allowed", [])]
     if not allowed_names:

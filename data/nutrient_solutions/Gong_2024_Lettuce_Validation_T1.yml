@@ -1,0 +1,13 @@
+name: Gong 2024 Lettuce Validation T1
+source: Gong et al. (2024), tables 7-8, DOI 10.3390/agronomy14061160
+note: Elemental mg/L calculated stoichiometrically from the cited formulation.
+targets_mg_per_l:
+  N_NO3: 246.51792
+  N_NH4: 37.81809
+  N_UREA: 0.0
+  P: 83.629157
+  K: 250.22912
+  Ca: 224.4368
+  Mg: 172.5655
+  S: 227.6615
+  N_total: 284.33601

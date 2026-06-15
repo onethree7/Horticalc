@@ -1,0 +1,18 @@
+name: Cooper NFT Solution 1979
+source: Cooper (1979), tables 9-10, ISBN 978-0901361226
+targets_mg_per_l:
+  N_total: 200.0
+  N_NO3: 200.0
+  N_NH4: 0.0
+  N_UREA: 0.0
+  P: 60.0
+  K: 300.0
+  Ca: 170.0
+  Mg: 50.0
+  S: 68.0
+  Fe: 12.0
+  Mn: 2.0
+  Zn: 0.1
+  Cu: 0.1
+  B: 0.3
+  Mo: 0.2

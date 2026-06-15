@@ -1,0 +1,21 @@
+name: Tocquin 2003 Arabidopsis Solution
+source: van Delden et al. (2020), tables 3-4, DOI 10.1186/s13007-020-00606-4
+note: Elemental mg/L calculated from source mmol/L and umol/L values.
+targets_mg_per_l:
+  N_total: 102.388977
+  N_NO3: 100.147905
+  N_NH4: 2.241072
+  N_UREA: 0.0
+  P: 4.026589
+  K: 199.40133
+  Ca: 40.47878
+  Mg: 12.1525
+  Na: 0.689693
+  S: 16.6738
+  Cl: 0.0
+  Fe: 1.250928
+  Mn: 0.111524
+  Zn: 0.020268
+  Cu: 0.01398
+  B: 0.10465
+  Mo: 0.013434

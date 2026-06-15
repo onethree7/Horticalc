@@ -1,22 +1,18 @@
-name: Nährlösung nach Abram Steiner
-source: Klassische Hydrokultur Nährlösung nach Abram Steiner (https://de.wikipedia.org/wiki/Hydrokulturd%C3%BCnger)
+name: Steiner Universal Nutrient Solution 1984
+source: Rueda-Lopez et al. (2024), table 1, DOI 10.2478/fhort-2024-0017
 targets_mg_per_l:
-  N_total: 170.0
+  N_total: 168.0
+  N_NO3: 168.0
   N_NH4: 0.0
-  N_NO3: 170.0
   N_UREA: 0.0
-  P: 50.0
-  K: 320.0
-  Ca: 183.0
-  Mg: 50.0
-  Na: 0.0
-  S: 148.0
-  Si: 0.0
-  Cl: 0.0
-  Fe: 4.0
-  Mn: 2.0
-  Zn: 0.2
-  Cu: 0.5
+  P: 31.0
+  K: 273.0
+  Ca: 180.0
+  Mg: 48.0
+  S: 112.0
+  Fe: 5.0
+  Cu: 0.02
+  Zn: 0.11
+  Mn: 0.62
+  B: 0.44
   Mo: 0.1
-  B: 2.0
-  HCO3: 0.0

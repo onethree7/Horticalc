@@ -1,0 +1,13 @@
+name: Sonneveld and Voogt 2009 Tomato Free-Drainage Supply
+source: Sonneveld and Voogt (2009), table 12.4, DOI 10.1007/978-90-481-2532-6
+note: Elemental mg/L calculated from source mmol/L values.
+targets_mg_per_l:
+  N_total: 240.91524
+  N_NO3: 224.1072
+  N_NH4: 16.80804
+  N_UREA: 0.0
+  P: 46.460643
+  K: 371.43385
+  Ca: 216.4212
+  Mg: 58.332
+  S: 141.086

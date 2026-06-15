@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 from dataclasses import dataclass
+from hashlib import sha256
 from pathlib import Path
 from shutil import copyfile
 
@@ -12,6 +13,33 @@ PORTABLE_WRITE_ERROR = (
     "Extract to a writable folder (e.g. Desktop/Downloads). "
     "Do not run from Program Files."
 )
+
+LEGACY_NUTRIENT_SOLUTION_HASHES = {
+    "Abram_Steiner_Hydrokultur_Naehrloesung.yml": (
+        "a318e4140e4313b692dd1abac7b252c115168695421641dc83d81e3e7067ed02",
+        "4bd780d390c6af78e38a3fcb68f1955628f9b33b5ec033463205575d12c4506b",
+        "0c9939a1419bafbf6d7495e9cbfbe41aaea84b2bfcb6e80699cc809ef4ca5ec4",
+        "619e92818228f0de3679972099ebf4fa0f19b10b828654b2b9df5e45fa977850",
+    ),
+    "Hoagland_Arnon_1950_Solution1_Nitrate.yml": (
+        "d2a5bba01c37ba38db312984c0f41a8fc2df6f2a037dd9832ab3368c8f43cd13"
+    ),
+    "Hoagland_Arnon_1950_Solution2_AmmoniumPhosphate.yml": (
+        "23a522abce757aaf49ceaba7c296f7a89d4cc4d60a96cd122e0e53c3833f30ec"
+    ),
+    "Knop_1861_Standard.yml": (
+        "c0038590e969c980e4643df573aa1c6d8850dd2126c3ee23a8b68172065d0514"
+    ),
+    "Long_Ashton_Nutrient_Solution_LANS_NitrateType.yml": (
+        "dfde4cde71a985278cbd0385858f34f68c1c90738304b1bbc0bd4bb783184788"
+    ),
+    "Murashige_Skoog_MS_1962_FullStrength.yml": (
+        "561d676294fe88dc7934724d9dffeb92c58fba866f6c5656133f7540e546f890"
+    ),
+    "Yoshida_Rice_Solution_1976_CommonVariant.yml": (
+        "84cd8dd3d0e086c1208074c0f98aab60f348623e38fc0c9b42fff13ee8e8561a"
+    ),
+}
 
 
 def repo_root() -> Path:
@@ -162,6 +190,20 @@ def _copy_shipped_yaml_defaults(source_dir: Path, destination_dir: Path) -> None
         _copy_if_missing(source, destination_dir / source.name)
 
 
+def _refresh_legacy_nutrient_solution_defaults(
+    source_dir: Path, destination_dir: Path
+) -> None:
+    for filename, legacy_hash in LEGACY_NUTRIENT_SOLUTION_HASHES.items():
+        source = source_dir / filename
+        destination = destination_dir / filename
+        if not source.exists() or not destination.exists():
+            continue
+        normalized_bytes = destination.read_bytes().replace(b"\r\n", b"\n")
+        known_hashes = (legacy_hash,) if isinstance(legacy_hash, str) else legacy_hash
+        if sha256(normalized_bytes).hexdigest() in known_hashes:
+            _atomic_copy(source, destination)
+
+
 def _ensure_writable_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
     test_file = path / ".write_test"
@@ -199,6 +241,9 @@ def ensure_portable_layout(root: Path | None = None) -> PortableLayout:
 
     _copy_shipped_yaml_defaults(shipped_water_profiles_dir(base), water_profiles)
     _copy_shipped_yaml_defaults(shipped_nutrient_solutions_dir(base), nutrient_solutions)
+    _refresh_legacy_nutrient_solution_defaults(
+        shipped_nutrient_solutions_dir(base), nutrient_solutions
+    )
     _copy_shipped_yaml_defaults(shipped_recipes_dir(base), recipes)
 
     return PortableLayout(

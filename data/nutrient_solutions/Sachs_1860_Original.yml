@@ -1,0 +1,15 @@
+name: Sachs Solution 1860 Original
+source: Hoagland and Arnon (1950), Circular 347, table 1
+note: Elemental mg/L calculated stoichiometrically from the cited formulation.
+targets_mg_per_l:
+  N_total: 138.538642
+  N_NO3: 138.538642
+  N_NH4: 0.0
+  N_UREA: 0.0
+  P: 99.858434
+  K: 386.716741
+  Ca: 341.008733
+  Mg: 100.961554
+  S: 250.960424
+  Na: 98.348135
+  Cl: 151.651865

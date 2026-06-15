@@ -1,13 +1,14 @@
-name: Knop 1865 Original
+name: Crone Solution 1902 Original
 source: Hoagland and Arnon (1950), Circular 347, table 1
 note: Elemental mg/L calculated stoichiometrically from the cited formulation.
 targets_mg_per_l:
-  N_total: 164.285341
-  N_NO3: 164.285341
+  N_total: 138.538642
+  N_NO3: 138.538642
   N_NH4: 0.0
   N_UREA: 0.0
-  P: 45.521018
-  K: 134.804706
-  Ca: 195.39783
-  Mg: 40.384622
-  S: 53.278457
+  P: 101.272721
+  K: 386.716741
+  Ca: 170.504366
+  Mg: 50.480777
+  S: 125.480212
+  Fe: 92.571189

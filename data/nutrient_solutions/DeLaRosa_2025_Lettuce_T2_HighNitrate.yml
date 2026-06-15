@@ -1,0 +1,19 @@
+name: De La Rosa 2025 Lettuce T2 High-Nitrate Proportion
+source: de la Rosa-Rodriguez et al. (2025), T2, table 1, DOI 10.47163/agrociencia.v59i8.3444
+note: Elemental mg/L calculated from source mmol/L charge concentrations; reported micronutrients retained as mg/L.
+targets_mg_per_l:
+  Fe: 2.25
+  Mn: 1.11
+  Zn: 0.18
+  Cu: 0.09
+  B: 0.21
+  Mo: 0.06
+  N_NO3: 158.807965
+  N_NH4: 0.0
+  N_UREA: 0.0
+  P: 10.964712
+  K: 205.266075
+  Ca: 135.26325
+  Mg: 36.4575
+  S: 39.744567
+  N_total: 158.807965

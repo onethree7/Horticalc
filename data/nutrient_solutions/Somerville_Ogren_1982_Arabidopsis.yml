@@ -1,0 +1,21 @@
+name: Somerville and Ogren 1982 Arabidopsis Solution
+source: van Delden et al. (2020), tables 3-4, DOI 10.1186/s13007-020-00606-4
+note: Elemental mg/L calculated from source mmol/L and umol/L values.
+targets_mg_per_l:
+  N_total: 126.0603
+  N_NO3: 126.0603
+  N_NH4: 0.0
+  N_UREA: 0.0
+  P: 77.434405
+  K: 293.23725
+  Ca: 80.156
+  Mg: 48.61
+  Na: 0.689693
+  S: 64.7713
+  Cl: 0.0
+  Fe: 0.949365
+  Mn: 0.769133
+  Zn: 0.06538
+  Cu: 0.031773
+  B: 0.75677
+  Mo: 0.019192

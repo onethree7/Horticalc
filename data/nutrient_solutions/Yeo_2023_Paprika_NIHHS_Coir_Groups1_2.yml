@@ -1,0 +1,13 @@
+name: Yeo 2023 Paprika NIHHS-Coir Groups 1-2
+source: Yeo et al. (2023), table 5, DOI 10.3390/horticulturae9040412
+targets_mg_per_l:
+  N_NO3: 200.0
+  N_NH4: 13.0
+  N_UREA: 0.0
+  P: 35.0
+  K: 227.0
+  Ca: 190.0
+  Mg: 33.0
+  S: 51.0
+  Fe: 1.68
+  N_total: 213.0

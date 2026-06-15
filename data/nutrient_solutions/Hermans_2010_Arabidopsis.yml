@@ -1,0 +1,21 @@
+name: Hermans 2010 Arabidopsis Solution
+source: van Delden et al. (2020), tables 3-4, DOI 10.1186/s13007-020-00606-4
+note: Elemental mg/L calculated from source mmol/L and umol/L values.
+targets_mg_per_l:
+  N_total: 28.0134
+  N_NO3: 28.0134
+  N_NH4: 0.0
+  N_UREA: 0.0
+  P: 7.743441
+  K: 78.587583
+  Ca: 40.078
+  Mg: 24.305
+  S: 0.0
+  Na: 43.220766
+  Cl: 0.0
+  Fe: 1.1169
+  Mn: 0.054938
+  Zn: 0.06538
+  Cu: 0.006355
+  B: 0.10811
+  Mo: 0.006717

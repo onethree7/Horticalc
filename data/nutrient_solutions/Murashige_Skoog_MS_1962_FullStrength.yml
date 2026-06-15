@@ -1,20 +1,21 @@
-name: Murashige Skoog MS 1962 (Full Strength)
-source: User provided dataset
+name: Murashige and Skoog Medium 1962 (Full Strength)
+source: Murashige and Skoog (1962), DOI 10.1111/j.1399-3054.1962.tb08052.x
+note: Elemental mg/L calculated from source mmol/L and umol/L values.
 targets_mg_per_l:
-  N_total: 840.687
-  N_NH4: 288.732
-  N_NO3: 551.955
+  N_total: 840.686809
+  N_NO3: 551.955114
+  N_NH4: 288.731695
   N_UREA: 0.0
-  P: 38.6929
-  K: 783.799
-  Ca: 119.967
-  Mg: 36.488
-  Na: 4.64991
-  S: 55.5125
-  Si: 0.0
-  Cl: 212.253
-  Fe: 5.58422
-  Mn: 5.49328
+  P: 38.692865
+  K: 783.603962
+  Ca: 119.954375
+  Mg: 36.485916
+  Na: 4.654886
+  S: 55.509139
+  Cl: 212.21278
+  Fe: 5.584208
+  Mn: 5.492283
+  Zn: 1.955378
   Cu: 0.006363
-  B: 1.08397
-  HCO3: 0.0
+  B: 1.08402
+  Mo: 0.099145

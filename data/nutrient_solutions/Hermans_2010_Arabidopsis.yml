@@ -1,49 +1,6 @@
 name: Hermans 2010 Arabidopsis Solution
-crop: Arabidopsis thaliana
-growth_stage: Whole plant
-cultivation_system: Deep-water culture
-solution_role: experimental_treatment
-strength_fraction: 1.0
-source: Composition reproduced and evaluated in van Delden et al. (2020), tables 3-4
-reference:
-  authors: S. H. van Delden, M. J. Nazarideljou, and L. F. M. Marcelis
-  title: Nutrient solutions for Arabidopsis thaliana
-  publication: Plant Methods 16, 72
-  year: 2020
-  doi_or_isbn: 10.1186/s13007-020-00606-4
-  page: 11
-  table: 3-4
-  source_type: primary_paper
-  source_url: https://doi.org/10.1186/s13007-020-00606-4
-  accessed: 2026-06-14
-original_basis:
-  type: ions
-  units: mmol/L for macro elements; umol/L for trace elements
-  includes_source_water: false
-  hydrate_forms_documented: true
-  element_mmol_per_l:
-    N_NO3: 2.0
-    N_NH4: 0.0
-    N_UREA: 0.0
-    P: 0.25
-    K: 2.01
-    Ca: 1.0
-    Mg: 1.0
-    S: 0.0
-    Na: 1.88
-    Cl: 0.0
-  trace_element_umol_per_l:
-    Fe: 20.0
-    Mn: 1.0
-    Zn: 1.0
-    Cu: 0.1
-    B: 10.0
-    Mo: 0.07
-conversion_notes:
-  - The source table explicitly reports zero sulfate and chloride for this composition.
-verification:
-  independent_recalculation: true
-  source_basis_checked: 2026-06-14
+source: van Delden et al. (2020), tables 3-4, DOI 10.1186/s13007-020-00606-4
+note: Elemental mg/L calculated from source mmol/L and umol/L values.
 targets_mg_per_l:
   N_total: 28.0134
   N_NO3: 28.0134

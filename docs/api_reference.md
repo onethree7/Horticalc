@@ -71,11 +71,9 @@ Save payload:
 Allowed target keys are defined in `src/horticalc/solver.py` as
 `ALLOWED_TARGET_KEYS` and reused by `api/app.py`.
 
-GET responses preserve optional scientific YAML metadata such as `crop`,
-`cultivation_system`, `solution_role`, `reference`, `original_basis`,
-`conversion_notes`, and `verification`. Runtime calculation continues to use
-`targets_mg_per_l`. The basic POST/PUT editor payload remains `name`, `source`,
-and `targets_mg_per_l`.
+GET responses expose only the runtime contract: `name`, `source`, and
+`targets_mg_per_l`. Optional shipped-profile conversion notes are not returned
+by the API. POST/PUT uses the same three-field contract.
 
 ## Recipes
 

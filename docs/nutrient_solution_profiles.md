@@ -1,8 +1,8 @@
 # Nutrient Solution Profiles
 
 The shipped catalogue in `data/nutrient_solutions/` contains 31 target profiles.
-Twenty-nine have a structured source basis that can be recalculated with
-`nutrient_solution_targets_from_basis()` in `src/horticalc/data_io.py`.
+Each profile stores solver targets, a concise source, and at most one short
+conversion note. Original source tables are not duplicated in profile YAML.
 
 The evidence-backed set includes:
 
@@ -108,21 +108,18 @@ that is a different input schema described in [Data model](data_model.md).
 
 Unknown values are omitted. Zero is used only where the cited composition
 explicitly excludes a form, such as ammonium in Hoagland Solution 1. Historical
-sources that say only "trace" are described in `conversion_notes`; they do not
-produce a numeric target.
+sources that say only "trace" do not produce a numeric target.
 
 ## Historical Formulation Basis
 
 Solver target profiles never store fertilizer recipes, compound quantities, or
 substance masses. For Sachs, Knop, Pfeffer, Crone, MS, and Yoshida, the cited
-formulation was converted outside the runtime profile into an elemental
-mmol/L or mg/L basis. The YAML retains only that derived nutrient basis, the
-citation, and conversion assumptions needed to audit the target values.
+formulation was converted outside the runtime profile to elemental mg/L. The
+YAML retains only those targets, the citation, and a short conversion note.
 
 Circular 347 prints the Sachs, Knop, Pfeffer, and Crone formulas without
-hydrate notation. Their YAMLs therefore state
-`hydrate_forms_documented: false`; this records the source limitation without
-embedding the printed compound amounts.
+hydrate notation. That limitation was considered during conversion but is not
+stored as runtime-profile metadata.
 
 The legacy filename `Knop_1861_Standard.yml` is retained for saved-profile and
 script compatibility, while the displayed name and provenance identify the
@@ -163,5 +160,6 @@ file. User-edited copies are not overwritten. Source:
 - de la Rosa-Rodriguez, R. et al. (2025), DOI
   `10.47163/agrociencia.v59i8.3444`.
 
-Each YAML records its exact page or table where available, source URL,
-conversion basis, and verification date.
+Each YAML keeps one concise source line, optional conversion text, and the
+elemental target values. Detailed research decisions and source review remain
+in this document instead of the profile files.

@@ -3,25 +3,12 @@ from __future__ import annotations
 from hashlib import sha256
 from pathlib import Path
 
-import pytest
-import yaml
-
-from horticalc.data_io import (
-    load_molar_masses,
-    load_nutrient_solution_data,
-    nutrient_solution_targets_from_basis,
-)
+from horticalc.data_io import load_nutrient_solution_data
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE_DIR = ROOT / "data" / "nutrient_solutions"
 BERNSTEIN_SHA256 = "a0bbb4c22fdb8abc26fe6b99a36f5e9bedf29c79a4528fc38f396342694ba988"
-UNCITED_LEGACY_PROFILES = {
-    "Bugbee_Utah_Hydroponic_Cannabis_2022.yml",
-    "Saloner_Bernstein_Cannabis_NPK_Target_Optimization.yml",
-}
-
-
 def _profile_paths() -> list[Path]:
     return sorted(PROFILE_DIR.glob("*.yml"))
 
@@ -63,31 +50,11 @@ def test_shipped_catalogue_contains_all_evidence_backed_profiles() -> None:
     } <= filenames
 
 
-@pytest.mark.parametrize(
-    "path",
-    [path for path in _profile_paths() if path.name not in UNCITED_LEGACY_PROFILES],
-    ids=lambda path: path.stem,
-)
-def test_profile_targets_recalculate_from_documented_basis(path: Path) -> None:
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    calculated = nutrient_solution_targets_from_basis(
-        data["original_basis"], load_molar_masses()
-    )
-
-    assert data["reference"]["source_url"]
-    assert data["verification"]["independent_recalculation"] is True
-    assert "SO4" not in data["targets_mg_per_l"]
-    assert calculated.keys() == data["targets_mg_per_l"].keys()
-    for key, expected in data["targets_mg_per_l"].items():
-        assert calculated[key] == pytest.approx(expected, abs=1e-5)
-
-
-def test_loader_preserves_provenance_metadata() -> None:
+def test_loader_returns_only_runtime_profile_fields() -> None:
     data = load_nutrient_solution_data(PROFILE_DIR / "Tocquin_2003_Arabidopsis.yml")
 
-    assert data["crop"] == "Arabidopsis thaliana"
-    assert data["reference"]["doi_or_isbn"] == "10.1186/s13007-020-00606-4"
-    assert data["original_basis"]["element_mmol_per_l"]["S"] == 0.52
+    assert set(data) == {"name", "source", "targets_mg_per_l"}
+    assert "10.1186/s13007-020-00606-4" in data["source"]
 
 
 def test_steiner_matches_reported_element_table_including_micronutrients() -> None:
@@ -95,8 +62,7 @@ def test_steiner_matches_reported_element_table_including_micronutrients() -> No
         PROFILE_DIR / "Abram_Steiner_Hydrokultur_Naehrloesung.yml"
     )
 
-    assert data["reference"]["doi_or_isbn"] == "10.2478/fhort-2024-0017"
-    assert data["original_basis"]["units"] == "mg/L at 100% strength"
+    assert "10.2478/fhort-2024-0017" in data["source"]
     assert data["targets_mg_per_l"] == {
         "N_total": 168.0,
         "N_NO3": 168.0,

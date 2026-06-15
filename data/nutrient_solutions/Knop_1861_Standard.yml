@@ -1,42 +1,6 @@
 name: Knop 1865 Original
-crop: General experimental water culture
-growth_stage: Unspecified
-cultivation_system: Water culture
-solution_role: experimental_treatment
-strength_fraction: 1.0
-source: Knop formulation reproduced by Hoagland and Arnon (1950), Circular 347, table 1
-reference:
-  authors: D. R. Hoagland and D. I. Arnon
-  title: The Water-Culture Method for Growing Plants without Soil
-  publication: California Agricultural Experiment Station Circular 347
-  year: 1950
-  table: 1
-  source_type: institutional_manual
-  source_url: https://www.nutricaodeplantas.agr.br/site/downloads/hoagland_arnon.pdf
-  accessed: 2026-06-14
-original_basis:
-  type: derived_ions
-  units: elemental mmol/L derived from the cited formulation
-  includes_source_water: false
-  hydrate_forms_documented: false
-  element_mmol_per_l:
-    N_NO3: 11.729054028
-    N_NH4: 0.0
-    N_UREA: 0.0
-    P: 1.469663838
-    K: 3.447840592
-    Ca: 4.875438637
-    Mg: 1.661576703
-    S: 1.661576703
-conversion_notes:
-  - The legacy filename is retained so saved recipes and scripts keep resolving.
-  - The date is corrected from 1861 to the 1865 Knop formulation identified by Circular 347.
-  - Formula masses use the formulas exactly as printed because hydrate forms are not stated.
-  - Fe is omitted because the source specifies only a non-quantitative trace of FePO4.
-  - The table recommends a later B/Mn/Zn/Cu/Mo supplement for best results; it is not part of the 1865 original formulation.
-verification:
-  independent_recalculation: true
-  source_basis_checked: 2026-06-14
+source: Hoagland and Arnon (1950), Circular 347, table 1
+note: Elemental mg/L calculated stoichiometrically from the cited formulation.
 targets_mg_per_l:
   N_total: 164.285341
   N_NO3: 164.285341

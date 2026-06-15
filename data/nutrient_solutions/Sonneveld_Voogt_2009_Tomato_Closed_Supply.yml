@@ -1,41 +1,6 @@
 name: Sonneveld and Voogt 2009 Tomato Closed-System Supply
-crop: Tomato
-growth_stage: Standard production
-cultivation_system: Closed soilless system
-solution_role: supply
-strength_fraction: 1.0
-source: Sonneveld and Voogt (2009), Plant Nutrition of Greenhouse Crops, table 12.4
-reference:
-  authors: C. Sonneveld and W. Voogt
-  title: Plant Nutrition of Greenhouse Crops
-  publication: Springer
-  year: 2009
-  doi_or_isbn: 10.1007/978-90-481-2532-6
-  page: 263
-  table: 12.4
-  source_type: scientific_book
-  source_url: https://doi.org/10.1007/978-90-481-2532-6_12
-  accessed: 2026-06-14
-original_basis:
-  type: ions
-  units: mmol/L
-  includes_source_water: false
-  hydrate_forms_documented: not_applicable
-  element_mmol_per_l:
-    N_NO3: 10.75
-    N_NH4: 1.0
-    N_UREA: 0.0
-    P: 1.25
-    K: 6.5
-    Ca: 2.75
-    Mg: 1.0
-    S: 1.5
-conversion_notes:
-  - This is the fertilizer-supplied closed-system composition, not the root-zone target.
-  - Micronutrients are omitted because table 12.4 does not specify them; values from cucumber table 12.6 or later manuals are not borrowed.
-verification:
-  independent_recalculation: true
-  source_basis_checked: 2026-06-14
+source: Sonneveld and Voogt (2009), table 12.4, DOI 10.1007/978-90-481-2532-6
+note: Elemental mg/L calculated from source mmol/L values.
 targets_mg_per_l:
   N_total: 164.578725
   N_NO3: 150.572025

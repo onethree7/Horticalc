@@ -1,49 +1,6 @@
 name: Tocquin 2003 Arabidopsis Solution
-crop: Arabidopsis thaliana
-growth_stage: Whole plant
-cultivation_system: Deep-water culture
-solution_role: experimental_treatment
-strength_fraction: 1.0
-source: Composition reproduced and evaluated in van Delden et al. (2020), tables 3-4
-reference:
-  authors: S. H. van Delden, M. J. Nazarideljou, and L. F. M. Marcelis
-  title: Nutrient solutions for Arabidopsis thaliana
-  publication: Plant Methods 16, 72
-  year: 2020
-  doi_or_isbn: 10.1186/s13007-020-00606-4
-  page: 11
-  table: 3-4
-  source_type: primary_paper
-  source_url: https://doi.org/10.1186/s13007-020-00606-4
-  accessed: 2026-06-14
-original_basis:
-  type: ions
-  units: mmol/L for macro elements; umol/L for trace elements
-  includes_source_water: false
-  hydrate_forms_documented: true
-  element_mmol_per_l:
-    N_NO3: 7.15
-    N_NH4: 0.16
-    N_UREA: 0.0
-    P: 0.13
-    K: 5.1
-    Ca: 1.01
-    Mg: 0.5
-    S: 0.52
-    Na: 0.03
-    Cl: 0.0
-  trace_element_umol_per_l:
-    Fe: 22.4
-    Mn: 2.03
-    Zn: 0.31
-    Cu: 0.22
-    B: 9.68
-    Mo: 0.14
-conversion_notes:
-  - Table 4 labels trace values mmol/L, but their magnitude and the paper's preparation data establish that they are umol/L.
-verification:
-  independent_recalculation: true
-  source_basis_checked: 2026-06-14
+source: van Delden et al. (2020), tables 3-4, DOI 10.1186/s13007-020-00606-4
+note: Elemental mg/L calculated from source mmol/L and umol/L values.
 targets_mg_per_l:
   N_total: 102.388977
   N_NO3: 100.147905

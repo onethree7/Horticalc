@@ -1,51 +1,5 @@
 name: Steiner Universal Nutrient Solution 1984
-crop: Lettuce (Lactuca sativa L. cv. Ruby Sky)
-growth_stage: 40-day-old plants through harvest
-cultivation_system: Floating root hydroponics
-solution_role: supply
-strength_fraction: 1.0
-source: Rueda-Lopez et al. (2024), Table 1, Steiner nutrient solution at 100%
-reference:
-  authors: I. Rueda-Lopez, L. I. Trejo-Tellez, F. C. Gomez-Merino, M. G. Peralta-Sanchez, and S. M. Ramirez-Olvera
-  title: Neodymium and zinc stimulate growth, biomass accumulation and nutrient uptake of lettuce plants in hydroponics
-  publication: Folia Horticulturae 36(2), 283-297
-  year: 2024
-  page: Table 1
-  source_type: journal_article
-  doi_or_isbn: 10.2478/fhort-2024-0017
-  source_url: https://doi.org/10.2478/fhort-2024-0017
-  table_url: https://www.researchgate.net/figure/Composition-of-the-Steiner-nutrient-solution-and-chemical-sources-used-in-this-experiment_tbl1_383816426
-  attributed_original_source: Steiner (1984), The Universal Nutrient Solution, pp. 633-650
-  accessed: 2026-06-15
-original_basis:
-  type: reported_element_concentrations
-  units: mg/L at 100% strength
-  hydrate_forms_documented: not_stored
-  element_mg_per_l:
-    N_NO3: 168.0
-    N_NH4: 0.0
-    N_UREA: 0.0
-    P: 31.0
-    K: 273.0
-    Ca: 180.0
-    Mg: 48.0
-    S: 112.0
-    Fe: 5.0
-    Cu: 0.02
-    Zn: 0.11
-    Mn: 0.62
-    B: 0.44
-    Mo: 0.10
-conversion_notes:
-  - Table 1 reports elemental concentrations directly in mg/L, so no sulfate-to-sulfur or other mass conversion is applied.
-  - Nitrogen is assigned to N_NO3 because the table reports nitrate-only nitrogen sources.
-  - The experiment used tap water; Table 1 does not state whether its background nutrient contribution is included in the listed concentrations.
-  - Chemical source names and brands shown in Table 1 are provenance context, not solver targets, and are intentionally not stored here.
-  - The micronutrient values are Fe 5.00, Cu 0.02, Zn 0.11, Mn 0.62, B 0.44, and Mo 0.10 mg/L.
-verification:
-  independent_recalculation: true
-  source_basis_checked: 2026-06-15
-  micronutrient_evidence_rechecked: 2026-06-15
+source: Rueda-Lopez et al. (2024), table 1, DOI 10.2478/fhort-2024-0017
 targets_mg_per_l:
   N_total: 168.0
   N_NO3: 168.0
@@ -61,4 +15,4 @@ targets_mg_per_l:
   Zn: 0.11
   Mn: 0.62
   B: 0.44
-  Mo: 0.10
+  Mo: 0.1

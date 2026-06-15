@@ -1,49 +1,5 @@
 name: Cooper NFT Solution 1979
-crop: General NFT crops
-growth_stage: Unspecified
-cultivation_system: Nutrient film technique
-solution_role: supply
-strength_fraction: 1.0
-source: Cooper (1979), The ABC of NFT, tables 9-10
-reference:
-  authors: A. J. Cooper
-  title: The ABC of NFT
-  publication: Grower Books
-  year: 1979
-  doi_or_isbn: 978-0901361226
-  page: 56-59
-  table: 9-10
-  source_type: scientific_book
-  source_url: https://books.google.com/books/about/The_ABC_of_NFT.html?id=Uog_AAAAYAAJ
-  accessed: 2026-06-14
-original_basis:
-  type: elements
-  units: mg/L
-  includes_source_water: false
-  hydrate_forms_documented: false
-  element_mg_per_l:
-    N_total: 200.0
-    N_NO3: 200.0
-    N_NH4: 0.0
-    N_UREA: 0.0
-    P: 60.0
-    K: 300.0
-    Ca: 170.0
-    Mg: 50.0
-    S: 68.0
-    Fe: 12.0
-    Mn: 2.0
-    Zn: 0.1
-    Cu: 0.1
-    B: 0.3
-    Mo: 0.2
-conversion_notes:
-  - Table 9 reports elemental target concentrations; the text recommends nitrate as the nitrogen form and rejects ammonium nitrogen for NFT cropping.
-  - Sulfur is the elemental total implied by the sulfate sources in the adjacent preparation table; no compound amounts are stored in this target profile.
-verification:
-  independent_recalculation: true
-  source_basis_checked: 2026-06-14
-  original_book_search_checked: 2026-06-15
+source: Cooper (1979), tables 9-10, ISBN 978-0901361226
 targets_mg_per_l:
   N_total: 200.0
   N_NO3: 200.0

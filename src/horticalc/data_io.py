@@ -5,7 +5,7 @@ import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict
+from typing import Dict
 
 import yaml
 
@@ -358,40 +358,11 @@ def load_recipe(path: Path) -> dict:
 def load_nutrient_solution_data(path: Path) -> dict:
     data = _load_yaml(path)
     targets = _float_mapping(data.get("targets_mg_per_l") or {})
-    result = dict(data)
-    result.update(
-        {
-            "name": data.get("name") or path.stem,
-            "source": data.get("source") or "",
-            "targets_mg_per_l": targets,
-        }
-    )
-    return result
-
-
-def nutrient_solution_targets_from_basis(
-    original_basis: Dict[str, Any],
-    molar_masses: Dict[str, float],
-) -> Dict[str, float]:
-    """Convert documented elemental source concentrations to target mg/L."""
-    targets = _float_mapping(original_basis.get("element_mg_per_l") or {})
-
-    element_mmol_per_l = _float_mapping(original_basis.get("element_mmol_per_l") or {})
-    for key, value in element_mmol_per_l.items():
-        element = "N" if key in {"N_NO3", "N_NH4", "N_UREA"} else key
-        targets[key] = value * molar_masses[element]
-
-    trace_element_umol_per_l = _float_mapping(
-        original_basis.get("trace_element_umol_per_l") or {}
-    )
-    for key, value in trace_element_umol_per_l.items():
-        targets[key] = value * molar_masses[key] / 1000.0
-
-    nitrogen_forms = ("N_NO3", "N_NH4", "N_UREA")
-    if any(key in targets for key in nitrogen_forms) and "N_total" not in targets:
-        targets["N_total"] = sum(targets.get(key, 0.0) for key in nitrogen_forms)
-
-    return targets
+    return {
+        "name": data.get("name") or path.stem,
+        "source": data.get("source") or "",
+        "targets_mg_per_l": targets,
+    }
 
 
 def save_nutrient_solution(

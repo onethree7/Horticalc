@@ -148,21 +148,8 @@ Target profile YAML:
 
 ```yaml
 name: Example Target
-source: ""
-crop: Example crop
-cultivation_system: Water culture
-solution_role: experimental_treatment
-reference:
-  authors: Example Author
-  title: Example publication
-  year: 2026
-  source_url: https://example.invalid/source
-original_basis:
-  type: ions
-  units: mmol/L
-  element_mmol_per_l:
-    N_NO3: 10
-    S: 2
+source: Example Author (2026), table 1, DOI 10.example/example
+note: Elemental mg/L calculated from source mmol/L values.
 targets_mg_per_l:
   N_total: 140.067
   N_NO3: 140.067
@@ -175,19 +162,17 @@ Targets are element mg/L. The accepted solver target keys live in
 keys may be reported but ignored by the solver objective; see
 [Solver](solver.MD).
 
-Shipped scientific profiles also carry crop/system context, a structured
-reference, the original concentration basis, conversion notes, and verification
-metadata. `load_nutrient_solution_data()` preserves these fields for API reads.
-`nutrient_solution_targets_from_basis()` recalculates documented mmol/L and
-umol/L source values to elemental mg/L. Unknown nutrients are omitted instead
-of being encoded as zero. See
+Shipped scientific profiles keep a short citation and, only when conversion
+was required, one concise `note`. They do not duplicate the source table.
+`load_nutrient_solution_data()` deliberately returns only `name`, `source`,
+and `targets_mg_per_l`; the note is provenance text rather than solver input.
+Unknown nutrients are omitted instead of being encoded as zero. See
 [Nutrient solution profiles](nutrient_solution_profiles.md).
 
 Nutrient-solution target profiles are not fertilizer recipes. They must not
 contain compound quantities, stock-solution instructions, or substance masses.
 Those belong to calculator recipes or fertilizer data. Scientific target YAMLs
-may retain citations, crop and system context, reported elemental/ionic
-concentrations, and conversion or uncertainty notes.
+retain only a concise citation and reported elemental or ionic concentrations.
 
 The target key `S` is elemental sulfur. A source value reported as sulfate or
 `SO3` must be converted toward elemental `S` using molar masses. `SO4` remains

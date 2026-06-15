@@ -87,10 +87,6 @@ Source: `api/app.py`, `frontend/`, `tests/test_frontend_solver_config_ui.py`,
 Source: `src/horticalc/solver_config.py`, `src/horticalc/solver.py`,
 `tests/test_cli_solver_config.py`, `tests/test_solver_matrix.py`.
 
-Historical note: the 2026-05-31 deep solver matrix report recommended
-`relative_weighting=true`, but current code and tests default it to `false`.
-The report is retained as historical evidence, not as the active default table.
-
 ### CI/Release
 
 - Release trigger: tags matching `v*` and manual workflow dispatch.
@@ -100,9 +96,3 @@ The report is retained as historical evidence, not as the active default table.
 - Packaged binary smoke test uses `HORTICALC_NO_BROWSER=1`.
 
 Source: `.github/workflows/release.yml`.
-
-## Maintenance Log
-
-- 2026-06-01: Reworked documentation, added current architecture/API/data
-  docs, deleted obsolete tracked plan/stub docs, and backed up old docs to
-  `_docs_backup/2026-06-01-pre-docs-rework/`.

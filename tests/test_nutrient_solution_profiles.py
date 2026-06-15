@@ -9,6 +9,8 @@ from horticalc.data_io import load_nutrient_solution_data
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE_DIR = ROOT / "data" / "nutrient_solutions"
 BERNSTEIN_SHA256 = "a0bbb4c22fdb8abc26fe6b99a36f5e9bedf29c79a4528fc38f396342694ba988"
+
+
 def _profile_paths() -> list[Path]:
     return sorted(PROFILE_DIR.glob("*.yml"))
 

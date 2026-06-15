@@ -412,7 +412,7 @@ main {
   width: auto;
 }
 
-.grid--form input[type="number"] {
+.grid--form input[inputmode="decimal"] {
   max-width: 6rem;
   margin: 0 auto;
   display: block;
@@ -812,7 +812,7 @@ main {
   gap: var(--space-4);
 }
 
-.water-settings input[type="number"] {
+.water-settings input[inputmode="decimal"] {
   max-width: 6rem;
 }
 
@@ -2066,8 +2066,8 @@ html {
   gap: var(--space-2);
 }
 
-.rail-config input[type="number"],
-.solver-advanced-config input[type="number"] {
+.rail-config input[inputmode="decimal"],
+.solver-advanced-config input[inputmode="decimal"] {
   width: 100%;
   min-width: 0;
 }

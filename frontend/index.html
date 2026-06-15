@@ -87,7 +87,7 @@
             <span data-i18n="config.title">Konfiguration</span>
             <label class="rail-config-liters" for="configLiters" id="configLitersStatus">
               <span data-i18n="config.solutionLiters">NL:</span>
-              <input id="configLiters" type="number" min="0.1" step="0.1" value="10" aria-label="Liter NL" />
+              <input id="configLiters" type="text" inputmode="decimal" min="0.1" step="0.1" value="10" aria-label="Liter NL" />
               <span>L</span>
             </label>
           </div>
@@ -261,7 +261,7 @@
             <div class="water-control-group water-settings">
               <div>
                 <label for="osmosisPercent" data-i18n="water.osmosisPercent">Osmoseanteil (%)</label>
-                <input id="osmosisPercent" type="number" min="0" max="100" step="1" value="0" />
+                <input id="osmosisPercent" type="text" inputmode="decimal" min="0" max="100" step="1" value="0" />
               </div>
               <label class="toggle">
                 <input id="waterUnitToggle" type="checkbox" />
@@ -559,15 +559,15 @@
               </label>
               <label>
                 Overshoot penalty
-                <input id="solverConfigOvershootPenalty" type="number" min="0" step="0.1" value="1" />
+                <input id="solverConfigOvershootPenalty" type="text" inputmode="decimal" min="0" step="0.1" value="1" />
               </label>
               <label>
                 <span data-i18n="solver.irlsIterations">IRLS Iterationen</span>
-                <input id="solverConfigIrlsMaxOuterIter" type="number" min="1" step="1" value="4" />
+                <input id="solverConfigIrlsMaxOuterIter" type="text" inputmode="decimal" min="1" step="1" value="4" />
               </label>
               <label>
                 Scale epsilon mg/L
-                <input id="solverConfigScaleEpsMgPerL" type="number" min="0" step="0.1" value="1" />
+                <input id="solverConfigScaleEpsMgPerL" type="text" inputmode="decimal" min="0" step="0.1" value="1" />
               </label>
               <label class="toggle">
                 <input id="solverConfigSingletonSupplierEnabled" type="checkbox" checked />
@@ -575,11 +575,11 @@
               </label>
               <label>
                 Singleton share
-                <input id="solverConfigSingletonShareThreshold" type="number" min="0" max="1" step="0.01" value="0.85" />
+                <input id="solverConfigSingletonShareThreshold" type="text" inputmode="decimal" min="0" max="1" step="0.01" value="0.85" />
               </label>
               <label>
                 Singleton max regress pp
-                <input id="solverConfigSingletonMaxRegressPp" type="number" min="0" step="0.01" value="0.25" />
+                <input id="solverConfigSingletonMaxRegressPp" type="text" inputmode="decimal" min="0" step="0.01" value="0.25" />
               </label>
               <label class="toggle">
                 <input id="solverConfigSingletonUnderfillEnabled" type="checkbox" checked />
@@ -587,11 +587,11 @@
               </label>
               <label>
                 Underfill share
-                <input id="solverConfigSingletonUnderfillShareThreshold" type="number" min="0" max="1" step="0.01" value="0.85" />
+                <input id="solverConfigSingletonUnderfillShareThreshold" type="text" inputmode="decimal" min="0" max="1" step="0.01" value="0.85" />
               </label>
               <label>
                 Underfill max iter
-                <input id="solverConfigSingletonUnderfillMaxIter" type="number" min="1" step="1" value="2" />
+                <input id="solverConfigSingletonUnderfillMaxIter" type="text" inputmode="decimal" min="1" step="1" value="2" />
               </label>
               <label class="toggle">
                 <input id="solverConfigNTotalGovernorEnabled" type="checkbox" />
@@ -599,7 +599,7 @@
               </label>
               <label>
                 N-governor weight
-                <input id="solverConfigNTotalGovernorWeight" type="number" min="0" step="0.01" value="1" />
+                <input id="solverConfigNTotalGovernorWeight" type="text" inputmode="decimal" min="0" step="0.01" value="1" />
               </label>
             </div>
           </details>

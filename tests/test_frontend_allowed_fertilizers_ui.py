@@ -59,4 +59,4 @@ def test_solver_override_panel_is_optional_and_auto_opens_when_active():
     assert "solverOverrideSummary" in content
     assert "function syncSolverOverridePanel" in content
     assert "solverOverridesDetails.open = true" in content
-    assert "forceOpen: Number(event.target.value) > 0" in content
+    assert "forceOpen: solverFixedGrams[name] > 0" in content

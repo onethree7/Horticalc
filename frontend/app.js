@@ -428,8 +428,17 @@ function parseDecimalInput(raw) {
   if (!s) {
     return null;
   }
-  const n = Number(s);
+  const n = Number(s.replace(",", "."));
   return Number.isFinite(n) ? n : null;
+}
+
+function decimalInputValue(raw, fallback = 0) {
+  const parsed = parseDecimalInput(raw);
+  return parsed === null ? fallback : parsed;
+}
+
+function normalizeDecimalInputElement(input, value, fallback = "0") {
+  input.value = Number.isFinite(value) ? String(value) : fallback;
 }
 
 function normalizeSolverConfigDefinitions(definitions = []) {
@@ -482,7 +491,7 @@ const FALLBACK_SOLVER_CONFIG_DEFINITIONS = [
 let solverConfigDefinitions = [...FALLBACK_SOLVER_CONFIG_DEFINITIONS];
 
 function validLiters(value) {
-  const liters = Number(value);
+  const liters = parseDecimalInput(value);
   return Number.isFinite(liters) && liters > 0 ? liters : DEFAULT_LITERS;
 }
 
@@ -864,15 +873,19 @@ function renderSolverTargetsTable() {
 
     const valueCell = document.createElement("td");
     const input = document.createElement("input");
-    input.type = "number";
+    input.type = "text";
+    input.inputMode = "decimal";
     input.min = "0";
     input.step = "0.1";
     input.value = solverTargetValues[field.key] || 0;
     input.addEventListener("input", (event) => {
-      const rawValue = Math.max(0, Number(event.target.value) || 0);
+      const rawValue = Math.max(0, decimalInputValue(event.target.value));
       solverTargetValues[field.key] = rawValue;
       solverTargetBaseValues[field.key] =
         solverTargetScaleFactor > 0 ? roundScaledValue(rawValue / solverTargetScaleFactor) : 0;
+    });
+    input.addEventListener("change", () => {
+      normalizeDecimalInputElement(input, solverTargetValues[field.key]);
     });
     valueCell.appendChild(input);
 
@@ -1266,6 +1279,9 @@ function renderFertilizerEditor() {
     weightInput.addEventListener("input", (event) => {
       row.weight_factor = parseDecimalInput(event.target.value);
     });
+    weightInput.addEventListener("change", () => {
+      normalizeDecimalInputElement(weightInput, row.weight_factor, "");
+    });
     weightInput.addEventListener("keydown", handleEditorEnterKey);
     weightCell.appendChild(weightInput);
     tr.appendChild(weightCell);
@@ -1292,6 +1308,10 @@ function renderFertilizerEditor() {
         } else {
           row.comp[key] = parsed / 100;
         }
+      });
+      input.addEventListener("change", () => {
+        const percentValue = Number.isFinite(row.comp?.[key]) ? row.comp[key] * 100 : null;
+        normalizeDecimalInputElement(input, percentValue, "");
       });
       input.addEventListener("keydown", handleEditorEnterKey);
       cell.appendChild(input);
@@ -1543,13 +1563,17 @@ function renderSolverFixedTable() {
 
     const valueCell = document.createElement("td");
     const input = document.createElement("input");
-    input.type = "number";
+    input.type = "text";
+    input.inputMode = "decimal";
     input.min = "0";
     input.step = "0.01";
     input.value = solverFixedGrams[name] || 0;
     input.addEventListener("input", (event) => {
-      solverFixedGrams[name] = Number(event.target.value) || 0;
-      syncSolverOverridePanel({ forceOpen: Number(event.target.value) > 0 });
+      solverFixedGrams[name] = decimalInputValue(event.target.value);
+      syncSolverOverridePanel({ forceOpen: solverFixedGrams[name] > 0 });
+    });
+    input.addEventListener("change", () => {
+      normalizeDecimalInputElement(input, solverFixedGrams[name]);
     });
     valueCell.appendChild(input);
 
@@ -1789,7 +1813,7 @@ function buildSolverClipboardText() {
   lines.push(
     ...buildClipboardRows(null, [
       [t("solver.clipboardBatchLiters"), formatNumber(currentLiters)],
-      [t("solver.clipboardOsmosis"), formatNumber(Number(osmosisPercentInput.value) || 0)],
+      [t("solver.clipboardOsmosis"), formatNumber(decimalInputValue(osmosisPercentInput.value))],
     ], [1])
   );
   lines.push("");
@@ -1808,7 +1832,7 @@ function buildSolverClipboardText() {
     liters: currentLiters,
     fertilizers,
     water_mg_l: buildWaterPayloadForApi(waterValues),
-    osmosis_percent: Number(osmosisPercentInput.value) || 0,
+    osmosis_percent: decimalInputValue(osmosisPercentInput.value),
   };
 
   return calculate(calculateData).then((data) => {
@@ -1971,16 +1995,20 @@ function renderCalculatorTable() {
 
     const amountCell = document.createElement("td");
     const input = document.createElement("input");
-    input.type = "number";
+    input.type = "text";
+    input.inputMode = "decimal";
     input.min = "0";
     input.step = "any";
     input.value = formatFertilizerGramsInput(fertilizerAmounts[i]);
     input.addEventListener("input", (event) => {
-      const rawValue = Math.max(0, Number(event.target.value) || 0);
+      const rawValue = Math.max(0, decimalInputValue(event.target.value));
       fertilizerAmounts[i] = rawValue;
       calculatorBaseAmounts[i] =
         calculatorScaleFactor > 0 ? roundScaledValue(rawValue / calculatorScaleFactor) : 0;
       scheduleRecalculate();
+    });
+    input.addEventListener("change", () => {
+      input.value = formatFertilizerGramsInput(fertilizerAmounts[i]);
     });
     amountCell.appendChild(input);
 
@@ -1999,7 +2027,8 @@ function renderWaterTable() {
 
     const valueCell = document.createElement("td");
     const input = document.createElement("input");
-    input.type = "number";
+    input.type = "text";
+    input.inputMode = "decimal";
     input.min = "0";
     input.step = waterUnit === "mol_l" && field.key !== "KH" ? "0.001" : "0.01";
     const rawValue = waterValues[field.key] || 0;
@@ -2010,7 +2039,7 @@ function renderWaterTable() {
       input.classList.add("is-helper");
     }
     input.addEventListener("input", (event) => {
-      const parsed = Number(event.target.value) || 0;
+      const parsed = decimalInputValue(event.target.value);
       waterValues[field.key] = waterUnit === "mol_l" ? molToMg(field.key, parsed) : parsed;
       const updatedKeys = applyWaterHelpers(waterValues, getMolarMass);
       updatedKeys
@@ -2018,12 +2047,15 @@ function renderWaterTable() {
         .forEach((key) => updateWaterInputValue(key));
       scheduleRecalculate();
     });
+    input.addEventListener("change", () => {
+      updateWaterInputValue(field.key);
+    });
     input.addEventListener("keydown", (event) => {
       if (event.key !== "Enter") {
         return;
       }
       event.preventDefault();
-      const parsed = Number(event.target.value) || 0;
+      const parsed = decimalInputValue(event.target.value);
       waterValues[field.key] = waterUnit === "mol_l" ? molToMg(field.key, parsed) : parsed;
       const updatedKeys = applyWaterHelpers(waterValues, getMolarMass);
       updatedKeys.forEach((key) => updateWaterInputValue(key));
@@ -2531,9 +2563,10 @@ function formatTraceValue(value) {
     maxDecimals = 3;
   }
 
-  const formatter = new Intl.NumberFormat(i18n.getLocale(), {
+  const formatter = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: maxDecimals,
+    useGrouping: false,
   });
   return formatter.format(value);
 }
@@ -2611,7 +2644,7 @@ function buildPayload() {
     liters: currentLiters,
     fertilizers,
     water_mg_l: waterPayload,
-    osmosis_percent: Number(osmosisPercentInput.value) || 0,
+    osmosis_percent: decimalInputValue(osmosisPercentInput.value),
   };
 }
 
@@ -2636,7 +2669,7 @@ function buildSolvePayload() {
     targets,
     water_profile: {
       mg_per_l: waterPayload,
-      osmosis_percent: Number(osmosisPercentInput.value) || 0,
+      osmosis_percent: decimalInputValue(osmosisPercentInput.value),
     },
     fertilizers_allowed: solverAllowedFertilizers,
     fixed_grams: fixedGrams,
@@ -2711,7 +2744,7 @@ async function saveWaterProfile() {
     name,
     source: "Horticalc UI",
     mg_per_l: waterPayload,
-    osmosis_percent: Number(osmosisPercentInput.value) || 0,
+    osmosis_percent: decimalInputValue(osmosisPercentInput.value),
   };
   await postJson(`${apiBase()}/water-profiles`, payload, t("errors.saveFailed"));
 }
@@ -3080,7 +3113,7 @@ function buildRecipePayload(name, fertilizers, liters, ureaAsNh4, phosphateSpeci
   if (waterProfileSelection) {
     payload.water_profile = waterProfileSelection.replace(/\.yml$/, "");
   }
-  const osmosisPercent = Number(osmosisPercentInput.value);
+  const osmosisPercent = parseDecimalInput(osmosisPercentInput.value);
   if (Number.isFinite(osmosisPercent)) {
     payload.osmosis_percent = osmosisPercent;
   }
@@ -3107,7 +3140,7 @@ function buildSolutionSnapshot() {
   const fertilizers = buildSelectedFertilizerEntries({ allowZeroGrams: true });
   return {
     water_profile_value: waterProfileSelect.value || "",
-    osmosis_percent: Number(osmosisPercentInput.value) || 0,
+    osmosis_percent: decimalInputValue(osmosisPercentInput.value),
     water_unit: waterUnit,
     liters: currentLiters,
     water_values: { ...waterValues },
@@ -3354,6 +3387,11 @@ solverConfigDefinitions.forEach((definition) => {
   input.addEventListener(eventName, () => {
     renderSolverResults(null);
   });
+  if (definition.type !== "boolean" && definition.key !== "nitrogen_objective_mode") {
+    input.addEventListener("change", () => {
+      normalizeDecimalInputElement(input, parseDecimalInput(input.value));
+    });
+  }
 });
 
 if (solverConfigResetDefaultsButton) {
@@ -3541,6 +3579,12 @@ saveWaterProfileButton.addEventListener("click", async () => {
 
 osmosisPercentInput.addEventListener("input", () => {
   scheduleRecalculate();
+});
+osmosisPercentInput.addEventListener("change", () => {
+  normalizeDecimalInputElement(
+    osmosisPercentInput,
+    parseDecimalInput(osmosisPercentInput.value)
+  );
 });
 
 waterUnitToggle.addEventListener("change", (event) => {

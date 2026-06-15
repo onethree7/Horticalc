@@ -68,12 +68,16 @@ Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`.
   presentation text.
 - API keys, CSV fields, element symbols, units, persisted recipe fields, and
   solver config keys remain literal data contracts and are not translated.
+- Numeric values use `.` as the decimal separator in GUI output, clipboard
+  output, API payloads, and persisted data. GUI numeric inputs accept either
+  `.` or `,`; accepted values are converted to numbers and shown with `.` when
+  the edit is committed.
 - Fertilizer physical state is stored as the required Boolean API field
   `liquid` and CSV field `Liquid` (`0` solid, `1` liquid). Localized words for
   solid and liquid exist only in the frontend.
 
 Source: `api/app.py`, `frontend/`, `tests/test_frontend_solver_config_ui.py`,
-`tests/test_frontend_i18n.py`.
+`tests/test_frontend_i18n.py`, `tests/test_frontend_decimal_separator.py`.
 
 ### Solver
 

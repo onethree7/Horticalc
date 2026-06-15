@@ -126,8 +126,7 @@ The `ion_balance` response object keeps legacy raw CBE fields
 `error_percent_signed` and `error_percent_abs` and also includes explicit
 `raw_cbe_percent_signed`, `raw_cbe_percent_abs`,
 `din_38402_62_percent_signed`, `din_38402_62_percent_abs`, and
-`balance_method` fields. The DIN field label in the UI is
-"Ionenbilanzabweichung nach DIN 38402-62 Formel".
+`balance_method` fields.
 
 ## Solve
 

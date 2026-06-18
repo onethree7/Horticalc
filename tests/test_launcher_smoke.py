@@ -87,7 +87,7 @@ def test_live_launcher_session_delays_server_shutdown(tmp_path, monkeypatch) -> 
 def test_fail_fast_exits(monkeypatch) -> None:
     if sys.platform.startswith("win"):
         fake_ctypes = types.SimpleNamespace(
-            windll=types.SimpleNamespace(user32=types.SimpleNamespace(MessageBoxW=lambda *args, **kwargs: 0))
+            windll=types.SimpleNamespace(user32=types.SimpleNamespace(MessageBoxW=lambda *args: 0))
         )
         monkeypatch.setitem(sys.modules, "ctypes", fake_ctypes)
 

@@ -159,11 +159,6 @@ def sanitize_water_profile(mg_per_l: Dict[str, float]) -> Dict[str, float]:
     return sanitized
 
 
-def normalized_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) -> Dict[str, float]:
-    normalized = normalize_water_profile(mm, water_mg_l)
-    return augment_water_profile_with_elements(mm, normalized)
-
-
 async def _parse_request_payload(request: Request) -> dict:
     content_type = (request.headers.get("content-type") or "").lower()
     if "yaml" in content_type:
@@ -235,6 +230,10 @@ def _validated_float_mapping(
         except (TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=f"Invalid value for {key}") from exc
     return result
+
+
+def _validated_water_mg_l(values: Dict[str, Any]) -> Dict[str, float]:
+    return _validated_float_mapping(values, ALLOWED_WATER_KEYS, "Invalid water key")
 
 
 def _require_path(getter: Callable[[], Path | None], name: str) -> Path:
@@ -340,7 +339,8 @@ def water_profile(profile_name: str) -> dict:
     data = load_water_profile_data(profile_path)
     mg_per_l = sanitize_water_profile(data.get("mg_per_l") or {})
     data["mg_per_l"] = mg_per_l
-    data["normalized_mg_per_l"] = normalized_water_profile(MOLAR_MASSES, mg_per_l)
+    normalized = normalize_water_profile(MOLAR_MASSES, mg_per_l)
+    data["normalized_mg_per_l"] = augment_water_profile_with_elements(MOLAR_MASSES, normalized)
     return data
 
 
@@ -367,9 +367,7 @@ async def save_profile(request: Request) -> dict:
     profile = WaterProfilePayload(**payload)
     name = _required_name(profile.name, "Profile name is required")
 
-    mg_per_l = sanitize_water_profile(
-        _validated_float_mapping(profile.mg_per_l, ALLOWED_WATER_KEYS, "Invalid water key")
-    )
+    mg_per_l = _validated_water_mg_l(profile.mg_per_l)
 
     osmosis_percent = profile.osmosis_percent if profile.osmosis_percent is not None else 0
     try:
@@ -494,14 +492,10 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
             raise HTTPException(status_code=404, detail="Water profile not found")
         profile = load_water_profile_data(profile_path)
         mg_per_l = profile.get("mg_per_l") or {}
-        water_mg_l = sanitize_water_profile(
-            _validated_float_mapping(mg_per_l, ALLOWED_WATER_KEYS, "Invalid water key")
-        )
+        water_mg_l = _validated_water_mg_l(mg_per_l)
         osmosis_percent = float(profile.get("osmosis_percent") or 0)
     elif payload.water_mg_l:
-        water_mg_l = sanitize_water_profile(
-            _validated_float_mapping(payload.water_mg_l, ALLOWED_WATER_KEYS, "Invalid water key")
-        )
+        water_mg_l = _validated_water_mg_l(payload.water_mg_l)
         if payload.osmosis_percent is not None:
             osmosis_percent = float(payload.osmosis_percent)
 

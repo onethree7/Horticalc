@@ -1071,14 +1071,6 @@ function handleEditorEnterKey(event) {
   }
 }
 
-function contentWidthCh(values, headerLabel, minimumCh = 1) {
-  const maxLength = values.reduce(
-    (longest, value) => Math.max(longest, String(value ?? "").length),
-    headerLabel.length
-  );
-  return Math.max(minimumCh, maxLength);
-}
-
 function fertilizerEditorSortValue(row, key) {
   if (key.startsWith("comp:")) {
     return Number(row.comp?.[key.slice(5)]);

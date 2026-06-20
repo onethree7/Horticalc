@@ -33,7 +33,7 @@ flowchart LR
 | Solver | `src/horticalc/solver.py`, `src/horticalc/solver_config.py` | Solves target profiles into fertilizer grams. |
 | Data paths | `src/horticalc/paths.py` | Defines AppRoot, shipped defaults, user copies, logs, and lockfile layout. |
 | Persistence IO | `src/horticalc/data_io.py` | Loads and saves CSV/YAML data. |
-| API | `api/app.py` | Exposes JSON/YAML routes and serves the frontend. |
+| API | `api/app.py` | Exposes JSON API routes, accepts YAML request bodies on save endpoints, and serves the frontend. |
 | UI | `frontend/index.html`, `frontend/app.js`, `frontend/styles.css` | Static app frame, workflows, and browser state. |
 | Launcher | `src/horticalc/launcher.py` | Starts API, waits for health, opens browser, and manages the owner lock plus active launcher sessions. |
 | Packaging | `scripts/packaging/*`, `.github/workflows/release.yml` | Builds and smoke-tests onedir release artifacts. |

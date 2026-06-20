@@ -26,10 +26,11 @@ plant people.
 
 ## Getting Started
 
-Horticalc includes an interactive browser GUI and a YAML-to-JSON command-line
-interface. The **[user guide](docs/user_guide.md)** explains when to use each
-one, how to start the GUI on Windows or Linux, and how to run calculator and
-solver recipes from the CLI.
+Horticalc includes an interactive browser GUI and a command-line interface.
+Editable profiles and recipes are stored as YAML; API, GUI, CLI output, and
+automation results use JSON. The **[user guide](docs/user_guide.md)** explains
+when to use each interface, how to start the GUI on Windows or Linux, and how
+to run calculator and solver recipes from the CLI.
 
 ## Scientific Approach
 

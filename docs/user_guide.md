@@ -18,7 +18,8 @@ Use the **GUI** for interactive work: editing fertilizers and water values,
 building recipes, comparing results, and exploring solver targets.
 
 Use the **CLI** for repeatable calculations, scripts, automated comparisons,
-and recipes stored in version control. It reads YAML and writes JSON.
+and recipes stored in version control. Editable profiles and recipes are YAML;
+CLI output, API payloads, GUI data exchange, and automation results are JSON.
 
 ## Start The GUI
 

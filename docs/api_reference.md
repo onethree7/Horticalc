@@ -1,7 +1,8 @@
 # API Reference
 
-The FastAPI app lives in `api/app.py`. It serves JSON/YAML API routes and the
-static frontend from the same origin.
+The FastAPI app lives in `api/app.py`. It serves JSON API routes and the static
+frontend from the same origin. Save endpoints also accept YAML request bodies
+for compatibility, but JSON is the documented API contract.
 
 ## Health And Schema
 

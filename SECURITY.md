@@ -60,6 +60,22 @@ heuristic detections. If a vendor flags a release archive or executable, please
 include the GitHub release URL, file SHA-256, and this repository URL in a
 false-positive report.
 
+If you report an antivirus or operating-system warning to this project, include
+the exact environment and detection details. A report that only says "my
+antivirus blocked it" is not actionable.
+
+Please include:
+
+- operating system and version, for example Windows 11 24H2;
+- security product name and version, for example Microsoft Defender,
+  SentinelOne, Avast, or another product;
+- whether the warning appeared on download, extraction, first launch, or after
+  the app was already running;
+- exact warning text, detection name, quarantine reason, or event-log text;
+- screenshot of the warning when possible;
+- file name and SHA-256 hash of the flagged file;
+- download source, such as the GitHub release URL.
+
 ## Report A Security Issue
 
 Please open a GitHub security advisory or contact the maintainer privately if

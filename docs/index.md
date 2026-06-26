@@ -25,6 +25,8 @@ historical report.
 ## Operations
 
 - [Release builds](release_build.md): PyInstaller and GitHub Actions release process.
+- [Security and release verification](../SECURITY.md): checksums,
+  attestations, and false-positive notes.
 - [Decisions log](decisions.md): accepted defaults and policy choices.
 - [Terminology and style guide](terminology_style_guide.md): canonical naming.
 

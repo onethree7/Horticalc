@@ -63,4 +63,5 @@ JavaScript frontend. Portable Windows and Linux builds use PyInstaller.
 - [API reference](docs/api_reference.md)
 - [Data model and units](docs/data_model.md)
 - [Solver behavior](docs/solver.MD)
+- [Security and release verification](SECURITY.md)
 - [Contributor guide](AGENTS.md)

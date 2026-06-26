@@ -15,6 +15,7 @@ app_name = "Horticalc" if sys.platform == "win32" else "horticalc"
 entry_script = project_root / "src" / "horticalc" / "launcher.py"
 show_console = sys.platform != "win32"
 hidden_imports = ["tzdata"] if sys.platform == "win32" else []
+version_file = os.environ.get("HORTICALC_VERSION_FILE") if sys.platform == "win32" else None
 
 
 a = Analysis(
@@ -46,6 +47,7 @@ exe = EXE(
     strip=False,
     upx=False,
     console=show_console,
+    version=version_file,
 )
 
 coll = COLLECT(

@@ -72,6 +72,11 @@ The build scripts run PyInstaller with
 `scripts/packaging/horticalc.spec`, then copy `frontend/`, `data/`, and
 `recipes/` into the onedir app root.
 
+On Windows, `scripts/packaging/build_windows.ps1` also generates a PyInstaller
+version resource with `scripts/packaging/write_windows_version_info.py`. CI
+passes the Git tag or short commit through `HORTICALC_VERSION`; local builds
+can set the same environment variable before running the script.
+
 ## CI Release Workflow
 
 `.github/workflows/release.yml` runs on:
@@ -88,13 +93,16 @@ Matrix:
 The workflow:
 
 1. Installs requirements and PyInstaller.
-2. Builds the platform package.
-3. Starts the packaged binary with `HORTICALC_NO_BROWSER=1`.
-4. Reads `AppRoot/user/horticalc.lock.json`.
-5. Polls `/health`.
-6. Checks that `frontend/`, `data/`, `recipes/`, and `logs/` exist.
-7. Uploads artifacts.
-8. Attaches release assets for `v*` tags.
+2. Resolves the release version from the tag or current commit.
+3. Builds the platform package.
+4. Starts the packaged binary with `HORTICALC_NO_BROWSER=1`.
+5. Reads `AppRoot/user/horticalc.lock.json`.
+6. Polls `/health`.
+7. Checks that `frontend/`, `data/`, `recipes/`, and `logs/` exist.
+8. Computes a SHA-256 checksum file for each platform archive.
+9. Creates GitHub Artifact Attestations for each archive and checksum file.
+10. Uploads artifacts.
+11. Attaches release assets for `v*` tags.
 
 ## Cut A Release
 
@@ -106,7 +114,39 @@ git push origin vX.Y.Z
 GitHub Actions builds and publishes:
 
 - `horticalc-vX.Y.Z-linux.tar.gz`
+- `horticalc-vX.Y.Z-linux.tar.gz.sha256`
 - `horticalc-vX.Y.Z-windows.zip`
+- `horticalc-vX.Y.Z-windows.zip.sha256`
+
+## Release Verification
+
+`.github/workflows/release.yml` owns release archive checksums and GitHub
+Artifact Attestations. These prove file integrity and GitHub Actions build
+provenance; they are not Windows Authenticode signatures and do not make
+Windows show a verified publisher for `Horticalc.exe`.
+
+Windows PowerShell:
+
+```powershell
+Get-FileHash -Algorithm SHA256 .\horticalc-vX.Y.Z-windows.zip
+Get-Content .\horticalc-vX.Y.Z-windows.zip.sha256
+```
+
+Linux:
+
+```bash
+sha256sum -c horticalc-vX.Y.Z-linux.tar.gz.sha256
+```
+
+With the GitHub CLI:
+
+```bash
+gh attestation verify horticalc-vX.Y.Z-windows.zip --repo onethree7/Horticalc
+gh attestation verify horticalc-vX.Y.Z-linux.tar.gz --repo onethree7/Horticalc
+```
+
+For security reporting and antivirus false-positive notes, see
+[SECURITY.md](../SECURITY.md).
 
 ## Portable Data Policy
 

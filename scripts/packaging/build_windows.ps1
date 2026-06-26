@@ -2,9 +2,21 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = (Resolve-Path "$PSScriptRoot/../..").Path
 $specPath = Join-Path $repoRoot "scripts/packaging/horticalc.spec"
+$versionInfoPath = Join-Path $repoRoot "build/horticalc_windows_version_info.txt"
 
 Set-Location $repoRoot
 $env:HORTICALC_PROJECT_ROOT = $repoRoot
+
+$releaseVersion = $env:HORTICALC_VERSION
+if ([string]::IsNullOrWhiteSpace($releaseVersion) -and $env:GITHUB_REF_TYPE -eq "tag") {
+    $releaseVersion = $env:GITHUB_REF_NAME
+}
+if ([string]::IsNullOrWhiteSpace($releaseVersion)) {
+    $releaseVersion = "0.0.0"
+}
+
+python scripts/packaging/write_windows_version_info.py --version $releaseVersion --output $versionInfoPath
+$env:HORTICALC_VERSION_FILE = $versionInfoPath
 
 python -m PyInstaller --noconfirm --clean $specPath
 

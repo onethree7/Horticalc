@@ -8,6 +8,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   build:
@@ -30,7 +32,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -43,8 +45,22 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install pyinstaller
 
+      - name: Compute artifact metadata
+        id: vars
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" == v* ]]; then
+            version="${GITHUB_REF_NAME}"
+          else
+            version="$(git rev-parse --short HEAD)"
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "artifact_base=horticalc-${version}-${{ matrix.platform }}" >> "$GITHUB_OUTPUT"
+
       - name: Build package (Linux)
         if: matrix.platform == 'linux'
+        env:
+          HORTICALC_VERSION: ${{ steps.vars.outputs.version }}
         run: |
           chmod +x scripts/packaging/build_linux.sh
           ./scripts/packaging/build_linux.sh
@@ -52,6 +68,8 @@ jobs:
       - name: Build package (Windows)
         if: matrix.platform == 'windows'
         shell: pwsh
+        env:
+          HORTICALC_VERSION: ${{ steps.vars.outputs.version }}
         run: |
           ./scripts/packaging/build_windows.ps1
 
@@ -131,18 +149,6 @@ jobs:
                   proc.wait(timeout=10)
           PY
 
-      - name: Compute artifact metadata
-        id: vars
-        shell: bash
-        run: |
-          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" == v* ]]; then
-            version="${GITHUB_REF_NAME}"
-          else
-            version="$(git rev-parse --short HEAD)"
-          fi
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-          echo "artifact_base=horticalc-${version}-${{ matrix.platform }}" >> "$GITHUB_OUTPUT"
-
       - name: Package artifact (Linux)
         if: matrix.platform == 'linux'
         shell: bash
@@ -159,15 +165,36 @@ jobs:
           Compress-Archive -Path "${{ matrix.app_dir }}" -DestinationPath $archive
           "ARCHIVE_PATH=$archive" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+      - name: Compute SHA-256 checksum
+        shell: bash
+        run: |
+          checksum="${ARCHIVE_PATH}.sha256"
+          sha256sum "${ARCHIVE_PATH}" > "${checksum}"
+          echo "CHECKSUM_PATH=${checksum}" >> "$GITHUB_ENV"
+
+      - name: Attest release archive
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: ${{ env.ARCHIVE_PATH }}
+
+      - name: Attest checksum file
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: ${{ env.CHECKSUM_PATH }}
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.vars.outputs.artifact_base }}
-          path: ${{ env.ARCHIVE_PATH }}
+          path: |
+            ${{ env.ARCHIVE_PATH }}
+            ${{ env.CHECKSUM_PATH }}
           if-no-files-found: error
 
       - name: Upload release assets
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
         with:
-          files: ${{ env.ARCHIVE_PATH }}
+          files: |
+            ${{ env.ARCHIVE_PATH }}
+            ${{ env.CHECKSUM_PATH }}

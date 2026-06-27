@@ -23,8 +23,8 @@ The active navigation has four user-facing areas:
 - `SOLVER`: target values, compact searchable allowed-fertilizer picker,
   optional override grams, solver config, solve result, and calculator handoff.
 
-The older visible mode bar is not the user workflow. Some hidden radio inputs
-remain only to keep existing JavaScript paths stable.
+The workflow menu is the single owner of visible area navigation; it directly
+selects the matching calculator, water, solver, or fertilizer-editor panel.
 
 The `Konfiguration` card in `frontend/index.html` contains the global batch
 liters input, a `Design` selector, and a `Sprache` selector. `frontend/app.js`

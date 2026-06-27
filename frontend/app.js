@@ -53,7 +53,6 @@ const summaryViewToggle = qs("#summaryViewToggle");
 const summaryPanels = qsa(".summary-panel[data-summary-panel]");
 const ionMeqList = qs("#ionMeqList");
 const ionBalanceList = qs("#ionBalanceList");
-const modeToggleInputs = qsa('input[name="modeToggle"]');
 const calculatorMode = qs("#calculatorMode");
 const solverMode = qs("#solverMode");
 const fertilizerEditorMode = qs("#fertilizerEditorMode");
@@ -123,8 +122,7 @@ const THEME_OPTIONS = new Set([
 ]);
 
 let fertilizerOptions = [];
-const selectedFertilizers = [{ name: "", liquid: false, weight: "" }];
-const fertilizerAmounts = [0];
+const calculatorRows = [createCalculatorRow()];
 let molarMasses = {};
 let waterProfiles = [];
 let recipeProfiles = [];
@@ -138,7 +136,6 @@ let userPreferences = {};
 let preferenceLoadPromise = null;
 let calculatorTable;
 let currentProfileMode = "calculator";
-let activeMode = "calculator";
 let copySolverStatusTimer = null;
 let solverApplyStatusTimer = null;
 let fertilizerEditorRows = [];
@@ -151,29 +148,24 @@ let fertilizerEditorSort = { key: "name", direction: "asc" };
 let summaryView = "ion";
 let ionNitrogenExpanded = false;
 let fertilizerEditorPreferredKeys = [];
-let activeShellView = "fertilizers";
 let currentLiters = DEFAULT_LITERS;
 
 const shellViewConfigs = {
   fertilizers: {
     mode: "calculator",
     anchor: "fertilizers",
-    labelKey: "workflow.calculatorUpper",
   },
   water: {
     mode: "water",
     anchor: "water",
-    labelKey: "workflow.waterUpper",
   },
   solver: {
     mode: "solver",
     anchor: "solver",
-    labelKey: "workflow.solverUpper",
   },
   editor: {
     mode: "fertilizers",
     anchor: "editor",
-    labelKey: "workflow.editorUpper",
   },
 };
 
@@ -205,7 +197,6 @@ const solverTargetValues = Object.fromEntries(
 const solverTargetBaseValues = Object.fromEntries(
   solverTargetDefinitions.map((field) => [field.key, 0])
 );
-const calculatorBaseAmounts = [0];
 let solverTargetScaleFactor = 1.0;
 let calculatorScaleFactor = 1.0;
 const SCALE_STEP = 0.05;
@@ -558,10 +549,10 @@ function scaleCurrentBatch(fromLiters, toLiters) {
   const oldLiters = validLiters(fromLiters);
   const newLiters = validLiters(toLiters);
   const factor = newLiters / oldLiters;
-  fertilizerAmounts.forEach((amount, index) => {
-    const scaled = roundScaledValue((Number(amount) || 0) * factor);
-    fertilizerAmounts[index] = scaled;
-    calculatorBaseAmounts[index] =
+  calculatorRows.forEach((row) => {
+    const scaled = roundScaledValue((Number(row.grams) || 0) * factor);
+    row.grams = scaled;
+    row.baseGrams =
       calculatorScaleFactor > 0 ? roundScaledValue(scaled / calculatorScaleFactor) : scaled;
   });
   Object.keys(solverFixedGrams).forEach((key) => {
@@ -754,8 +745,6 @@ function setMode(mode) {
   fertilizerEditorMode.classList.toggle("is-hidden", !isEditor);
   waterSection.classList.toggle("is-hidden", !isWater);
   profileSection.classList.toggle("is-hidden", isEditor || isWater);
-  activeMode = mode;
-  updateModeToggleUI();
   if (!isEditor && !isWater) {
     setProfileMode(mode);
   }
@@ -782,26 +771,6 @@ function refreshApiStatusLabel() {
   }
 }
 
-function syncModeRadio(mode) {
-  modeToggleInputs.forEach((input) => {
-    input.checked = input.value === mode;
-  });
-  updateModeToggleUI();
-}
-
-function setActiveShellView(view) {
-  activeShellView = view;
-  qsa("[data-shell-view]").forEach((button) => {
-    const isActive = button.dataset.shellView === view;
-    button.classList.toggle("is-active", isActive);
-    if (isActive) {
-      button.setAttribute("aria-current", "page");
-    } else {
-      button.removeAttribute("aria-current");
-    }
-  });
-}
-
 function scrollToPanelAnchor(anchor, shouldFocus = true) {
   const target = qs(`[data-panel-anchor="${anchor}"]`);
   if (!target) {
@@ -825,9 +794,16 @@ function scrollToPanelAnchor(anchor, shouldFocus = true) {
 function showShellView(view, options = {}) {
   const config = shellViewConfigs[view] || shellViewConfigs.fertilizers;
   const shouldScroll = options.scroll !== false;
-  syncModeRadio(config.mode);
   setMode(config.mode);
-  setActiveShellView(view);
+  qsa("[data-shell-view]").forEach((button) => {
+    const isActive = button.dataset.shellView === view;
+    button.classList.toggle("is-active", isActive);
+    if (isActive) {
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.removeAttribute("aria-current");
+    }
+  });
   updateLiveResultBar();
   if (shouldScroll) {
     window.setTimeout(() => scrollToPanelAnchor(config.anchor), 0);
@@ -857,16 +833,6 @@ function updateLiveResultBar(data = lastCalculation) {
 
   liveLastCalc.textContent = t("status.updatedAt", {
     time: new Date().toLocaleTimeString(i18n.getLocale()),
-  });
-}
-
-function updateModeToggleUI() {
-  modeToggleInputs.forEach((input) => {
-    const label = input.closest("label");
-    if (!label) {
-      return;
-    }
-    label.classList.toggle("is-active", input.checked);
   });
 }
 
@@ -943,6 +909,15 @@ function roundScaledValue(value) {
   return Math.round(value * 1000) / 1000;
 }
 
+function createCalculatorRow(name = "", grams = 0) {
+  const normalizedGrams = Math.max(0, Number(grams) || 0);
+  return {
+    name,
+    grams: normalizedGrams,
+    baseGrams: roundScaledValue(normalizedGrams),
+  };
+}
+
 function roundScaleFactor(value) {
   return Math.round(value * 100) / 100;
 }
@@ -998,13 +973,12 @@ function updateCalculatorScaleDisplay() {
 }
 
 function applyCalculatorScaleFactor(nextFactor) {
-  const definitions = fertilizerAmounts.map((_, index) => index);
   applyScaleFactor({
     nextFactor,
-    definitions,
-    getBaseValue: (index) => calculatorBaseAmounts[index],
-    setScaledValue: (index, value) => {
-      fertilizerAmounts[index] = value;
+    definitions: calculatorRows,
+    getBaseValue: (row) => row.baseGrams,
+    setScaledValue: (row, value) => {
+      row.grams = value;
     },
     setFactor: (factor) => {
       calculatorScaleFactor = factor;
@@ -1372,6 +1346,29 @@ async function putFertilizers(payload) {
   }
 }
 
+async function refreshFertilizerCatalog() {
+  const refreshedFertilizers = await fetchFertilizers();
+  const availableNames = new Set(refreshedFertilizers.map((fertilizer) => fertilizer.name));
+  fertilizerOptions = refreshedFertilizers;
+  setFertilizerEditorData(fertilizerOptions);
+
+  calculatorRows.forEach((row) => {
+    if (row.name && !availableNames.has(row.name)) {
+      Object.assign(row, createCalculatorRow());
+    }
+  });
+  if (!calculatorRows.length) {
+    calculatorRows.push(createCalculatorRow());
+  }
+
+  const availableSolverNames = solverAllowedFertilizers.filter((name) => availableNames.has(name));
+  updateSolverAllowedFertilizers(availableSolverNames, "replace");
+  renderSelectionTable();
+  renderCalculatorTable();
+  renderSolverResults(null);
+  scheduleRecalculate();
+}
+
 async function saveFertilizerEditor() {
   const payload = [];
   const seen = new Set();
@@ -1406,11 +1403,7 @@ async function saveFertilizerEditor() {
   }
   try {
     await putFertilizers(payload);
-    const previousMode = activeMode;
-    await init();
-    if (previousMode === "fertilizers") {
-      setMode("fertilizers");
-    }
+    await refreshFertilizerCatalog();
   } catch (error) {
     reportError(error, t("errors.saveFailed"));
   }
@@ -1418,12 +1411,7 @@ async function saveFertilizerEditor() {
 
 async function reloadFertilizerEditor() {
   try {
-    fertilizerOptions = await fetchFertilizers();
-    setFertilizerEditorData(fertilizerOptions);
-    renderSelectionTable();
-    renderCalculatorTable();
-    renderSolverAllowedOptions();
-    renderSolverFixedTable();
+    await refreshFertilizerCatalog();
   } catch (error) {
     reportError(error, t("errors.loadFertilizers"));
   }
@@ -1805,10 +1793,6 @@ function applySolverResultToCalculator({ switchToCalculator = false } = {}) {
   setSolverApplyStatus(t("status.appliedCalculator"));
 
   if (switchToCalculator) {
-    const calculatorInput = Array.from(modeToggleInputs).find((input) => input.value === "calculator");
-    if (calculatorInput) {
-      calculatorInput.checked = true;
-    }
     showShellView("fertilizers");
   }
   return true;
@@ -1978,7 +1962,8 @@ async function copySolverResultsToClipboard() {
 }
 
 function renderSelectionTable() {
-  renderTableRows(fertilizerSelectTable, selectedFertilizers.length, (i) => {
+  renderTableRows(fertilizerSelectTable, calculatorRows.length, (i) => {
+    const calculatorRow = calculatorRows[i];
     const row = document.createElement("tr");
 
     const indexCell = document.createElement("td");
@@ -1986,28 +1971,25 @@ function renderSelectionTable() {
 
     const selectCell = document.createElement("td");
     const select = createSelect(fertilizerOptions, (value) => {
-      const match = fertilizerOptions.find((opt) => opt.name === value);
-      selectedFertilizers[i] = {
-        name: value,
-        liquid: Boolean(match?.liquid),
-        weight: match ? match.weight_factor : "",
-      };
+      calculatorRow.name = value;
       renderSelectionTable();
       renderCalculatorTable();
       scheduleRecalculate();
     });
-    select.value = selectedFertilizers[i].name;
+    select.value = calculatorRow.name;
     selectCell.appendChild(select);
 
+    const selectedOption = fertilizerOptions.find((option) => option.name === calculatorRow.name);
+
     const liquidCell = document.createElement("td");
-    liquidCell.textContent = selectedFertilizers[i].name
-      ? selectedFertilizers[i].liquid
+    liquidCell.textContent = calculatorRow.name
+      ? selectedOption?.liquid
         ? t("common.liquid")
         : t("common.solid")
       : "-";
 
     const weightCell = document.createElement("td");
-    weightCell.textContent = selectedFertilizers[i].weight || "-";
+    weightCell.textContent = selectedOption?.weight_factor || "-";
 
     row.append(indexCell, selectCell, liquidCell, weightCell);
     return row;
@@ -2015,11 +1997,12 @@ function renderSelectionTable() {
 }
 
 function renderCalculatorTable() {
-  renderTableRows(calculatorTable, selectedFertilizers.length, (i) => {
+  renderTableRows(calculatorTable, calculatorRows.length, (i) => {
+    const calculatorRow = calculatorRows[i];
     const row = document.createElement("tr");
-    if (calculatorBaseAmounts[i] === undefined) {
-      const currentAmount = Math.max(0, Number(fertilizerAmounts[i]) || 0);
-      calculatorBaseAmounts[i] =
+    if (calculatorRow.baseGrams === undefined) {
+      const currentAmount = Math.max(0, Number(calculatorRow.grams) || 0);
+      calculatorRow.baseGrams =
         calculatorScaleFactor > 0 ? roundScaledValue(currentAmount / calculatorScaleFactor) : 0;
     }
 
@@ -2027,7 +2010,7 @@ function renderCalculatorTable() {
     indexCell.textContent = `${i + 1}`;
 
     const nameCell = document.createElement("td");
-    nameCell.textContent = selectedFertilizers[i].name || "-";
+    nameCell.textContent = calculatorRow.name || "-";
     nameCell.colSpan = 2;
 
     const amountCell = document.createElement("td");
@@ -2036,16 +2019,16 @@ function renderCalculatorTable() {
     input.inputMode = "decimal";
     input.min = "0";
     input.step = "any";
-    input.value = formatFertilizerGramsInput(fertilizerAmounts[i]);
+    input.value = formatFertilizerGramsInput(calculatorRow.grams);
     input.addEventListener("input", (event) => {
       const rawValue = Math.max(0, decimalInputValue(event.target.value));
-      fertilizerAmounts[i] = rawValue;
-      calculatorBaseAmounts[i] =
+      calculatorRow.grams = rawValue;
+      calculatorRow.baseGrams =
         calculatorScaleFactor > 0 ? roundScaledValue(rawValue / calculatorScaleFactor) : 0;
       scheduleRecalculate();
     });
     input.addEventListener("change", () => {
-      input.value = formatFertilizerGramsInput(fertilizerAmounts[i]);
+      input.value = formatFertilizerGramsInput(calculatorRow.grams);
     });
     amountCell.appendChild(input);
 
@@ -2664,10 +2647,10 @@ function waterElementsForDisplay(elements) {
 }
 
 function buildSelectedFertilizerEntries({ allowZeroGrams = false } = {}) {
-  return selectedFertilizers
-    .map((fert, index) => ({
-      name: fert.name,
-      grams: Number(fertilizerAmounts[index]) || 0,
+  return calculatorRows
+    .map((row) => ({
+      name: row.name,
+      grams: Number(row.grams) || 0,
     }))
     .filter((entry) => entry.name && (allowZeroGrams || entry.grams > 0));
 }
@@ -2940,28 +2923,17 @@ function applyRecipe(recipe, { applyLiters = true } = {}) {
     setCurrentLiters(recipe.liters, { scaleBatch: false, recalculate: false, invalidateSolver: false });
   }
   const fertilizers = Array.isArray(recipe.fertilizers) ? recipe.fertilizers : [];
-  selectedFertilizers.length = 0;
-  fertilizerAmounts.length = 0;
-  calculatorBaseAmounts.length = 0;
+  calculatorRows.length = 0;
   calculatorScaleFactor = 1.0;
 
   fertilizers.forEach((entry) => {
     const name = entry.name || "";
-    const match = fertilizerOptions.find((opt) => opt.name === name);
     const grams = Math.max(0, Number(entry.grams) || 0);
-    selectedFertilizers.push({
-      name,
-      liquid: Boolean(match?.liquid),
-      weight: match ? match.weight_factor : "",
-    });
-    fertilizerAmounts.push(grams);
-    calculatorBaseAmounts.push(roundScaledValue(grams));
+    calculatorRows.push(createCalculatorRow(name, grams));
   });
 
-  if (!selectedFertilizers.length) {
-    selectedFertilizers.push({ name: "", liquid: false, weight: "" });
-    fertilizerAmounts.push(0);
-    calculatorBaseAmounts.push(0);
+  if (!calculatorRows.length) {
+    calculatorRows.push(createCalculatorRow());
   }
 
   updateCalculatorScaleDisplay();
@@ -3005,7 +2977,7 @@ function updateSolverResultActions() {
 }
 
 function collectSelectedFertilizerNames() {
-  const names = selectedFertilizers.map((fert) => fert.name).filter(Boolean);
+  const names = calculatorRows.map((row) => row.name).filter(Boolean);
   return Array.from(new Set(names));
 }
 
@@ -3079,21 +3051,17 @@ function applyWaterProfile(profile) {
 }
 
 function addFertilizerRow() {
-  selectedFertilizers.push({ name: "", liquid: false, weight: "" });
-  fertilizerAmounts.push(0);
-  calculatorBaseAmounts.push(0);
+  calculatorRows.push(createCalculatorRow());
   renderSelectionTable();
   renderCalculatorTable();
 }
 
 function removeFertilizerRow() {
-  if (selectedFertilizers.length <= 1) {
+  if (calculatorRows.length <= 1) {
     return;
   }
 
-  selectedFertilizers.pop();
-  fertilizerAmounts.pop();
-  calculatorBaseAmounts.pop();
+  calculatorRows.pop();
   renderSelectionTable();
   renderCalculatorTable();
 }
@@ -3338,12 +3306,6 @@ calculateButton.addEventListener("click", async () => {
   } catch (error) {
     reportError(error, t("errors.calculateFailed"));
   }
-});
-
-modeToggleInputs.forEach((input) => {
-  input.addEventListener("change", (event) => {
-    setMode(event.target.value);
-  });
 });
 
 if (summaryViewToggle) {

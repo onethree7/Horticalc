@@ -11,7 +11,8 @@ def test_horticalc_shell_replaces_visible_mode_menu() -> None:
     assert 'data-testid="horticalc-app-frame"' in content
     assert 'data-testid="horticalc-rail"' in content
     assert 'data-testid="rail-brand"' in content
-    assert 'id="modeStateControls"' in content
+    assert 'id="modeStateControls"' not in content
+    assert 'name="modeToggle"' not in content
     assert "recipe-wheel" not in content
     assert "wheel-" not in content
 
@@ -36,10 +37,10 @@ def test_workflow_steps_and_editor_utility_exist_in_order() -> None:
     assert 'data-shell-view="calculate"' not in content
     assert 'data-shell-view="results"' not in content
     assert 'data-shell-view="details"' not in content
-    assert 'data-i18n="workflow.editorUpper"' in content
-    assert 'data-i18n="workflow.waterUpper"' in content
-    assert 'data-i18n="workflow.calculatorUpper"' in content
-    assert 'data-i18n="workflow.solverUpper"' in content
+    assert 'data-i18n="workflow.editor"' in content
+    assert 'data-i18n="workflow.water"' in content
+    assert 'data-i18n="workflow.calculator"' in content
+    assert 'data-i18n="workflow.solver"' in content
     assert 'data-i18n="workflow.menu"' in content
     assert 'data-i18n="workflow.shortGuide"' in content
     assert 'data-i18n="workflow.guide.editor"' in content
@@ -190,7 +191,6 @@ def test_app_js_shell_helpers_are_top_level_and_initialized() -> None:
 
     for helper in [
         "function bindShellNavigation()",
-        "function setActiveShellView(view)",
         "function showShellView(view",
         "function scrollToPanelAnchor(anchor",
         "function updateLiveResultBar(data = lastCalculation)",
@@ -208,8 +208,9 @@ def test_app_js_shell_helpers_are_top_level_and_initialized() -> None:
     assert "updateLiveResultBar(data);" in content
     assert "applySolverResultToCalculator" in content
     assert "solverAutoApplyEnabled" in content
-    assert 'labelKey: "workflow.calculatorUpper"' in content
-    assert 'labelKey: "workflow.solverUpper"' in content
+    assert "modeToggleInputs" not in content
+    assert "activeShellView" not in content
+    assert "activeMode" not in content
 
 def test_framed_shell_styles_present() -> None:
     content = read_frontend_file("styles.css")

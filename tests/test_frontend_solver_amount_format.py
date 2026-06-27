@@ -16,6 +16,6 @@ def test_calculator_accepts_and_displays_small_fertilizer_amounts() -> None:
     content = read_frontend_file("app.js")
 
     assert 'input.step = "any";' in content
-    assert "input.value = formatFertilizerGramsInput(fertilizerAmounts[i]);" in content
+    assert "input.value = formatFertilizerGramsInput(calculatorRow.grams);" in content
     assert "function formatFertilizerGramsInput(value)" in content
     assert 'return formatted === "0" ? String(numericValue) : formatted;' in content

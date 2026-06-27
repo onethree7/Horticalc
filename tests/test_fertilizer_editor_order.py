@@ -32,6 +32,22 @@ def test_fertilizer_editor_headers_are_sortable() -> None:
     assert 'th[aria-sort="descending"]' in styles
 
 
+def test_fertilizer_editor_refreshes_catalog_without_restarting_app() -> None:
+    app = read_frontend_file("app.js")
+    save_block = app.split("async function saveFertilizerEditor()", 1)[1].split(
+        "async function reloadFertilizerEditor()",
+        1,
+    )[0]
+
+    assert "async function refreshFertilizerCatalog()" in app
+    assert "await refreshFertilizerCatalog();" in save_block
+    assert "await init();" not in save_block
+    assert "availableNames" in app
+    assert 'updateSolverAllowedFertilizers(availableSolverNames, "replace")' in app
+    assert "renderSolverResults(null);" in app
+    assert app.count("init();") == 1
+
+
 def test_fertilizer_api_uses_liquid_boolean_schema() -> None:
     client = TestClient(api_app.app)
     response = client.get("/fertilizers")

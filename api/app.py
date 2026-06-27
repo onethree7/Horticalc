@@ -39,7 +39,7 @@ from horticalc.paths import (
     ensure_portable_layout,
 )
 from horticalc.solver import solve_recipe_data
-from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS
+from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS, SOLVER_CONFIG_TYPES
 
 
 @asynccontextmanager
@@ -73,7 +73,10 @@ class FertilizerPayload(BaseModel):
 
 
 class PreferencesPayload(BaseModel):
-    theme: str
+    theme: Optional[str] = None
+    default_liters: Optional[float] = Field(default=None, gt=0)
+    solver_config: Optional[Dict[str, Any]] = None
+    last_water_profile: Optional[str] = None
 
 
 class RecipeRequest(BaseModel):
@@ -293,16 +296,39 @@ THEME_OPTIONS = {
 
 
 @app.get("/preferences")
-def preferences() -> dict[str, str]:
+def preferences() -> dict[str, Any]:
     return load_user_preferences()
 
 
 @app.put("/preferences")
-def put_preferences(payload: PreferencesPayload) -> dict[str, str]:
-    if payload.theme not in THEME_OPTIONS:
+def put_preferences(payload: PreferencesPayload) -> dict[str, Any]:
+    updates = payload.model_dump(exclude_unset=True)
+    if "theme" in updates and payload.theme not in THEME_OPTIONS:
         raise HTTPException(status_code=400, detail="Unknown theme")
+    if payload.default_liters is not None and not math.isfinite(payload.default_liters):
+        raise HTTPException(status_code=400, detail="Invalid default liters")
+    if payload.last_water_profile is not None:
+        profile_name = payload.last_water_profile.strip()
+        if not profile_name or Path(profile_name).name != profile_name:
+            raise HTTPException(status_code=400, detail="Invalid water profile")
+        updates["last_water_profile"] = profile_name
+    if payload.solver_config is not None:
+        for key, value in payload.solver_config.items():
+            value_type = SOLVER_CONFIG_TYPES.get(key)
+            if value_type is None:
+                raise HTTPException(status_code=400, detail=f"Unknown solver config key: {key}")
+            if value_type == "boolean" and not isinstance(value, bool):
+                raise HTTPException(status_code=400, detail=f"Invalid solver config value: {key}")
+            if value_type == "integer" and (not isinstance(value, int) or isinstance(value, bool)):
+                raise HTTPException(status_code=400, detail=f"Invalid solver config value: {key}")
+            if value_type == "number" and (
+                not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value)
+            ):
+                raise HTTPException(status_code=400, detail=f"Invalid solver config value: {key}")
+            if value_type == "string" and not isinstance(value, str):
+                raise HTTPException(status_code=400, detail=f"Invalid solver config value: {key}")
     preferences = load_user_preferences()
-    preferences["theme"] = payload.theme
+    preferences.update(updates)
     save_user_preferences(preferences)
     return preferences
 

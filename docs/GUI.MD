@@ -28,16 +28,21 @@ remain only to keep existing JavaScript paths stable.
 
 The `Konfiguration` card in `frontend/index.html` contains the global batch
 liters input, a `Design` selector, and a `Sprache` selector. `frontend/app.js`
-applies the selected theme to `document.body.dataset.theme` and stores it in
-`localStorage` under `horticalc.theme`. It also writes the theme through
-`/preferences` to `user/preferences.json`, because launcher-managed browser
-profiles are temporary. `frontend/i18n/runtime.js` stores the
+applies the selected theme to `document.body.dataset.theme`. Theme, the user's
+default batch liters, Solver defaults, and the last directly loaded water
+profile are written through `/preferences` to `user/preferences.json`, because
+launcher-managed browser profiles are temporary. `frontend/i18n/runtime.js` stores the
 selected language under `horticalc.locale`, updates `document.documentElement.lang`,
 and applies `data-i18n` attributes from the static catalogs. `frontend/styles.css`
 defines the available visual themes: Horticalc Dark, Horticalc Light, High
-Contrast, Soil, VT Green, and Blue Matrix. Theme and language are presentation
-state and are not sent to recipes or solver payloads; only the theme is also
-persisted by the preference API.
+Contrast, Soil, VT Green, and Blue Matrix. Language remains browser-local
+presentation state and is not sent to recipes or solver payloads.
+
+Preferences supply startup defaults. An explicitly loaded recipe overrides its
+liters and any non-empty `solver_config` for the current working state without
+rewriting the user's defaults. A water profile loaded with the water-profile
+controls becomes the next startup profile; a water profile loaded indirectly
+from a recipe does not. Missing remembered profiles fall back to `default.yml`.
 
 The workflow menu and primary workspace headings reuse one inline SVG icon
 sprite from `frontend/index.html`. Its seven reduced scientific monoline
@@ -147,12 +152,15 @@ The UI stores small workflow state in `localStorage`:
 - Last calculated solution snapshot.
 - Solver allowed fertilizer selections by context.
 - Solver auto-apply preference.
-- Selected visual theme (also persisted in `user/preferences.json`).
 - Selected frontend language.
 
-Solver config is intentionally not restored from saved solution snapshots and
-is not automatically applied from loaded recipes. The UI fetches the backend
-schema from `/schema/solver-config`.
+`user/preferences.json` stores the selected visual theme, default batch liters,
+Solver defaults, and last directly loaded water profile.
+
+Solver config is not restored from saved solution snapshots. Startup defaults
+come from preferences, while a non-empty config in an explicitly loaded recipe
+overrides the active controls. The UI fetches the backend schema from
+`/schema/solver-config`.
 
 ## Stable Contracts
 

@@ -18,11 +18,14 @@ for compatibility, but JSON is the documented API contract.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/preferences` | Return persisted UI preferences. |
-| `PUT` | `/preferences` | Validate and persist the selected visual theme. |
+| `PUT` | `/preferences` | Validate and merge one or more UI preferences. |
 
-The theme payload is `{"theme": "soil"}`. Values must match a theme exposed by
-the frontend. Preferences are stored in `user/preferences.json` so they survive
-the launcher's temporary browser profiles.
+Accepted fields are `theme`, positive `default_liters`, `solver_config`, and
+`last_water_profile`. Solver keys and value types must match
+`/schema/solver-config`; water-profile values must be filenames rather than
+paths. Partial payloads are merged with existing preferences. Preferences are
+stored in `user/preferences.json` so they survive the launcher's temporary
+browser profiles.
 
 ## Fertilizers
 

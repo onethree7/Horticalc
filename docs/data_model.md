@@ -31,6 +31,12 @@ Water profiles, nutrient solutions, and recipes still copy shipped defaults
 into `user/` when a user copy is missing. Runtime edits are written to `user/`,
 not to shipped defaults.
 
+`user/preferences.json` is a JSON object containing optional `theme`,
+`default_liters`, `solver_config`, and `last_water_profile` fields. The API
+validates partial updates and preserves JSON types, including the nested Solver
+configuration. Source: `load_user_preferences()` in
+`src/horticalc/data_io.py` and `/preferences` in `api/app.py`.
+
 ## Fertilizers CSV
 
 Loaded by `load_fertilizers()` in `src/horticalc/data_io.py`.

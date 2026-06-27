@@ -68,11 +68,11 @@ def test_solver_ui_does_not_restore_hidden_solver_config_from_saved_solution() -
 
     assert "applySolverConfig(savedSolution.solver_config || {})" not in content
 
-def test_solver_ui_does_not_auto_apply_recipe_solver_config() -> None:
+def test_solver_ui_applies_explicit_recipe_solver_config_without_persisting_it() -> None:
     content = read_frontend_file("app.js")
 
-    assert "if (recipe?.solver_config)" not in content
-    assert "applySolverConfig(recipe.solver_config)" not in content
+    assert "if (recipe?.solver_config && Object.keys(recipe.solver_config).length)" in content
+    assert "applySolverConfig({ ...buildSolverConfigPayload(), ...recipe.solver_config })" in content
 
 def test_solver_ui_does_not_persist_solver_config_in_recipe_or_snapshot() -> None:
     content = read_frontend_file("app.js")

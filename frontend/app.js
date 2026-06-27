@@ -134,6 +134,8 @@ let lastCalculation = null;
 let lastSolveResult = null;
 let recalculateTimer = null;
 let fertilizerSelectTable;
+let userPreferences = {};
+let preferenceLoadPromise = null;
 let calculatorTable;
 let currentProfileMode = "calculator";
 let activeMode = "calculator";
@@ -401,6 +403,35 @@ function applyTheme(theme) {
   return nextTheme;
 }
 
+function loadPreferences() {
+  if (!preferenceLoadPromise) {
+    preferenceLoadPromise = fetch(`${apiBase()}/preferences`)
+      .then((response) => (response.ok ? response.json() : {}))
+      .then((preferences) => {
+        userPreferences = preferences && typeof preferences === "object" ? preferences : {};
+        return userPreferences;
+      })
+      .catch(() => userPreferences);
+  }
+  return preferenceLoadPromise;
+}
+
+function persistPreferences(updates) {
+  userPreferences = { ...userPreferences, ...updates };
+  return fetch(`${apiBase()}/preferences`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+    keepalive: true,
+  })
+    .then((response) => (response.ok ? response.json() : userPreferences))
+    .then((preferences) => {
+      userPreferences = preferences && typeof preferences === "object" ? preferences : userPreferences;
+      return userPreferences;
+    })
+    .catch(() => userPreferences);
+}
+
 async function initializeThemeControl() {
   let themeChanged = false;
   const activeTheme = applyTheme(lsGet(THEME_STORAGE_KEY, DEFAULT_THEME));
@@ -412,19 +443,13 @@ async function initializeThemeControl() {
     themeChanged = true;
     const nextTheme = applyTheme(event.target.value);
     lsSet(THEME_STORAGE_KEY, nextTheme);
-    fetch(`${apiBase()}/preferences`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ theme: nextTheme }),
-      keepalive: true,
-    }).catch(() => {});
+    persistPreferences({ theme: nextTheme });
   });
   try {
-    const response = await fetch(`${apiBase()}/preferences`);
-    if (!response.ok || themeChanged) {
+    const preferences = await loadPreferences();
+    if (themeChanged) {
       return;
     }
-    const preferences = await response.json();
     const savedTheme = applyTheme(preferences.theme || activeTheme);
     lsSet(THEME_STORAGE_KEY, savedTheme);
   } catch (error) {
@@ -2910,8 +2935,8 @@ function renderCalculation(data) {
   setApiStatus(t("status.apiReady"), "ready");
 }
 
-function applyRecipe(recipe) {
-  if (recipe && recipe.liters !== undefined && recipe.liters !== null) {
+function applyRecipe(recipe, { applyLiters = true } = {}) {
+  if (applyLiters && recipe && recipe.liters !== undefined && recipe.liters !== null) {
     setCurrentLiters(recipe.liters, { scaleBatch: false, recalculate: false, invalidateSolver: false });
   }
   const fertilizers = Array.isArray(recipe.fertilizers) ? recipe.fertilizers : [];
@@ -3177,6 +3202,7 @@ function restoreSolverAllowedFromStorage(context = solverAllowedContext) {
 
 async function init() {
   let hasStoredAllowed = false;
+  const preferences = await loadPreferences();
   setApiStatus(t("status.loadingData"), "loading");
   try {
     solverConfigDefinitions = await fetchSolverConfigDefinitions();
@@ -3184,7 +3210,12 @@ async function init() {
     reportError(error, t("errors.loadSolverDefaults"));
     solverConfigDefinitions = [...FALLBACK_SOLVER_CONFIG_DEFINITIONS];
   }
-  applySolverConfig();
+  applySolverConfig(preferences.solver_config || {});
+  setCurrentLiters(preferences.default_liters || DEFAULT_LITERS, {
+    scaleBatch: false,
+    recalculate: false,
+    invalidateSolver: false,
+  });
   restoreSolverAutoApplyPreference();
   try {
     fertilizerEditorPreferredKeys = await fetchFertilizerCompKeys();
@@ -3265,16 +3296,26 @@ async function init() {
     return;
   }
 
+  const preferredWaterProfile = preferences.last_water_profile || "default.yml";
   try {
-    const defaultProfile = await fetchWaterProfileData("default");
-    applyWaterProfile(defaultProfile);
+    const profile = await fetchWaterProfileData(preferredWaterProfile);
+    waterProfileSelect.value = preferredWaterProfile.endsWith(".yml")
+      ? preferredWaterProfile
+      : `${preferredWaterProfile}.yml`;
+    applyWaterProfile(profile);
   } catch (error) {
-    renderWaterTable();
+    try {
+      const defaultProfile = await fetchWaterProfileData("default");
+      waterProfileSelect.value = "default.yml";
+      applyWaterProfile(defaultProfile);
+    } catch (defaultError) {
+      renderWaterTable();
+    }
   }
 
   try {
     const recipe = await fetchDefaultRecipe();
-    applyRecipe(recipe);
+    applyRecipe(recipe, { applyLiters: false });
     await calculateAndRender();
   } catch (error) {
     renderSelectionTable();
@@ -3384,6 +3425,7 @@ if (configLitersInput) {
       return;
     }
     setCurrentLiters(nextLiters, { scaleBatch: true, recalculate: true });
+    persistPreferences({ default_liters: nextLiters });
   });
   configLitersInput.addEventListener("change", () => {
     updateLitersDisplay();
@@ -3395,9 +3437,18 @@ solverConfigDefinitions.forEach((definition) => {
   if (!input) {
     return;
   }
-  const eventName = definition.type === "boolean" ? "change" : "input";
+  const eventName =
+    definition.type === "boolean" || definition.key === "nitrogen_objective_mode" ? "change" : "input";
   input.addEventListener(eventName, () => {
+    if (
+      definition.type !== "boolean" &&
+      definition.key !== "nitrogen_objective_mode" &&
+      parseDecimalInput(input.value) === null
+    ) {
+      return;
+    }
     renderSolverResults(null);
+    persistPreferences({ solver_config: buildSolverConfigPayload() });
   });
   if (definition.type !== "boolean" && definition.key !== "nitrogen_objective_mode") {
     input.addEventListener("change", () => {
@@ -3410,6 +3461,7 @@ if (solverConfigResetDefaultsButton) {
   solverConfigResetDefaultsButton.addEventListener("click", () => {
     applySolverConfig();
     renderSolverResults(null);
+    persistPreferences({ solver_config: {} });
   });
 }
 
@@ -3441,6 +3493,9 @@ if (copySolverResultsButton) {
 const applyRecipeProfile = async (recipe, context = "") => {
   solverAllowedContext = normalizeSolverAllowedContext(context || recipe?.filename || recipe?.name);
   applyRecipe(recipe);
+  if (recipe?.solver_config && Object.keys(recipe.solver_config).length) {
+    applySolverConfig({ ...buildSolverConfigPayload(), ...recipe.solver_config });
+  }
   const hasStoredAllowed = restoreSolverAllowedFromStorage(solverAllowedContext);
   if (!hasStoredAllowed) {
     const recipeAllowed = Array.isArray(recipe?.fertilizers_allowed)
@@ -3565,6 +3620,7 @@ loadWaterProfileButton.addEventListener("click", async () => {
   try {
     const profile = await fetchWaterProfileData(selection);
     applyWaterProfile(profile);
+    persistPreferences({ last_water_profile: selection });
   } catch (error) {
     reportError(error, t("errors.loadWaterProfile"));
   }
@@ -3573,7 +3629,9 @@ loadWaterProfileButton.addEventListener("click", async () => {
 resetWaterProfileButton.addEventListener("click", async () => {
   try {
     const profile = await fetchWaterProfileData("default");
+    waterProfileSelect.value = "default.yml";
     applyWaterProfile(profile);
+    persistPreferences({ last_water_profile: "default.yml" });
   } catch (error) {
     reportError(error, t("errors.loadWaterProfile"));
   }

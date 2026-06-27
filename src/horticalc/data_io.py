@@ -73,7 +73,7 @@ def _save_yaml(path: Path, payload: dict) -> None:
         yaml.safe_dump(payload, f, sort_keys=True, allow_unicode=True)
 
 
-def load_user_preferences() -> dict[str, str]:
+def load_user_preferences() -> dict[str, Any]:
     preference_path = paths.user_preferences_path()
     if not preference_path.exists():
         return {}
@@ -83,10 +83,10 @@ def load_user_preferences() -> dict[str, str]:
         return {}
     if not isinstance(payload, dict):
         return {}
-    return {str(key): str(value) for key, value in payload.items()}
+    return {str(key): value for key, value in payload.items()}
 
 
-def save_user_preferences(payload: dict[str, str]) -> None:
+def save_user_preferences(payload: dict[str, Any]) -> None:
     preference_path = paths.user_preferences_path()
     preference_path.parent.mkdir(parents=True, exist_ok=True)
     preference_path.write_text(

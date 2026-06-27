@@ -266,8 +266,20 @@ def test_theme_selector_persists_browser_design_state() -> None:
     assert "async function initializeThemeControl()" in app_js
     assert "lsGet(THEME_STORAGE_KEY, DEFAULT_THEME)" in app_js
     assert 'fetch(`${apiBase()}/preferences`' in app_js
-    assert 'body: JSON.stringify({ theme: nextTheme })' in app_js
+    assert "persistPreferences({ theme: nextTheme });" in app_js
+    assert "body: JSON.stringify(updates)" in app_js
     assert "keepalive: true" in app_js
+
+
+def test_workspace_preferences_persist_without_overwriting_explicit_recipe_loads() -> None:
+    app_js = read_frontend_file("app.js")
+
+    assert "persistPreferences({ default_liters: nextLiters });" in app_js
+    assert "persistPreferences({ solver_config: buildSolverConfigPayload() });" in app_js
+    assert "persistPreferences({ last_water_profile: selection });" in app_js
+    assert 'persistPreferences({ last_water_profile: "default.yml" });' in app_js
+    assert "applyRecipe(recipe, { applyLiters: false });" in app_js
+    assert "applyRecipe(recipe);" in app_js
 
 def test_fertilizer_editor_sticky_columns_size_from_visible_content() -> None:
     styles = read_frontend_file("styles.css")

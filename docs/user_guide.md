@@ -87,6 +87,10 @@ CSV columns, or API fields.
    milliliters when their catalog entry includes the correct density factor.
 5. Calculate and inspect the result tables and summary sidebar.
 
+Horticalc remembers the directly selected water profile and batch volume as
+startup defaults. Loading a recipe can temporarily override its own liters,
+water profile, and Solver configuration without changing those user defaults.
+
 Results include element and oxide totals, ions, ion balance, fertilizer-only
 and water-only contributions, EC, NPK metrics, nutrient ratios, and Sluijsmann.
 

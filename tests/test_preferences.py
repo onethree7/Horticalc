@@ -54,3 +54,24 @@ def test_preferences_reject_unknown_solver_key_and_profile_path(monkeypatch, tmp
 
     assert client.put("/preferences", json={"solver_config": {"mystery": True}}).status_code == 400
     assert client.put("/preferences", json={"last_water_profile": "../tap.yml"}).status_code == 400
+
+
+def test_preferences_reject_advanced_solver_config(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+    client = TestClient(api_app.app)
+
+    advanced = client.put(
+        "/preferences",
+        json={"solver_config": {"n_form_priority_weights": {"N_NO3": 3.0}}},
+    )
+    rejected = client.put(
+        "/preferences",
+        json={"solver_config": {"relative_weighting": "false"}},
+    )
+
+    assert advanced.status_code == 400
+    assert advanced.json()["detail"] == (
+        "Advanced solver config key is not accepted here: n_form_priority_weights"
+    )
+    assert rejected.status_code == 400
+    assert rejected.json()["detail"] == "Invalid solver config value: relative_weighting"

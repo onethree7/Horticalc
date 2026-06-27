@@ -1,9 +1,16 @@
 from __future__ import annotations
 
 import argparse
+from copy import deepcopy
 import json
+import math
+from collections.abc import Mapping
 from typing import Any
 
+from .chemistry import N_FORM_KEYS
+
+
+NITROGEN_OBJECTIVE_MODES = ("as_targets", "n_total_only", "n_forms_only")
 
 SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"key": "relative_weighting", "type": "boolean", "default": False},
@@ -16,10 +23,16 @@ SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"key": "singleton_underfill_enabled", "type": "boolean", "default": True},
     {"key": "singleton_underfill_share_threshold", "type": "number", "default": 0.85},
     {"key": "singleton_underfill_max_iter", "type": "integer", "default": 2},
-    {"key": "nitrogen_objective_mode", "type": "string", "default": "n_total_only"},
+    {
+        "key": "nitrogen_objective_mode",
+        "type": "string",
+        "default": "n_total_only",
+        "choices": list(NITROGEN_OBJECTIVE_MODES),
+    },
     {"key": "s_objective_enabled", "type": "boolean", "default": False},
     {"key": "n_total_governor_enabled", "type": "boolean", "default": False},
     {"key": "n_total_governor_weight", "type": "number", "default": 1.0},
+    {"key": "n_form_priority_weights", "type": "mapping", "default": {}, "ui": False},
 )
 
 SOLVER_CONFIG_TYPES = {definition["key"]: definition["type"] for definition in SOLVER_CONFIG_DEFINITIONS}
@@ -64,6 +77,8 @@ def add_solver_config_arguments(parser: argparse.ArgumentParser) -> None:
                 default=None,
                 help=f"Override solver_config.{key}",
             )
+        elif definition["type"] == "mapping":
+            continue
         else:
             group.add_argument(
                 flag,
@@ -109,12 +124,82 @@ def _coerce_solver_config_value(key: str, value: Any) -> Any:
         return float(value)
     if value_type == "string":
         return str(value)
+    if value_type == "mapping":
+        parsed = json.loads(value) if isinstance(value, str) else value
+        if not isinstance(parsed, dict):
+            raise ValueError(f"Expected object value for {key}, got {value!r}")
+        return parsed
     if isinstance(value, str):
         try:
             return json.loads(value)
         except json.JSONDecodeError:
             return value
     return value
+
+
+def validate_solver_config(
+    values: Mapping[str, Any] | None,
+    *,
+    allow_advanced: bool = True,
+) -> dict[str, Any]:
+    if values is None:
+        return {}
+    if not isinstance(values, Mapping):
+        raise ValueError("solver_config must be an object")
+
+    validated: dict[str, Any] = {}
+    for key, value in values.items():
+        if not isinstance(key, str) or key not in SOLVER_CONFIG_TYPES:
+            raise ValueError(f"Unknown solver config key: {key}")
+        if not allow_advanced and any(
+            definition["key"] == key and not definition.get("ui", True)
+            for definition in SOLVER_CONFIG_DEFINITIONS
+        ):
+            raise ValueError(f"Advanced solver config key is not accepted here: {key}")
+
+        value_type = SOLVER_CONFIG_TYPES[key]
+        if value_type == "boolean":
+            if not isinstance(value, bool):
+                raise ValueError(f"Invalid solver config value: {key}")
+        elif value_type == "integer":
+            if not isinstance(value, int) or isinstance(value, bool):
+                raise ValueError(f"Invalid solver config value: {key}")
+        elif value_type == "number":
+            if (
+                not isinstance(value, (int, float))
+                or isinstance(value, bool)
+                or not math.isfinite(value)
+            ):
+                raise ValueError(f"Invalid solver config value: {key}")
+        elif value_type == "string":
+            if not isinstance(value, str):
+                raise ValueError(f"Invalid solver config value: {key}")
+            if key == "nitrogen_objective_mode" and value not in NITROGEN_OBJECTIVE_MODES:
+                raise ValueError(f"Invalid solver config value: {key}")
+        elif value_type == "mapping":
+            if key != "n_form_priority_weights" or not isinstance(value, Mapping):
+                raise ValueError(f"Invalid solver config value: {key}")
+            weights: dict[str, int | float] = {}
+            for form_key, weight in value.items():
+                if form_key not in N_FORM_KEYS:
+                    raise ValueError(f"Invalid n_form_priority_weights key: {form_key}")
+                if (
+                    not isinstance(weight, (int, float))
+                    or isinstance(weight, bool)
+                    or not math.isfinite(weight)
+                    or weight < 0
+                ):
+                    raise ValueError(f"Invalid n_form_priority_weights value: {form_key}")
+                weights[form_key] = weight
+            value = weights
+        validated[key] = value
+    return validated
+
+
+def resolve_solver_config(values: Mapping[str, Any] | None) -> dict[str, Any]:
+    resolved = deepcopy(SOLVER_CONFIG_DEFAULTS)
+    resolved.update(validate_solver_config(values))
+    return resolved
 
 
 def solver_config_overrides_from_args(args: argparse.Namespace) -> dict[str, Any]:
@@ -141,4 +226,4 @@ def solver_config_overrides_from_args(args: argparse.Namespace) -> dict[str, Any
             raise ValueError("--solver-config entries must include a non-empty key")
         overrides[key] = _coerce_solver_config_value(key, value.strip())
 
-    return overrides
+    return validate_solver_config(overrides)

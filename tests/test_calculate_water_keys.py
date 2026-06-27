@@ -1,3 +1,4 @@
+from dataclasses import replace
 import tempfile
 import unittest
 from pathlib import Path
@@ -26,11 +27,11 @@ class TestCalculateWaterKeys(unittest.TestCase):
         self.assertEqual(response.json()["detail"], "Invalid water key: INVALID")
 
     def test_invalid_water_key_in_profile_returns_400(self) -> None:
-        original_dir = api_app.WATER_PROFILES_DIR
+        original_layout = api_app._portable_layout()
         try:
             with tempfile.TemporaryDirectory() as tmp_dir:
                 tmp_path = Path(tmp_dir)
-                api_app.WATER_PROFILES_DIR = tmp_path
+                api_app.PORTABLE_LAYOUT = replace(original_layout, water_profiles=tmp_path)
                 profile_path = tmp_path / "broken.yml"
                 profile_path.write_text(
                     yaml.safe_dump(
@@ -51,17 +52,17 @@ class TestCalculateWaterKeys(unittest.TestCase):
                     },
                 )
         finally:
-            api_app.WATER_PROFILES_DIR = original_dir
+            api_app.PORTABLE_LAYOUT = original_layout
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["detail"], "Invalid water key: INVALID")
 
     def test_water_profile_name_without_suffix_is_accepted(self) -> None:
-        original_dir = api_app.WATER_PROFILES_DIR
+        original_layout = api_app._portable_layout()
         try:
             with tempfile.TemporaryDirectory() as tmp_dir:
                 tmp_path = Path(tmp_dir)
-                api_app.WATER_PROFILES_DIR = tmp_path
+                api_app.PORTABLE_LAYOUT = replace(original_layout, water_profiles=tmp_path)
                 profile_path = tmp_path / "simple.yml"
                 profile_path.write_text(
                     yaml.safe_dump(
@@ -82,7 +83,7 @@ class TestCalculateWaterKeys(unittest.TestCase):
                     },
                 )
         finally:
-            api_app.WATER_PROFILES_DIR = original_dir
+            api_app.PORTABLE_LAYOUT = original_layout
 
         self.assertEqual(response.status_code, 200)
 

@@ -51,6 +51,7 @@ def test_recipe_payload_persists_solver_config() -> None:
             "overshoot_penalty": 1.5,
             "n_total_governor_enabled": True,
             "n_total_governor_weight": 0.05,
+            "n_form_priority_weights": {"N_NO3": 3.0},
         },
     }
 
@@ -68,3 +69,17 @@ def test_solver_config_schema_matches_backend_definitions() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"definitions": list(SOLVER_CONFIG_DEFINITIONS)}
+
+
+def test_recipe_save_rejects_invalid_solver_config() -> None:
+    client = TestClient(api_app.app)
+    response = client.post(
+        "/recipes",
+        json={
+            "name": "invalid_solver_config",
+            "solver_config": {"relative_weighting": "false"},
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid solver config value: relative_weighting"

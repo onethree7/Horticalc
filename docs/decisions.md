@@ -60,9 +60,10 @@ Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`.
 - The visible workflow areas are `DUENGER-EDITOR`, `WASSERWERTE`,
   `RECHNER`, and `SOLVER`.
 - The frontend fetches solver config schema from `/schema/solver-config`.
-- `user/preferences.json` stores theme, default batch liters, Solver defaults,
-  and the last directly loaded water profile. Explicit recipe fields override
-  active values without rewriting those user defaults.
+- `user/preferences.json` stores theme, default batch liters, UI-visible Solver
+  defaults, and the last directly loaded water profile. Advanced Solver fields
+  marked `ui: false` remain recipe or direct solve inputs. Explicit recipe
+  fields override active values without rewriting those user defaults.
 - Legacy macro/stage solver controls are removed from the backend config and UI.
 - Frontend i18n is implemented without a bundler or external dependency in
   `frontend/i18n/`. German is the fallback catalog; English, Dutch, Spanish,

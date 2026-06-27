@@ -34,6 +34,22 @@ def test_solve_recipe_data_rejects_non_positive_liters() -> None:
     with pytest.raises(ValueError, match="liters must be > 0"):
         solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
 
+
+def test_solve_recipe_data_rejects_invalid_solver_config() -> None:
+    molar_masses = load_molar_masses()
+    ferts = {
+        "K test": Fertilizer("K test", False, 1.0, {"K2O": 1.0}),
+    }
+    recipe = {
+        "liters": 1,
+        "targets": {"K": 10.0},
+        "fertilizers_allowed": ["K test"],
+        "solver_config": {"relative_weighting": "false"},
+    }
+
+    with pytest.raises(ValueError, match="Invalid solver config value: relative_weighting"):
+        solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
+
 def test_solve_recipe_data_rejects_negative_fixed_grams() -> None:
     molar_masses = load_molar_masses()
     ferts = {

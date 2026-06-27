@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Callable, Dict, List
 
 import numpy as np
 
@@ -28,19 +28,22 @@ from .data_io import (
     load_water_profile_data,
 )
 from .paths import resolve_water_profile_path
-from .solver_config import SOLVER_CONFIG_DEFAULTS
+from .solver_config import (
+    NITROGEN_OBJECTIVE_MODES,
+    SOLVER_CONFIG_DEFAULTS,
+    resolve_solver_config,
+)
 
 
 ALWAYS_IGNORED_TARGETS = {"NA", "CL"}
 S_TARGETS = {"S"}
-NITROGEN_OBJECTIVE_MODES = {"as_targets", "n_total_only", "n_forms_only"}
 DEFAULT_SOLVER_CONFIG = dict(SOLVER_CONFIG_DEFAULTS)
 
 
 @dataclass
 class SolveResult:
     liters: float
-    fertilizers: List[Dict[str, float]]
+    fertilizers: List[Dict[str, float | str]]
     objective_elements: List[str]
     targets_mg_l: Dict[str, float]
     achieved_elements_mg_l: Dict[str, float]
@@ -105,7 +108,6 @@ def _normalize_targets(targets: Dict[str, float]) -> Dict[str, float]:
 def _objective_keys(
     targets: Dict[str, float],
     *,
-    allow_n_total_with_forms: bool = True,
     nitrogen_objective_mode: str = "as_targets",
     s_objective_enabled: bool = False,
 ) -> List[str]:
@@ -127,12 +129,6 @@ def _objective_keys(
         return [key for key in keys if key not in N_FORM_KEYS]
     if nitrogen_objective_mode == "n_forms_only":
         return [key for key in keys if key != "N_total"]
-    if (
-        not allow_n_total_with_forms
-        and "N_total" in keys
-        and any(k in keys for k in N_FORM_KEYS)
-    ):
-        keys = [key for key in keys if key != "N_total"]
     return keys
 
 
@@ -359,10 +355,6 @@ def _uses_default_solver_portfolio(solver_config: Dict[str, object]) -> bool:
     return True
 
 
-def _solver_config_value(solver_config: Dict[str, object], key: str, coerce):
-    return coerce(solver_config.get(key, DEFAULT_SOLVER_CONFIG[key]))
-
-
 def _percent_errors(
     keys: list[str],
     targets_raw: Dict[str, float],
@@ -430,14 +422,13 @@ def _singleton_supplier_pass(
     objective_keys: List[str],
     targets_raw: Dict[str, float],
     achieved_elements: Dict[str, float],
-    liters: float,
     share_threshold: float,
     max_regress_pp: float,
     skip_keys: set[str] | None,
-    recompute_achieved_fn: callable,
+    recompute_achieved_fn: Callable[[np.ndarray], Dict[str, float]],
     mode: str = "overshoot",
     use_potential_share: bool = False,
-) -> np.ndarray:
+) -> tuple[np.ndarray, Dict[str, float]]:
     adjusted = x_full.copy()
     skip = skip_keys or set()
     for row, key in enumerate(objective_keys):
@@ -495,7 +486,7 @@ def _singleton_supplier_pass(
         if improves and regression_ok:
             adjusted = proposed
             achieved_elements = achieved_new
-    return adjusted
+    return adjusted, achieved_elements
 
 
 def _build_solution_payload(
@@ -504,8 +495,8 @@ def _build_solution_payload(
     allowed: List[Fertilizer],
     liters: float,
     recipe: dict,
-) -> tuple[list[dict[str, float]], dict]:
-    ferts_out: list[dict[str, float]] = []
+) -> tuple[list[dict[str, float | str]], dict]:
+    ferts_out: list[dict[str, float | str]] = []
     for idx, fert in enumerate(allowed):
         grams = float(weights[idx])
         if grams > 0:
@@ -562,29 +553,24 @@ def solve_recipe_data(
         or recipe.get("targets_mg_per_l")
         or {}
     )
-    solver_config = recipe.get("solver_config") or {}
-    relative_weighting = _solver_config_value(solver_config, "relative_weighting", bool)
-    overshoot_penalty = _solver_config_value(solver_config, "overshoot_penalty", float)
-    irls_max_outer_iter = _solver_config_value(solver_config, "irls_max_outer_iter", int)
-    scale_eps_mg_per_l = _solver_config_value(solver_config, "scale_eps_mg_per_l", float)
-    singleton_supplier_enabled = _solver_config_value(solver_config, "singleton_supplier_enabled", bool)
-    singleton_share_threshold = _solver_config_value(solver_config, "singleton_share_threshold", float)
-    singleton_max_regress_pp = _solver_config_value(solver_config, "singleton_max_regress_pp", float)
-    singleton_underfill_enabled = _solver_config_value(solver_config, "singleton_underfill_enabled", bool)
-    singleton_underfill_share_threshold = _solver_config_value(
-        solver_config,
-        "singleton_underfill_share_threshold",
-        float,
-    )
-    singleton_underfill_max_iter = _solver_config_value(solver_config, "singleton_underfill_max_iter", int)
-    nitrogen_objective_mode = _solver_config_value(solver_config, "nitrogen_objective_mode", str)
-    s_objective_enabled = _solver_config_value(solver_config, "s_objective_enabled", bool)
-    n_total_governor_enabled = _solver_config_value(solver_config, "n_total_governor_enabled", bool)
-    n_total_governor_weight = _solver_config_value(solver_config, "n_total_governor_weight", float)
-    n_form_priority_weights = solver_config.get("n_form_priority_weights") or {}
+    solver_config = resolve_solver_config(recipe.get("solver_config"))
+    relative_weighting = solver_config["relative_weighting"]
+    overshoot_penalty = solver_config["overshoot_penalty"]
+    irls_max_outer_iter = solver_config["irls_max_outer_iter"]
+    scale_eps_mg_per_l = solver_config["scale_eps_mg_per_l"]
+    singleton_supplier_enabled = solver_config["singleton_supplier_enabled"]
+    singleton_share_threshold = solver_config["singleton_share_threshold"]
+    singleton_max_regress_pp = solver_config["singleton_max_regress_pp"]
+    singleton_underfill_enabled = solver_config["singleton_underfill_enabled"]
+    singleton_underfill_share_threshold = solver_config["singleton_underfill_share_threshold"]
+    singleton_underfill_max_iter = solver_config["singleton_underfill_max_iter"]
+    nitrogen_objective_mode = solver_config["nitrogen_objective_mode"]
+    s_objective_enabled = solver_config["s_objective_enabled"]
+    n_total_governor_enabled = solver_config["n_total_governor_enabled"]
+    n_total_governor_weight = solver_config["n_total_governor_weight"]
+    n_form_priority_weights = solver_config["n_form_priority_weights"]
     objective_keys = _objective_keys(
         target_raw,
-        allow_n_total_with_forms=True,
         nitrogen_objective_mode=nitrogen_objective_mode,
         s_objective_enabled=s_objective_enabled,
     )
@@ -634,17 +620,9 @@ def solve_recipe_data(
     b = np.array([target_raw.get(key, 0.0) - water_elements.get(key, 0.0) for key in objective_keys], dtype=float)
     A = _build_matrix(allowed, molar_masses, objective_keys, liters)
 
-    def build_full_weights(solved: np.ndarray) -> np.ndarray:
-        combined = fixed_weights.copy()
-        var_idx_inner = 0
-        for idx in range(len(allowed)):
-            if variable_mask[idx]:
-                if solved.size:
-                    combined[idx] += float(solved[var_idx_inner])
-                var_idx_inner += 1
-        return combined
-
-    def build_solution_for_weights(weights: np.ndarray) -> tuple[list[dict[str, float]], dict[str, float], dict]:
+    def build_solution_for_weights(
+        weights: np.ndarray,
+    ) -> tuple[list[dict[str, float | str]], dict[str, float]]:
         ferts_out, recipe_payload = _build_solution_payload(
             weights=weights,
             allowed=allowed,
@@ -658,17 +636,26 @@ def solve_recipe_data(
             water_mg_l,
             osmosis_percent=osmosis_percent,
         )
-        return ferts_out, achieved_solution.elements_mg_l, recipe_payload
+        return ferts_out, achieved_solution.elements_mg_l
+
+    solved_variants: dict[
+        tuple[bool, bool, bool],
+        tuple[list[dict[str, float | str]], dict[str, float]],
+    ] = {}
 
     def solve_once(
         *,
         use_relative_weighting: bool,
         singleton_supplier_enabled_local: bool,
         singleton_underfill_enabled_local: bool,
-    ) -> tuple[np.ndarray, list[dict[str, float]], dict[str, float], dict]:
-        latest_recipe: dict[str, float] | dict = {}
-        latest_fertilizers: list[dict[str, float]] = []
-        x_full_local = np.zeros(len(allowed), dtype=float)
+    ) -> tuple[list[dict[str, float | str]], dict[str, float]]:
+        variant_key = (
+            use_relative_weighting,
+            singleton_supplier_enabled_local,
+            singleton_underfill_enabled_local,
+        )
+        if variant_key in solved_variants:
+            return solved_variants[variant_key]
 
         solved_weights = _solve_weights(
             A,
@@ -685,26 +672,14 @@ def solve_recipe_data(
             irls_max_outer_iter=irls_max_outer_iter,
             scale_eps_mg_per_l=scale_eps_mg_per_l,
         )
-        x_full_local = build_full_weights(solved_weights)
-        latest_fertilizers, achieved_elements_local, latest_recipe = build_solution_for_weights(x_full_local)
+        x_full_local = fixed_weights.copy()
+        x_full_local[variable_mask] += solved_weights
+        latest_fertilizers, achieved_elements_local = build_solution_for_weights(x_full_local)
 
         singleton_skip_keys = {"N_total"} if n_total_governor_enabled else None
 
         def recompute_achieved_fn(new_x_full: np.ndarray) -> Dict[str, float]:
-            _, updated_recipe = _build_solution_payload(
-                weights=new_x_full,
-                allowed=allowed,
-                liters=liters,
-                recipe=recipe,
-            )
-            updated_solution = compute_solution(
-                updated_recipe,
-                fertilizers,
-                molar_masses,
-                water_mg_l,
-                osmosis_percent=osmosis_percent,
-            )
-            return updated_solution.elements_mg_l
+            return build_solution_for_weights(new_x_full)[1]
 
         def apply_singleton_pass(
             *,
@@ -712,15 +687,14 @@ def solve_recipe_data(
             share_threshold: float,
             use_potential_share: bool,
         ) -> bool:
-            nonlocal x_full_local, latest_fertilizers, achieved_elements_local, latest_recipe
-            x_full_updated = _singleton_supplier_pass(
+            nonlocal x_full_local, latest_fertilizers, achieved_elements_local
+            x_full_updated, achieved_elements_updated = _singleton_supplier_pass(
                 A=A,
                 x_full=x_full_local,
                 variable_mask_full=variable_mask,
                 objective_keys=objective_keys,
                 targets_raw=target_raw,
                 achieved_elements=achieved_elements_local,
-                liters=liters,
                 share_threshold=share_threshold,
                 max_regress_pp=singleton_max_regress_pp,
                 skip_keys=singleton_skip_keys,
@@ -731,21 +705,13 @@ def solve_recipe_data(
             if not np.any(np.abs(x_full_updated - x_full_local) > 1e-12):
                 return False
             x_full_local = x_full_updated
-            latest_fertilizers, latest_recipe_payload = _build_solution_payload(
+            latest_fertilizers, _ = _build_solution_payload(
                 weights=x_full_local,
                 allowed=allowed,
                 liters=liters,
                 recipe=recipe,
             )
-            latest_recipe["fertilizers"] = latest_recipe_payload["fertilizers"]
-            achieved_solution = compute_solution(
-                latest_recipe,
-                fertilizers,
-                molar_masses,
-                water_mg_l,
-                osmosis_percent=osmosis_percent,
-            )
-            achieved_elements_local = achieved_solution.elements_mg_l
+            achieved_elements_local = achieved_elements_updated
             return True
 
         if singleton_supplier_enabled_local:
@@ -764,21 +730,23 @@ def solve_recipe_data(
                 ):
                     break
 
-        return x_full_local, latest_fertilizers, achieved_elements_local, latest_recipe
+        result = latest_fertilizers, achieved_elements_local
+        solved_variants[variant_key] = result
+        return result
 
     def solve_variant(
         *,
         use_relative_weighting: bool,
         singleton_supplier_enabled_local: bool,
         singleton_underfill_enabled_local: bool,
-    ) -> tuple[np.ndarray, list[dict[str, float]], dict[str, float], dict]:
-        x_full_local, fertilizers_local, achieved_local, recipe_local = solve_once(
+    ) -> tuple[list[dict[str, float | str]], dict[str, float]]:
+        fertilizers_local, achieved_local = solve_once(
             use_relative_weighting=use_relative_weighting,
             singleton_supplier_enabled_local=singleton_supplier_enabled_local,
             singleton_underfill_enabled_local=singleton_underfill_enabled_local,
         )
         if use_relative_weighting and not (n_total_governor_enabled or n_form_priority_weights):
-            x_full_unweighted, ferts_unweighted, achieved_unweighted, recipe_unweighted = solve_once(
+            ferts_unweighted, achieved_unweighted = solve_once(
                 use_relative_weighting=False,
                 singleton_supplier_enabled_local=singleton_supplier_enabled_local,
                 singleton_underfill_enabled_local=singleton_underfill_enabled_local,
@@ -794,10 +762,15 @@ def solve_recipe_data(
                 achieved_unweighted,
             )
             if unweighted_score < weighted_score:
-                return x_full_unweighted, ferts_unweighted, achieved_unweighted, recipe_unweighted
-        return x_full_local, fertilizers_local, achieved_local, recipe_local
+                return ferts_unweighted, achieved_unweighted
+        return fertilizers_local, achieved_local
 
-    x_full, fertilizers_out, achieved_elements, full_recipe = solve_variant(
+    current_variant = (
+        relative_weighting,
+        singleton_supplier_enabled,
+        singleton_underfill_enabled,
+    )
+    fertilizers_out, achieved_elements = solve_variant(
         use_relative_weighting=relative_weighting,
         singleton_supplier_enabled_local=singleton_supplier_enabled,
         singleton_underfill_enabled_local=singleton_underfill_enabled,
@@ -809,9 +782,9 @@ def solve_recipe_data(
             (False, singleton_supplier_enabled, singleton_underfill_enabled),
             (False, False, singleton_underfill_enabled),
         ]
-        best_variant = (x_full, fertilizers_out, achieved_elements, full_recipe)
+        best_variant = (fertilizers_out, achieved_elements)
         best_score = _default_portfolio_score(objective_keys, target_raw, achieved_elements)
-        seen_variants: set[tuple[bool, bool, bool]] = set()
+        seen_variants = {current_variant}
         for candidate in default_variants:
             if candidate in seen_variants:
                 continue
@@ -824,12 +797,12 @@ def solve_recipe_data(
             candidate_score = _default_portfolio_score(
                 objective_keys,
                 target_raw,
-                candidate_result[2],
+                candidate_result[1],
             )
             if candidate_score < best_score:
                 best_variant = candidate_result
                 best_score = candidate_score
-        x_full, fertilizers_out, achieved_elements, full_recipe = best_variant
+        fertilizers_out, achieved_elements = best_variant
 
     errors_mg_l = {}
     errors_percent = {}

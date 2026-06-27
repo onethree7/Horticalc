@@ -34,12 +34,13 @@ from horticalc.data_io import (
     save_water_profile,
 )
 from horticalc.paths import (
+    PortableLayout,
     app_root,
     default_recipe_path,
     ensure_portable_layout,
 )
 from horticalc.solver import solve_recipe_data
-from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS, SOLVER_CONFIG_TYPES
+from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS, validate_solver_config
 
 
 @asynccontextmanager
@@ -53,11 +54,8 @@ app = FastAPI(title="Horticalc API", version="0.1.0", lifespan=lifespan)
 
 FERTILIZERS: Dict[str, Fertilizer] = {}
 MOLAR_MASSES: Dict[str, float] = {}
+PORTABLE_LAYOUT: PortableLayout | None = None
 FRONTEND_DIR = app_root() / "frontend"
-WATER_PROFILES_DIR: Path | None = None
-NUTRIENT_SOLUTIONS_DIR: Path | None = None
-DEFAULT_RECIPE_PATH: Path | None = None
-RECIPES_DIR: Path | None = None
 
 
 class FertilizerEntry(BaseModel):
@@ -96,6 +94,12 @@ class CalculationResponse(BaseModel):
     ions_mmol_per_l: Dict[str, float]
     ions_meq_per_l: Dict[str, float]
     ion_balance: Dict[str, float | str]
+    fertilizer_elements_mg_per_l: Dict[str, float]
+    fertilizer_oxides_mg_per_l: Dict[str, float]
+    fertilizer_ions_mmol_per_l: Dict[str, float]
+    fertilizer_ions_meq_per_l: Dict[str, float]
+    fertilizer_ion_balance: Dict[str, float | str]
+    ec_fertilizer: Dict[str, Any]
     water_elements_mg_per_l: Dict[str, float]
     water_oxides_mg_per_l: Dict[str, float]
     water_ions_mmol_per_l: Dict[str, float]
@@ -104,6 +108,7 @@ class CalculationResponse(BaseModel):
     ec: Dict[str, Any]
     ec_water: Dict[str, Any]
     npk_metrics: Dict[str, Any]
+    sluijsmann: Dict[str, Any]
     osmosis_percent: float
 
 
@@ -245,28 +250,35 @@ def _validated_water_mg_l(values: Dict[str, Any]) -> Dict[str, float]:
     return _validated_float_mapping(values, ALLOWED_WATER_KEYS, "Invalid water key")
 
 
-def _require_path(getter: Callable[[], Path | None], name: str) -> Path:
+def _validated_solver_config(
+    values: Dict[str, Any],
+    *,
+    allow_advanced: bool = True,
+) -> Dict[str, Any]:
+    try:
+        return validate_solver_config(values, allow_advanced=allow_advanced)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+def _portable_layout() -> PortableLayout:
     _ensure_initialized()
-    path = getter()
-    if path is None:
-        raise RuntimeError(f"{name} directory has not been initialized")
-    return path
+    if PORTABLE_LAYOUT is None:
+        raise RuntimeError("Portable layout has not been initialized")
+    return PORTABLE_LAYOUT
 
 
 def _ensure_initialized() -> None:
-    if not MOLAR_MASSES or WATER_PROFILES_DIR is None or NUTRIENT_SOLUTIONS_DIR is None or RECIPES_DIR is None:
+    if not MOLAR_MASSES or PORTABLE_LAYOUT is None:
         load_app_data()
 
 
 def load_app_data() -> None:
     layout = ensure_portable_layout()
-    global FERTILIZERS, MOLAR_MASSES, WATER_PROFILES_DIR, NUTRIENT_SOLUTIONS_DIR, DEFAULT_RECIPE_PATH, RECIPES_DIR
+    global FERTILIZERS, MOLAR_MASSES, PORTABLE_LAYOUT
     FERTILIZERS = load_fertilizers()
     MOLAR_MASSES = load_molar_masses()
-    WATER_PROFILES_DIR = layout.water_profiles
-    NUTRIENT_SOLUTIONS_DIR = layout.nutrient_solutions
-    RECIPES_DIR = layout.recipes
-    DEFAULT_RECIPE_PATH = default_recipe_path(layout.root)
+    PORTABLE_LAYOUT = layout
 
 
 @app.get("/health")
@@ -313,20 +325,10 @@ def put_preferences(payload: PreferencesPayload) -> dict[str, Any]:
             raise HTTPException(status_code=400, detail="Invalid water profile")
         updates["last_water_profile"] = profile_name
     if payload.solver_config is not None:
-        for key, value in payload.solver_config.items():
-            value_type = SOLVER_CONFIG_TYPES.get(key)
-            if value_type is None:
-                raise HTTPException(status_code=400, detail=f"Unknown solver config key: {key}")
-            if value_type == "boolean" and not isinstance(value, bool):
-                raise HTTPException(status_code=400, detail=f"Invalid solver config value: {key}")
-            if value_type == "integer" and (not isinstance(value, int) or isinstance(value, bool)):
-                raise HTTPException(status_code=400, detail=f"Invalid solver config value: {key}")
-            if value_type == "number" and (
-                not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value)
-            ):
-                raise HTTPException(status_code=400, detail=f"Invalid solver config value: {key}")
-            if value_type == "string" and not isinstance(value, str):
-                raise HTTPException(status_code=400, detail=f"Invalid solver config value: {key}")
+        updates["solver_config"] = _validated_solver_config(
+            payload.solver_config,
+            allow_advanced=False,
+        )
     preferences = load_user_preferences()
     preferences.update(updates)
     save_user_preferences(preferences)
@@ -377,20 +379,20 @@ def put_fertilizers(payload: List[FertilizerPayload]) -> dict:
         new_ferts[name] = Fertilizer(name=name, liquid=entry.liquid, weight_factor=weight, comp=comp)
 
     global FERTILIZERS
+    save_fertilizers(new_ferts)
     FERTILIZERS = new_ferts
-    save_fertilizers(FERTILIZERS)
-    return {"count": len(FERTILIZERS)}
+    return {"count": len(new_ferts)}
 
 
 @app.get("/water-profiles")
 def water_profiles() -> List[dict]:
-    water_profiles_dir = _require_path(lambda: WATER_PROFILES_DIR, "Water profiles")
+    water_profiles_dir = _portable_layout().water_profiles
     return _named_yaml_entries(water_profiles_dir, load_water_profile_data)
 
 
 @app.get("/water-profiles/{profile_name}")
 def water_profile(profile_name: str) -> dict:
-    water_profiles_dir = _require_path(lambda: WATER_PROFILES_DIR, "Water profiles")
+    water_profiles_dir = _portable_layout().water_profiles
     profile_path = water_profiles_dir / _yaml_filename(profile_name)
     if not profile_path.exists():
         raise HTTPException(status_code=404, detail="Water profile not found")
@@ -404,13 +406,13 @@ def water_profile(profile_name: str) -> dict:
 
 @app.get("/nutrient-solutions")
 def nutrient_solutions() -> List[dict]:
-    nutrient_solutions_dir = _require_path(lambda: NUTRIENT_SOLUTIONS_DIR, "Nutrient solutions")
+    nutrient_solutions_dir = _portable_layout().nutrient_solutions
     return _named_yaml_entries(nutrient_solutions_dir, load_nutrient_solution_data)
 
 
 @app.get("/nutrient-solutions/{solution_name}")
 def nutrient_solution(solution_name: str) -> dict:
-    nutrient_solutions_dir = _require_path(lambda: NUTRIENT_SOLUTIONS_DIR, "Nutrient solutions")
+    nutrient_solutions_dir = _portable_layout().nutrient_solutions
     solution_path = nutrient_solutions_dir / _yaml_filename(solution_name)
     if not solution_path.exists():
         raise HTTPException(status_code=404, detail="Nutrient Solution not found")
@@ -435,7 +437,7 @@ async def save_profile(request: Request) -> dict:
     if not 0 <= osmosis_percent <= 100:
         raise HTTPException(status_code=400, detail="osmosis_percent must be between 0 and 100")
 
-    water_profiles_dir = _require_path(lambda: WATER_PROFILES_DIR, "Water profiles")
+    water_profiles_dir = _portable_layout().water_profiles
     profile_path = _saved_yaml_path(water_profiles_dir, name, "Profile name results in empty filename")
     save_water_profile(
         profile_path,
@@ -461,7 +463,7 @@ async def save_nutrient_solution_profile(request: Request) -> dict:
         "Invalid target key",
     )
 
-    nutrient_solutions_dir = _require_path(lambda: NUTRIENT_SOLUTIONS_DIR, "Nutrient solutions")
+    nutrient_solutions_dir = _portable_layout().nutrient_solutions
     solution_path = _saved_yaml_path(
         nutrient_solutions_dir,
         name,
@@ -484,15 +486,15 @@ def molar_masses() -> Dict[str, float]:
 
 @app.get("/recipes/default")
 def default_recipe() -> dict:
-    default_recipe_path = _require_path(lambda: DEFAULT_RECIPE_PATH, "Recipes")
-    if not default_recipe_path.exists():
+    recipe_path = default_recipe_path(_portable_layout().root)
+    if not recipe_path.exists():
         raise HTTPException(status_code=404, detail="Default recipe not found")
-    return load_recipe(default_recipe_path)
+    return load_recipe(recipe_path)
 
 
 @app.get("/recipes")
 def recipes() -> List[dict]:
-    recipes_dir = _require_path(lambda: RECIPES_DIR, "Recipes")
+    recipes_dir = _portable_layout().recipes
     return _named_yaml_entries(
         recipes_dir,
         load_recipe,
@@ -502,7 +504,7 @@ def recipes() -> List[dict]:
 
 @app.get("/recipes/{recipe_name}")
 def recipe(recipe_name: str) -> dict:
-    recipes_dir = _require_path(lambda: RECIPES_DIR, "Recipes")
+    recipes_dir = _portable_layout().recipes
     recipe_path = recipes_dir / _yaml_filename(recipe_name)
     if not recipe_path.exists():
         raise HTTPException(status_code=404, detail="Recipe not found")
@@ -516,6 +518,7 @@ async def save_recipe_profile(request: Request) -> dict:
 
     recipe = RecipePayload(**payload)
     name = _required_name(recipe.name, "Recipe name is required")
+    solver_config = _validated_solver_config(recipe.solver_config)
 
     payload_out = {
         "name": name,
@@ -525,14 +528,14 @@ async def save_recipe_profile(request: Request) -> dict:
         "urea_as_nh4": recipe.urea_as_nh4,
         "phosphate_species": recipe.phosphate_species,
     }
-    if recipe.solver_config:
-        payload_out["solver_config"] = recipe.solver_config
+    if solver_config:
+        payload_out["solver_config"] = solver_config
     if recipe.water_profile:
         payload_out["water_profile"] = recipe.water_profile
     if recipe.osmosis_percent is not None:
         payload_out["osmosis_percent"] = recipe.osmosis_percent
 
-    recipes_dir = _require_path(lambda: RECIPES_DIR, "Recipes")
+    recipes_dir = _portable_layout().recipes
     recipe_path = _saved_yaml_path(recipes_dir, name, "Recipe name results in empty filename")
     save_recipe(recipe_path, payload_out)
     return {"status": "ok", "filename": recipe_path.name}
@@ -544,7 +547,7 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
     water_mg_l: Dict[str, float] = {}
     osmosis_percent = 0.0
     if payload.water_profile_name:
-        water_profiles_dir = _require_path(lambda: WATER_PROFILES_DIR, "Water profiles")
+        water_profiles_dir = _portable_layout().water_profiles
         profile_path = water_profiles_dir / _yaml_filename(payload.water_profile_name)
         if not profile_path.exists():
             raise HTTPException(status_code=404, detail="Water profile not found")
@@ -598,7 +601,7 @@ def solve(payload: SolveRequest) -> SolveResponse:
         "fixed_grams": payload.fixed_grams,
         "urea_as_nh4": payload.urea_as_nh4,
         "phosphate_species": payload.phosphate_species,
-        "solver_config": payload.solver_config,
+        "solver_config": _validated_solver_config(payload.solver_config),
     }
 
     try:

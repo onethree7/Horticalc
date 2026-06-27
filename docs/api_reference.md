@@ -21,11 +21,18 @@ for compatibility, but JSON is the documented API contract.
 | `PUT` | `/preferences` | Validate and merge one or more UI preferences. |
 
 Accepted fields are `theme`, positive `default_liters`, `solver_config`, and
-`last_water_profile`. Solver keys and value types must match
-`/schema/solver-config`; water-profile values must be filenames rather than
-paths. Partial payloads are merged with existing preferences. Preferences are
-stored in `user/preferences.json` so they survive the launcher's temporary
-browser profiles.
+`last_water_profile`. Preference Solver keys and value types must match the
+UI-visible definitions from `/schema/solver-config`; definitions marked
+`ui: false` remain available to recipes and `/solve` but are not preference
+defaults. Water-profile values must be filenames rather than paths. Partial
+payloads are merged with existing preferences. Preferences are stored in
+`user/preferences.json` so they survive the launcher's temporary browser
+profiles.
+
+Solver configuration is validated consistently for preferences, saved
+recipes, and `/solve`. Unknown keys, incorrect JSON types, unsupported
+`nitrogen_objective_mode` values, non-finite numbers, and invalid
+`n_form_priority_weights` mappings return HTTP 400.
 
 ## Fertilizers
 
@@ -33,6 +40,8 @@ browser profiles.
 | --- | --- | --- |
 | `GET` | `/fertilizers` | List loaded fertilizers. |
 | `PUT` | `/fertilizers` | Replace the effective fertilizer list by saving user overrides and disabled shipped names. |
+
+The in-memory effective catalog is replaced only after persistence succeeds.
 
 `PUT /fertilizers` accepts a list:
 
@@ -136,6 +145,8 @@ Instead of `water_mg_l`, callers may pass `water_profile_name`.
 
 Response follows `CalcResult.to_dict()` in `src/horticalc/core.py`; see
 [Data model](data_model.md).
+This includes the fertilizer-only element, oxide, ion-balance, and EC fields,
+plus the Sluijsmann result.
 
 The `ion_balance` response object keeps legacy raw CBE fields
 `error_percent_signed` and `error_percent_abs` and also includes explicit

@@ -33,8 +33,9 @@ not to shipped defaults.
 
 `user/preferences.json` is a JSON object containing optional `theme`,
 `default_liters`, `solver_config`, and `last_water_profile` fields. The API
-validates partial updates and preserves JSON types, including the nested Solver
-configuration. Source: `load_user_preferences()` in
+validates partial updates and preserves JSON types. Preference `solver_config`
+contains only UI-visible Solver defaults; advanced settings marked `ui: false`
+remain recipe or direct solve inputs. Source: `load_user_preferences()` in
 `src/horticalc/data_io.py` and `/preferences` in `api/app.py`.
 
 ## Fertilizers CSV

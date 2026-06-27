@@ -6,7 +6,12 @@ from pathlib import Path
 import pytest
 
 import horticalc.__main__ as cli
-from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS
+from horticalc.solver_config import (
+    SOLVER_CONFIG_DEFAULTS,
+    SOLVER_CONFIG_DEFINITIONS,
+    resolve_solver_config,
+    validate_solver_config,
+)
 
 def test_solver_config_definitions_use_data_backed_defaults() -> None:
     defaults = {definition["key"]: definition["default"] for definition in SOLVER_CONFIG_DEFINITIONS}
@@ -15,6 +20,13 @@ def test_solver_config_definitions_use_data_backed_defaults() -> None:
     assert defaults["relative_weighting"] is False
     assert defaults["singleton_supplier_enabled"] is False
     assert defaults["singleton_underfill_enabled"] is True
+    assert defaults["n_form_priority_weights"] == {}
+    nitrogen_definition = next(
+        definition
+        for definition in SOLVER_CONFIG_DEFINITIONS
+        if definition["key"] == "nitrogen_objective_mode"
+    )
+    assert nitrogen_definition["choices"] == ["as_targets", "n_total_only", "n_forms_only"]
     assert "macro_priority_enabled" not in defaults
     assert "stage_optimization_enabled" not in defaults
 
@@ -87,3 +99,35 @@ def test_solve_cli_rejects_non_object_solver_config_json(capsys, tmp_path) -> No
 
     assert exc_info.value.code == 2
     assert "--solver-config-json must be a JSON object" in capsys.readouterr().err
+
+
+def test_solver_config_validation_preserves_valid_partial_values() -> None:
+    config = {
+        "relative_weighting": True,
+        "overshoot_penalty": 1,
+        "n_form_priority_weights": {"N_NO3": 3.0},
+    }
+
+    assert validate_solver_config(config) == config
+    resolved = resolve_solver_config(config)
+    assert resolved["relative_weighting"] is True
+    assert resolved["overshoot_penalty"] == 1
+    assert resolved["n_form_priority_weights"] == {"N_NO3": 3.0}
+    assert set(resolved) == set(SOLVER_CONFIG_DEFAULTS)
+
+
+@pytest.mark.parametrize(
+    "config, message",
+    [
+        ({"mystery": True}, "Unknown solver config key"),
+        ({"relative_weighting": "false"}, "Invalid solver config value"),
+        ({"irls_max_outer_iter": 1.9}, "Invalid solver config value"),
+        ({"overshoot_penalty": float("nan")}, "Invalid solver config value"),
+        ({"nitrogen_objective_mode": "chaos_mode"}, "Invalid solver config value"),
+        ({"n_form_priority_weights": {"K": 2.0}}, "Invalid n_form_priority_weights key"),
+        ({"n_form_priority_weights": {"N_NO3": -1.0}}, "Invalid n_form_priority_weights value"),
+    ],
+)
+def test_solver_config_validation_rejects_invalid_values(config: dict, message: str) -> None:
+    with pytest.raises(ValueError, match=message):
+        validate_solver_config(config)

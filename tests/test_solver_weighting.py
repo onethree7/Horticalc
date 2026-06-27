@@ -1,10 +1,14 @@
 from pathlib import Path
 
 import numpy as np
-import yaml
 
-from horticalc.data_io import load_fertilizers, load_molar_masses, load_water_profile_data
-from horticalc.data_io import Fertilizer
+from horticalc.data_io import (
+    Fertilizer,
+    load_fertilizers,
+    load_molar_masses,
+    load_nutrient_solution_data,
+    load_water_profile_data,
+)
 from horticalc.solver import (
     _fertilizer_element_contrib_per_g,
     _score_percent_errors,
@@ -52,14 +56,13 @@ def test_singleton_supplier_pass_reduces_overshoot() -> None:
     def recompute_achieved_fn(new_x_full: np.ndarray) -> dict:
         return {"K": float((A @ new_x_full)[0])}
 
-    updated = _singleton_supplier_pass(
+    updated, _ = _singleton_supplier_pass(
         A=A,
         x_full=x_full,
         variable_mask_full=np.array([True, True]),
         objective_keys=["K"],
         targets_raw=targets_raw,
         achieved_elements=achieved_elements,
-        liters=10.0,
         share_threshold=0.85,
         max_regress_pp=0.25,
         skip_keys=None,
@@ -78,14 +81,13 @@ def test_singleton_supplier_pass_rolls_back_on_regression() -> None:
         _ = new_x_full
         return {"K": 100.0, "Ca": 10.0}
 
-    updated = _singleton_supplier_pass(
+    updated, _ = _singleton_supplier_pass(
         A=A,
         x_full=x_full,
         variable_mask_full=np.array([True, True]),
         objective_keys=["K", "Ca"],
         targets_raw=targets_raw,
         achieved_elements=achieved_elements,
-        liters=10.0,
         share_threshold=0.85,
         max_regress_pp=0.0,
         skip_keys=None,
@@ -104,14 +106,13 @@ def test_singleton_supplier_pass_checks_each_objective_regression() -> None:
         values = A @ new_x_full
         return {"K": float(values[0]), "Ca": float(values[1])}
 
-    updated = _singleton_supplier_pass(
+    updated, _ = _singleton_supplier_pass(
         A=A,
         x_full=x_full,
         variable_mask_full=np.array([True, True]),
         objective_keys=["K", "Ca"],
         targets_raw=targets_raw,
         achieved_elements=achieved_elements,
-        liters=10.0,
         share_threshold=0.85,
         max_regress_pp=0.0,
         skip_keys=None,
@@ -131,11 +132,12 @@ def test_score_percent_errors_returns_max_percent_error() -> None:
 
 def test_default_n_total_portfolio_avoids_saloner_macro_collapse() -> None:
     root = Path(__file__).resolve().parents[1]
-    with (root / "user" / "nutrient_solutions" / "Saloner_Bernstein_Cannabis_NPK_Target_Optimization.yml").open(
-        "r",
-        encoding="utf-8",
-    ) as handle:
-        profile = yaml.safe_load(handle)
+    profile = load_nutrient_solution_data(
+        root
+        / "data"
+        / "nutrient_solutions"
+        / "Saloner_Bernstein_Cannabis_NPK_Target_Optimization.yml"
+    )
 
     recipe = {
         "liters": 10.0,
@@ -175,7 +177,7 @@ def test_default_n_total_portfolio_avoids_saloner_macro_collapse() -> None:
         recipe,
         ferts=load_fertilizers(),
         mm=load_molar_masses(),
-        water_profile_data=load_water_profile_data(root / "user" / "water_profiles" / "65936.yml"),
+        water_profile_data=load_water_profile_data(root / "data" / "water_profiles" / "65936.yml"),
     )
 
     achieved = result.achieved_elements_mg_l

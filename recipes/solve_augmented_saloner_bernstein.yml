@@ -1,0 +1,55 @@
+name: augmented_saloner_bernstein_regression
+liters: 10.0
+water_profile: 65936
+osmosis_percent: 66.0
+phosphate_species: H2PO4
+urea_as_nh4: false
+fertilizers_allowed:
+  - Yara Tera CALCINIT
+  - K+S EPSO Top Bittersalz 16-39
+  - S3 Kaliwasser 28 Be
+  - Yara Tera KRISTALON ROT CALCIUM
+  - Compo Fetrilon Combi 1
+  - Peters Professional Combi Sol 6-18-36+3MgO+TE
+  - Haifa MAG Magnesiumnitrat 11-0-0+16MgO
+  - Haifa Monokaliumphosphat MKP
+  - Haifa DUO 3-0-9+34CaO
+  - Haifa SOP Bio Kaliumsulfat wasserlöslich 0-0-52
+  - ICL Nova PeKacid 0-60-20
+  - Agrolution Special 313 14-7-14+14CaO+TE
+  - Compo Hakaphos Soft16-8-22(+3) Spezial
+targets_mg_per_l:
+  B: 0.09729
+  Ca: 119.8
+  Cl: 0.0
+  Cu: 0.0508368
+  Fe: 1.67535
+  HCO3: 0.0
+  K: 100.0
+  Mg: 35.2
+  Mn: 1.09876
+  Mo: 0.028785
+  N_NH4: 32.0
+  N_NO3: 128.0
+  N_UREA: 0.0
+  N_total: 160.0
+  Na: 0.0
+  P: 30.0
+  S: 25.0
+  Si: 11.0
+  Zn: 0.39228
+solver_config:
+  relative_weighting: false
+  overshoot_penalty: 1.5
+  irls_max_outer_iter: 4
+  scale_eps_mg_per_l: 1.0
+  singleton_supplier_enabled: false
+  singleton_share_threshold: 0.85
+  singleton_max_regress_pp: 0.25
+  singleton_underfill_enabled: false
+  singleton_underfill_share_threshold: 0.0
+  singleton_underfill_max_iter: 2
+  nitrogen_objective_mode: n_total_only
+  s_objective_enabled: true
+  n_total_governor_enabled: true
+  n_total_governor_weight: 0.05

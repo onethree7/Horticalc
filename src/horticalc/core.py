@@ -361,7 +361,7 @@ class CalcResult:
     water_ions_meq_l: Dict[str, float]
     water_ion_balance: Dict[str, float | str]
     ec_water: Dict[str, object]
-    sluijsmann: Dict[str, float | dict]
+    sluijsmann: Dict[str, float | str | Dict[str, float]]
     osmosis_percent: float
 
     def to_dict(self) -> dict:
@@ -446,22 +446,19 @@ def compute_solution(
         phosphate_species,
     )
 
-    # 4b) Water-only EC (baseline without fertilizers)
-    water_only_forms = {k: 0.0 for k in COMP_COLS}
+    # 4) Compute the water-only and fertilizer-only states
     water_elements, water_oxides, water_ions_mmol, water_ions_meq, water_ion_balance = _compute_solution_state(
         mm,
-        water_only_forms,
+        {},
         water_forms,
         urea_as_nh4,
         phosphate_species,
     )
     ec_water = compute_ec(water_ions_mmol)
-    fertilizer_only_forms = dict(forms_mg_l)
-    fertilizer_water_forms: Dict[str, float] = {}
     fert_elements, fert_oxides, fert_ions_mmol, fert_ions_meq, fert_ion_balance = _compute_solution_state(
         mm,
-        fertilizer_only_forms,
-        fertilizer_water_forms,
+        fertilizer_forms_mg_l,
+        {},
         urea_as_nh4,
         phosphate_species,
     )

@@ -76,6 +76,16 @@ The canonical defaults are in `src/horticalc/solver_config.py`.
 | `s_objective_enabled` | `false` |
 | `n_total_governor_enabled` | `false` |
 | `n_total_governor_weight` | `1.0` |
+| `n_form_priority_weights` | `{}` |
+
+Solver configuration has one validation contract in
+`src/horticalc/solver_config.py`. API and YAML values must use their native
+Boolean, numeric, integer, string, or mapping types; numeric values must be
+finite, unknown keys are rejected, and `nitrogen_objective_mode` must be one of
+the three documented modes. The CLI's `KEY=VALUE` form is the only boundary
+that converts text values. `n_form_priority_weights` remains an advanced
+mapping for `N_NH4`, `N_NO3`, and `N_UREA` with finite, non-negative weights.
+It is accepted in recipes and direct solve inputs, but not in UI preferences.
 
 Note: the 2026-05-31 historical solver-matrix report recommended
 `relative_weighting=true`, but the current implementation and tests default it

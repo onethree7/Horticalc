@@ -263,9 +263,11 @@ def test_theme_selector_persists_browser_design_state() -> None:
     assert 'const THEME_STORAGE_KEY = "horticalc.theme";' in app_js
     assert 'const DEFAULT_THEME = "horticalc-dark";' in app_js
     assert 'document.body.dataset.theme = nextTheme;' in app_js
-    assert "function initializeThemeControl()" in app_js
+    assert "async function initializeThemeControl()" in app_js
     assert "lsGet(THEME_STORAGE_KEY, DEFAULT_THEME)" in app_js
-    assert "lsSet(THEME_STORAGE_KEY, applyTheme(event.target.value));" in app_js
+    assert 'fetch(`${apiBase()}/preferences`' in app_js
+    assert 'body: JSON.stringify({ theme: nextTheme })' in app_js
+    assert "keepalive: true" in app_js
 
 def test_fertilizer_editor_sticky_columns_size_from_visible_content() -> None:
     styles = read_frontend_file("styles.css")

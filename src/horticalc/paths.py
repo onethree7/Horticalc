@@ -104,6 +104,10 @@ def user_disabled_fertilizers_path(root: Path | None = None) -> Path:
     return user_dir(root) / "fertilizers_disabled.txt"
 
 
+def user_preferences_path(root: Path | None = None) -> Path:
+    return user_dir(root) / "preferences.json"
+
+
 def user_water_profiles_dir(root: Path | None = None) -> Path:
     return user_dir(root) / "water_profiles"
 

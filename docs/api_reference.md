@@ -13,6 +13,17 @@ for compatibility, but JSON is the documented API contract.
 | `GET` | `/schema/solver-config` | Returns solver config definitions from `solver_config.py`. |
 | `GET` | `/molar-masses` | Returns `data/molar_masses.yml`. |
 
+## Preferences
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/preferences` | Return persisted UI preferences. |
+| `PUT` | `/preferences` | Validate and persist the selected visual theme. |
+
+The theme payload is `{"theme": "soil"}`. Values must match a theme exposed by
+the frontend. Preferences are stored in `user/preferences.json` so they survive
+the launcher's temporary browser profiles.
+
 ## Fertilizers
 
 | Method | Path | Purpose |

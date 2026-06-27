@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import os
 import re
 from dataclasses import dataclass
@@ -70,6 +71,28 @@ def _load_yaml(path: Path) -> dict:
 def _save_yaml(path: Path, payload: dict) -> None:
     with path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(payload, f, sort_keys=True, allow_unicode=True)
+
+
+def load_user_preferences() -> dict[str, str]:
+    preference_path = paths.user_preferences_path()
+    if not preference_path.exists():
+        return {}
+    try:
+        payload = json.loads(preference_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    return {str(key): str(value) for key, value in payload.items()}
+
+
+def save_user_preferences(payload: dict[str, str]) -> None:
+    preference_path = paths.user_preferences_path()
+    preference_path.parent.mkdir(parents=True, exist_ok=True)
+    preference_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def _float_mapping(data: dict) -> Dict[str, float]:
@@ -271,6 +294,14 @@ def _write_fertilizer_csv(
             writer.writerow(row)
 
 
+def _read_csv_header(csv_path: Path) -> list[str] | None:
+    if not csv_path.exists():
+        return None
+    with csv_path.open("r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        return list(reader.fieldnames) if reader.fieldnames else None
+
+
 def save_fertilizers(
     fertilizers: Dict[str, Fertilizer],
     csv_path: Path | None = None,
@@ -297,22 +328,19 @@ def save_fertilizers(
 
         overrides_path = paths.user_fertilizer_overrides_path(layout.root)
         if overrides:
-            if overrides_path.exists():
-                with overrides_path.open("r", encoding="utf-8", newline="") as f:
-                    reader = csv.DictReader(f)
-                    if reader.fieldnames:
-                        header = list(reader.fieldnames)
+            header = _read_csv_header(shipped_path)
+            existing_header = _read_csv_header(overrides_path)
+            if header is None:
+                header = existing_header
+            elif existing_header:
+                header.extend(field for field in existing_header if field not in header)
             _write_fertilizer_csv(overrides, overrides_path, header)
         else:
             overrides_path.unlink(missing_ok=True)
         _write_disabled_fertilizers(disabled, paths.user_disabled_fertilizers_path(layout.root))
         return
 
-    if csv_path.exists():
-        with csv_path.open("r", encoding="utf-8", newline="") as f:
-            reader = csv.DictReader(f)
-            if reader.fieldnames:
-                header = list(reader.fieldnames)
+    header = _read_csv_header(csv_path)
 
     _write_fertilizer_csv(fertilizers, csv_path, header)
 

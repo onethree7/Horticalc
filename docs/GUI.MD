@@ -29,13 +29,15 @@ remain only to keep existing JavaScript paths stable.
 The `Konfiguration` card in `frontend/index.html` contains the global batch
 liters input, a `Design` selector, and a `Sprache` selector. `frontend/app.js`
 applies the selected theme to `document.body.dataset.theme` and stores it in
-`localStorage` under `horticalc.theme`. `frontend/i18n/runtime.js` stores the
+`localStorage` under `horticalc.theme`. It also writes the theme through
+`/preferences` to `user/preferences.json`, because launcher-managed browser
+profiles are temporary. `frontend/i18n/runtime.js` stores the
 selected language under `horticalc.locale`, updates `document.documentElement.lang`,
 and applies `data-i18n` attributes from the static catalogs. `frontend/styles.css`
 defines the available visual themes: Horticalc Dark, Horticalc Light, High
-Contrast, Soil, VT Green, and Blue Matrix. Theme and language
-selection are browser-only presentation state and are not sent to recipes,
-solver payloads, or API routes.
+Contrast, Soil, VT Green, and Blue Matrix. Theme and language are presentation
+state and are not sent to recipes or solver payloads; only the theme is also
+persisted by the preference API.
 
 The workflow menu and primary workspace headings reuse one inline SVG icon
 sprite from `frontend/index.html`. Its seven reduced scientific monoline
@@ -145,7 +147,7 @@ The UI stores small workflow state in `localStorage`:
 - Last calculated solution snapshot.
 - Solver allowed fertilizer selections by context.
 - Solver auto-apply preference.
-- Selected visual theme.
+- Selected visual theme (also persisted in `user/preferences.json`).
 - Selected frontend language.
 
 Solver config is intentionally not restored from saved solution snapshots and

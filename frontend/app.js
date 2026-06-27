@@ -401,15 +401,35 @@ function applyTheme(theme) {
   return nextTheme;
 }
 
-function initializeThemeControl() {
+async function initializeThemeControl() {
+  let themeChanged = false;
   const activeTheme = applyTheme(lsGet(THEME_STORAGE_KEY, DEFAULT_THEME));
   lsSet(THEME_STORAGE_KEY, activeTheme);
   if (!themeSelect) {
     return;
   }
   themeSelect.addEventListener("change", (event) => {
-    lsSet(THEME_STORAGE_KEY, applyTheme(event.target.value));
+    themeChanged = true;
+    const nextTheme = applyTheme(event.target.value);
+    lsSet(THEME_STORAGE_KEY, nextTheme);
+    fetch(`${apiBase()}/preferences`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme: nextTheme }),
+      keepalive: true,
+    }).catch(() => {});
   });
+  try {
+    const response = await fetch(`${apiBase()}/preferences`);
+    if (!response.ok || themeChanged) {
+      return;
+    }
+    const preferences = await response.json();
+    const savedTheme = applyTheme(preferences.theme || activeTheme);
+    lsSet(THEME_STORAGE_KEY, savedTheme);
+  } catch (error) {
+    // Browser storage remains the fallback when the preference API is unavailable.
+  }
 }
 
 function initializeLanguageControl() {

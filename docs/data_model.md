@@ -14,6 +14,7 @@ Runtime user copies:
 
 - `user/fertilizers_overrides.csv`
 - `user/fertilizers_disabled.txt`
+- `user/preferences.json`
 - `user/water_profiles/*.yml`
 - `user/nutrient_solutions/*.yml`
 - `user/recipes/*.yml`
@@ -43,6 +44,10 @@ Required columns:
 All other numeric columns are interpreted as composition fractions. A value of
 `0.14` means 14 percent by mass. `NR` or `Nr.` is accepted only for legacy CSV
 compatibility and ignored during loading; newly written catalogs omit it.
+New `fertilizers_overrides.csv` files use the stable shipped-catalog column
+layout, with any user-defined composition columns appended. Empty values stay
+empty rather than causing columns to disappear. Source: `save_fertilizers()` in
+`src/horticalc/data_io.py`.
 
 `load_fertilizers()` returns the fully merged shipped and user catalog sorted
 by normalized fertilizer name. The API, GUI, solver, and CLI therefore share

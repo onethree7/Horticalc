@@ -25,10 +25,12 @@ from horticalc.data_io import (
     load_molar_masses,
     load_nutrient_solution_data,
     load_recipe,
+    load_user_preferences,
     load_water_profile_data,
     save_fertilizers,
     save_nutrient_solution,
     save_recipe,
+    save_user_preferences,
     save_water_profile,
 )
 from horticalc.paths import (
@@ -68,6 +70,10 @@ class FertilizerPayload(BaseModel):
     liquid: bool
     weight_factor: float | None = None
     comp: Dict[str, float] | None = None
+
+
+class PreferencesPayload(BaseModel):
+    theme: str
 
 
 class RecipeRequest(BaseModel):
@@ -273,6 +279,32 @@ def fertilizer_comp_keys() -> dict:
 @app.get("/schema/solver-config")
 def solver_config_schema() -> dict:
     return {"definitions": list(SOLVER_CONFIG_DEFINITIONS)}
+
+
+THEME_OPTIONS = {
+    "horticalc-dark",
+    "horticalc-light",
+    "high-contrast",
+    "soil",
+    "gch-classic",
+    "vt-green",
+    "blue-matrix",
+}
+
+
+@app.get("/preferences")
+def preferences() -> dict[str, str]:
+    return load_user_preferences()
+
+
+@app.put("/preferences")
+def put_preferences(payload: PreferencesPayload) -> dict[str, str]:
+    if payload.theme not in THEME_OPTIONS:
+        raise HTTPException(status_code=400, detail="Unknown theme")
+    preferences = load_user_preferences()
+    preferences["theme"] = payload.theme
+    save_user_preferences(preferences)
+    return preferences
 
 
 @app.get("/fertilizers")

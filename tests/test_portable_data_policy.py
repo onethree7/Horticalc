@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 from hashlib import sha256
 from pathlib import Path
 
@@ -41,6 +42,8 @@ def test_portable_layout_uses_shipped_catalog_and_user_overlay(
     disabled_txt = paths.user_disabled_fertilizers_path(tmp_path)
     assert overrides_csv.exists()
     assert "Extra" in overrides_csv.read_text(encoding="utf-8")
+    with overrides_csv.open("r", encoding="utf-8", newline="") as handle:
+        assert next(csv.reader(handle)) == ["Düngername", "Liquid", "Gewicht", "N"]
     assert disabled_txt.read_text(encoding="utf-8").strip() == "Remove Me"
     assert "Extra" not in shipped_csv.read_text(encoding="utf-8")
 

@@ -255,6 +255,16 @@ def test_framed_shell_styles_present() -> None:
     assert ".brand-kicker" not in content
     assert ".gap-3" not in content
     assert "@media (max-width: 980px)" in content
+    intermediate_styles = content.split("@media (max-width: 980px)", 1)[1].split(
+        "@media (max-width: 640px)", 1
+    )[0]
+    intermediate_rail = intermediate_styles.split(".app-rail {", 1)[1].split("}", 1)[0]
+    assert "align-items: start;" not in intermediate_rail
+    assert ".rail-workflow,\n  .live-bar {\n    grid-column: 1 / -1;" in content
+    assert ".live-bar {\n    grid-template-columns: repeat(2, minmax(0, 1fr));" in content
+    assert ".live-ion-ratios .ion-ratio-grid {\n    grid-template-columns: repeat(3, minmax(0, 1fr));" in content
+    assert "@media (max-width: 640px)" in content
+    assert ".live-bar {\n    grid-template-columns: 1fr;" in content
     assert ".recipe-wheel" not in content
     assert ".wheel-" not in content
 
@@ -279,6 +289,9 @@ def test_workspace_preferences_persist_without_overwriting_explicit_recipe_loads
     assert "persistPreferences({ solver_config: buildSolverConfigPayload() });" in app_js
     assert "persistPreferences({ last_water_profile: selection });" in app_js
     assert 'persistPreferences({ last_water_profile: "default.yml" });' in app_js
+    assert "let preferenceWritePromise = Promise.resolve();" in app_js
+    assert "preferenceWritePromise = preferenceWritePromise.then(() =>" in app_js
+    assert "return preferenceWritePromise;" in app_js
     assert "applyRecipe(recipe, { applyLiters: false });" in app_js
     assert "applyRecipe(recipe);" in app_js
 

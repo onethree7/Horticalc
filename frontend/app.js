@@ -134,6 +134,7 @@ let recalculateTimer = null;
 let fertilizerSelectTable;
 let userPreferences = {};
 let preferenceLoadPromise = null;
+let preferenceWritePromise = Promise.resolve();
 let calculatorTable;
 let currentProfileMode = "calculator";
 let copySolverStatusTimer = null;
@@ -409,18 +410,21 @@ function loadPreferences() {
 
 function persistPreferences(updates) {
   userPreferences = { ...userPreferences, ...updates };
-  return fetch(`${apiBase()}/preferences`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updates),
-    keepalive: true,
-  })
-    .then((response) => (response.ok ? response.json() : userPreferences))
-    .then((preferences) => {
-      userPreferences = preferences && typeof preferences === "object" ? preferences : userPreferences;
-      return userPreferences;
+  preferenceWritePromise = preferenceWritePromise.then(() =>
+    fetch(`${apiBase()}/preferences`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+      keepalive: true,
     })
-    .catch(() => userPreferences);
+      .then((response) => (response.ok ? response.json() : userPreferences))
+      .then((preferences) => {
+        userPreferences = preferences && typeof preferences === "object" ? preferences : userPreferences;
+        return userPreferences;
+      })
+      .catch(() => userPreferences)
+  );
+  return preferenceWritePromise;
 }
 
 async function initializeThemeControl() {
@@ -436,16 +440,12 @@ async function initializeThemeControl() {
     lsSet(THEME_STORAGE_KEY, nextTheme);
     persistPreferences({ theme: nextTheme });
   });
-  try {
-    const preferences = await loadPreferences();
-    if (themeChanged) {
-      return;
-    }
-    const savedTheme = applyTheme(preferences.theme || activeTheme);
-    lsSet(THEME_STORAGE_KEY, savedTheme);
-  } catch (error) {
-    // Browser storage remains the fallback when the preference API is unavailable.
+  const preferences = await loadPreferences();
+  if (themeChanged) {
+    return;
   }
+  const savedTheme = applyTheme(preferences.theme || activeTheme);
+  lsSet(THEME_STORAGE_KEY, savedTheme);
 }
 
 function initializeLanguageControl() {

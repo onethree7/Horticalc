@@ -24,4 +24,4 @@ def test_sidebar_navigation_styles_wrap_button_text() -> None:
     assert ".workflow-step-title,\n.workflow-step-hint,\n.workflow-step-arrow" in content
     assert ".workflow-step-number" in content
     assert "overflow-wrap: anywhere;" in content
-    assert ".rail-brand,\n  .rail-workflow {\n    grid-column: 1 / -1;" in content
+    assert ".rail-brand,\n  .rail-workflow,\n  .live-bar {\n    grid-column: 1 / -1;" in content

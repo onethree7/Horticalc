@@ -146,6 +146,8 @@ def load_user_preferences() -> dict[str, Any]:
 
 def save_user_preferences(payload: dict[str, Any]) -> None:
     preference_path = paths.user_preferences_path()
+    if not isinstance(payload, dict):
+        raise ValueError("Preferences must be a JSON object")
     _require_finite_numbers(payload, str(preference_path))
     _atomic_write_text(
         preference_path,
@@ -181,6 +183,7 @@ def _float_mapping(data: dict, location: str) -> Dict[str, float]:
 
 def _load_fertilizer_csv(csv_path: Path) -> Dict[str, Fertilizer]:
     ferts: Dict[str, Fertilizer] = {}
+    seen_names: set[str] = set()
     with csv_path.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
         fields = set(reader.fieldnames or [])
@@ -193,6 +196,10 @@ def _load_fertilizer_csv(csv_path: Path) -> Dict[str, Fertilizer]:
             name = _fertilizer_name_from_row(row)
             if not name:
                 continue
+            name_key = fertilizer_name_key(name)
+            if name_key in seen_names:
+                raise ValueError(f"{csv_path}: duplicate fertilizer name: {name}")
+            seen_names.add(name_key)
             liquid = _fertilizer_is_liquid(row)
             weight = _positive_float(
                 row.get("Gewicht") or 1.0,
@@ -348,6 +355,12 @@ def _header_for_fertilizers(fertilizers: Dict[str, Fertilizer], existing_header:
     return header
 
 
+def _validate_fertilizer(fertilizer: Fertilizer) -> None:
+    _positive_float(fertilizer.weight_factor, f"Weight for {fertilizer.name}")
+    for key, value in fertilizer.comp.items():
+        _finite_float(value, f"Composition {key} for {fertilizer.name}")
+
+
 def _write_fertilizer_csv(
     fertilizers: Dict[str, Fertilizer],
     csv_path: Path,
@@ -362,7 +375,8 @@ def _write_fertilizer_csv(
     writer = csv.DictWriter(output, fieldnames=header)
     writer.writeheader()
     for fert in sorted_ferts:
-        weight = _positive_float(fert.weight_factor, f"Weight for {fert.name}")
+        _validate_fertilizer(fert)
+        weight = float(fert.weight_factor)
         row = {key: "" for key in header}
         row[name_field] = fert.name
         row["Liquid"] = "1" if fert.liquid else "0"
@@ -373,7 +387,6 @@ def _write_fertilizer_csv(
             value = fert.comp.get(key)
             if value is None:
                 continue
-            _finite_float(value, f"Composition {key} for {fert.name}")
             row[key] = format(value, ".10g")
         writer.writerow(row)
     _atomic_write_text(csv_path, output.getvalue(), newline="")
@@ -410,6 +423,9 @@ def save_fertilizers(
     fertilizers: Dict[str, Fertilizer],
     csv_path: Path | None = None,
 ) -> None:
+    for fertilizer in fertilizers.values():
+        _validate_fertilizer(fertilizer)
+
     header: list[str] | None = None
     if csv_path is None:
         layout = paths.ensure_portable_layout()
@@ -446,13 +462,18 @@ def load_molar_masses(path: Path | None = None) -> Dict[str, float]:
 
 def load_water_profile_data(path: Path) -> dict:
     data = _load_yaml(path)
-    mp = _float_mapping(data.get("mg_per_l") or {}, f"{path}: mg_per_l")
+    raw_mg_per_l = data.get("mg_per_l")
+    mp = _float_mapping(
+        {} if raw_mg_per_l is None else raw_mg_per_l,
+        f"{path}: mg_per_l",
+    )
+    raw_osmosis_percent = data.get("osmosis_percent")
     return {
         "name": data.get("name") or path.stem,
         "source": data.get("source") or "",
         "mg_per_l": mp,
         "osmosis_percent": _finite_float(
-            data.get("osmosis_percent") or 0,
+            0 if raw_osmosis_percent is None else raw_osmosis_percent,
             f"{path}: osmosis_percent",
         ),
     }
@@ -480,8 +501,9 @@ def load_recipe(path: Path) -> dict:
 
 def load_nutrient_solution_data(path: Path) -> dict:
     data = _load_yaml(path)
+    raw_targets = data.get("targets_mg_per_l")
     targets = _float_mapping(
-        data.get("targets_mg_per_l") or {},
+        {} if raw_targets is None else raw_targets,
         f"{path}: targets_mg_per_l",
     )
     return {

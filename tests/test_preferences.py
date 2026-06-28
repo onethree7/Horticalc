@@ -117,3 +117,12 @@ def test_preferences_save_rejects_non_finite_numbers(monkeypatch, tmp_path) -> N
         save_user_preferences({"default_liters": float("inf")})
 
     assert not paths.user_preferences_path(tmp_path).exists()
+
+
+def test_preferences_save_requires_object(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+
+    with pytest.raises(ValueError, match="JSON object"):
+        save_user_preferences(["invalid"])
+
+    assert not paths.user_preferences_path(tmp_path).exists()

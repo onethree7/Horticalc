@@ -49,6 +49,35 @@ def test_yaml_loaders_reject_non_finite_numbers(
         loader(path)
 
 
+@pytest.mark.parametrize(
+    ("content", "loader", "message"),
+    [
+        ("name: Invalid\nmg_per_l: []\n", load_water_profile_data, "must be a mapping"),
+        (
+            'name: Invalid\nosmosis_percent: ""\nmg_per_l: {}\n',
+            load_water_profile_data,
+            "must be numeric",
+        ),
+        (
+            "name: Invalid\ntargets_mg_per_l: []\n",
+            load_nutrient_solution_data,
+            "must be a mapping",
+        ),
+    ],
+)
+def test_profile_loaders_reject_explicitly_malformed_empty_values(
+    tmp_path: Path,
+    content: str,
+    loader,
+    message: str,
+) -> None:
+    path = tmp_path / "invalid.yml"
+    path.write_text(content, encoding="utf-8")
+
+    with pytest.raises(ValueError, match=message):
+        loader(path)
+
+
 def test_recipe_save_rejects_non_finite_numbers(tmp_path: Path) -> None:
     path = tmp_path / "recipe.yml"
 

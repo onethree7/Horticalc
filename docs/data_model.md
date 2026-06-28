@@ -45,6 +45,12 @@ numbers. Invalid preferences are logged and retain the empty-preferences
 fallback; invalid resource YAML remains visible to API logging and is skipped
 from resource lists.
 
+Explicitly malformed profile fields are not treated as missing defaults:
+numeric mappings must be mappings, osmosis percentages must be numeric, and
+fertilizer CSV names must remain unique after whitespace and case
+normalization. All incoming fertilizers are validated before shipped/user
+overlay differences are calculated. Preference writers require a JSON object.
+
 `user/preferences.json` is a JSON object containing optional `theme`,
 `default_liters`, `solver_config`, and `last_water_profile` fields. The API
 validates partial updates and preserves JSON types. Preference `solver_config`

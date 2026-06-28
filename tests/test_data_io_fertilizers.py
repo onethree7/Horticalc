@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 import horticalc.data_io as data_io
+from horticalc import paths
 from horticalc.data_io import Fertilizer, load_fertilizers, save_fertilizers
 
 def test_load_fertilizers_ignores_number_field(tmp_path: Path) -> None:
@@ -128,6 +129,17 @@ def test_load_fertilizers_rejects_non_positive_weight(tmp_path: Path, weight: st
         load_fertilizers(csv_path)
 
 
+def test_load_fertilizers_rejects_normalized_duplicate_names(tmp_path: Path) -> None:
+    csv_path = tmp_path / "fertilizers.csv"
+    csv_path.write_text(
+        "Düngername,Liquid,Gewicht,NO3\nTest,0,1,0.1\n test ,0,1,0.2\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="duplicate fertilizer name"):
+        load_fertilizers(csv_path)
+
+
 def test_save_fertilizers_rejects_non_finite_numbers(tmp_path: Path) -> None:
     csv_path = tmp_path / "fertilizers.csv"
     fertilizers = {
@@ -160,6 +172,32 @@ def test_save_fertilizers_rejects_zero_weight(tmp_path: Path) -> None:
         save_fertilizers(fertilizers, csv_path)
 
     assert not csv_path.exists()
+
+
+def test_overlay_save_validates_all_incoming_fertilizers(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    shipped_path = tmp_path / "data" / "fertilizers.csv"
+    shipped_path.parent.mkdir(parents=True)
+    shipped_path.write_text(
+        "Düngername,Liquid,Gewicht,NO3\nExisting,0,1,0.1\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+    incoming = {
+        "Existing": Fertilizer(
+            name="Existing",
+            liquid=False,
+            weight_factor=float("nan"),
+            comp={"NO3": 0.1},
+        )
+    }
+
+    with pytest.raises(ValueError, match="finite"):
+        save_fertilizers(incoming)
+
+    assert not paths.user_fertilizer_overrides_path(tmp_path).exists()
 
 
 def test_atomic_fertilizer_save_preserves_existing_file_on_replace_failure(

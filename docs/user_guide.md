@@ -69,8 +69,8 @@ Then open `http://127.0.0.1:8000/`.
 
 ## GUI Areas
 
-- **Fertilizer editor:** inspect and edit fertilizer products and composition
-  values.
+- **Fertilizer editor:** inspect, search, and edit fertilizer products and
+  composition values in one continuous table.
 - **Water values:** load, edit, save, and mix water profiles with reverse-
   osmosis water.
 - **Calculator:** select fertilizers and doses, calculate a recipe, and inspect

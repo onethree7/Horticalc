@@ -308,7 +308,7 @@ def test_fertilizer_editor_sticky_columns_size_from_visible_content() -> None:
     assert "--fert-editor-weight-width: 52px" in styles
     assert "left: calc(var(--fert-editor-index-width) + var(--fert-editor-name-width))" in styles
     assert "left: calc(var(--fert-editor-index-width) + var(--fert-editor-name-width) + var(--fert-editor-liquid-width))" in styles
-    assert "const indexDigitCount = String(Math.max(1, filteredRows.length)).length;" in app_js
+    assert "const indexDigitCount = String(Math.max(1, sortedRows.length)).length;" in app_js
     assert "calc(${indexDigitCount}ch + (var(--space-2) * 2))" in app_js
     assert "addFertilizerNameColumnResizer" in app_js
     assert 'table.style.setProperty("--fert-editor-name-width"' in app_js

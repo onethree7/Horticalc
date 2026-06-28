@@ -26,6 +26,9 @@ The active navigation has four user-facing areas:
 
 The workflow menu is the single owner of visible area navigation; it directly
 selects the matching calculator, water, solver, or fertilizer-editor panel.
+The large fertilizer-editor and Solver picker tables are mounted only while
+their workflow is active and are removed from the DOM when another workflow is
+selected. Their JavaScript state remains intact across navigation.
 
 The `Konfiguration` card in `frontend/index.html` contains the global batch
 liters input, a `Design` selector, and a `Sprache` selector. `frontend/app.js`
@@ -45,8 +48,9 @@ rewriting the user's defaults. A water profile loaded with the water-profile
 controls becomes the next startup profile; a water profile loaded indirectly
 from a recipe does not. Missing remembered profiles fall back to `default.yml`.
 
-Independent startup resources load concurrently. If any required catalog or
-schema fails, the System indicator shows `Data incomplete` instead of
+Preferences and independent startup resources begin loading concurrently. If
+any required catalog or schema fails, the System indicator shows `Data
+incomplete` instead of
 claiming that the complete UI is ready. Calculation, Solver, recipe-profile,
 and water-profile requests use latest-request ownership: a slower response from
 an older edit or selection is discarded instead of overwriting newer UI state.
@@ -73,6 +77,9 @@ compact widths. The sticky fertilizer-name column starts at `18rem` and has a
 drag handle on its right edge; resizing is limited to 180-640 pixels and only
 affects the editor table. The four-column sticky base block uses theme-specific
 opaque row colors so horizontally scrolled nutrient values cannot show through.
+The editor keeps the complete catalog in one continuous table while it is
+active. Its debounced name search toggles existing row visibility instead of
+rebuilding thousands of inputs for every typed character.
 
 The frontend selects the first supported language from `navigator.languages`
 on first use and falls back to English. An explicit language selection is

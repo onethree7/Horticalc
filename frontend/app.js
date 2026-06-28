@@ -111,6 +111,7 @@ const liveLastCalc = qs("#liveLastCalc");
 
 const DEFAULT_LITERS = 10.0;
 const DEFAULT_THEME = "horticalc-dark";
+const FERTILIZER_EDITOR_SEARCH_DELAY_MS = 150;
 const THEME_STORAGE_KEY = "horticalc.theme";
 const THEME_OPTIONS = new Set([
   DEFAULT_THEME,
@@ -147,6 +148,7 @@ let solverApplyStatusTimer = null;
 let fertilizerEditorRows = [];
 let fertilizerEditorSelectedIndex = 0;
 let fertilizerEditorFilter = "";
+let fertilizerEditorSearchTimer = null;
 let fertilizerEditorTable;
 let fertilizerEditorNameWidthPx = 288;
 let fertilizerEditorCompKeys = [];
@@ -155,6 +157,7 @@ let summaryView = "ion";
 let ionNitrogenExpanded = false;
 let fertilizerEditorPreferredKeys = [];
 let currentLiters = DEFAULT_LITERS;
+let currentShellView = "fertilizers";
 
 const shellViewConfigs = {
   fertilizers: {
@@ -748,6 +751,26 @@ function renderTableRows(tableBody, rowCount, buildRow) {
   }
 }
 
+function releaseInactiveHeavyViews() {
+  if (currentShellView !== "editor") {
+    fertilizerEditorTableWrap.replaceChildren();
+    fertilizerEditorTable = null;
+  }
+  if (currentShellView !== "solver") {
+    solverAllowedFertilizersSelect.replaceChildren();
+    solverFixedTable.replaceChildren();
+  }
+}
+
+function renderActiveHeavyView() {
+  if (currentShellView === "editor") {
+    renderFertilizerEditor();
+  } else if (currentShellView === "solver") {
+    renderSolverAllowedOptions();
+    renderSolverFixedTable();
+  }
+}
+
 function setMode(mode) {
   const isSolver = mode === "solver";
   const isEditor = mode === "fertilizers";
@@ -806,7 +829,10 @@ function scrollToPanelAnchor(anchor, shouldFocus = true) {
 function showShellView(view, options = {}) {
   const config = shellViewConfigs[view] || shellViewConfigs.fertilizers;
   const shouldScroll = options.scroll !== false;
+  currentShellView = shellViewConfigs[view] ? view : "fertilizers";
   setMode(config.mode);
+  releaseInactiveHeavyViews();
+  renderActiveHeavyView();
   qsa("[data-shell-view]").forEach((button) => {
     const isActive = button.dataset.shellView === view;
     button.classList.toggle("is-active", isActive);
@@ -1053,7 +1079,9 @@ function setFertilizerEditorData(fertilizers) {
   }));
   fertilizerEditorSelectedIndex = 0;
   fertilizerEditorCompKeys = buildFertilizerCompKeys(fertilizerEditorRows);
-  renderFertilizerEditor();
+  if (currentShellView === "editor") {
+    renderFertilizerEditor();
+  }
 }
 
 function focusEditorInput(rowIndex, field, compKey) {
@@ -1097,7 +1125,10 @@ function handleEditorEnterKey(event) {
     nextInRow.focus();
     return;
   }
-  const nextRow = row.nextElementSibling;
+  let nextRow = row.nextElementSibling;
+  while (nextRow?.hidden) {
+    nextRow = nextRow.nextElementSibling;
+  }
   if (!nextRow) {
     return;
   }
@@ -1191,24 +1222,42 @@ function addFertilizerNameColumnResizer(table) {
   header.appendChild(handle);
 }
 
+function applyFertilizerEditorFilter() {
+  if (!fertilizerEditorTable) {
+    return;
+  }
+  const query = fertilizerEditorFilter.trim().toLowerCase();
+  const rows = Array.from(qsa("tr[data-editor-index]", fertilizerEditorTable));
+  let firstVisibleIndex = null;
+  let selectedVisible = false;
+  rows.forEach((row) => {
+    const editorIndex = Number(row.dataset.editorIndex);
+    const name = fertilizerEditorRows[editorIndex]?.name || "";
+    const visible = !query || name.toLowerCase().includes(query);
+    row.hidden = !visible;
+    if (visible && firstVisibleIndex === null) {
+      firstVisibleIndex = editorIndex;
+    }
+    if (visible && editorIndex === fertilizerEditorSelectedIndex) {
+      selectedVisible = true;
+    }
+  });
+  if (!selectedVisible && firstVisibleIndex !== null) {
+    setSelectedEditorRow(firstVisibleIndex);
+  }
+}
+
 function renderFertilizerEditor() {
-  if (!fertilizerEditorTableWrap) {
+  if (!fertilizerEditorTableWrap || currentShellView !== "editor") {
     return;
   }
   fertilizerEditorTableWrap.innerHTML = "";
 
   fertilizerEditorCompKeys = buildFertilizerCompKeys(fertilizerEditorRows);
-  const filterValue = fertilizerEditorFilter.trim().toLowerCase();
-  const filteredRows = fertilizerEditorRows
+  const sortedRows = fertilizerEditorRows
     .map((row, index) => ({ row, index }))
-    .filter(({ row }) => {
-      if (!filterValue) {
-        return true;
-      }
-      return row.name.toLowerCase().includes(filterValue);
-    })
     .sort(compareFertilizerEditorRows);
-  const indexDigitCount = String(Math.max(1, filteredRows.length)).length;
+  const indexDigitCount = String(Math.max(1, sortedRows.length)).length;
   const colgroupClasses = [
     "col-index",
     "col-name",
@@ -1246,14 +1295,7 @@ function renderFertilizerEditor() {
     `calc(${indexDigitCount}ch + (var(--space-2) * 2))`
   );
 
-  if (filteredRows.length) {
-    const stillVisible = filteredRows.some(({ index }) => index === fertilizerEditorSelectedIndex);
-    if (!stillVisible) {
-      fertilizerEditorSelectedIndex = filteredRows[0].index;
-    }
-  }
-
-  filteredRows.forEach(({ row, index }, visibleIndex) => {
+  sortedRows.forEach(({ row, index }, visibleIndex) => {
     const tr = document.createElement("tr");
     tr.dataset.editorIndex = index;
     tr.classList.toggle("is-selected", index === fertilizerEditorSelectedIndex);
@@ -1349,6 +1391,7 @@ function renderFertilizerEditor() {
 
     table.tbody.appendChild(tr);
   });
+  applyFertilizerEditorFilter();
 }
 
 async function putFertilizers(payload) {
@@ -1374,7 +1417,6 @@ async function refreshFertilizerCatalog() {
       Object.assign(row, createCalculatorRow());
     }
   });
-  renderSolverResults(null);
   if (!calculatorRows.length) {
     calculatorRows.push(createCalculatorRow());
   }
@@ -1383,7 +1425,6 @@ async function refreshFertilizerCatalog() {
   updateSolverAllowedFertilizers(availableSolverNames, "replace");
   renderSelectionTable();
   renderCalculatorTable();
-  renderSolverResults(null);
   scheduleRecalculate();
 }
 
@@ -1436,6 +1477,12 @@ async function reloadFertilizerEditor() {
 }
 
 function addFertilizerEditorRow() {
+  fertilizerEditorFilter = "";
+  fertEditorSearchInput.value = "";
+  if (fertilizerEditorSearchTimer) {
+    clearTimeout(fertilizerEditorSearchTimer);
+    fertilizerEditorSearchTimer = null;
+  }
   fertilizerEditorRows.push({ name: "", liquid: false, weight_factor: null, comp: {} });
   fertilizerEditorSelectedIndex = fertilizerEditorRows.length - 1;
   renderFertilizerEditor();
@@ -1491,6 +1538,10 @@ function setSolverAllowedRowState(row, checked) {
 
 function renderSolverAllowedOptions() {
   if (!solverAllowedFertilizersSelect) {
+    return;
+  }
+  if (currentShellView !== "solver") {
+    updateSolverAllowedCount();
     return;
   }
   solverAllowedFertilizersSelect.innerHTML = "";
@@ -1597,6 +1648,9 @@ function syncSolverOverridePanel({ forceOpen = false } = {}) {
 }
 
 function renderSolverFixedTable() {
+  if (currentShellView !== "solver") {
+    return;
+  }
   solverFixedTable.innerHTML = "";
   solverAllowedFertilizers.forEach((name) => {
     const row = document.createElement("tr");
@@ -3121,26 +3175,30 @@ function renderWaterProfileOptions() {
 }
 
 function refreshLocalizedUi() {
-  i18n.applyDomTranslations();
   updateLitersDisplay();
   refreshApiStatusLabel();
   updateLiveResultBar();
   setProfileMode(currentProfileMode);
   renderWaterProfileOptions();
-  renderSelectionTable();
-  renderCalculatorTable();
-  renderWaterTable();
-  renderFertilizerEditor();
-  renderSolverAllowedOptions();
-  renderSolverFixedTable();
-  renderSolverTargetsTable();
-  renderSolverResults(lastSolveResult);
-  if (lastCalculation) {
-    renderCalculation(lastCalculation);
+  if (currentShellView === "editor") {
+    renderFertilizerEditor();
+  } else if (currentShellView === "solver") {
+    renderSolverAllowedOptions();
+    renderSolverFixedTable();
+    renderSolverTargetsTable();
+    renderSolverResults(lastSolveResult);
+  } else if (currentShellView === "water") {
+    renderWaterTable();
   } else {
-    renderWaterSummaryTable(waterSummaryTable, {});
-    renderOxideSummaryTable(oxideSummaryTable, {});
-    renderIonSummaryTable(ionSummaryTable, {});
+    renderSelectionTable();
+    renderCalculatorTable();
+    if (lastCalculation) {
+      renderCalculation(lastCalculation);
+    } else {
+      renderWaterSummaryTable(waterSummaryTable, {});
+      renderOxideSummaryTable(oxideSummaryTable, {});
+      renderIonSummaryTable(ionSummaryTable, {});
+    }
   }
 }
 
@@ -3263,9 +3321,11 @@ function finishStartupStatus(errors) {
 
 async function init() {
   let hasStoredAllowed = false;
-  const preferences = await loadPreferences();
   setApiStatus(t("status.loadingData"), "loading");
-  const startupResources = await loadStartupResources();
+  const [preferences, startupResources] = await Promise.all([
+    loadPreferences(),
+    loadStartupResources(),
+  ]);
   solverConfigDefinitions = startupResources.solverConfigDefinitions;
   fertilizerEditorPreferredKeys = startupResources.fertilizerEditorPreferredKeys;
   fertilizerOptions = startupResources.fertilizerOptions;
@@ -3382,7 +3442,13 @@ if (summaryViewToggle) {
 
 fertEditorSearchInput.addEventListener("input", (event) => {
   fertilizerEditorFilter = event.target.value || "";
-  renderFertilizerEditor();
+  if (fertilizerEditorSearchTimer) {
+    clearTimeout(fertilizerEditorSearchTimer);
+  }
+  fertilizerEditorSearchTimer = window.setTimeout(() => {
+    fertilizerEditorSearchTimer = null;
+    applyFertilizerEditorFilter();
+  }, FERTILIZER_EDITOR_SEARCH_DELAY_MS);
 });
 
 fertEditorAddRowButton.addEventListener("click", addFertilizerEditorRow);

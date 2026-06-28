@@ -37,6 +37,14 @@ contain finite numbers; API save routes reject `NaN` and infinity rather than
 persisting them. Runtime liters, fertilizer grams, Solver fixed grams, and
 osmosis percentages must also be finite.
 
+Persistence writes for YAML, preferences JSON, fertilizer CSV, and disabled
+fertilizer names use a temporary file followed by an atomic replacement. A
+failed replacement therefore leaves the previous file intact. YAML files must
+contain a top-level mapping, and YAML/JSON/CSV persistence rejects non-finite
+numbers. Invalid preferences are logged and retain the empty-preferences
+fallback; invalid resource YAML remains visible to API logging and is skipped
+from resource lists.
+
 `user/preferences.json` is a JSON object containing optional `theme`,
 `default_liters`, `solver_config`, and `last_water_profile` fields. The API
 validates partial updates and preserves JSON types. Preference `solver_config`
@@ -76,7 +84,9 @@ Composition keys are defined by `COMP_COLS` in `src/horticalc/core.py`:
 `Liquid` is strictly `0` for a solid fertilizer or `1` for a liquid
 fertilizer. It is exposed by the API as the Boolean field `liquid`; localized
 labels are frontend presentation only. `Gewicht` is a `weight_factor` and
-multiplies the fertilizer dose to effective product mass.
+multiplies the fertilizer dose to effective product mass. It must be a finite
+number greater than zero; invalid values are rejected instead of being silently
+converted during persistence.
 
 ### Dose Units, Mass, And Liquid Fertilizers
 

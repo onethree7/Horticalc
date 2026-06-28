@@ -1,6 +1,9 @@
 import csv
 from pathlib import Path
 
+import pytest
+
+import horticalc.data_io as data_io
 from horticalc.data_io import Fertilizer, load_fertilizers, save_fertilizers
 
 def test_load_fertilizers_ignores_number_field(tmp_path: Path) -> None:
@@ -93,3 +96,95 @@ def test_load_fertilizers_requires_liquid_column(tmp_path: Path) -> None:
         assert "requires Liquid" in str(error)
     else:
         raise AssertionError("Liquid column must be required")
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        "Invalid,0,inf,0.1\n",
+        "Invalid,0,1,nan\n",
+    ],
+)
+def test_load_fertilizers_rejects_non_finite_numbers(tmp_path: Path, row: str) -> None:
+    csv_path = tmp_path / "fertilizers.csv"
+    csv_path.write_text(
+        "Düngername,Liquid,Gewicht,NO3\n" + row,
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="finite"):
+        load_fertilizers(csv_path)
+
+
+@pytest.mark.parametrize("weight", ["0", "-1"])
+def test_load_fertilizers_rejects_non_positive_weight(tmp_path: Path, weight: str) -> None:
+    csv_path = tmp_path / "fertilizers.csv"
+    csv_path.write_text(
+        f"Düngername,Liquid,Gewicht,NO3\nInvalid,0,{weight},0.1\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="greater than zero"):
+        load_fertilizers(csv_path)
+
+
+def test_save_fertilizers_rejects_non_finite_numbers(tmp_path: Path) -> None:
+    csv_path = tmp_path / "fertilizers.csv"
+    fertilizers = {
+        "Invalid": Fertilizer(
+            name="Invalid",
+            liquid=False,
+            weight_factor=1.0,
+            comp={"NO3": float("inf")},
+        )
+    }
+
+    with pytest.raises(ValueError, match="finite"):
+        save_fertilizers(fertilizers, csv_path)
+
+    assert not csv_path.exists()
+
+
+def test_save_fertilizers_rejects_zero_weight(tmp_path: Path) -> None:
+    csv_path = tmp_path / "fertilizers.csv"
+    fertilizers = {
+        "Invalid": Fertilizer(
+            name="Invalid",
+            liquid=False,
+            weight_factor=0,
+            comp={"NO3": 0.1},
+        )
+    }
+
+    with pytest.raises(ValueError, match="greater than zero"):
+        save_fertilizers(fertilizers, csv_path)
+
+    assert not csv_path.exists()
+
+
+def test_atomic_fertilizer_save_preserves_existing_file_on_replace_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    csv_path = tmp_path / "fertilizers.csv"
+    original = "Düngername,Liquid,Gewicht,NO3\nOriginal,0,1,0.1\n"
+    csv_path.write_text(original, encoding="utf-8")
+    fertilizers = {
+        "Updated": Fertilizer(
+            name="Updated",
+            liquid=False,
+            weight_factor=1.0,
+            comp={"NO3": 0.2},
+        )
+    }
+
+    def fail_replace(_source: Path, _destination: Path) -> None:
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(data_io.os, "replace", fail_replace)
+
+    with pytest.raises(OSError, match="replace failed"):
+        save_fertilizers(fertilizers, csv_path)
+
+    assert csv_path.read_text(encoding="utf-8") == original
+    assert list(tmp_path.glob(".fertilizers.csv.tmp-*")) == []

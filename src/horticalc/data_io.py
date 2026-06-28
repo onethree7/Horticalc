@@ -1,16 +1,24 @@
 from __future__ import annotations
 
 import csv
+import io
 import json
+import logging
+import math
 import os
 import re
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 
 import yaml
 
 from . import paths
+
+
+logger = logging.getLogger(__name__)
+
 
 @dataclass(frozen=True)
 class Fertilizer:
@@ -63,14 +71,57 @@ def _fertilizer_name_from_row(row: dict[str, str | None]) -> str:
     return ""
 
 
+def _require_finite_numbers(value: Any, location: str) -> None:
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(f"{location} must contain only finite numbers")
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _require_finite_numbers(item, f"{location}.{key}")
+    elif isinstance(value, (list, tuple)):
+        for index, item in enumerate(value):
+            _require_finite_numbers(item, f"{location}[{index}]")
+
+
 def _load_yaml(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+        payload = yaml.safe_load(f)
+    if payload is None:
+        return {}
+    if not isinstance(payload, dict):
+        raise ValueError(f"{path} must contain a YAML mapping")
+    _require_finite_numbers(payload, str(path))
+    return payload
+
+
+def _atomic_write_text(path: Path, content: str, *, newline: str | None = None) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline=newline,
+            delete=False,
+            dir=path.parent,
+            prefix=f".{path.name}.tmp-",
+        ) as temp_file:
+            temp_path = Path(temp_file.name)
+            temp_file.write(content)
+            temp_file.flush()
+            os.fsync(temp_file.fileno())
+        os.replace(temp_path, path)
+    finally:
+        if temp_path is not None:
+            try:
+                temp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 def _save_yaml(path: Path, payload: dict) -> None:
-    with path.open("w", encoding="utf-8") as f:
-        yaml.safe_dump(payload, f, sort_keys=True, allow_unicode=True)
+    _require_finite_numbers(payload, str(path))
+    content = yaml.safe_dump(payload, sort_keys=True, allow_unicode=True)
+    _atomic_write_text(path, content)
 
 
 def load_user_preferences() -> dict[str, Any]:
@@ -79,24 +130,53 @@ def load_user_preferences() -> dict[str, Any]:
         return {}
     try:
         payload = json.loads(preference_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError) as exc:
+        logger.warning("Ignoring invalid preferences file %s: %s", preference_path, exc)
         return {}
     if not isinstance(payload, dict):
+        logger.warning("Ignoring invalid preferences file %s: expected a JSON object", preference_path)
+        return {}
+    try:
+        _require_finite_numbers(payload, str(preference_path))
+    except ValueError as exc:
+        logger.warning("Ignoring invalid preferences file %s: %s", preference_path, exc)
         return {}
     return {str(key): value for key, value in payload.items()}
 
 
 def save_user_preferences(payload: dict[str, Any]) -> None:
     preference_path = paths.user_preferences_path()
-    preference_path.parent.mkdir(parents=True, exist_ok=True)
-    preference_path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
+    _require_finite_numbers(payload, str(preference_path))
+    _atomic_write_text(
+        preference_path,
+        json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
     )
 
 
-def _float_mapping(data: dict) -> Dict[str, float]:
-    return {str(k): float(v) for k, v in data.items()}
+def _finite_float(value: Any, location: str) -> float:
+    try:
+        numeric_value = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{location} must be numeric") from exc
+    if not math.isfinite(numeric_value):
+        raise ValueError(f"{location} must be finite")
+    return numeric_value
+
+
+def _positive_float(value: Any, location: str) -> float:
+    numeric_value = _finite_float(value, location)
+    if numeric_value <= 0:
+        raise ValueError(f"{location} must be greater than zero")
+    return numeric_value
+
+
+def _float_mapping(data: dict, location: str) -> Dict[str, float]:
+    if not isinstance(data, dict):
+        raise ValueError(f"{location} must be a mapping")
+    return {
+        str(key): _finite_float(value, f"{location}.{key}")
+        for key, value in data.items()
+    }
 
 
 def _load_fertilizer_csv(csv_path: Path) -> Dict[str, Fertilizer]:
@@ -114,7 +194,10 @@ def _load_fertilizer_csv(csv_path: Path) -> Dict[str, Fertilizer]:
             if not name:
                 continue
             liquid = _fertilizer_is_liquid(row)
-            weight = float(row.get("Gewicht") or 1.0)
+            weight = _positive_float(
+                row.get("Gewicht") or 1.0,
+                f"{csv_path}: Gewicht for {name}",
+            )
 
             comp: Dict[str, float] = {}
             for k, v in row.items():
@@ -127,6 +210,8 @@ def _load_fertilizer_csv(csv_path: Path) -> Dict[str, Fertilizer]:
                 except ValueError:
                     # ignore text columns
                     continue
+                if not math.isfinite(value):
+                    raise ValueError(f"{csv_path}: {k} for {name} must be finite")
                 if value == 0:
                     continue
                 comp[k] = value
@@ -199,10 +284,8 @@ def _write_disabled_fertilizers(names: list[str], path: Path) -> None:
     if not names:
         path.unlink(missing_ok=True)
         return
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temp_path = path.with_name(f".{path.name}.tmp")
-    temp_path.write_text("\n".join(sorted(names, key=str.casefold)) + "\n", encoding="utf-8")
-    os.replace(temp_path, path)
+    content = "\n".join(sorted(names, key=str.casefold)) + "\n"
+    _atomic_write_text(path, content)
 
 
 def _migrate_legacy_user_fertilizers(root: Path) -> None:
@@ -270,28 +353,30 @@ def _write_fertilizer_csv(
     csv_path: Path,
     existing_header: list[str] | None = None,
 ) -> None:
-    csv_path.parent.mkdir(parents=True, exist_ok=True)
     header = _header_for_fertilizers(fertilizers, existing_header)
     name_field = next((field for field in header if field in FERTILIZER_NAME_FIELDS), "Düngername")
 
     sorted_ferts = sorted(fertilizers.values(), key=lambda fert: fertilizer_name_key(fert.name))
 
-    with csv_path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=header)
-        writer.writeheader()
-        for fert in sorted_ferts:
-            row = {key: "" for key in header}
-            row[name_field] = fert.name
-            row["Liquid"] = "1" if fert.liquid else "0"
-            row["Gewicht"] = format(fert.weight_factor or 1.0, ".10g")
-            for key in header:
-                if _is_base_fertilizer_field(key):
-                    continue
-                value = fert.comp.get(key)
-                if value is None:
-                    continue
-                row[key] = format(value, ".10g")
-            writer.writerow(row)
+    output = io.StringIO(newline="")
+    writer = csv.DictWriter(output, fieldnames=header)
+    writer.writeheader()
+    for fert in sorted_ferts:
+        weight = _positive_float(fert.weight_factor, f"Weight for {fert.name}")
+        row = {key: "" for key in header}
+        row[name_field] = fert.name
+        row["Liquid"] = "1" if fert.liquid else "0"
+        row["Gewicht"] = format(weight, ".10g")
+        for key in header:
+            if _is_base_fertilizer_field(key):
+                continue
+            value = fert.comp.get(key)
+            if value is None:
+                continue
+            _finite_float(value, f"Composition {key} for {fert.name}")
+            row[key] = format(value, ".10g")
+        writer.writerow(row)
+    _atomic_write_text(csv_path, output.getvalue(), newline="")
 
 
 def _read_csv_header(csv_path: Path) -> list[str] | None:
@@ -300,6 +385,25 @@ def _read_csv_header(csv_path: Path) -> list[str] | None:
     with csv_path.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
         return list(reader.fieldnames) if reader.fieldnames else None
+
+
+def _fertilizer_overlay_changes(
+    shipped: Dict[str, Fertilizer],
+    incoming: Dict[str, Fertilizer],
+) -> tuple[Dict[str, Fertilizer], list[str]]:
+    shipped_by_key = {_fertilizer_key(fert): fert for fert in shipped.values()}
+    incoming_by_key = {_fertilizer_key(fert): fert for fert in incoming.values()}
+    overrides = {
+        fert.name: fert
+        for key, fert in incoming_by_key.items()
+        if key not in shipped_by_key or not _fertilizers_equal(fert, shipped_by_key[key])
+    }
+    disabled = [
+        shipped_fert.name
+        for key, shipped_fert in shipped_by_key.items()
+        if key not in incoming_by_key
+    ]
+    return overrides, disabled
 
 
 def save_fertilizers(
@@ -312,19 +416,7 @@ def save_fertilizers(
         _migrate_legacy_user_fertilizers(layout.root)
         shipped_path = paths.shipped_fertilizers_path(layout.root)
         shipped = _load_fertilizer_csv(shipped_path) if shipped_path.exists() else {}
-        shipped_by_key = {_fertilizer_key(fert): fert for fert in shipped.values()}
-        incoming_by_key = {_fertilizer_key(fert): fert for fert in fertilizers.values()}
-
-        overrides = {
-            fert.name: fert
-            for key, fert in incoming_by_key.items()
-            if key not in shipped_by_key or not _fertilizers_equal(fert, shipped_by_key[key])
-        }
-        disabled = [
-            shipped_fert.name
-            for key, shipped_fert in shipped_by_key.items()
-            if key not in incoming_by_key
-        ]
+        overrides, disabled = _fertilizer_overlay_changes(shipped, fertilizers)
 
         overrides_path = paths.user_fertilizer_overrides_path(layout.root)
         if overrides:
@@ -349,17 +441,20 @@ def load_molar_masses(path: Path | None = None) -> Dict[str, float]:
     if path is None:
         path = paths.app_root() / "data" / "molar_masses.yml"
     data = _load_yaml(path)
-    return _float_mapping(data)
+    return _float_mapping(data, f"{path}: molar masses")
 
 
 def load_water_profile_data(path: Path) -> dict:
     data = _load_yaml(path)
-    mp = _float_mapping(data.get("mg_per_l") or {})
+    mp = _float_mapping(data.get("mg_per_l") or {}, f"{path}: mg_per_l")
     return {
         "name": data.get("name") or path.stem,
         "source": data.get("source") or "",
         "mg_per_l": mp,
-        "osmosis_percent": float(data.get("osmosis_percent") or 0),
+        "osmosis_percent": _finite_float(
+            data.get("osmosis_percent") or 0,
+            f"{path}: osmosis_percent",
+        ),
     }
 
 
@@ -373,8 +468,8 @@ def save_water_profile(
     payload = {
         "name": name,
         "source": source,
-        "mg_per_l": {str(k): float(v) for k, v in mg_per_l.items()},
-        "osmosis_percent": float(osmosis_percent),
+        "mg_per_l": _float_mapping(mg_per_l, f"{path}: mg_per_l"),
+        "osmosis_percent": _finite_float(osmosis_percent, f"{path}: osmosis_percent"),
     }
     _save_yaml(path, payload)
 
@@ -385,7 +480,10 @@ def load_recipe(path: Path) -> dict:
 
 def load_nutrient_solution_data(path: Path) -> dict:
     data = _load_yaml(path)
-    targets = _float_mapping(data.get("targets_mg_per_l") or {})
+    targets = _float_mapping(
+        data.get("targets_mg_per_l") or {},
+        f"{path}: targets_mg_per_l",
+    )
     return {
         "name": data.get("name") or path.stem,
         "source": data.get("source") or "",
@@ -402,7 +500,10 @@ def save_nutrient_solution(
     payload = {
         "name": name,
         "source": source,
-        "targets_mg_per_l": {str(k): float(v) for k, v in targets_mg_per_l.items()},
+        "targets_mg_per_l": _float_mapping(
+            targets_mg_per_l,
+            f"{path}: targets_mg_per_l",
+        ),
     }
     _save_yaml(path, payload)
 

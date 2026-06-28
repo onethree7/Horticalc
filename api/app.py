@@ -400,7 +400,7 @@ def put_fertilizers(payload: List[FertilizerPayload]) -> dict:
         seen_names.add(name_key)
 
         weight = entry.weight_factor if entry.weight_factor is not None else 1.0
-        if not math.isfinite(weight):
+        if not math.isfinite(weight) or weight <= 0:
             raise HTTPException(status_code=400, detail="Ungültiger Gewichtswert")
 
         comp: Dict[str, float] = {}

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
+import pytest
 
 import api.app as api_app
 from horticalc import paths
+from horticalc.data_io import load_user_preferences, save_user_preferences
 
 
 def test_theme_preference_persists_in_user_directory(monkeypatch, tmp_path) -> None:
@@ -90,3 +92,28 @@ def test_preferences_can_reset_solver_config_to_defaults(monkeypatch, tmp_path) 
     assert response.status_code == 200
     assert response.json()["solver_config"] == {}
     assert client.get("/preferences").json()["solver_config"] == {}
+
+
+@pytest.mark.parametrize("content", ["{broken", "[]", '{"value": NaN}'])
+def test_invalid_preferences_are_logged_and_ignored(
+    monkeypatch,
+    tmp_path,
+    caplog,
+    content: str,
+) -> None:
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+    preference_path = paths.user_preferences_path(tmp_path)
+    preference_path.parent.mkdir(parents=True)
+    preference_path.write_text(content, encoding="utf-8")
+
+    assert load_user_preferences() == {}
+    assert "Ignoring invalid preferences file" in caplog.text
+
+
+def test_preferences_save_rejects_non_finite_numbers(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+
+    with pytest.raises(ValueError, match="finite numbers"):
+        save_user_preferences({"default_liters": float("inf")})
+
+    assert not paths.user_preferences_path(tmp_path).exists()

@@ -84,7 +84,7 @@ return HTTP 400 with English error details.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/water-profiles` | List user water profiles. |
+| `GET` | `/water-profiles` | List shipped profiles with user overrides layered by filename. |
 | `GET` | `/water-profiles/{profile_name}` | Load one water profile and include normalized values. |
 | `POST`/`PUT` | `/water-profiles` | Save a water profile. |
 
@@ -122,8 +122,8 @@ by the API. POST/PUT uses the same three-field contract.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/recipes/default` | Load the user default recipe. |
-| `GET` | `/recipes` | List user recipes except `default.yml` and `solve_*.yml`. |
+| `GET` | `/recipes/default` | Load the user override or shipped default recipe. |
+| `GET` | `/recipes` | List layered shipped/user recipes except `default.yml` and `solve_*.yml`. |
 | `GET` | `/recipes/{recipe_name}` | Load a recipe. |
 | `POST`/`PUT` | `/recipes` | Save a recipe. |
 

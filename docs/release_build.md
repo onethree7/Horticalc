@@ -17,6 +17,8 @@ only inside the extracted app folder.
 6. Runtime writes go to `AppRoot/user/` and `AppRoot/logs/`.
 7. Browser profiles are created under `AppRoot/user/browser_profiles/` and
    removed after the app window closes.
+8. Runtime logs rotate at 2 MiB with two backups; packaged builds suppress
+   routine HTTP access lines.
 
 Lock ownership is claimed exclusively before uvicorn starts. Concurrent
 launches wait for that owner to become healthy, while dead or malformed locks
@@ -44,6 +46,7 @@ dist/Horticalc/
   frontend/
   data/
   recipes/
+  README.txt
   user/      created at runtime
   logs/      created at runtime
 ```
@@ -57,6 +60,7 @@ dist/horticalc/
   frontend/
   data/
   recipes/
+  README.txt
   user/      created at runtime
   logs/      created at runtime
 ```
@@ -87,7 +91,7 @@ chmod +x scripts/packaging/build_linux.sh
 
 The build scripts run PyInstaller with
 `scripts/packaging/horticalc.spec`, then copy `frontend/`, `data/`, and
-`recipes/` into the onedir app root.
+`recipes/` into the onedir app root and add the portable `README.txt`.
 
 On Windows, `scripts/packaging/build_windows.ps1` also generates a PyInstaller
 version resource with `scripts/packaging/write_windows_version_info.py`. CI
@@ -115,11 +119,12 @@ The workflow:
 4. Starts the packaged binary with `HORTICALC_NO_BROWSER=1`.
 5. Reads `AppRoot/user/horticalc.lock.json`.
 6. Polls `/health`.
-7. Checks that `frontend/`, `data/`, `recipes/`, and `logs/` exist.
-8. Computes a SHA-256 checksum file for each platform archive.
-9. Creates GitHub Artifact Attestations for each archive and checksum file.
-10. Uploads artifacts.
-11. Attaches release assets for `v*` tags.
+7. Checks that `frontend/`, `data/`, `recipes/`, `README.txt`, and `logs/` exist.
+8. Removes smoke-test `user/` and `logs/` state from the staging directory.
+9. Computes a SHA-256 checksum file for each platform archive.
+10. Creates GitHub Artifact Attestations for each archive and checksum file.
+11. Uploads artifacts.
+12. Attaches release assets for `v*` tags.
 
 ## Cut A Release
 
@@ -171,8 +176,9 @@ For security reporting and antivirus false-positive notes, see
 
 - AppRoot is the repo root in dev and the executable folder in release.
 - Shipped defaults live in `data/` and `recipes/`.
-- Editable runtime copies live in `user/`.
-- Logs live in `logs/`.
+- User-created and edited overrides live in `user/`; shipped YAML remains in
+  `data/` and `recipes/` and is layered underneath those overrides.
+- Rotating logs live in `logs/`.
 - If AppRoot is not writable, startup fails with:
 
 ```text

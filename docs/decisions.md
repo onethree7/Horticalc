@@ -19,7 +19,8 @@ Status: decision-log.
 - Windows executable name: `Horticalc.exe`.
 - Linux executable name: `horticalc`.
 - Windows includes `tzdata` as a hidden import.
-- Release artifacts include `frontend/`, `data/`, and `recipes/`.
+- Release artifacts include `frontend/`, `data/`, `recipes/`, and the portable
+  `README.txt`, but exclude runtime state created by packaging smoke tests.
 
 Source: `scripts/packaging/horticalc.spec`,
 `scripts/packaging/build_windows.ps1`, `scripts/packaging/build_linux.sh`.
@@ -33,7 +34,8 @@ Source: `scripts/packaging/horticalc.spec`,
 - App-window sessions: PID-backed files in `AppRoot/user/launcher_sessions/`;
   the backend stops only after all live sessions end and the reopen grace
   period expires.
-- Logs: `AppRoot/logs/launcher.log`.
+- Logs: rotating `AppRoot/logs/launcher.log` files; packaged builds suppress
+  routine HTTP access entries.
 - Preferred browser: Edge, Chrome, or Chromium in app mode.
 - Browser fallback: system default browser; the local server remains running
   because generic browser-tab closure cannot be observed reliably.
@@ -49,7 +51,8 @@ Source: `src/horticalc/launcher.py`.
 - Runtime writes stay under `AppRoot/user/` and `AppRoot/logs/`.
 - The shipped fertilizer catalog remains in `data/fertilizers.csv`; user
   fertilizer edits are stored as overrides and disabled names under `user/`.
-- Shipped YAML defaults are copied to user space on first run if missing.
+- Shipped YAML defaults stay in place; user YAML overrides are layered by
+  filename, and redundant copies from older releases are pruned on startup.
 - AppRoot must be writable; otherwise startup fails fast.
 
 Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`.
@@ -68,10 +71,10 @@ Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`.
   fields override active values without rewriting those user defaults.
 - Legacy macro/stage solver controls are removed from the backend config and UI.
 - Frontend i18n is implemented without a bundler or external dependency in
-  `frontend/i18n/`. German is the fallback catalog; English, Dutch, Spanish,
-  and Simplified Chinese catalogs must keep the same keys. Language selection is
-  stored in `localStorage` under `horticalc.locale` and only affects frontend
-  presentation text.
+  `frontend/i18n/`. Browser locale detection falls back to English; German,
+  English, Dutch, Spanish, and Simplified Chinese catalogs keep the same keys.
+  Explicit language selection is stored in browser storage and
+  `user/preferences.json`.
 - API keys, CSV fields, element symbols, units, persisted recipe fields, and
   solver config keys remain literal data contracts and are not translated.
 - Numeric values use `.` as the decimal separator in GUI output, clipboard

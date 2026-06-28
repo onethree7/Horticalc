@@ -24,6 +24,8 @@ for dir in frontend data recipes; do
   cp -a "$src" "$dest"
 done
 
+cp "$repo_root/scripts/packaging/README.txt" "$app_root/README.txt"
+
 binary_path="$app_root/horticalc"
 if [[ ! -x "$binary_path" ]]; then
   echo "Expected packaged binary not found or not executable: $binary_path" >&2
@@ -36,3 +38,8 @@ for dir in frontend data recipes; do
     exit 1
   fi
 done
+
+if [[ ! -f "$app_root/README.txt" ]]; then
+  echo "Expected packaged README not found: $app_root/README.txt" >&2
+  exit 1
+fi

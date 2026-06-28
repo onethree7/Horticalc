@@ -29,6 +29,8 @@ HEALTH_ENDPOINT = "/health"
 HEALTH_TIMEOUT_SECONDS = 30.0
 LOCKFILE_NAME = "horticalc.lock.json"
 LOG_FILENAME = "launcher.log"
+LOG_MAX_BYTES = 2 * 1024 * 1024
+LOG_BACKUP_COUNT = 2
 NO_BROWSER_ENV = "HORTICALC_NO_BROWSER"
 KEEP_SERVER_ENV = "HORTICALC_KEEP_SERVER"
 FALLBACK_GRACE_SECONDS = 5.0
@@ -71,7 +73,8 @@ def lockfile_path(root: Path) -> Path:
     return root / "user" / LOCKFILE_NAME
 
 
-def _logging_config(log_file: Path) -> dict[str, Any]:
+def _logging_config(log_file: Path, *, packaged: bool | None = None) -> dict[str, Any]:
+    packaged = bool(getattr(sys, "frozen", False)) if packaged is None else packaged
     log_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     return {
         "version": 1,
@@ -79,11 +82,13 @@ def _logging_config(log_file: Path) -> dict[str, Any]:
         "formatters": {"default": {"format": log_format}},
         "handlers": {
             "file": {
-                "class": "logging.FileHandler",
+                "class": "logging.handlers.RotatingFileHandler",
                 "formatter": "default",
                 "level": "INFO",
                 "filename": str(log_file),
                 "encoding": "utf-8",
+                "maxBytes": LOG_MAX_BYTES,
+                "backupCount": LOG_BACKUP_COUNT,
             },
             "console": {
                 "class": "logging.StreamHandler",
@@ -95,7 +100,11 @@ def _logging_config(log_file: Path) -> dict[str, Any]:
             "": {"handlers": ["file", "console"], "level": "INFO"},
             "uvicorn": {"handlers": ["file", "console"], "level": "INFO", "propagate": False},
             "uvicorn.error": {"handlers": ["file", "console"], "level": "INFO", "propagate": False},
-            "uvicorn.access": {"handlers": ["file", "console"], "level": "INFO", "propagate": False},
+            "uvicorn.access": {
+                "handlers": ["file", "console"],
+                "level": "WARNING" if packaged else "INFO",
+                "propagate": False,
+            },
         },
     }
 
@@ -614,7 +623,7 @@ def main() -> None:
         host="127.0.0.1",
         port=port,
         log_config=_logging_config(log_file),
-        access_log=True,
+        access_log=not bool(getattr(sys, "frozen", False)),
     )
     server = uvicorn.Server(config)
 

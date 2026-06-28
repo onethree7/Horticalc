@@ -31,3 +31,25 @@ def test_pyproject_packages_app_assets_for_wheel_installs() -> None:
     assert "data/water_profiles/*.yml" in data_files["data/water_profiles"]
     assert "data/nutrient_solutions/*.yml" in data_files["data/nutrient_solutions"]
     assert "recipes/*.yml" in data_files["recipes"]
+
+
+def test_release_builds_include_readme_and_clean_smoke_state() -> None:
+    readme = (ROOT / "scripts" / "packaging" / "README.txt").read_text(encoding="utf-8")
+    windows_build = (ROOT / "scripts" / "packaging" / "build_windows.ps1").read_text(
+        encoding="utf-8"
+    )
+    linux_build = (ROOT / "scripts" / "packaging" / "build_linux.sh").read_text(
+        encoding="utf-8"
+    )
+    release_workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Back up user/" in readme
+    assert "logs/launcher.log" in readme
+    assert 'scripts/packaging/README.txt' in windows_build
+    assert 'scripts/packaging/README.txt' in linux_build
+    assert "Clean smoke-test runtime state" in release_workflow
+    cleanup_index = release_workflow.index("Clean smoke-test runtime state")
+    assert cleanup_index < release_workflow.index("Package artifact (Linux)")
+    assert cleanup_index < release_workflow.index("Package artifact (Windows)")

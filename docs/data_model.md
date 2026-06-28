@@ -10,7 +10,7 @@ Shipped defaults:
 - `data/nutrient_solutions/*.yml`
 - `recipes/*.yml`
 
-Runtime user copies:
+Runtime user overrides:
 
 - `user/fertilizers_overrides.csv`
 - `user/fertilizers_disabled.txt`
@@ -27,9 +27,11 @@ snapshots are migrated once: custom names move into
 `user/fertilizers_overrides.csv`, and the original file is retained as a
 `.legacy-backup`.
 
-Water profiles, nutrient solutions, and recipes still copy shipped defaults
-into `user/` when a user copy is missing. Runtime edits are written to `user/`,
-not to shipped defaults.
+Water profiles, nutrient solutions, and recipes are read from shipped defaults
+with `user/` files layered on top by filename. Runtime edits are written only
+to `user/`; shipped files remain unchanged. Startup removes byte-identical
+copied defaults and known untouched legacy nutrient-solution copies so existing
+installations migrate to the overlay model without losing edits.
 
 API list routes omit malformed or unreadable user YAML files and log a warning,
 allowing the remaining valid profiles to stay available. Numeric mappings must

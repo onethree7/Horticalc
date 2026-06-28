@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import os
 import sys
-import tempfile
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
-from shutil import copyfile
 
 
 PORTABLE_WRITE_ERROR = (
@@ -121,7 +119,12 @@ def user_recipes_dir(root: Path | None = None) -> Path:
 
 
 def default_recipe_path(root: Path | None = None) -> Path:
-    return user_recipes_dir(root) / "default.yml"
+    base = root or app_root()
+    return resolve_layered_yaml_path(
+        "default.yml",
+        user_recipes_dir(base),
+        shipped_recipes_dir(base),
+    )
 
 
 def shipped_fertilizers_path(root: Path | None = None) -> Path:
@@ -134,6 +137,11 @@ def shipped_water_profiles_dir(root: Path | None = None) -> Path:
 
 def shipped_nutrient_solutions_dir(root: Path | None = None) -> Path:
     return shipped_data_dir(root) / "nutrient_solutions"
+
+
+def resolve_layered_yaml_path(filename: str, user_folder: Path, shipped_folder: Path) -> Path:
+    user_path = user_folder / filename
+    return user_path if user_path.exists() else shipped_folder / filename
 
 
 def _resolve_yaml_path(value: str | Path, folders: tuple[Path, ...], fallback_folder: Path) -> Path:
@@ -163,49 +171,33 @@ def resolve_water_profile_path(value: str | Path, root: Path | None = None) -> P
     return _resolve_yaml_path(value, (user_water_profiles_dir(base), shipped), shipped)
 
 
-def _atomic_copy(source: Path, destination: Path) -> None:
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        delete=False,
-        dir=destination.parent,
-        prefix=f".{destination.name}.tmp-",
-    ) as temp_file:
-        temp_path = Path(temp_file.name)
-    try:
-        copyfile(source, temp_path)
-        os.replace(temp_path, destination)
-    finally:
-        try:
-            temp_path.unlink(missing_ok=True)
-        except OSError:
-            pass
+def _normalized_file_hash(path: Path) -> str:
+    normalized_bytes = path.read_bytes().replace(b"\r\n", b"\n")
+    return sha256(normalized_bytes).hexdigest()
 
 
-def _copy_if_missing(source: Path, destination: Path) -> None:
-    if destination.exists():
-        return
-    _atomic_copy(source, destination)
-
-
-def _copy_shipped_yaml_defaults(source_dir: Path, destination_dir: Path) -> None:
-    if not source_dir.exists():
-        return
-    for source in sorted(source_dir.glob("*.yml")):
-        _copy_if_missing(source, destination_dir / source.name)
-
-
-def _refresh_legacy_nutrient_solution_defaults(
-    source_dir: Path, destination_dir: Path
+def _prune_redundant_yaml_overrides(
+    source_dir: Path,
+    destination_dir: Path,
+    legacy_hashes: dict[str, str | tuple[str, ...]] | None = None,
 ) -> None:
-    for filename, legacy_hash in LEGACY_NUTRIENT_SOLUTION_HASHES.items():
-        source = source_dir / filename
-        destination = destination_dir / filename
-        if not source.exists() or not destination.exists():
+    if not source_dir.exists() or not destination_dir.exists():
+        return
+    for destination in sorted(destination_dir.glob("*.yml")):
+        source = source_dir / destination.name
+        if not source.exists():
             continue
-        normalized_bytes = destination.read_bytes().replace(b"\r\n", b"\n")
-        known_hashes = (legacy_hash,) if isinstance(legacy_hash, str) else legacy_hash
-        if sha256(normalized_bytes).hexdigest() in known_hashes:
-            _atomic_copy(source, destination)
+        destination_hash = _normalized_file_hash(destination)
+        known_legacy_hashes: tuple[str, ...] = ()
+        if legacy_hashes and destination.name in legacy_hashes:
+            legacy_value = legacy_hashes[destination.name]
+            known_legacy_hashes = (
+                (legacy_value,) if isinstance(legacy_value, str) else legacy_value
+            )
+        is_current_default = destination_hash == _normalized_file_hash(source)
+        is_legacy_default = destination_hash in known_legacy_hashes
+        if is_current_default or is_legacy_default:
+            destination.unlink()
 
 
 def _ensure_writable_dir(path: Path) -> None:
@@ -243,12 +235,19 @@ def ensure_portable_layout(root: Path | None = None) -> PortableLayout:
     nutrient_solutions.mkdir(parents=True, exist_ok=True)
     recipes.mkdir(parents=True, exist_ok=True)
 
-    _copy_shipped_yaml_defaults(shipped_water_profiles_dir(base), water_profiles)
-    _copy_shipped_yaml_defaults(shipped_nutrient_solutions_dir(base), nutrient_solutions)
-    _refresh_legacy_nutrient_solution_defaults(
-        shipped_nutrient_solutions_dir(base), nutrient_solutions
+    _prune_redundant_yaml_overrides(
+        shipped_water_profiles_dir(base),
+        water_profiles,
     )
-    _copy_shipped_yaml_defaults(shipped_recipes_dir(base), recipes)
+    _prune_redundant_yaml_overrides(
+        shipped_nutrient_solutions_dir(base),
+        nutrient_solutions,
+        LEGACY_NUTRIENT_SOLUTION_HASHES,
+    )
+    _prune_redundant_yaml_overrides(
+        shipped_recipes_dir(base),
+        recipes,
+    )
 
     return PortableLayout(
         root=base,

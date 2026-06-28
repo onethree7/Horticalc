@@ -125,13 +125,14 @@ The legacy filename `Knop_1861_Standard.yml` is retained for saved-profile and
 script compatibility, while the displayed name and provenance identify the
 1865 formulation reproduced in Circular 347.
 
-## Runtime Copies
+## Runtime Overrides
 
-HortiCalc normally reads `user/nutrient_solutions/`. On startup,
-`ensure_portable_layout()` copies new shipped profiles and refreshes an old
-profile only when its SHA-256 hash exactly matches a known untouched legacy
-file. User-edited copies are not overwritten. Source:
-`src/horticalc/paths.py`.
+Horticalc lists shipped profiles from `data/nutrient_solutions/` and layers
+same-filename files from `user/nutrient_solutions/` on top. New and edited
+profiles are stored only in `user/`. On startup, byte-identical copies and
+known untouched legacy defaults are removed so the current shipped profile is
+used; user-edited copies are preserved. Source: `src/horticalc/paths.py` and
+`api/app.py`.
 
 ## Main Sources
 

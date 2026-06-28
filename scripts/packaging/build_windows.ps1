@@ -37,6 +37,10 @@ foreach ($dir in $assetDirs) {
     Copy-Item -Recurse -Force $source $destination
 }
 
+$readmeSource = Join-Path $repoRoot "scripts/packaging/README.txt"
+$readmeDestination = Join-Path $appRoot "README.txt"
+Copy-Item -Force $readmeSource $readmeDestination
+
 $binaryPath = Join-Path $appRoot "Horticalc.exe"
 if (-not (Test-Path $binaryPath)) {
     throw "Expected packaged binary not found: $binaryPath"
@@ -47,4 +51,8 @@ foreach ($dir in $assetDirs) {
     if (-not (Test-Path $path)) {
         throw "Expected packaged asset directory not found: $path"
     }
+}
+
+if (-not (Test-Path $readmeDestination)) {
+    throw "Expected packaged README not found: $readmeDestination"
 }

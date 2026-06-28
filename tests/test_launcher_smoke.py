@@ -8,6 +8,9 @@ import pytest
 
 import horticalc.launcher as launcher
 from horticalc.launcher import (
+    LOG_BACKUP_COUNT,
+    LOG_MAX_BYTES,
+    _logging_config,
     active_launcher_sessions,
     claim_lockfile,
     cleanup_stale_profile_dirs,
@@ -49,6 +52,17 @@ def test_lockfile_roundtrip(tmp_path) -> None:
     assert payload is not None
     assert payload["port"] == 8000
     assert payload["pid"] == 1234
+
+
+def test_packaged_logging_rotates_and_suppresses_access_noise(tmp_path) -> None:
+    config = _logging_config(tmp_path / "launcher.log", packaged=True)
+
+    assert config["handlers"]["file"]["class"] == "logging.handlers.RotatingFileHandler"
+    assert config["handlers"]["file"]["maxBytes"] == LOG_MAX_BYTES
+    assert config["handlers"]["file"]["backupCount"] == LOG_BACKUP_COUNT
+    assert config["loggers"]["uvicorn.access"]["level"] == "WARNING"
+    dev_config = _logging_config(tmp_path / "dev.log", packaged=False)
+    assert dev_config["loggers"]["uvicorn.access"]["level"] == "INFO"
 
 
 def test_lockfile_removal_is_owner_aware(tmp_path) -> None:

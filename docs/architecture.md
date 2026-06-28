@@ -31,7 +31,7 @@ flowchart LR
 | NPK and ratios | `src/horticalc/metrics.py` | Formats NPK strings and summary ratios. |
 | Sluijsmann | `src/horticalc/sluijsmann.py` | Computes CaO-equivalent alkalinity/acidity metric. |
 | Solver | `src/horticalc/solver.py`, `src/horticalc/solver_config.py` | Solves target profiles into fertilizer grams. |
-| Data paths | `src/horticalc/paths.py` | Defines AppRoot, shipped defaults, user copies, logs, and lockfile layout. |
+| Data paths | `src/horticalc/paths.py` | Defines AppRoot, shipped defaults, user overrides, logs, and lockfile layout. |
 | Persistence IO | `src/horticalc/data_io.py` | Loads and saves CSV/YAML data. |
 | API | `api/app.py` | Exposes JSON API routes, accepts YAML request bodies on save endpoints, and serves the frontend. |
 | UI | `frontend/index.html`, `frontend/app.js`, `frontend/styles.css` | Static app frame, workflows, and browser state. |
@@ -76,15 +76,16 @@ AppRoot/
   data/       shipped defaults
   recipes/    shipped defaults
   frontend/   static UI
-  user/       editable user overlays and copied YAML defaults
-  logs/       launcher/server logs
+  user/       user-created and edited overrides
+  logs/       rotating launcher/server logs
 ```
 
 On startup, `ensure_portable_layout()` creates `user/` and `logs/`, checks that
-they are writable, and copies shipped YAML defaults into user space if missing.
-The fertilizer catalog stays in `data/fertilizers.csv`; `data_io.py` applies
-`user/fertilizers_overrides.csv` and `user/fertilizers_disabled.txt` as an
-overlay so shipped catalog updates are visible after app updates.
+they are writable, and removes redundant YAML copies left by older releases.
+API resource lookup layers user YAML over shipped YAML by filename. The
+fertilizer catalog stays in `data/fertilizers.csv`; `data_io.py` applies
+`user/fertilizers_overrides.csv` and `user/fertilizers_disabled.txt` with the
+same shipped-default/user-overlay policy.
 
 The launcher lock records the backend owner's PID. Each Chromium app window
 also gets a PID-backed session file under `user/launcher_sessions/`. The backend

@@ -53,6 +53,9 @@ the system browser.
 For a packaged release, extract the complete archive to a writable folder and
 run `Horticalc.exe` on Windows or `./horticalc` on Linux. Keep the executable
 beside the included `_internal/`, `frontend/`, `data/`, and `recipes/` folders.
+The packaged `README.txt` explains backup, reset, and troubleshooting. Back up
+`user/` to preserve saved profiles and settings; shipped defaults remain in
+`data/` and `recipes/` and are not duplicated into `user/`.
 
 ### Development Server
 

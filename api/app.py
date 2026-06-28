@@ -40,6 +40,10 @@ from horticalc.paths import (
     app_root,
     default_recipe_path,
     ensure_portable_layout,
+    resolve_layered_yaml_path,
+    shipped_nutrient_solutions_dir,
+    shipped_recipes_dir,
+    shipped_water_profiles_dir,
 )
 from horticalc.solver import solve_recipe_data
 from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS, validate_solver_config
@@ -232,14 +236,17 @@ def _saved_yaml_path(directory: Path, name: str, empty_name_detail: str) -> Path
 
 
 def _named_yaml_entries(
-    directory: Path,
+    directories: Path | tuple[Path, ...],
     loader: Callable[[Path], dict],
     skip: Callable[[Path], bool] | None = None,
 ) -> List[dict]:
-    if not directory.exists():
-        return []
+    resource_dirs = (directories,) if isinstance(directories, Path) else directories
+    resources: dict[str, Path] = {}
+    for directory in resource_dirs:
+        if directory.exists():
+            resources.update({path.name: path for path in directory.glob("*.yml")})
     entries = []
-    for path in sorted(directory.glob("*.yml")):
+    for path in sorted(resources.values(), key=lambda resource: resource.name.casefold()):
         if skip and skip(path):
             continue
         try:
@@ -428,14 +435,21 @@ def put_fertilizers(payload: List[FertilizerPayload]) -> dict:
 
 @app.get("/water-profiles")
 def water_profiles() -> List[dict]:
-    water_profiles_dir = _portable_layout().water_profiles
-    return _named_yaml_entries(water_profiles_dir, load_water_profile_data)
+    layout = _portable_layout()
+    return _named_yaml_entries(
+        (shipped_water_profiles_dir(layout.root), layout.water_profiles),
+        load_water_profile_data,
+    )
 
 
 @app.get("/water-profiles/{profile_name}")
 def water_profile(profile_name: str) -> dict:
-    water_profiles_dir = _portable_layout().water_profiles
-    profile_path = water_profiles_dir / _yaml_filename(profile_name)
+    layout = _portable_layout()
+    profile_path = resolve_layered_yaml_path(
+        _yaml_filename(profile_name),
+        layout.water_profiles,
+        shipped_water_profiles_dir(layout.root),
+    )
     if not profile_path.exists():
         raise HTTPException(status_code=404, detail="Water profile not found")
     data = load_water_profile_data(profile_path)
@@ -448,14 +462,21 @@ def water_profile(profile_name: str) -> dict:
 
 @app.get("/nutrient-solutions")
 def nutrient_solutions() -> List[dict]:
-    nutrient_solutions_dir = _portable_layout().nutrient_solutions
-    return _named_yaml_entries(nutrient_solutions_dir, load_nutrient_solution_data)
+    layout = _portable_layout()
+    return _named_yaml_entries(
+        (shipped_nutrient_solutions_dir(layout.root), layout.nutrient_solutions),
+        load_nutrient_solution_data,
+    )
 
 
 @app.get("/nutrient-solutions/{solution_name}")
 def nutrient_solution(solution_name: str) -> dict:
-    nutrient_solutions_dir = _portable_layout().nutrient_solutions
-    solution_path = nutrient_solutions_dir / _yaml_filename(solution_name)
+    layout = _portable_layout()
+    solution_path = resolve_layered_yaml_path(
+        _yaml_filename(solution_name),
+        layout.nutrient_solutions,
+        shipped_nutrient_solutions_dir(layout.root),
+    )
     if not solution_path.exists():
         raise HTTPException(status_code=404, detail="Nutrient Solution not found")
     return load_nutrient_solution_data(solution_path)
@@ -532,9 +553,9 @@ def default_recipe() -> dict:
 
 @app.get("/recipes")
 def recipes() -> List[dict]:
-    recipes_dir = _portable_layout().recipes
+    layout = _portable_layout()
     return _named_yaml_entries(
-        recipes_dir,
+        (shipped_recipes_dir(layout.root), layout.recipes),
         load_recipe,
         skip=lambda path: path.stem.startswith("solve_") or path.name == "default.yml",
     )
@@ -542,8 +563,12 @@ def recipes() -> List[dict]:
 
 @app.get("/recipes/{recipe_name}")
 def recipe(recipe_name: str) -> dict:
-    recipes_dir = _portable_layout().recipes
-    recipe_path = recipes_dir / _yaml_filename(recipe_name)
+    layout = _portable_layout()
+    recipe_path = resolve_layered_yaml_path(
+        _yaml_filename(recipe_name),
+        layout.recipes,
+        shipped_recipes_dir(layout.root),
+    )
     if not recipe_path.exists():
         raise HTTPException(status_code=404, detail="Recipe not found")
     return load_recipe(recipe_path)
@@ -585,8 +610,12 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
     water_mg_l: Dict[str, float] = {}
     osmosis_percent = 0.0
     if payload.water_profile_name:
-        water_profiles_dir = _portable_layout().water_profiles
-        profile_path = water_profiles_dir / _yaml_filename(payload.water_profile_name)
+        layout = _portable_layout()
+        profile_path = resolve_layered_yaml_path(
+            _yaml_filename(payload.water_profile_name),
+            layout.water_profiles,
+            shipped_water_profiles_dir(layout.root),
+        )
         if not profile_path.exists():
             raise HTTPException(status_code=404, detail="Water profile not found")
         profile = load_water_profile_data(profile_path)

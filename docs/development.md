@@ -70,7 +70,7 @@ data policy, solver defaults, and release-facing behavior.
 
 ## Generated And Ignored Files
 
-- `user/`: editable runtime copies in development.
+- `user/`: user-created and edited runtime overrides in development.
 - `logs/`: launcher logs and solver-matrix output.
 - `dist/`, `build/`: packaging output.
 - `_docs_backup/`: ignored documentation backups.

@@ -56,6 +56,36 @@ def test_portable_layout_uses_shipped_catalog_and_user_overlay(
     assert "Remove Me" not in reloaded
 
 
+def test_portable_layout_prunes_copied_defaults_and_preserves_user_yaml(tmp_path: Path) -> None:
+    shipped_water = tmp_path / "data" / "water_profiles" / "tap.yml"
+    shipped_target = tmp_path / "data" / "nutrient_solutions" / "target.yml"
+    shipped_recipe = tmp_path / "recipes" / "default.yml"
+    for path in (shipped_water, shipped_target, shipped_recipe):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"name: {path.stem}\n", encoding="utf-8")
+
+    copied_water = paths.user_water_profiles_dir(tmp_path) / shipped_water.name
+    copied_target = paths.user_nutrient_solutions_dir(tmp_path) / shipped_target.name
+    edited_recipe = paths.user_recipes_dir(tmp_path) / shipped_recipe.name
+    for source, destination in (
+        (shipped_water, copied_water),
+        (shipped_target, copied_target),
+    ):
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(source.read_bytes())
+    edited_recipe.parent.mkdir(parents=True, exist_ok=True)
+    edited_recipe.write_text("name: User default\n", encoding="utf-8")
+
+    layout = paths.ensure_portable_layout(tmp_path)
+
+    assert not copied_water.exists()
+    assert not copied_target.exists()
+    assert edited_recipe.exists()
+    assert list(layout.water_profiles.iterdir()) == []
+    assert list(layout.nutrient_solutions.iterdir()) == []
+    assert paths.default_recipe_path(tmp_path) == edited_recipe
+
+
 def test_merged_catalog_is_sorted_after_user_overrides(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -137,7 +167,7 @@ def test_legacy_migration_uses_shipped_replace_aliases_to_avoid_duplicates(
     assert "Old Name" not in paths.user_fertilizer_overrides_path(tmp_path).read_text(encoding="utf-8")
 
 
-def test_untouched_legacy_nutrient_solution_is_refreshed(
+def test_untouched_legacy_nutrient_solution_is_removed_to_use_shipped_default(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -155,9 +185,14 @@ def test_untouched_legacy_nutrient_solution_is_refreshed(
         {filename: sha256(legacy_bytes).hexdigest()},
     )
 
-    paths._refresh_legacy_nutrient_solution_defaults(shipped.parent, user.parent)
+    paths._prune_redundant_yaml_overrides(
+        shipped.parent,
+        user.parent,
+        paths.LEGACY_NUTRIENT_SOLUTION_HASHES,
+    )
 
-    assert user.read_bytes() == shipped.read_bytes()
+    assert not user.exists()
+    assert paths.resolve_layered_yaml_path(filename, user.parent, shipped.parent) == shipped
 
 
 def test_edited_legacy_nutrient_solution_is_not_overwritten(
@@ -177,6 +212,10 @@ def test_edited_legacy_nutrient_solution_is_not_overwritten(
         {filename: sha256(b"name: Legacy\nsource: old\n").hexdigest()},
     )
 
-    paths._refresh_legacy_nutrient_solution_defaults(shipped.parent, user.parent)
+    paths._prune_redundant_yaml_overrides(
+        shipped.parent,
+        user.parent,
+        paths.LEGACY_NUTRIENT_SOLUTION_HASHES,
+    )
 
     assert user.read_bytes() == b"name: User edit\nsource: custom\n"

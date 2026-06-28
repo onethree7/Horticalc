@@ -107,9 +107,15 @@ def test_solve_rejects_non_object_nested_water_values(mg_per_l) -> None:
 
 def test_resource_list_skips_invalid_yaml(monkeypatch, tmp_path, caplog) -> None:
     layout = api_app._portable_layout()
-    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", replace(layout, recipes=tmp_path))
-    (tmp_path / "good.yml").write_text("name: Good\nliters: 10\n", encoding="utf-8")
-    (tmp_path / "broken.yml").write_text("name: [", encoding="utf-8")
+    user_recipes = tmp_path / "user" / "recipes"
+    user_recipes.mkdir(parents=True)
+    monkeypatch.setattr(
+        api_app,
+        "PORTABLE_LAYOUT",
+        replace(layout, root=tmp_path, recipes=user_recipes),
+    )
+    (user_recipes / "good.yml").write_text("name: Good\nliters: 10\n", encoding="utf-8")
+    (user_recipes / "broken.yml").write_text("name: [", encoding="utf-8")
 
     response = TestClient(api_app.app).get("/recipes")
 

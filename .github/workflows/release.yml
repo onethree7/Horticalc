@@ -117,6 +117,7 @@ jobs:
                   app_root / "frontend" / "index.html",
                   app_root / "data",
                   app_root / "recipes",
+                  app_root / "README.txt",
               ]
               for path in required_paths:
                   if not path.exists():
@@ -149,6 +150,13 @@ jobs:
                   proc.kill()
                   proc.wait(timeout=10)
           PY
+
+      - name: Clean smoke-test runtime state
+        shell: bash
+        run: |
+          rm -rf "${{ matrix.app_dir }}/user" "${{ matrix.app_dir }}/logs"
+          test ! -e "${{ matrix.app_dir }}/user"
+          test ! -e "${{ matrix.app_dir }}/logs"
 
       - name: Package artifact (Linux)
         if: matrix.platform == 'linux'

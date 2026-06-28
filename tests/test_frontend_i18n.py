@@ -34,16 +34,20 @@ def test_frontend_loads_i18n_before_app_js() -> None:
     assert content.index('src="i18n/zh.js') < content.index('src="i18n/runtime.js')
     assert content.index('src="i18n/runtime.js') < content.index('src="app.js')
 
-def test_language_selector_persists_frontend_locale() -> None:
+def test_language_selector_detects_and_persists_frontend_locale() -> None:
     index_html = read_frontend_file("index.html")
     runtime_js = read_frontend_file("i18n/runtime.js")
     app_js = read_frontend_file("app.js")
 
     assert '<select id="languageSelect"' in index_html
-    assert 'const DEFAULT_LOCALE = "de";' in runtime_js
+    assert 'const DEFAULT_LOCALE = "en";' in runtime_js
     assert 'const LOCALE_STORAGE_KEY = "horticalc.locale";' in runtime_js
+    assert "detectBrowserLocale" in runtime_js
+    assert "navigator.languages" in runtime_js
     assert "document.documentElement.lang = currentLocale;" in runtime_js
     assert "initializeLanguageControl();" in app_js
+    assert "persistPreferences({ locale: i18n.getLocale() });" in app_js
+    assert "preferences.locale" in app_js
     assert 'window.addEventListener("horticalc:localechange", refreshLocalizedUi);' in app_js
 
 def test_frontend_i18n_keeps_data_contract_names_literal() -> None:
@@ -70,7 +74,7 @@ def test_fertilizer_dose_header_covers_solids_and_liquids() -> None:
     assert catalogs["nl"]["common.grams"] == "Gram/ml"
     assert catalogs["es"]["common.grams"] == "Gramos/ml"
     assert catalogs["zh"]["common.grams"] == "克/毫升"
-    assert '<th data-i18n="common.grams">Gramm/ml</th>' in index_html
+    assert '<th data-i18n="common.grams">Grams/ml</th>' in index_html
 
 
 def test_calculator_fertilizer_metadata_uses_clear_labels() -> None:
@@ -79,5 +83,5 @@ def test_calculator_fertilizer_metadata_uses_clear_labels() -> None:
 
     assert catalogs["de"]["common.productType"] == "Typ"
     assert catalogs["de"]["common.mass"] == "Masse"
-    assert '{ labelKey: "common.productType", label: "Typ" }' in app_js
-    assert '{ labelKey: "common.mass", label: "Masse" }' in app_js
+    assert '{ labelKey: "common.productType", label: "Type" }' in app_js
+    assert '{ labelKey: "common.mass", label: "Mass" }' in app_js

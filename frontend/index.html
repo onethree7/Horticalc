@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -44,7 +44,7 @@
       </symbol>
     </svg>
     <main class="app-shell" data-testid="horticalc-app-frame">
-      <aside class="app-rail" aria-label="Horticalc Steuerleiste" data-i18n-aria-label="aria.rail" data-testid="horticalc-rail">
+      <aside class="app-rail" aria-label="Horticalc control rail" data-i18n-aria-label="aria.rail" data-testid="horticalc-rail">
         <div class="rail-brand" data-testid="rail-brand">
           <span class="rail-logo" aria-hidden="true">
             <svg viewBox="0 0 32 32" focusable="false">
@@ -57,24 +57,24 @@
             <span data-i18n="app.tagline">Hydroponic Solution Calculator and powerful Nutrient Solver.</span>
           </div>
         </div>
-        <section class="rail-card rail-api-card api-config" aria-label="Systemstatus" data-i18n-aria-label="aria.system" data-testid="rail-api-controls">
+        <section class="rail-card rail-api-card api-config" aria-label="System status" data-i18n-aria-label="aria.system" data-testid="rail-api-controls">
           <div class="rail-card-heading">
             <span>System</span>
             <span class="api-status" id="apiStatus" data-testid="api-status">API bereit</span>
           </div>
         </section>
-        <section class="rail-card rail-config" aria-label="Aktuelle Konfiguration" data-i18n-aria-label="aria.config" data-testid="rail-config-controls">
+        <section class="rail-card rail-config" aria-label="Current configuration" data-i18n-aria-label="aria.config" data-testid="rail-config-controls">
           <div class="rail-card-heading">
-            <span data-i18n="config.title">Konfiguration</span>
+            <span data-i18n="config.title">Configuration</span>
             <label class="rail-config-liters" for="configLiters" id="configLitersStatus">
-              <span data-i18n="config.solutionLiters">NL:</span>
+              <span data-i18n="config.solutionLiters">NS:</span>
               <input id="configLiters" type="text" inputmode="decimal" min="0.1" step="0.1" value="10" aria-label="Liter NL" />
               <span>L</span>
             </label>
           </div>
           <label class="rail-theme-control" for="themeSelect">
             <span data-i18n="config.design">Design</span>
-            <select id="themeSelect" aria-label="Darstellung auswählen" data-i18n-aria-label="aria.theme">
+            <select id="themeSelect" aria-label="Select appearance" data-i18n-aria-label="aria.theme">
               <option value="horticalc-dark">Horticalc Dark</option>
               <option value="horticalc-light">Horticalc Light</option>
               <option value="high-contrast">High Contrast</option>
@@ -85,8 +85,8 @@
             </select>
           </label>
           <label class="rail-theme-control" for="languageSelect">
-            <span data-i18n="config.language">Sprache</span>
-            <select id="languageSelect" aria-label="Sprache auswählen" data-i18n-aria-label="aria.language">
+            <span data-i18n="config.language">Language</span>
+            <select id="languageSelect" aria-label="Select language" data-i18n-aria-label="aria.language">
               <option value="de" data-i18n="language.de">Deutsch</option>
               <option value="en" data-i18n="language.en">English</option>
               <option value="nl" data-i18n="language.nl">Nederlands</option>
@@ -95,19 +95,19 @@
             </select>
           </label>
         </section>
-        <section class="rail-card rail-workflow" aria-label="Hauptsteuerung" data-i18n-aria-label="aria.workflow" data-testid="workflow-nav">
+        <section class="rail-card rail-workflow" aria-label="Main controls" data-i18n-aria-label="aria.workflow" data-testid="workflow-nav">
           <div class="rail-card-heading">
-            <span data-i18n="workflow.menu">Hauptmenü</span>
+            <span data-i18n="workflow.menu">Main menu</span>
           </div>
-          <nav class="workflow-nav" aria-label="Workflow Schritte" data-i18n-aria-label="aria.workflowSteps">
+          <nav class="workflow-nav" aria-label="Workflow steps" data-i18n-aria-label="aria.workflowSteps">
             <button class="workflow-step workflow-step--editor" type="button" data-shell-view="editor" data-testid="workflow-editor">
               <span class="workflow-step-index" aria-hidden="true">
                 <svg class="app-icon"><use href="#icon-editor"></use></svg>
                 <span class="workflow-step-number">1</span>
               </span>
               <span class="workflow-step-copy">
-                <span class="workflow-step-title" data-i18n="workflow.editor">Dünger-Editor</span>
-                <span class="workflow-step-hint" data-i18n="workflow.editorHint">Datenbank pflegen</span>
+                <span class="workflow-step-title" data-i18n="workflow.editor">Fertilizer editor</span>
+                <span class="workflow-step-hint" data-i18n="workflow.editorHint">Maintain database</span>
               </span>
               <span class="workflow-step-arrow" aria-hidden="true">›</span>
             </button>
@@ -117,8 +117,8 @@
                 <span class="workflow-step-number">2</span>
               </span>
               <span class="workflow-step-copy">
-                <span class="workflow-step-title" data-i18n="workflow.water">Wasserwerte</span>
-                <span class="workflow-step-hint" data-i18n="workflow.waterHint">Profile und Osmose</span>
+                <span class="workflow-step-title" data-i18n="workflow.water">Water values</span>
+                <span class="workflow-step-hint" data-i18n="workflow.waterHint">Profiles and osmosis</span>
               </span>
               <span class="workflow-step-arrow" aria-hidden="true">›</span>
             </button>
@@ -128,8 +128,8 @@
                 <span class="workflow-step-number">3</span>
               </span>
               <span class="workflow-step-copy">
-                <span class="workflow-step-title" data-i18n="workflow.calculator">Rechner</span>
-                <span class="workflow-step-hint" data-i18n="workflow.calculatorHint">Rezept von Hand bauen</span>
+                <span class="workflow-step-title" data-i18n="workflow.calculator">Calculator</span>
+                <span class="workflow-step-hint" data-i18n="workflow.calculatorHint">Build recipe manually</span>
               </span>
               <span class="workflow-step-arrow" aria-hidden="true">›</span>
             </button>
@@ -140,42 +140,42 @@
               </span>
               <span class="workflow-step-copy">
                 <span class="workflow-step-title" data-i18n="workflow.solver">Solver</span>
-                <span class="workflow-step-hint" data-i18n="workflow.solverHint">Zielprofil automatisch lösen</span>
+                <span class="workflow-step-hint" data-i18n="workflow.solverHint">Solve target profile automatically</span>
               </span>
               <span class="workflow-step-arrow" aria-hidden="true">›</span>
             </button>
           </nav>
           <details class="rail-guide" data-testid="workflow-guide">
-            <summary data-i18n="workflow.shortGuide">Ablauf kurz</summary>
+            <summary data-i18n="workflow.shortGuide">Quick workflow</summary>
             <ol class="rail-guide-list">
-              <li><strong data-i18n="workflow.guide.editor">Erstelle oder lade eigene Dünger im Dünger-Editor.</strong></li>
-              <li><strong data-i18n="workflow.guide.water">Konfiguriere deine Wasserwerte.</strong></li>
-              <li><strong data-i18n="workflow.guide.calculator">Erstelle Rezepte von Hand im Rechner.</strong></li>
-              <li><strong data-i18n="workflow.guide.solver">Oder lass den Solver für dich lösen.</strong></li>
+              <li><strong data-i18n="workflow.guide.editor">Create or load your own fertilizers in the fertilizer editor.</strong></li>
+              <li><strong data-i18n="workflow.guide.water">Configure your water values.</strong></li>
+              <li><strong data-i18n="workflow.guide.calculator">Build recipes manually in the calculator.</strong></li>
+              <li><strong data-i18n="workflow.guide.solver">Or let the solver solve them for you.</strong></li>
             </ol>
           </details>
         </section>
-        <aside class="live-bar" aria-label="Live Ergebnisse" data-i18n-aria-label="aria.liveResults" data-testid="live-bar">
+        <aside class="live-bar" aria-label="Live results" data-i18n-aria-label="aria.liveResults" data-testid="live-bar">
           <div class="live-bar-heading">
-            <span data-i18n="live.title">Live Ergebnisse</span>
+            <span data-i18n="live.title">Live results</span>
             <span class="live-chip live-chip--strong">Live</span>
           </div>
           <div class="live-metric live-metric--npk">
-            <span data-i18n="live.npkTotal">NPK Gesamt (%)</span>
+            <span data-i18n="live.npkTotal">NPK total (%)</span>
             <strong id="npkAllPct">-</strong>
           </div>
-          <div class="live-metric-row" aria-label="NPK Kennzahlen" data-i18n-aria-label="aria.npkMetrics">
+          <div class="live-metric-row" aria-label="NPK metrics" data-i18n-aria-label="aria.npkMetrics">
             <div class="live-metric live-metric--pnorm live-metric--compact">
-              <span data-i18n="live.npkPNorm">NPK P-Norm</span>
+              <span data-i18n="live.npkPNorm">NPK P-normalized</span>
               <strong id="npkPNorm">-</strong>
             </div>
             <div class="live-metric live-metric--ratio live-metric--compact">
-              <span data-i18n="live.npkRatio">NPK Verhältnis (%)</span>
+              <span data-i18n="live.npkRatio">NPK ratio (%)</span>
               <strong id="npkNpkPct">-</strong>
             </div>
           </div>
           <div class="live-metric live-metric--camg">
-            <span data-i18n="live.caMgRatio">Ca:Mg Ratio (mg/L)</span>
+            <span data-i18n="live.caMgRatio">Ca:Mg ratio (mg/L)</span>
             <strong id="caMgRatio">-</strong>
           </div>
           <div class="live-ec">
@@ -184,33 +184,33 @@
               <div class="ec-line ec-primary">
                 <span class="ec-temp">25&nbsp;°C</span>
                 <span class="ec-pair">
-                  <span class="ec-label" data-i18n="live.solution">Lösung</span>
+                  <span class="ec-label" data-i18n="live.solution">Solution</span>
                   <strong class="ec-value" id="ec25Value">—</strong>
                 </span>
                 <span class="ec-pair">
-                  <span class="ec-label" data-i18n="live.water">Wasser</span>
+                  <span class="ec-label" data-i18n="live.water">Water</span>
                   <strong class="ec-value muted" id="ecWater25Value">—</strong>
                 </span>
               </div>
               <div class="ec-line">
                 <span class="ec-temp">18&nbsp;°C</span>
                 <span class="ec-pair">
-                  <span class="ec-label" data-i18n="live.solution">Lösung</span>
+                  <span class="ec-label" data-i18n="live.solution">Solution</span>
                   <strong class="ec-value" id="ec18Value">—</strong>
                 </span>
                 <span class="ec-pair">
-                  <span class="ec-label" data-i18n="live.water">Wasser</span>
+                  <span class="ec-label" data-i18n="live.water">Water</span>
                   <strong class="ec-value muted" id="ecWater18Value">—</strong>
                 </span>
               </div>
             </div>
           </div>
           <div class="live-ion-ratios">
-            <div class="metric-title" data-i18n="live.ionRatios">Ionen-Verhältnisse (mg/L)</div>
-            <div class="ion-ratio-grid" id="ionRatioList" aria-label="Ionen-Verhältnisse" data-i18n-aria-label="aria.ionRatios"></div>
+            <div class="metric-title" data-i18n="live.ionRatios">Ion ratios (mg/L)</div>
+            <div class="ion-ratio-grid" id="ionRatioList" aria-label="Ion ratios" data-i18n-aria-label="aria.ionRatios"></div>
           </div>
           <div class="live-meta">
-            <span id="liveLastCalc" data-i18n="status.noCalculation">Noch keine Berechnung</span>
+            <span id="liveLastCalc" data-i18n="status.noCalculation">No calculation yet</span>
           </div>
         </aside>
       </aside>
@@ -219,34 +219,34 @@
       <section class="block water-section is-hidden" id="waterSection" data-panel-anchor="water" data-testid="water-view">
         <div class="section-heading">
           <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-water"></use></svg></span>
-          <h2 data-i18n="water.title">Wasserwerte</h2>
+          <h2 data-i18n="water.title">Water values</h2>
         </div>
         <div class="water-content">
-          <p class="hint" data-i18n="water.hint">Profile lokal speichern/laden und Osmose-Anteil berücksichtigen.</p>
+          <p class="hint" data-i18n="water.hint">Save/load profiles locally and account for the osmosis share.</p>
           <div class="water-controls">
             <div class="water-control-group">
-              <label for="waterProfileSelect" data-i18n="common.profileSelect">Profil auswählen</label>
+              <label for="waterProfileSelect" data-i18n="common.profileSelect">Select profile</label>
               <div class="water-control-row">
                 <select id="waterProfileSelect"></select>
-                <button id="loadWaterProfile" class="btn btn--outline" type="button" data-i18n="common.load">Laden</button>
-                <button id="resetWaterProfile" class="btn btn--outline" type="button" data-i18n="common.resetDefault">Standard zurücksetzen</button>
+                <button id="loadWaterProfile" class="btn btn--outline" type="button" data-i18n="common.load">Load</button>
+                <button id="resetWaterProfile" class="btn btn--outline" type="button" data-i18n="common.resetDefault">Reset default</button>
               </div>
             </div>
             <div class="water-control-group">
-              <label for="waterProfileName" data-i18n="common.profileNameSave">Profilname zum Speichern</label>
+              <label for="waterProfileName" data-i18n="common.profileNameSave">Profile name to save</label>
               <div class="water-control-row">
-                <input id="waterProfileName" type="text" placeholder="z.B. stadenburdenhard" data-i18n-placeholder="water.profilePlaceholder" />
-                <button id="saveWaterProfile" class="btn btn--outline" type="button" data-i18n="common.save">Speichern</button>
+                <input id="waterProfileName" type="text" placeholder="e.g. stadenburdenhard" data-i18n-placeholder="water.profilePlaceholder" />
+                <button id="saveWaterProfile" class="btn btn--outline" type="button" data-i18n="common.save">Save</button>
               </div>
             </div>
             <div class="water-control-group water-settings">
               <div>
-                <label for="osmosisPercent" data-i18n="water.osmosisPercent">Osmoseanteil (%)</label>
+                <label for="osmosisPercent" data-i18n="water.osmosisPercent">Osmosis share (%)</label>
                 <input id="osmosisPercent" type="text" inputmode="decimal" min="0" max="100" step="1" value="0" />
               </div>
               <label class="toggle">
                 <input id="waterUnitToggle" type="checkbox" />
-                <span data-i18n="water.mmolToggle">mmol/L Eingabe & Anzeige</span>
+                <span data-i18n="water.mmolToggle">mmol/L input & display</span>
               </label>
             </div>
           </div>
@@ -255,8 +255,8 @@
               <thead>
                 <tr>
                   <th data-i18n="common.parameter">Parameter</th>
-                  <th data-i18n="common.value">Wert</th>
-                  <th data-i18n="common.unit">Einheit</th>
+                  <th data-i18n="common.value">Value</th>
+                  <th data-i18n="common.unit">Unit</th>
                 </tr>
               </thead>
               <tbody>
@@ -264,36 +264,36 @@
               </tbody>
             </table>
           </div>
-          <p class="hint" data-i18n="water.helperHint">CO3 / CaCO3 / °KH / S sind Helfer: jede Eingabe überschreibt HCO3 bzw. SO4.</p>
+          <p class="hint" data-i18n="water.helperHint">CO3 / CaCO3 / °KH / S are helpers: each input overwrites HCO3 or SO4.</p>
         </div>
       </section>
 
       <section class="block" id="profileSection" data-panel-anchor="profile" data-testid="profile-panel">
         <div class="section-heading">
           <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-recipe"></use></svg></span>
-          <h2 id="profileSectionTitle" data-i18n="profile.recipeTitle">Rezeptverwaltung</h2>
+          <h2 id="profileSectionTitle" data-i18n="profile.recipeTitle">Recipe management</h2>
         </div>
-        <p class="hint" id="profileSectionHint" data-i18n="profile.recipeHint">Rezepte lokal speichern oder laden.</p>
+        <p class="hint" id="profileSectionHint" data-i18n="profile.recipeHint">Save or load recipes locally. Solver target profiles stay in the solver.</p>
         <div class="water-controls">
           <div class="water-control-group">
-            <label for="profileSelect" data-i18n="common.profileSelect">Profil auswählen</label>
+            <label for="profileSelect" data-i18n="common.profileSelect">Select profile</label>
             <div class="water-control-row">
               <select id="profileSelect"></select>
-              <button id="loadProfile" class="btn btn--outline" type="button" data-i18n="common.load">Laden</button>
-              <button id="resetProfile" class="btn btn--outline" type="button" data-i18n="common.resetDefault">Standard zurücksetzen</button>
+              <button id="loadProfile" class="btn btn--outline" type="button" data-i18n="common.load">Load</button>
+              <button id="resetProfile" class="btn btn--outline" type="button" data-i18n="common.resetDefault">Reset default</button>
             </div>
           </div>
           <div class="water-control-group">
-            <label for="profileName" data-i18n="common.profileNameSave">Profilname zum Speichern</label>
+            <label for="profileName" data-i18n="common.profileNameSave">Profile name to save</label>
             <div class="water-control-row">
-              <input id="profileName" type="text" placeholder="z.B. default" data-i18n-placeholder="common.defaultNamePlaceholder" />
-              <button id="saveProfile" class="btn btn--outline" type="button" data-i18n="common.save">Speichern</button>
+              <input id="profileName" type="text" placeholder="e.g. default" data-i18n-placeholder="common.defaultNamePlaceholder" />
+              <button id="saveProfile" class="btn btn--outline" type="button" data-i18n="common.save">Save</button>
             </div>
           </div>
         </div>
         <div class="actions is-hidden" id="solverProfileActions">
-          <button id="saveSolverAsRecipe" class="btn btn--outline" type="button" data-i18n="profile.saveSolverAsRecipe">Als Düngerrezept speichern</button>
-          <button id="applySolverToCalculator" class="btn btn--outline" type="button" data-i18n="profile.viewInCalculator">Im Rechner ansehen</button>
+          <button id="saveSolverAsRecipe" class="btn btn--outline" type="button" data-i18n="profile.saveSolverAsRecipe">Save as fertilizer recipe</button>
+          <button id="applySolverToCalculator" class="btn btn--outline" type="button" data-i18n="profile.viewInCalculator">View in calculator</button>
         </div>
       </section>
 
@@ -301,12 +301,12 @@
         <section class="block" data-panel-anchor="fertilizers" data-testid="fertilizer-selection-panel">
           <div class="section-heading">
             <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-components"></use></svg></span>
-            <h2 data-i18n="calculator.fertilizerComponents">Düngerkomponenten</h2>
+            <h2 data-i18n="calculator.fertilizerComponents">Fertilizer components</h2>
           </div>
           <div class="actions inline-actions">
             <button id="addFertilizerRow" class="btn btn--outline btn--icon icon-button" type="button">+</button>
             <button id="removeFertilizerRow" class="btn btn--outline btn--icon icon-button" type="button">-</button>
-            <span class="inline-hint" data-i18n="calculator.componentHint">Wähle Dünger aus der Datenbank, das Plus fügt weitere Zeilen hinzu.</span>
+            <span class="inline-hint" data-i18n="calculator.componentHint">Choose fertilizers from the database; the plus adds more rows.</span>
           </div>
           <div class="table-wrap" id="fertilizerSelectTableWrap"></div>
         </section>
@@ -317,13 +317,13 @@
               <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-calculator"></use></svg></span>
               <h2 data-i18n="calculator.title">Hydroponic Solution Calculator</h2>
             </div>
-            <button id="calculateBtn" class="btn btn--solver-primary" type="button" data-i18n="calculator.calculate">Berechnen</button>
+            <button id="calculateBtn" class="btn btn--solver-primary" type="button" data-i18n="calculator.calculate">Calculate</button>
           </div>
-          <p class="hint" data-i18n="calculator.hint">Mengen eingeben und Berechnung starten.</p>
+          <p class="hint" data-i18n="calculator.hint">Enter amounts and start calculation.</p>
           <div class="actions inline-actions">
             <button id="calculatorScaleDown" class="btn btn--outline btn--icon icon-button" type="button">-</button>
             <button id="calculatorScaleUp" class="btn btn--outline btn--icon icon-button" type="button">+</button>
-            <span class="inline-hint"><span data-i18n="calculator.scale">Skalierung</span> <span id="calculatorScaleValue">1.00x</span></span>
+            <span class="inline-hint"><span data-i18n="calculator.scale">Scaling</span> <span id="calculatorScaleValue">1.00x</span></span>
           </div>
           <div class="table-wrap" id="calculatorTableWrap"></div>
           <div class="summary" data-panel-anchor="results" data-testid="results-panel">
@@ -331,15 +331,15 @@
               <div class="summary-tables">
                 <div class="table-card summary-panel" data-summary-panel="water">
                   <div class="table-card-title summary-table-title">
-                    <div class="segmented" id="summaryViewToggle" role="tablist" aria-label="Ergebnis-Ansicht" data-i18n-aria-label="aria.resultView">
+                    <div class="segmented" id="summaryViewToggle" role="tablist" aria-label="Result view" data-i18n-aria-label="aria.resultView">
                       <button class="segmented-btn" type="button" role="tab" data-summary-view="water">
-                        <span data-i18n="water.summaryTab">Wasserwerte</span>
+                        <span data-i18n="water.summaryTab">Water values</span>
                       </button>
                       <button class="segmented-btn" type="button" role="tab" data-summary-view="oxide">
-                        <span data-i18n="calculator.oxideForms">Oxidformen</span>
+                        <span data-i18n="calculator.oxideForms">Oxide forms</span>
                       </button>
                       <button class="segmented-btn" type="button" role="tab" data-summary-view="ion">
-                        <span data-i18n="water.dissolvedIonsTab">Gelöste Ionen</span>
+                        <span data-i18n="water.dissolvedIonsTab">Dissolved ions</span>
                       </button>
                     </div>
                     <span class="table-badge" id="waterSummaryBadge">mg/L</span>
@@ -366,19 +366,19 @@
         <section class="block" data-panel-anchor="details" data-testid="details-panel">
           <div class="section-heading">
             <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-balance"></use></svg></span>
-            <h2 data-i18n="calculator.ionBalance">Ionenbilanz</h2>
+            <h2 data-i18n="calculator.ionBalance">Ion balance</h2>
           </div>
             <div class="data-grid">
               <div class="table-card compact-card">
                 <div class="table-card-title">
-                  <h3 data-i18n="calculator.ions">Ionen</h3>
+                  <h3 data-i18n="calculator.ions">Ions</h3>
                   <span class="table-badge">meq/L</span>
                 </div>
                 <div class="compact-table-wrap" id="ionMeqList"></div>
               </div>
               <div class="table-card compact-card">
                 <div class="table-card-title">
-                  <h3 data-i18n="calculator.balance">Bilanz</h3>
+                  <h3 data-i18n="calculator.balance">Balance</h3>
                   <span class="table-badge" data-i18n="unit.meqPercent">meq/L / %</span>
                 </div>
                 <div class="compact-table-wrap compact-table-wrap--balance" id="ionBalanceList"></div>
@@ -392,26 +392,26 @@
           <div class="block-heading">
             <div class="section-heading">
               <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-solver"></use></svg></span>
-              <h2 data-i18n="solver.title">Zielprofil-Rechner</h2>
+              <h2 data-i18n="solver.title">Target profile calculator</h2>
             </div>
-            <button id="solveBtn" class="btn btn--solver-primary" type="button" data-i18n="solver.solve">Solver berechnen</button>
+            <button id="solveBtn" class="btn btn--solver-primary" type="button" data-i18n="solver.solve">Run solver</button>
           </div>
-          <p class="hint" data-i18n="solver.hint">Zielwerte setzen, Dünger freigeben und das Ergebnis direkt im Rechner prüfen.</p>
+          <p class="hint" data-i18n="solver.hint">Set target values, allow fertilizers, and check the result directly in the calculator.</p>
           <div class="solver-workbench">
             <div class="solver-results solver-comparison-grid">
               <div class="solver-panel solver-panel--targets">
-                <h3 data-i18n="solver.targetsTitle">Zielwerte (mg/L)</h3>
+                <h3 data-i18n="solver.targetsTitle">Target values (mg/L)</h3>
                 <div class="actions inline-actions">
                   <button id="solverTargetScaleDown" class="btn btn--outline btn--icon icon-button" type="button">-</button>
                   <button id="solverTargetScaleUp" class="btn btn--outline btn--icon icon-button" type="button">+</button>
-                  <span class="inline-hint"><span data-i18n="calculator.scale">Skalierung</span> <span id="solverTargetScaleValue">1.00x</span></span>
+                  <span class="inline-hint"><span data-i18n="calculator.scale">Scaling</span> <span id="solverTargetScaleValue">1.00x</span></span>
                 </div>
                 <div class="table-wrap solver-target-wrap">
                   <table class="grid grid--form" id="solverTargetsTable">
                     <thead>
                       <tr>
                         <th data-i18n="common.element">Element</th>
-                        <th data-i18n="common.target">Ziel</th>
+                        <th data-i18n="common.target">Target</th>
                       </tr>
                     </thead>
                     <tbody></tbody>
@@ -420,18 +420,18 @@
               </div>
 
               <div class="solver-panel solver-panel--target-results">
-                <h3 data-i18n="solver.resultsTitle">Solver Results</h3>
+                <h3 data-i18n="solver.resultsTitle">Solver results</h3>
                 <div class="actions inline-actions solver-results-spacer" aria-hidden="true"></div>
                 <div class="table-wrap">
                   <div class="solver-results-empty" id="solverTargetsResultsEmpty">
-                    <span data-i18n="solver.resultsEmpty">Zielwerte setzen, erlaubte Dünger auswählen und dann Solver berechnen.</span>
+                    <span data-i18n="solver.resultsEmpty">Set target values, select allowed fertilizers, then run the solver.</span>
                   </div>
                   <table class="grid grid--form is-hidden" id="solverTargetsResultsTable">
                     <thead>
                       <tr>
                         <th data-i18n="common.element">Element</th>
-                        <th data-i18n="common.target">Ziel</th>
-                        <th data-i18n="common.achieved">Erreicht</th>
+                        <th data-i18n="common.target">Target</th>
+                        <th data-i18n="common.achieved">Achieved</th>
                         <th data-i18n="common.delta">Delta</th>
                         <th>Delta %</th>
                       </tr>
@@ -445,31 +445,31 @@
             <div class="solver-lower-grid">
               <div class="solver-panel solver-panel--fertilizers">
                 <div class="solver-panel-heading">
-                  <h3 data-i18n="solver.allowedTitle">Erlaubte Dünger</h3>
-                  <span class="inline-hint" id="solverAllowedCount">0 ausgewählt</span>
+                  <h3 data-i18n="solver.allowedTitle">Allowed fertilizers</h3>
+                  <span class="inline-hint" id="solverAllowedCount">0 selected</span>
                 </div>
-                <input id="solverAllowedSearch" class="input-field" type="search" placeholder="Dünger suchen, z.B. 313 oder soft" data-i18n-placeholder="solver.allowedSearchPlaceholder" autocomplete="off" />
+                <input id="solverAllowedSearch" class="input-field" type="search" placeholder="Search fertilizers, e.g. 313 or soft" data-i18n-placeholder="solver.allowedSearchPlaceholder" autocomplete="off" />
                 <div class="actions inline-actions solver-picker-actions">
-                  <button id="solverAllowedFromRecipe" class="btn btn--outline" type="button" data-i18n="solver.allowedFromRecipe">Rezept übernehmen</button>
-                  <button id="solverAllowedAll" class="btn btn--outline" type="button" data-i18n="common.all">Alle</button>
+                  <button id="solverAllowedFromRecipe" class="btn btn--outline" type="button" data-i18n="solver.allowedFromRecipe">Use recipe</button>
+                  <button id="solverAllowedAll" class="btn btn--outline" type="button" data-i18n="common.all">All</button>
                   <label class="toggle solver-picker-toggle">
                     <input id="solverAllowedHideInactive" type="checkbox" />
-                    <span data-i18n="solver.onlyActive">Nur aktive</span>
+                    <span data-i18n="solver.onlyActive">Active only</span>
                   </label>
-                  <button id="solverAllowedClear" class="btn btn--outline" type="button" data-i18n="solver.clearSelection">Auswahl leeren</button>
+                  <button id="solverAllowedClear" class="btn btn--outline" type="button" data-i18n="solver.clearSelection">Clear selection</button>
                 </div>
-                <div id="solverAllowedFertilizers" class="table-wrap solver-picker" role="listbox" aria-label="Erlaubte Dünger" data-i18n-aria-label="aria.allowedFertilizers"></div>
+                <div id="solverAllowedFertilizers" class="table-wrap solver-picker" role="listbox" aria-label="Allowed fertilizers" data-i18n-aria-label="aria.allowedFertilizers"></div>
 
                 <details id="solverOverrides" class="solver-overrides">
                   <summary>
-                    <span data-i18n="solver.overrideTitle">Override / fixe Menge (g, optional)</span>
+                    <span data-i18n="solver.overrideTitle">Override / fixed amount (g, optional)</span>
                     <span class="inline-hint" id="solverOverrideSummary">0 aktiv</span>
                   </summary>
                   <div class="table-wrap solver-fixed-wrap">
                     <table class="grid grid--form" id="solverFixedTable">
                       <thead>
                         <tr>
-                          <th data-i18n="common.fertilizer">Dünger</th>
+                          <th data-i18n="common.fertilizer">Fertilizer</th>
                           <th data-i18n="solver.overrideGrams">Override (g)</th>
                         </tr>
                       </thead>
@@ -480,7 +480,7 @@
               </div>
 
               <div class="solver-panel solver-panel--fertilizer-results">
-                <h3 data-i18n="solver.amountsTitle">Düngermengen</h3>
+                <h3 data-i18n="solver.amountsTitle">Fertilizer amounts</h3>
                 <div class="table-wrap">
                   <table class="grid grid--form" id="solverFertilizersTable">
                     <colgroup>
@@ -489,8 +489,8 @@
                     </colgroup>
                     <thead>
                       <tr>
-                        <th data-i18n="common.fertilizer">Dünger</th>
-                        <th data-i18n="common.grams">Gramm/ml</th>
+                        <th data-i18n="common.fertilizer">Fertilizer</th>
+                        <th data-i18n="common.grams">Grams/ml</th>
                       </tr>
                     </thead>
                     <tbody></tbody>
@@ -500,31 +500,31 @@
             </div>
           </div>
           <div class="actions solver-actions">
-            <button id="copySolverResults" class="btn btn--outline" type="button" data-i18n="solver.copyClipboard">In Zwischenablage kopieren</button>
-            <button id="applySolverToCalculatorInline" class="btn btn--outline" type="button" data-i18n="profile.viewInCalculator">Im Rechner ansehen</button>
+            <button id="copySolverResults" class="btn btn--outline" type="button" data-i18n="solver.copyClipboard">Copy to clipboard</button>
+            <button id="applySolverToCalculatorInline" class="btn btn--outline" type="button" data-i18n="profile.viewInCalculator">View in calculator</button>
             <span class="inline-hint" id="copySolverResultsStatus" aria-live="polite"></span>
             <span class="inline-hint" id="solverApplyStatus" aria-live="polite"></span>
           </div>
           <details class="solver-advanced-config">
-            <summary data-i18n="solver.advanced">Erweitert</summary>
+            <summary data-i18n="solver.advanced">Advanced</summary>
             <div class="solver-settings">
               <label class="toggle solver-auto-apply">
                 <input id="solverAutoApply" type="checkbox" checked />
-                <span data-i18n="solver.autoApply">Bei Berechnen automatisch in den Düngerrechner einfügen</span>
+                <span data-i18n="solver.autoApply">Automatically insert into the fertilizer calculator when solving</span>
               </label>
               <label class="toggle">
                 <input id="solverUreaToggle" type="checkbox" />
-                <span data-i18n="solver.ureaAsNh4">Harnstoff als NH4 behandeln</span>
+                <span data-i18n="solver.ureaAsNh4">Treat urea as NH4</span>
               </label>
               <label>
-                <span data-i18n="solver.phosphateSpecies">Phosphat-Spezies</span>
+                <span data-i18n="solver.phosphateSpecies">Phosphate species</span>
                 <select id="solverPhosphate">
                   <option value="H2PO4">H2PO4</option>
                   <option value="HPO4">HPO4</option>
                 </select>
               </label>
             </div>
-            <button id="solverConfigResetDefaults" class="btn btn--outline rail-config-reset" type="button" data-i18n="solver.resetConfig">Solver-Konfiguration zurücksetzen</button>
+            <button id="solverConfigResetDefaults" class="btn btn--outline rail-config-reset" type="button" data-i18n="solver.resetConfig">Reset solver configuration</button>
             <div class="rail-config-grid rail-config-grid--advanced">
               <label class="toggle">
                 <input id="solverConfigRelativeWeighting" type="checkbox" checked />
@@ -532,18 +532,18 @@
               </label>
               <label class="toggle">
                 <input id="solverConfigNitrogenObjectiveMode" type="checkbox" checked />
-                <span data-i18n="solver.nTotalInsteadForms">N-total statt N-Formen</span>
+                <span data-i18n="solver.nTotalInsteadForms">N-total instead of N forms</span>
               </label>
               <label class="toggle">
                 <input id="solverConfigSObjectiveEnabled" type="checkbox" />
-                <span data-i18n="solver.sAsTarget">S als Solver-Ziel</span>
+                <span data-i18n="solver.sAsTarget">S as solver target</span>
               </label>
               <label>
                 Overshoot penalty
                 <input id="solverConfigOvershootPenalty" type="text" inputmode="decimal" min="0" step="0.1" value="1" />
               </label>
               <label>
-                <span data-i18n="solver.irlsIterations">IRLS Iterationen</span>
+                <span data-i18n="solver.irlsIterations">IRLS iterations</span>
                 <input id="solverConfigIrlsMaxOuterIter" type="text" inputmode="decimal" min="1" step="1" value="4" />
               </label>
               <label>
@@ -591,24 +591,22 @@
         <section class="block" data-panel-anchor="editor">
           <div class="section-heading">
             <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-editor"></use></svg></span>
-            <h2 data-i18n="editor.title">Dünger-Editor</h2>
+            <h2 data-i18n="editor.title">Fertilizer editor</h2>
           </div>
-          <p class="hint" data-i18n="editor.percentHint">
-            Werte als Prozent eingeben (z.B. 15 für 15%). Speicherung erfolgt als Bruch (0.15) in der CSV.
-          </p>
-          <p class="hint" data-i18n="editor.listHint">Düngerliste lokal speichern/laden.</p>
+          <p class="hint" data-i18n="editor.percentHint">Enter values as percentages (e.g. 15 for 15%). They are saved as fractions (0.15) in the CSV.</p>
+          <p class="hint" data-i18n="editor.listHint">Save/load the fertilizer list locally.</p>
           <div class="water-controls">
             <div class="water-control-group">
-              <label data-i18n="editor.listLabel">Düngerliste</label>
+              <label data-i18n="editor.listLabel">Fertilizer list</label>
               <div class="water-control-row">
-                <button id="fertEditorLoad" class="btn btn--outline" type="button" data-i18n="common.load">Laden</button>
-                <button id="fertEditorSave" class="btn btn--outline" type="button" data-i18n="common.save">Speichern</button>
+                <button id="fertEditorLoad" class="btn btn--outline" type="button" data-i18n="common.load">Load</button>
+                <button id="fertEditorSave" class="btn btn--outline" type="button" data-i18n="common.save">Save</button>
               </div>
             </div>
           </div>
 
           <div class="actions inline-actions">
-            <input id="fertEditorSearch" type="text" placeholder="Suchen..." data-i18n-placeholder="editor.searchPlaceholder" />
+            <input id="fertEditorSearch" type="text" placeholder="Search..." data-i18n-placeholder="editor.searchPlaceholder" />
             <button id="fertEditorAddRow" class="btn btn--outline btn--icon icon-button" type="button">+</button>
             <button id="fertEditorDeleteRow" class="btn btn--outline btn--icon icon-button" type="button">-</button>
           </div>

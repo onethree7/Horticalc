@@ -29,7 +29,7 @@ def test_fertilizer_editor_weight_header_uses_semantic_mass_symbol():
     assert 'massUnit.className = "quantity-unit";' in app_js
     assert 'massUnit.textContent = " [g]";' in app_js
     assert 'massHeaderButton.replaceChildren(massSymbol, massUnit);' in app_js
-    assert '{ labelKey: "common.grams", label: "Gramm/ml" }' in app_js
+    assert '{ labelKey: "common.grams", label: "Grams/ml" }' in app_js
     assert 'amountHeader.replaceChildren' not in app_js
     assert ".quantity-symbol" in styles_css
     assert "font-style: italic;" in styles_css

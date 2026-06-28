@@ -1,5 +1,5 @@
 (function () {
-  const DEFAULT_LOCALE = "de";
+  const DEFAULT_LOCALE = "en";
   const LOCALE_STORAGE_KEY = "horticalc.locale";
   const catalogs = window.HORTICALC_I18N || {};
   const supportedLocales = ["de", "en", "nl", "es", "zh"];
@@ -12,9 +12,9 @@
 
   function readStoredLocale() {
     try {
-      return localStorage.getItem(LOCALE_STORAGE_KEY) || DEFAULT_LOCALE;
+      return localStorage.getItem(LOCALE_STORAGE_KEY);
     } catch (error) {
-      return DEFAULT_LOCALE;
+      return null;
     }
   }
 
@@ -30,7 +30,20 @@
     return isSupportedLocale(locale) ? locale : DEFAULT_LOCALE;
   }
 
-  let currentLocale = normalizeLocale(readStoredLocale());
+  function detectBrowserLocale() {
+    const browserLocales = Array.isArray(navigator.languages) && navigator.languages.length
+      ? navigator.languages
+      : [navigator.language];
+    for (const locale of browserLocales) {
+      const language = String(locale || "").trim().toLowerCase().split(/[-_]/, 1)[0];
+      if (isSupportedLocale(language)) {
+        return language;
+      }
+    }
+    return DEFAULT_LOCALE;
+  }
+
+  let currentLocale = normalizeLocale(readStoredLocale() || detectBrowserLocale());
 
   function interpolate(text, params) {
     return String(text).replace(/\{([a-zA-Z0-9_]+)\}/g, (match, key) =>
@@ -97,6 +110,7 @@
     DEFAULT_LOCALE,
     LOCALE_STORAGE_KEY,
     supportedLocales,
+    detectBrowserLocale,
     t,
     setLocale,
     getLocale,

@@ -213,28 +213,28 @@ let solverAllowedHideInactive = false;
 const solverFixedGrams = {};
 
 const waterFieldDefinitions = [
-  { key: "NH4", labelKey: "waterField.NH4", label: "Ammonium in NH4" },
-  { key: "NO3", labelKey: "waterField.NO3", label: "Nitrat in NO3" },
-  { key: "PO4", labelKey: "waterField.PO4", label: "Phosphat in PO4" },
-  { key: "P", labelKey: "waterField.P", label: "Phosphor in P" },
-  { key: "K", labelKey: "waterField.K", label: "Kalium in K" },
-  { key: "Ca", labelKey: "waterField.Ca", label: "Calcium in Ca" },
-  { key: "Mg", labelKey: "waterField.Mg", label: "Magnesium in Mg" },
-  { key: "Na", labelKey: "waterField.Na", label: "Natrium in Na" },
-  { key: "SO4", labelKey: "waterField.SO4", label: "Sulfat in SO4" },
-  { key: "S", labelKey: "waterField.S", label: "Schwefel in S" },
-  { key: "Fe", labelKey: "waterField.Fe", label: "Eisen in Fe" },
-  { key: "Mn", labelKey: "waterField.Mn", label: "Mangan in Mn" },
-  { key: "Cu", labelKey: "waterField.Cu", label: "Kupfer in Cu" },
-  { key: "Zn", labelKey: "waterField.Zn", label: "Zink in Zn" },
-  { key: "B", labelKey: "waterField.B", label: "Bor in B" },
-  { key: "Mo", labelKey: "waterField.Mo", label: "Molybdän in Mo" },
-  { key: "Cl", labelKey: "waterField.Cl", label: "Chlor in Cl" },
-  { key: "HCO3", labelKey: "waterField.HCO3", label: "Carbonate in HCO3" },
-  { key: "CO3", labelKey: "waterField.CO3", label: "Carbonat in CO3" },
-  { key: "CaCO3", labelKey: "waterField.CaCO3", label: "Gesamtcarbonathärte in CaCO3" },
-  { key: "KH", labelKey: "waterField.KH", label: "Carbonathärte in °KH" },
-  { key: "SiO2", labelKey: "waterField.SiO2", label: "Silicium in SiO2" },
+  { key: "NH4", labelKey: "waterField.NH4", label: "Ammonium as NH4" },
+  { key: "NO3", labelKey: "waterField.NO3", label: "Nitrate as NO3" },
+  { key: "PO4", labelKey: "waterField.PO4", label: "Phosphate as PO4" },
+  { key: "P", labelKey: "waterField.P", label: "Phosphorus as P" },
+  { key: "K", labelKey: "waterField.K", label: "Potassium as K" },
+  { key: "Ca", labelKey: "waterField.Ca", label: "Calcium as Ca" },
+  { key: "Mg", labelKey: "waterField.Mg", label: "Magnesium as Mg" },
+  { key: "Na", labelKey: "waterField.Na", label: "Sodium as Na" },
+  { key: "SO4", labelKey: "waterField.SO4", label: "Sulfate as SO4" },
+  { key: "S", labelKey: "waterField.S", label: "Sulfur as S" },
+  { key: "Fe", labelKey: "waterField.Fe", label: "Iron as Fe" },
+  { key: "Mn", labelKey: "waterField.Mn", label: "Manganese as Mn" },
+  { key: "Cu", labelKey: "waterField.Cu", label: "Copper as Cu" },
+  { key: "Zn", labelKey: "waterField.Zn", label: "Zinc as Zn" },
+  { key: "B", labelKey: "waterField.B", label: "Boron as B" },
+  { key: "Mo", labelKey: "waterField.Mo", label: "Molybdenum as Mo" },
+  { key: "Cl", labelKey: "waterField.Cl", label: "Chloride as Cl" },
+  { key: "HCO3", labelKey: "waterField.HCO3", label: "Carbonate alkalinity as HCO3" },
+  { key: "CO3", labelKey: "waterField.CO3", label: "Carbonate as CO3" },
+  { key: "CaCO3", labelKey: "waterField.CaCO3", label: "Total carbonate hardness as CaCO3" },
+  { key: "KH", labelKey: "waterField.KH", label: "Carbonate hardness as °KH" },
+  { key: "SiO2", labelKey: "waterField.SiO2", label: "Silicon as SiO2" },
 ];
 
 const waterValues = Object.fromEntries(waterFieldDefinitions.map((field) => [field.key, 0]));
@@ -453,15 +453,22 @@ async function initializeThemeControl() {
   lsSet(THEME_STORAGE_KEY, savedTheme);
 }
 
-function initializeLanguageControl() {
+async function initializeLanguageControl() {
+  let localeChanged = false;
   i18n.setLocale(i18n.getLocale(), { persist: false });
   if (!languageSelect) {
     return;
   }
   languageSelect.value = i18n.getLocale();
   languageSelect.addEventListener("change", (event) => {
+    localeChanged = true;
     i18n.setLocale(event.target.value);
+    persistPreferences({ locale: i18n.getLocale() });
   });
+  const preferences = await loadPreferences();
+  if (!localeChanged && preferences.locale) {
+    i18n.setLocale(preferences.locale);
+  }
 }
 
 function parseDecimalInput(raw) {
@@ -712,9 +719,9 @@ function initializeFertilizerTables() {
     colgroupClasses: ["col-index", "col-name", "col-liquid", "col-weight"],
     headerCells: [
       { label: "#" },
-      { labelKey: "calculator.fertilizerDropdown", label: "Dünger (Dropdown)" },
-      { labelKey: "common.productType", label: "Typ" },
-      { labelKey: "common.mass", label: "Masse" },
+      { labelKey: "calculator.fertilizerDropdown", label: "Fertilizer (dropdown)" },
+      { labelKey: "common.productType", label: "Type" },
+      { labelKey: "common.mass", label: "Mass" },
     ],
   });
   fertilizerSelectTableWrap.appendChild(selectTable.table);
@@ -726,8 +733,8 @@ function initializeFertilizerTables() {
     colgroupClasses: ["col-index", "col-name", "col-form", "col-amount"],
     headerCells: [
       { label: "#" },
-      { labelKey: "editor.fertilizerName", label: "Düngername", colSpan: 2 },
-      { labelKey: "common.grams", label: "Gramm/ml" },
+      { labelKey: "editor.fertilizerName", label: "Fertilizer name", colSpan: 2 },
+      { labelKey: "common.grams", label: "Grams/ml" },
     ],
   });
   calculatorTableWrap.appendChild(calculator.table);
@@ -1211,8 +1218,8 @@ function renderFertilizerEditor() {
   ];
   const headerCells = [
     { label: "#" },
-    fertilizerEditorHeader("Düngername", "name", "editor.fertilizerName"),
-    fertilizerEditorHeader("Flüssig", "liquid", "common.liquid"),
+    fertilizerEditorHeader("Fertilizer name", "name", "editor.fertilizerName"),
+    fertilizerEditorHeader("Liquid", "liquid", "common.liquid"),
     fertilizerEditorHeader("m [g]", "weight_factor"),
     ...fertilizerEditorCompKeys.map((key) => fertilizerEditorHeader(key, `comp:${key}`)),
   ];

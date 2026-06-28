@@ -27,7 +27,7 @@ def test_solver_recipe_button_uses_short_responsive_label() -> None:
     german = read_frontend_file("i18n/de.js")
     styles = read_frontend_file("styles.css")
 
-    assert '>Rezept übernehmen</button>' in html
+    assert '>Use recipe</button>' in html
     assert '"solver.allowedFromRecipe": "Rezept übernehmen"' in german
     assert ".solver-picker-actions .btn" in styles
     assert "overflow-wrap: anywhere" in styles

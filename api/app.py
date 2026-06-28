@@ -87,6 +87,7 @@ class FertilizerPayload(BaseModel):
 
 class PreferencesPayload(BaseModel):
     theme: Optional[str] = None
+    locale: Optional[str] = None
     default_liters: Optional[FiniteFloat] = Field(default=None, gt=0)
     solver_config: Optional[Dict[str, Any]] = None
     last_water_profile: Optional[str] = None
@@ -343,6 +344,7 @@ THEME_OPTIONS = {
     "vt-green",
     "blue-matrix",
 }
+LOCALE_OPTIONS = {"de", "en", "nl", "es", "zh"}
 
 
 @app.get("/preferences")
@@ -355,6 +357,8 @@ def put_preferences(payload: PreferencesPayload) -> dict[str, Any]:
     updates = payload.model_dump(exclude_unset=True)
     if "theme" in updates and payload.theme not in THEME_OPTIONS:
         raise HTTPException(status_code=400, detail="Unknown theme")
+    if "locale" in updates and payload.locale not in LOCALE_OPTIONS:
+        raise HTTPException(status_code=400, detail="Unknown locale")
     if payload.default_liters is not None and not math.isfinite(payload.default_liters):
         raise HTTPException(status_code=400, detail="Invalid default liters")
     if payload.last_water_profile is not None:

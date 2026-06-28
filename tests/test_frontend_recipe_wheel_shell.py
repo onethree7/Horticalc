@@ -160,9 +160,9 @@ def test_theme_adaptive_icon_sprite_is_reused_by_workflow_and_headings() -> None
 
     assert content.count('class="workflow-step-number"') == 4
     assert content.count('class="heading-icon"') == 7
-    assert '<h2 data-i18n="water.title">Wasserwerte</h2>' in content
+    assert '<h2 data-i18n="water.title">Water values</h2>' in content
     assert '<h2 data-i18n="calculator.title">Hydroponic Solution Calculator</h2>' in content
-    assert '<h2 data-i18n="solver.title">Zielprofil-Rechner</h2>' in content
+    assert '<h2 data-i18n="solver.title">Target profile calculator</h2>' in content
     assert '.app-icon .icon-accent' in styles
     assert 'stroke: var(--app-teal);' in styles
     assert 'width: 1.82rem;' in styles
@@ -349,7 +349,7 @@ def test_live_result_bar_uses_consistent_high_visibility_type() -> None:
     assert "letter-spacing: 0" in styles
     assert "EC (mS/cm)" in index
     assert 'data-i18n="live.ionRatios"' in index
-    assert "Ca:Mg Ratio (mg/L)" in index
+    assert "Ca:Mg ratio (mg/L)" in index
 
 def test_sidebar_omits_co3_si_ratio_chip() -> None:
     app_js = read_frontend_file("app.js")

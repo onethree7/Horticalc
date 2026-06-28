@@ -34,7 +34,7 @@ def test_solver_ui_exposes_nitrogen_objective_checkbox() -> None:
     js_content = read_frontend_file("app.js")
 
     assert 'id="solverConfigNitrogenObjectiveMode"' in html_content
-    assert "N-total statt N-Formen" in html_content
+    assert "N-total instead of N forms" in html_content
     assert "nitrogen_objective_mode" in js_content
     assert "n_total_only" in js_content
     assert "n_forms_only" in js_content

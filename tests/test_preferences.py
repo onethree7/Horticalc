@@ -34,6 +34,7 @@ def test_preferences_merge_typed_workspace_defaults(monkeypatch, tmp_path) -> No
     response = client.put(
         "/preferences",
         json={
+            "locale": "es",
             "default_liters": 100,
             "last_water_profile": "tap.yml",
             "solver_config": {"relative_weighting": True, "overshoot_penalty": 1.2},
@@ -43,11 +44,21 @@ def test_preferences_merge_typed_workspace_defaults(monkeypatch, tmp_path) -> No
     assert response.status_code == 200
     assert response.json() == {
         "theme": "soil",
+        "locale": "es",
         "default_liters": 100.0,
         "last_water_profile": "tap.yml",
         "solver_config": {"relative_weighting": True, "overshoot_penalty": 1.2},
     }
     assert client.get("/preferences").json() == response.json()
+
+
+def test_locale_preference_rejects_unknown_locale(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+
+    response = TestClient(api_app.app).put("/preferences", json={"locale": "fr"})
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Unknown locale"
 
 
 def test_preferences_reject_unknown_solver_key_and_profile_path(monkeypatch, tmp_path) -> None:

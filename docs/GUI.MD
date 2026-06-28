@@ -46,7 +46,7 @@ controls becomes the next startup profile; a water profile loaded indirectly
 from a recipe does not. Missing remembered profiles fall back to `default.yml`.
 
 Independent startup resources load concurrently. If any required catalog or
-schema fails, the System indicator shows `Daten unvollständig` instead of
+schema fails, the System indicator shows `Data incomplete` instead of
 claiming that the complete UI is ready. Calculation, Solver, recipe-profile,
 and water-profile requests use latest-request ownership: a slower response from
 an older edit or selection is discarded instead of overwriting newer UI state.
@@ -68,20 +68,21 @@ The calculator fertilizer-selection table labels the Boolean physical state as
 `Typ` and renders it as localized solid/liquid text. The adjacent
 `weight_factor` column is presented as `Masse`.
 
-In the fertilizer editor, the sticky `Flüssig` and `m [g]` columns use fixed
+In the fertilizer editor, the sticky `Liquid` and `m [g]` columns use fixed
 compact widths. The sticky fertilizer-name column starts at `18rem` and has a
 drag handle on its right edge; resizing is limited to 180-640 pixels and only
 affects the editor table. The four-column sticky base block uses theme-specific
 opaque row colors so horizontally scrolled nutrient values cannot show through.
 
-The frontend language model is intentionally frontend-only. German is the
-fallback catalog in `frontend/i18n/de.js`, with English, Dutch, Spanish, and
-Simplified Chinese in `frontend/i18n/en.js`, `frontend/i18n/nl.js`,
-`frontend/i18n/es.js`, and `frontend/i18n/zh.js`. Visible labels,
-placeholders, ARIA labels, status messages, empty states, and clipboard section
-labels use translation keys. Data contracts such as API route names, JSON keys,
-CSV fields like `Düngername` and `Liquid`, element symbols, solver config keys, and units
-remain literal and are not translated.
+The frontend selects the first supported language from `navigator.languages`
+on first use and falls back to English. An explicit language selection is
+stored in both browser storage and `user/preferences.json`; the saved
+preference overrides browser detection on later loads. German, English, Dutch,
+Spanish, and Simplified Chinese catalogs live in `frontend/i18n/`. Visible
+labels, placeholders, ARIA labels, status messages, empty states, and clipboard
+section labels use translation keys. Data contracts such as API route names,
+JSON keys, CSV fields like `Düngername` and `Liquid`, element symbols, solver
+config keys, and units remain literal and are not translated.
 
 The live sidebar in `frontend/index.html` and `frontend/app.js` displays the
 latest calculation's NPK totals, compact P-normalized and NPK-only bubbles,
@@ -99,7 +100,7 @@ clear the selection. It stores allowed fertilizer selections by context in
 The Solver view in `frontend/index.html` places the editable Zielwerte table
 next to the Solver target/achieved/delta result table in the top comparison
 grid. The allowed-fertilizer picker sits below it on the left, and
-Düngermengen sit on the right. Before a solve result exists, Solver Results
+Fertilizer amounts sit on the right. Before a solve result exists, Solver Results
 shows an instruction hint instead of the empty result table.
 
 Solver override grams live in the collapsed `solverOverrides` details panel.
@@ -136,7 +137,7 @@ by `/schema/solver-config`, and is wired in `frontend/app.js`. The visible
 `N-total statt N-Formen` checkbox writes
 `solver_config.nitrogen_objective_mode`: checked sends `n_total_only`,
 unchecked sends `n_forms_only`.
-The explicit `Solver-Konfiguration zurücksetzen` button in the same advanced
+The explicit `Reset solver configuration` button in the same advanced
 panel restores every schema default and persists an empty `solver_config`,
 removing previous preference overrides.
 
@@ -172,7 +173,7 @@ Solver defaults, and last directly loaded water profile.
 Solver config is not restored from saved solution snapshots. Startup defaults
 come from preferences, while a non-empty config in an explicitly loaded recipe
 overrides the active controls. The UI fetches the backend schema from
-`/schema/solver-config`. Use `Solver-Konfiguration zurücksetzen` inside
+`/schema/solver-config`. Use `Reset solver configuration` inside
 `Erweitert` to discard non-default preference values.
 
 ## Stable Contracts

@@ -33,6 +33,3 @@ historical report.
 ## Audits And History
 
 - [Solver matrix deep run report 2026-05-31](solver_matrix_deep_run_2026_05_31.md): historical benchmark evidence.
-
-The pre-rework docs are backed up under `_docs_backup/2026-06-01-pre-docs-rework/`.
-That folder is ignored by git.

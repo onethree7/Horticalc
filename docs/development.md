@@ -62,7 +62,6 @@ For documentation changes:
 
 ```bash
 rg -n "TODO|UNDECIDED|Task [0-9]|Implementation Roadmap" docs README.md --glob "!**/development.md" --glob "!**/documentation_maintenance.md"
-rg -n "GUI_PLAN|feature_osmosis|golden_example" docs README.md --glob "!**/audit_2026_06_01.md" --glob "!**/development.md" --glob "!**/documentation_maintenance.md"
 ```
 
 The full test suite also protects frontend contracts, API schemas, portable

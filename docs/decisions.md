@@ -13,14 +13,26 @@ Status: decision-log.
 
 ## Current Accepted Decisions
 
+### License
+
+- Horticalc is licensed under `GPL-3.0-or-later`.
+- Source distributions and portable release archives include the canonical
+  GPLv3 `LICENSE` text.
+- The portable README identifies the copyright holder, warranty disclaimer,
+  license, and corresponding-source location.
+
+Source: `LICENSE`, `pyproject.toml`, `README.md`,
+`scripts/packaging/README.txt`.
+
 ### Packaging
 
 - PyInstaller mode: onedir.
 - Windows executable name: `Horticalc.exe`.
 - Linux executable name: `horticalc`.
 - Windows includes `tzdata` as a hidden import.
-- Release artifacts include `frontend/`, `data/`, `recipes/`, and the portable
-  `README.txt`, but exclude runtime state created by packaging smoke tests.
+- Release artifacts include `frontend/`, `data/`, `recipes/`, the portable
+  `README.txt`, and `LICENSE`, but exclude runtime state created by packaging
+  smoke tests.
 
 Source: `scripts/packaging/horticalc.spec`,
 `scripts/packaging/build_windows.ps1`, `scripts/packaging/build_linux.sh`.

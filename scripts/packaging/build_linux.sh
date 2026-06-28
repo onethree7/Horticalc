@@ -25,6 +25,7 @@ for dir in frontend data recipes; do
 done
 
 cp "$repo_root/scripts/packaging/README.txt" "$app_root/README.txt"
+cp "$repo_root/LICENSE" "$app_root/LICENSE"
 
 binary_path="$app_root/horticalc"
 if [[ ! -x "$binary_path" ]]; then
@@ -41,5 +42,10 @@ done
 
 if [[ ! -f "$app_root/README.txt" ]]; then
   echo "Expected packaged README not found: $app_root/README.txt" >&2
+  exit 1
+fi
+
+if [[ ! -f "$app_root/LICENSE" ]]; then
+  echo "Expected packaged license not found: $app_root/LICENSE" >&2
   exit 1
 fi

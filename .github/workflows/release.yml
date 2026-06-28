@@ -118,6 +118,7 @@ jobs:
                   app_root / "data",
                   app_root / "recipes",
                   app_root / "README.txt",
+                  app_root / "LICENSE",
               ]
               for path in required_paths:
                   if not path.exists():

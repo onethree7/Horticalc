@@ -41,6 +41,10 @@ $readmeSource = Join-Path $repoRoot "scripts/packaging/README.txt"
 $readmeDestination = Join-Path $appRoot "README.txt"
 Copy-Item -Force $readmeSource $readmeDestination
 
+$licenseSource = Join-Path $repoRoot "LICENSE"
+$licenseDestination = Join-Path $appRoot "LICENSE"
+Copy-Item -Force $licenseSource $licenseDestination
+
 $binaryPath = Join-Path $appRoot "Horticalc.exe"
 if (-not (Test-Path $binaryPath)) {
     throw "Expected packaged binary not found: $binaryPath"
@@ -55,4 +59,8 @@ foreach ($dir in $assetDirs) {
 
 if (-not (Test-Path $readmeDestination)) {
     throw "Expected packaged README not found: $readmeDestination"
+}
+
+if (-not (Test-Path $licenseDestination)) {
+    throw "Expected packaged license not found: $licenseDestination"
 }

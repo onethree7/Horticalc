@@ -29,3 +29,16 @@ when reporting a startup problem.
 
 Project documentation and issue tracker:
 https://github.com/onethree7/Horticalc
+
+License and source
+------------------
+Copyright (C) 2026 Florian Kefferpütz.
+
+Horticalc is free software under the GNU General Public License, version 3 or
+(at your option) any later version. It comes without any warranty. The full
+license is included in LICENSE.
+
+The corresponding source code and release build scripts are available at:
+https://github.com/onethree7/Horticalc
+
+For a release archive, use the source from the matching version tag or commit.

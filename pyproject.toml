@@ -2,6 +2,8 @@
 name = "horticalc"
 version = "0.1.0"
 description = "Horticalc (molar-correct) – CSV/YAML Backend"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = [
   "PyYAML>=6.0",
@@ -37,5 +39,5 @@ where = ["src"]
 "recipes" = ["recipes/*.yml"]
 
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"

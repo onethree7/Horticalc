@@ -55,6 +55,15 @@ or biological response. More detail is available in
 Horticalc uses Python, NumPy, PyYAML, FastAPI, uvicorn, and a Vanilla
 JavaScript frontend. Portable Windows and Linux builds use PyInstaller.
 
+## License
+
+Copyright © 2026 Florian Kefferpütz.
+
+Horticalc is free software licensed under the GNU General Public License,
+version 3 or (at your option) any later version. See [LICENSE](LICENSE). The
+corresponding source code and release build scripts are maintained in this
+repository.
+
 ## Documentation
 
 - [User guide](docs/user_guide.md)

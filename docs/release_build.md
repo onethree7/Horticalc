@@ -47,6 +47,7 @@ dist/Horticalc/
   data/
   recipes/
   README.txt
+  LICENSE
   user/      created at runtime
   logs/      created at runtime
 ```
@@ -61,6 +62,7 @@ dist/horticalc/
   data/
   recipes/
   README.txt
+  LICENSE
   user/      created at runtime
   logs/      created at runtime
 ```
@@ -91,7 +93,8 @@ chmod +x scripts/packaging/build_linux.sh
 
 The build scripts run PyInstaller with
 `scripts/packaging/horticalc.spec`, then copy `frontend/`, `data/`, and
-`recipes/` into the onedir app root and add the portable `README.txt`.
+`recipes/` into the onedir app root and add the portable `README.txt` and
+GPLv3 `LICENSE`.
 
 On Windows, `scripts/packaging/build_windows.ps1` also generates a PyInstaller
 version resource with `scripts/packaging/write_windows_version_info.py`. CI
@@ -119,7 +122,8 @@ The workflow:
 4. Starts the packaged binary with `HORTICALC_NO_BROWSER=1`.
 5. Reads `AppRoot/user/horticalc.lock.json`.
 6. Polls `/health`.
-7. Checks that `frontend/`, `data/`, `recipes/`, `README.txt`, and `logs/` exist.
+7. Checks that `frontend/`, `data/`, `recipes/`, `README.txt`, `LICENSE`, and
+   `logs/` exist.
 8. Removes smoke-test `user/` and `logs/` state from the staging directory.
 9. Computes a SHA-256 checksum file for each platform archive.
 10. Creates GitHub Artifact Attestations for each archive and checksum file.

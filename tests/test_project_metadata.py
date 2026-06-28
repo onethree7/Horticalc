@@ -19,6 +19,16 @@ def test_pyproject_declares_runtime_dependencies_used_by_entrypoints() -> None:
     dependency_names = _dependency_names(pyproject["project"]["dependencies"])
 
     assert {"fastapi", "pydantic", "uvicorn", "pyyaml", "numpy"} <= dependency_names
+    assert pyproject["project"]["license"] == "GPL-3.0-or-later"
+    assert pyproject["project"]["license-files"] == ["LICENSE"]
+
+
+def test_repository_contains_canonical_gplv3_license() -> None:
+    license_text = (ROOT / "LICENSE").read_text(encoding="utf-8")
+
+    assert "GNU GENERAL PUBLIC LICENSE" in license_text
+    assert "Version 3, 29 June 2007" in license_text
+    assert "Everyone is permitted to copy and distribute verbatim copies" in license_text
 
 
 def test_pyproject_packages_app_assets_for_wheel_installs() -> None:
@@ -47,8 +57,13 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
 
     assert "Back up user/" in readme
     assert "logs/launcher.log" in readme
+    assert "GNU General Public License" in readme
+    assert "corresponding source code" in readme
     assert 'scripts/packaging/README.txt' in windows_build
     assert 'scripts/packaging/README.txt' in linux_build
+    assert 'Join-Path $repoRoot "LICENSE"' in windows_build
+    assert 'cp "$repo_root/LICENSE" "$app_root/LICENSE"' in linux_build
+    assert 'app_root / "LICENSE"' in release_workflow
     assert "Clean smoke-test runtime state" in release_workflow
     cleanup_index = release_workflow.index("Clean smoke-test runtime state")
     assert cleanup_index < release_workflow.index("Package artifact (Linux)")

@@ -257,10 +257,10 @@ by `src/horticalc/core.py`. They contain `cations_meq_per_l`,
 shown as "Ionenbilanzabweichung nach DIN 38402-62 Formel" uses
 `(cations_sum - anions_sum) / (0.5 * (cations_sum + anions_sum)) * 100`.
 
-Die Ionenbilanzabweichung wird mit der DIN-38402-62-Formel berechnet.
-HortiCalc berücksichtigt dabei nur die im Modell vorhandenen analytischen
-Ionensummen; fehlende Wasseranalyse-Ionen werden nicht rekonstruiert, geraten
-oder durch stilles Wunschdenken ergänzt.
+The ion-balance deviation is calculated with the DIN 38402-62 formula.
+Horticalc includes only the analytical ion totals represented by the model;
+missing water-analysis ions are not reconstructed, guessed, or silently
+invented.
 
 The current ion set in `src/horticalc/core.py` is NH4+, K+, Ca2+, Mg2+, Na+,
 NO3-, phosphate as the configured H2PO4-/HPO4^2- species, SO4^2-, Cl-, HCO3-,

@@ -75,7 +75,9 @@ The in-memory effective catalog is replaced only after persistence succeeds.
 Names are matched case-insensitively after whitespace normalization. The
 shipped catalog remains `data/fertilizers.csv`; the endpoint writes only user
 deltas under `user/`. `liquid` is required and Boolean; the API does not accept
-localized form strings.
+localized form strings. Names must be non-empty and unique, weight factors must
+be positive finite numbers, and nutrient values must be finite; violations
+return HTTP 400 with English error details.
 
 ## Water Profiles
 

@@ -584,7 +584,7 @@ def solve_recipe_data(
     allowed = []
     for name in allowed_names:
         if name not in fertilizers:
-            raise KeyError(f"Unbekannter Dünger in fertilizers_allowed: '{name}'")
+            raise KeyError(f"Unknown fertilizer in fertilizers_allowed: '{name}'")
         allowed.append(fertilizers[name])
 
     fixed_grams: dict[str, float] = {}

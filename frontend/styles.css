@@ -729,7 +729,7 @@ main {
   column-gap: 10px;
 }
 
-/* 25 °C minimal stärker */
+/* Give 25 °C slightly stronger emphasis. */
 .ec-line.ec-primary {
   opacity: 1;
 }
@@ -739,20 +739,20 @@ main {
   opacity: 0.75;
 }
 
-/* gleiche Typo wie KPI-Zahlen */
+/* Match the typography used for KPI values. */
 .ec-value {
   font-size: 1em;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-/* Labels bewusst klein & ruhig */
+/* Keep labels intentionally small and unobtrusive. */
 .ec-label {
   font-size: 0.8em;
   opacity: 0.65;
 }
 
-/* Wasser visuell sekundär */
+/* Give water values lower visual priority. */
 .ec-value.muted {
   opacity: 0.75;
 }

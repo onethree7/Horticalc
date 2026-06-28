@@ -53,4 +53,4 @@ def test_fertilizer_save_rejects_non_positive_weight(monkeypatch, weight: float)
         api_app.put_fertilizers(payload)
 
     assert error.value.status_code == 400
-    assert error.value.detail == "Ungültiger Gewichtswert"
+    assert error.value.detail == "Invalid weight value"

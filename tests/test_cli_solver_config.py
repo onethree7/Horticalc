@@ -101,6 +101,17 @@ def test_solve_cli_rejects_non_object_solver_config_json(capsys, tmp_path) -> No
     assert "--solver-config-json must be a JSON object" in capsys.readouterr().err
 
 
+def test_cli_help_uses_english_for_common_arguments(capsys) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(["--help"])
+
+    assert exc_info.value.code == 0
+    help_text = capsys.readouterr().out
+    assert "load a recipe file explicitly" in help_text
+    assert "water profile file" in help_text
+    assert "Pretty-print the JSON output" in help_text
+
+
 def test_solver_config_validation_preserves_valid_partial_values() -> None:
     config = {
         "relative_weighting": True,

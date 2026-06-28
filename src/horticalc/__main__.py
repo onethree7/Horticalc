@@ -13,22 +13,22 @@ def _add_common_arguments(parser: argparse.ArgumentParser, recipe_help: str) -> 
     parser.add_argument("recipe", nargs="?", help=recipe_help)
     parser.add_argument(
         "--load-recipe",
-        help="Optional: Recipe-Datei explizit laden (überschreibt positional)",
+        help="Optional: load a recipe file explicitly (overrides the positional argument)",
         default=None,
     )
     parser.add_argument(
         "--load-water",
-        help="Optional: Wasserprofil-Datei (z.B. 65936.yml oder Pfad)",
+        help="Optional: water profile file (for example, 65936.yml or a path)",
         default=None,
     )
     parser.add_argument(
         "--out",
-        help="Optional: JSON Ergebnis in Datei schreiben",
+        help="Optional: write the JSON result to a file",
         default=None,
     )
     parser.add_argument(
         "--pretty",
-        help="JSON hübsch formatieren",
+        help="Pretty-print the JSON output",
         action="store_true",
     )
 
@@ -36,7 +36,7 @@ def _add_common_arguments(parser: argparse.ArgumentParser, recipe_help: str) -> 
 def _resolve_cli_paths(args: argparse.Namespace, parser: argparse.ArgumentParser) -> tuple[Path, Path | None]:
     recipe_arg = args.load_recipe or args.recipe
     if not recipe_arg:
-        parser.error("Recipe fehlt: positional oder --load-recipe angeben.")
+        parser.error("Recipe missing: provide a positional argument or --load-recipe.")
     recipe_path = resolve_recipe_path(recipe_arg)
     water_profile_path = resolve_water_profile_path(args.load_water) if args.load_water else None
     return recipe_path, water_profile_path

@@ -2,7 +2,7 @@
 setlocal
 
 if not exist ".venv\\Scripts\\python.exe" (
-  echo [Horticalc] .venv nicht gefunden. Bitte Setup aus README.md ausfuehren.
+  echo [Horticalc] .venv not found. Follow the setup instructions in README.md.
   exit /b 1
 )
 

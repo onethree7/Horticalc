@@ -44,7 +44,7 @@ def parse_ion_key(label: str) -> tuple[str, int]:
     else:
         match = ION_SIMPLE_RE.match(label)
         if not match:
-            raise ValueError(f"Unbekanntes Ion-Format: {label}")
+            raise ValueError(f"Unknown ion format: {label}")
         formula = match.group("formula")
         charge = int(match.group("charge") or "1")
         sign = match.group("sign")
@@ -114,7 +114,7 @@ def compute_ec(
             canonical, charge = parse_ion_key(raw_ion)
         except ValueError:
             coverage["ignored_ions"].append(raw_ion)
-            warnings.append(f"Ion '{raw_ion}' konnte nicht geparst werden und wurde ignoriert.")
+            warnings.append(f"Ion '{raw_ion}' could not be parsed and was ignored.")
             continue
         mol_per_l = mmol_per_l / 1000.0
         molality = mol_per_l / density_kg_per_l
@@ -138,7 +138,7 @@ def compute_ec(
                 params = MCCLESKEY_PARAMS[ion]
                 if charges[ion] != params.z:
                     warnings.append(
-                        f"Ion '{ion}' hat Ladung {charges[ion]}, erwartet {params.z}; verwende Tabellenladung."
+                        f"Ion '{ion}' has charge {charges[ion]}, expected {params.z}; using tabulated charge."
                     )
                 k_val = _mccleskey_k(params, temp_c, ionic_strength)
                 contrib = k_val * molality
@@ -155,11 +155,11 @@ def compute_ec(
             else:
                 coverage["ignored_ions"].append(ion)
                 warnings.append(
-                    f"Ion '{ion}' hat keine McCleskey- oder Fallback-Parameter und wurde ignoriert."
+                    f"Ion '{ion}' has no McCleskey or fallback parameters and was ignored."
                 )
                 continue
             if contrib < 0:
-                warnings.append(f"Negativer EC-Beitrag für '{ion}' ({contrib:.6g} mS/cm).")
+                warnings.append(f"Negative EC contribution for '{ion}' ({contrib:.6g} mS/cm).")
             contributions[ion] = contrib
             total += contrib
 
@@ -170,7 +170,7 @@ def compute_ec(
 
         if include_transport_numbers:
             if total == 0.0:
-                warnings.append(f"Gesamt-EC für {temp_key}°C ist 0; Transportzahlen = 0.")
+                warnings.append(f"Total EC at {temp_key}°C is 0; transport numbers = 0.")
                 transport_numbers[temp_key] = {ion: 0.0 for ion in contributions}
             else:
                 transport_numbers[temp_key] = {ion: value / total for ion, value in contributions.items()}
@@ -182,7 +182,7 @@ def compute_ec(
             ec18 = ec_mS_per_cm[temp_key_18]
             denom = 1 + atc_alpha_per_c * (18.0 - 25.0)
             if denom == 0:
-                warnings.append("ATC-Korrektur für 18°C ist undefiniert (denom=0).")
+                warnings.append("ATC correction for 18°C is undefined (denom=0).")
             else:
                 ec25 = ec18 / denom
                 atc["ec25_from_18_mS_per_cm"] = ec25

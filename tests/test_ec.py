@@ -19,6 +19,17 @@ def test_parse_ion_key() -> None:
     assert parse_ion_key("CO3^2-") == ("CO3^2-", -2)
     assert parse_ion_key("H2PO4-") == ("H2PO4-", -1)
 
+
+def test_invalid_ion_diagnostics_are_in_english() -> None:
+    with pytest.raises(ValueError, match="Unknown ion format"):
+        parse_ion_key("invalid")
+
+    result = compute_ec({"invalid": 1.0}, temps_c=(25.0,), include_atc_to_25=False)
+    assert result["warnings"] == [
+        "Ion 'invalid' could not be parsed and was ignored.",
+        "Total EC at 25.0°C is 0; transport numbers = 0.",
+    ]
+
 def test_mccleskey_k_matches_k0_at_zero_strength() -> None:
     temp_c = 25.0
     for ion, params in MCCLESKEY_PARAMS.items():

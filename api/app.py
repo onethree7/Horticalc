@@ -395,21 +395,21 @@ def put_fertilizers(payload: List[FertilizerPayload]) -> dict:
     for entry in payload:
         name = entry.name.strip()
         if not name:
-            raise HTTPException(status_code=400, detail="Düngername darf nicht leer sein")
+            raise HTTPException(status_code=400, detail="Fertilizer name must not be empty")
         name_key = fertilizer_name_key(name)
         if name_key in seen_names:
-            raise HTTPException(status_code=400, detail="Düngernamen müssen eindeutig sein")
+            raise HTTPException(status_code=400, detail="Fertilizer names must be unique")
         seen_names.add(name_key)
 
         weight = entry.weight_factor if entry.weight_factor is not None else 1.0
         if not math.isfinite(weight) or weight <= 0:
-            raise HTTPException(status_code=400, detail="Ungültiger Gewichtswert")
+            raise HTTPException(status_code=400, detail="Invalid weight value")
 
         comp: Dict[str, float] = {}
         if entry.comp:
             for key, value in entry.comp.items():
                 if not math.isfinite(value):
-                    raise HTTPException(status_code=400, detail="Ungültiger Nährstoffwert")
+                    raise HTTPException(status_code=400, detail="Invalid nutrient value")
                 if value == 0:
                     continue
                 comp[key] = value

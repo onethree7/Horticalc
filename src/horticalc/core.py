@@ -27,7 +27,7 @@ from .sluijsmann import compute_sluijsmann
 
 def _mm(mm: Dict[str, float], key: str) -> float:
     if key not in mm:
-        raise KeyError(f"Molmasse fehlt für '{key}' (data/molar_masses.yml)")
+        raise KeyError(f"Molar mass missing for '{key}' (data/molar_masses.yml)")
     return float(mm[key])
 
 
@@ -419,7 +419,7 @@ def compute_solution(
         if grams == 0.0:
             continue
         if name not in fertilizers:
-            raise KeyError(f"Unbekannter Dünger im Rezept: '{name}'")
+            raise KeyError(f"Unknown fertilizer in recipe: '{name}'")
 
         fert = fertilizers[name]
         eff_g = grams * float(fert.weight_factor or 1.0)

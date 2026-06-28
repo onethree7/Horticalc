@@ -20,6 +20,10 @@ Status: decision-log.
   GPLv3 `LICENSE` text.
 - The portable README identifies the copyright holder, warranty disclaimer,
   license, and corresponding-source location.
+- The portable README states that Horticalc is independent from named
+  manufacturers and data sources. Bundled product data and manufacturer
+  schedules are documented as point-in-time snapshots without warranty;
+  current official manufacturer documents take precedence.
 
 Source: `LICENSE`, `pyproject.toml`, `README.md`,
 `scripts/packaging/README.txt`.

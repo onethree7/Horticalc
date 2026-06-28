@@ -57,7 +57,7 @@ JavaScript frontend. Portable Windows and Linux builds use PyInstaller.
 
 ## License
 
-Copyright © 2026 Florian Kefferpütz.
+Copyright © 2026 Horticalc contributors.
 
 Horticalc is free software licensed under the GNU General Public License,
 version 3 or (at your option) any later version. See [LICENSE](LICENSE). The

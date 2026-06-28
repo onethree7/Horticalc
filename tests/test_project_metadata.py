@@ -59,6 +59,9 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert "logs/launcher.log" in readme
     assert "GNU General Public License" in readme
     assert "corresponding source code" in readme
+    assert "Horticalc is an independent project" in readme
+    assert "point-in-time snapshots" in readme
+    assert "Those official documents always take precedence" in readme
     assert 'scripts/packaging/README.txt' in windows_build
     assert 'scripts/packaging/README.txt' in linux_build
     assert 'Join-Path $repoRoot "LICENSE"' in windows_build

@@ -96,6 +96,12 @@ The build scripts run PyInstaller with
 `recipes/` into the onedir app root and add the portable `README.txt` and
 GPLv3 `LICENSE`.
 
+The portable README also carries the product-data disclaimer. It states that
+Horticalc is independent from named manufacturers and data sources, that bundled
+product data and manufacturer schedules are point-in-time snapshots without
+warranty, and that current official manufacturer labels, safety and technical
+data sheets, and application schedules take precedence.
+
 On Windows, `scripts/packaging/build_windows.ps1` also generates a PyInstaller
 version resource with `scripts/packaging/write_windows_version_info.py`. CI
 passes the Git tag or short commit through `HORTICALC_VERSION`; local builds

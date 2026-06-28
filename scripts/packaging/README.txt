@@ -30,9 +30,26 @@ when reporting a startup problem.
 Project documentation and issue tracker:
 https://github.com/onethree7/Horticalc
 
+Product data and manufacturer schedules
+---------------------------------------
+Horticalc is an independent project. It is not affiliated with, sponsored,
+endorsed, or approved by any manufacturer, brand owner, retailer, publisher,
+water utility, or other data source named in the application. Product names
+and trademarks are used only to identify the referenced products and remain
+the property of their respective owners.
+
+Bundled fertilizer data, product compositions, recipes, and manufacturer
+schedules are point-in-time snapshots of information available when they were
+recorded. They may be incomplete, inaccurate, or out of date and are provided
+without warranty. Before every use, obtain and check the manufacturer's current
+official product label, safety data sheet, technical data sheet, and current
+application or feed schedule. Those official documents always take precedence.
+Do not use Horticalc's bundled data or calculated output as the sole source for
+mixing, dosing, compatibility, or safety decisions.
+
 License and source
 ------------------
-Copyright (C) 2026 Florian Kefferpütz.
+Copyright (C) 2026 Horticalc contributors.
 
 Horticalc is free software under the GNU General Public License, version 3 or
 (at your option) any later version. It comes without any warranty. The full

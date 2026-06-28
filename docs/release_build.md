@@ -18,6 +18,13 @@ only inside the extracted app folder.
 7. Browser profiles are created under `AppRoot/user/browser_profiles/` and
    removed after the app window closes.
 
+Lock ownership is claimed exclusively before uvicorn starts. Concurrent
+launches wait for that owner to become healthy, while dead or malformed locks
+are removed safely. Lock and launcher-session records use durable replacement
+writes. Browser profile directories are collision-proof. When no supported
+app-mode browser is available, the system-browser fallback keeps the backend
+running until the launcher process is stopped; later launches reuse it.
+
 ## AppRoot Layout
 
 Windows:

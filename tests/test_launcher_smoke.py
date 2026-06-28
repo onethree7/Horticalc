@@ -6,13 +6,18 @@ import types
 
 import pytest
 
+import horticalc.launcher as launcher
 from horticalc.launcher import (
     active_launcher_sessions,
+    claim_lockfile,
+    create_profile_dir,
     create_launcher_session,
     fail_fast,
     lockfile_path,
     read_lockfile,
     remove_lockfile,
+    wait_for_existing_server,
+    wait_for_fallback_shutdown,
     wait_for_launcher_sessions,
     write_lockfile,
 )
@@ -56,6 +61,56 @@ def test_lockfile_removal_is_owner_aware(tmp_path) -> None:
     assert not path.exists()
 
 
+def test_lockfile_write_is_atomic_on_replace_failure(tmp_path, monkeypatch) -> None:
+    path = lockfile_path(tmp_path)
+    path.parent.mkdir()
+    original = '{"pid": 1234, "port": 8000}'
+    path.write_text(original, encoding="utf-8")
+
+    def fail_replace(_source, _destination) -> None:
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(launcher.os, "replace", fail_replace)
+
+    with pytest.raises(OSError, match="replace failed"):
+        write_lockfile(path, port=8001, pid=5678)
+
+    assert path.read_text(encoding="utf-8") == original
+    assert list(path.parent.glob(f".{path.name}.tmp-*")) == []
+
+
+def test_exclusive_lockfile_claim_has_single_winner(tmp_path) -> None:
+    path = lockfile_path(tmp_path)
+
+    assert claim_lockfile(path, port=8000, pid=1234) is True
+    assert claim_lockfile(path, port=8001, pid=5678) is False
+    assert read_lockfile(path)["pid"] == 1234
+
+
+def test_existing_server_waits_for_live_owner_health(tmp_path, monkeypatch) -> None:
+    path = lockfile_path(tmp_path)
+    write_lockfile(path, port=8000, pid=1234)
+    health_results = iter([False, True])
+    monkeypatch.setattr(launcher, "health_ok", lambda _port: next(health_results))
+    monkeypatch.setattr(launcher, "_pid_is_running", lambda _pid: True)
+
+    assert wait_for_existing_server(path, timeout_seconds=1) == 8000
+
+
+def test_existing_server_removes_dead_or_malformed_locks(tmp_path, monkeypatch) -> None:
+    path = lockfile_path(tmp_path)
+    write_lockfile(path, port=8000, pid=1234)
+    monkeypatch.setattr(launcher, "health_ok", lambda _port: False)
+    monkeypatch.setattr(launcher, "_pid_is_running", lambda _pid: False)
+
+    assert wait_for_existing_server(path, timeout_seconds=0) is None
+    assert not path.exists()
+
+    path.write_text("{broken", encoding="utf-8")
+    assert wait_for_existing_server(path, malformed_grace_seconds=0) is None
+    assert not path.exists()
+
+
 def test_launcher_sessions_keep_live_processes_and_remove_stale_ones(tmp_path, monkeypatch) -> None:
     live = create_launcher_session(tmp_path, pid=1234)
     stale = create_launcher_session(tmp_path, pid=5678)
@@ -83,6 +138,40 @@ def test_live_launcher_session_delays_server_shutdown(tmp_path, monkeypatch) -> 
     session.unlink()
     waiter.join(timeout=0.5)
     assert not waiter.is_alive()
+
+
+def test_launcher_session_write_cleans_up_after_replace_failure(tmp_path, monkeypatch) -> None:
+    def fail_replace(_source, _destination) -> None:
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(launcher.os, "replace", fail_replace)
+
+    with pytest.raises(OSError, match="replace failed"):
+        create_launcher_session(tmp_path, pid=1234)
+
+    session_dir = launcher.launcher_session_dir(tmp_path)
+    assert list(session_dir.iterdir()) == []
+
+
+def test_browser_profile_directories_are_unique(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(launcher.os, "getpid", lambda: 1234)
+
+    first = create_profile_dir(tmp_path)
+    second = create_profile_dir(tmp_path)
+
+    assert first != second
+    assert first.exists()
+    assert second.exists()
+
+
+def test_system_browser_fallback_waits_for_server_shutdown() -> None:
+    joined = []
+    server_thread = types.SimpleNamespace(join=lambda: joined.append(True))
+    logger = types.SimpleNamespace(info=lambda *_args: None)
+
+    wait_for_fallback_shutdown(server_thread, logger, compatibility_flag_set=False)
+
+    assert joined == [True]
 
 def test_fail_fast_exits(monkeypatch) -> None:
     if sys.platform.startswith("win"):

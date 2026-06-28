@@ -8,6 +8,7 @@ import os
 import shutil
 import socket
 import sys
+import tempfile
 import threading
 import time
 import urllib.error
@@ -30,6 +31,7 @@ LOG_FILENAME = "launcher.log"
 NO_BROWSER_ENV = "HORTICALC_NO_BROWSER"
 KEEP_SERVER_ENV = "HORTICALC_KEEP_SERVER"
 FALLBACK_GRACE_SECONDS = 5.0
+LOCK_READ_GRACE_SECONDS = 0.5
 PROFILE_DIR_NAME = "browser_profiles"
 SESSION_DIR_NAME = "launcher_sessions"
 
@@ -142,28 +144,77 @@ def health_ok(port: int) -> bool:
         return False
 
 
+def _write_json_stream(handle, payload: dict[str, Any]) -> None:
+    json.dump(payload, handle, indent=2)
+    handle.flush()
+    os.fsync(handle.fileno())
+
+
+def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            delete=False,
+            dir=path.parent,
+            prefix=f".{path.name}.tmp-",
+        ) as temp_file:
+            temp_path = Path(temp_file.name)
+            _write_json_stream(temp_file, payload)
+        os.replace(temp_path, path)
+    finally:
+        if temp_path is not None:
+            try:
+                temp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+
+def _lock_payload(port: int, pid: int | None = None) -> dict[str, Any]:
+    return {
+        "pid": pid or os.getpid(),
+        "port": port,
+        "started_at": time.time(),
+    }
+
+
 def read_lockfile(path: Path) -> dict[str, Any] | None:
     if not path.exists():
         return None
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, OSError):
         return None
     if not isinstance(payload, dict):
         return None
     port = payload.get("port")
-    if not isinstance(port, int):
+    pid = payload.get("pid")
+    if not isinstance(port, int) or port not in PORT_RANGE:
+        return None
+    if not isinstance(pid, int) or pid <= 0:
         return None
     return payload
 
 
 def write_lockfile(path: Path, port: int, pid: int | None = None) -> None:
-    payload = {
-        "pid": pid or os.getpid(),
-        "port": port,
-        "started_at": time.time(),
-    }
-    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    _atomic_write_json(path, _lock_payload(port, pid))
+
+
+def claim_lockfile(path: Path, port: int, pid: int | None = None) -> bool:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
+    except FileExistsError:
+        return False
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            _write_json_stream(handle, _lock_payload(port, pid))
+    except BaseException:
+        path.unlink(missing_ok=True)
+        raise
+    return True
 
 
 def remove_lockfile(path: Path, expected_pid: int | None = None) -> None:
@@ -175,6 +226,37 @@ def remove_lockfile(path: Path, expected_pid: int | None = None) -> None:
         path.unlink(missing_ok=True)
     except OSError:
         logging.exception("Failed to remove lockfile: %s", path)
+
+
+def wait_for_existing_server(
+    lock_path: Path,
+    timeout_seconds: float = HEALTH_TIMEOUT_SECONDS,
+    malformed_grace_seconds: float = LOCK_READ_GRACE_SECONDS,
+) -> int | None:
+    health_deadline = time.monotonic() + timeout_seconds
+    malformed_deadline = time.monotonic() + malformed_grace_seconds
+    while lock_path.exists():
+        payload = read_lockfile(lock_path)
+        if payload is None:
+            if time.monotonic() < malformed_deadline:
+                time.sleep(0.05)
+                continue
+            remove_lockfile(lock_path)
+            return None
+
+        port = payload["port"]
+        owner_pid = payload["pid"]
+        if health_ok(port):
+            return port
+        if not _pid_is_running(owner_pid):
+            remove_lockfile(lock_path, expected_pid=owner_pid)
+            return None
+        if time.monotonic() >= health_deadline:
+            raise RuntimeError(
+                f"Existing Horticalc process {owner_pid} did not become healthy."
+            )
+        time.sleep(0.1)
+    return None
 
 
 def wait_for_health(
@@ -222,10 +304,7 @@ def find_browser_executable() -> Path | None:
 def create_profile_dir(root: Path) -> Path:
     profile_root = root / "user" / PROFILE_DIR_NAME
     profile_root.mkdir(parents=True, exist_ok=True)
-    suffix = f"{os.getpid()}-{int(time.time())}"
-    profile_dir = profile_root / f"profile-{suffix}"
-    profile_dir.mkdir(parents=True, exist_ok=True)
-    return profile_dir
+    return Path(tempfile.mkdtemp(prefix=f"profile-{os.getpid()}-", dir=profile_root))
 
 
 def launch_app_window(
@@ -272,7 +351,7 @@ def launcher_session_dir(root: Path) -> Path:
 def create_launcher_session(root: Path, pid: int | None = None) -> Path:
     owner_pid = pid or os.getpid()
     path = launcher_session_dir(root) / f"session-{owner_pid}-{time.time_ns()}.json"
-    path.write_text(json.dumps({"pid": owner_pid}), encoding="utf-8")
+    _atomic_write_json(path, {"pid": owner_pid})
     return path
 
 
@@ -371,6 +450,18 @@ def require_server_health(
     fail_fast(error_message or "Server failed to start.", log_file)
 
 
+def wait_for_fallback_shutdown(
+    server_thread: threading.Thread,
+    logger: logging.Logger,
+    compatibility_flag_set: bool,
+) -> None:
+    if compatibility_flag_set:
+        logger.info("%s is set; fallback server remains running.", KEEP_SERVER_ENV)
+    else:
+        logger.info("System-browser fallback keeps the local server running.")
+    server_thread.join()
+
+
 def main() -> None:
     root = app_root()
     try:
@@ -390,31 +481,36 @@ def main() -> None:
     from api.app import app
 
     lock_path = lockfile_path(root)
-    lock_data = read_lockfile(lock_path)
-    if lock_data and health_ok(lock_data["port"]):
-        url = f"http://127.0.0.1:{lock_data['port']}/"
-        logger.info("Existing server detected on port %s.", lock_data["port"])
-        if no_browser:
-            logger.info("%s is set; skipping browser launch.", NO_BROWSER_ENV)
+    while True:
+        try:
+            existing_port = wait_for_existing_server(lock_path)
+        except RuntimeError as exc:
+            fail_fast(str(exc), log_file)
             return
-        logger.info("Opening browser for existing server.")
-        browser = find_browser_executable()
-        if browser:
-            profile_dir = create_profile_dir(root)
-            if not wait_for_app_window(url, root, profile_dir, logger, browser):
-                cleanup_profile_dir(profile_dir)
+        if existing_port is not None:
+            url = f"http://127.0.0.1:{existing_port}/"
+            logger.info("Existing server detected on port %s.", existing_port)
+            if no_browser:
+                logger.info("%s is set; skipping browser launch.", NO_BROWSER_ENV)
+                return
+            logger.info("Opening browser for existing server.")
+            browser = find_browser_executable()
+            if browser:
+                profile_dir = create_profile_dir(root)
+                if not wait_for_app_window(url, root, profile_dir, logger, browser):
+                    cleanup_profile_dir(profile_dir)
+                    webbrowser.open(url)
+            else:
                 webbrowser.open(url)
-        else:
-            webbrowser.open(url)
-        return
-    if lock_path.exists():
-        logger.info("Stale lockfile detected; removing %s.", lock_path)
-        remove_lockfile(lock_path)
+            return
 
-    port = find_free_port()
-    if port is None:
-        fail_fast("No free port found in the 8000-8100 range.", log_file)
-        return
+        port = find_free_port()
+        if port is None:
+            fail_fast("No free port found in the 8000-8100 range.", log_file)
+            return
+        if claim_lockfile(lock_path, port):
+            break
+        logger.info("Another launcher claimed the server lock; waiting for it.")
 
     config = uvicorn.Config(
         app,
@@ -425,7 +521,6 @@ def main() -> None:
     )
     server = uvicorn.Server(config)
 
-    write_lockfile(lock_path, port)
     atexit.register(remove_lockfile, lock_path, os.getpid())
     server_thread = threading.Thread(target=server.run, name="uvicorn-server", daemon=True)
     server_thread.start()
@@ -446,13 +541,7 @@ def main() -> None:
             cleanup_profile_dir(profile_dir)
             logger.warning("No supported Chromium-based browser found; falling back to system default.")
             webbrowser.open(url)
-            if keep_server:
-                logger.info("%s is set; keeping server running.", KEEP_SERVER_ENV)
-                server_thread.join()
-                return
-            logger.info("Stopping server after fallback grace period of %.1f seconds.", FALLBACK_GRACE_SECONDS)
-            time.sleep(FALLBACK_GRACE_SECONDS)
-            stop_server(server, server_thread, lock_path)
+            wait_for_fallback_shutdown(server_thread, logger, keep_server)
             return
 
         logger.info("App window closed; waiting for other launcher sessions.")

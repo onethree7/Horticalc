@@ -23,14 +23,14 @@ def main() -> int:
         print(f"[Horticalc] Creating virtual environment at {VENV_PYTHON.parent.parent}")
         run([sys.executable, "-m", "venv", str(VENV_PYTHON.parent.parent)])
 
-    pytest_check = subprocess.run(
-        [str(VENV_PYTHON), "-c", "import pytest"],
+    dependency_check = subprocess.run(
+        [str(VENV_PYTHON), "-c", "import httpx2, pytest"],
         cwd=REPO_ROOT,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         check=False,
     )
-    if pytest_check.returncode != 0:
+    if dependency_check.returncode != 0:
         print("[Horticalc] Installing development dependencies into .venv")
         run([str(VENV_PYTHON), "-m", "pip", "install", "-e", ".[dev]"])
 

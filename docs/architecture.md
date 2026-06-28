@@ -90,7 +90,11 @@ The launcher lock records the backend owner's PID. Each Chromium app window
 also gets a PID-backed session file under `user/launcher_sessions/`. The backend
 owner waits until all live launcher sessions have ended, plus a short grace
 period for immediate reopen, before stopping the server. Lock cleanup is
-owner-aware so an older launcher cannot delete a newer owner's lock.
+owner-aware so an older launcher cannot delete a newer owner's lock. Lock and
+session records are written durably, and startup claims the lock exclusively;
+concurrent launchers wait for the winning owner's health endpoint instead of
+starting a second backend. System-browser fallback cannot observe tab closure,
+so it keeps the reusable local server running until the launcher is stopped.
 
 ## Current Boundaries
 

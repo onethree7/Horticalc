@@ -41,8 +41,9 @@ Standard verification:
 python scripts/test.py
 ```
 
-The test entrypoint creates `.venv` if needed, installs `.[dev]` when pytest is
-missing, and always executes pytest with the repository virtual environment.
+The test entrypoint creates `.venv` if needed, installs `.[dev]` when a required
+test dependency is missing, and always executes pytest with the repository
+virtual environment.
 
 Focused examples:
 

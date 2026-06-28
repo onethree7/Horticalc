@@ -35,9 +35,11 @@ Source: `scripts/packaging/horticalc.spec`,
   period expires.
 - Logs: `AppRoot/logs/launcher.log`.
 - Preferred browser: Edge, Chrome, or Chromium in app mode.
-- Browser fallback: system default browser.
+- Browser fallback: system default browser; the local server remains running
+  because generic browser-tab closure cannot be observed reliably.
 - No-browser CI mode: `HORTICALC_NO_BROWSER=1`.
-- Keep fallback server mode: `HORTICALC_KEEP_SERVER=1`.
+- Compatibility alias: `HORTICALC_KEEP_SERVER=1` remains accepted but is no
+  longer required because fallback servers now stay running by default.
 
 Source: `src/horticalc/launcher.py`.
 

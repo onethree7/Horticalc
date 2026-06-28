@@ -9,6 +9,7 @@ FastAPI from the same origin as the API.
 
 - `frontend/index.html`: DOM structure, workflow panels, stable IDs.
 - `frontend/app.js`: state, API calls, rendering, workflow navigation.
+- `frontend/request_gate.js`: executable latest-request ownership state.
 - `frontend/i18n/`: frontend-only translation catalogs and runtime.
 - `frontend/styles.css`: app frame layout, tables, responsive rules.
 
@@ -49,6 +50,8 @@ schema fails, the System indicator shows `Daten unvollständig` instead of
 claiming that the complete UI is ready. Calculation, Solver, recipe-profile,
 and water-profile requests use latest-request ownership: a slower response from
 an older edit or selection is discarded instead of overwriting newer UI state.
+The request gate is exercised directly with Node's built-in runtime in the
+standard test suite; no npm package is required.
 
 The workflow menu and primary workspace headings reuse one inline SVG icon
 sprite from `frontend/index.html`. Its seven reduced scientific monoline

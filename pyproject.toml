@@ -29,7 +29,7 @@ pythonpath = ["src", "."]
 where = ["src"]
 
 [tool.setuptools.data-files]
-"frontend" = ["frontend/index.html", "frontend/app.js", "frontend/styles.css"]
+"frontend" = ["frontend/index.html", "frontend/app.js", "frontend/request_gate.js", "frontend/styles.css"]
 "frontend/i18n" = ["frontend/i18n/*.js"]
 "data" = ["data/*.csv", "data/*.yml"]
 "data/water_profiles" = ["data/water_profiles/*.yml"]

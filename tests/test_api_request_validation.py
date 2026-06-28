@@ -1,6 +1,7 @@
 from dataclasses import replace
 
 from fastapi.testclient import TestClient
+import pytest
 
 import api.app as api_app
 
@@ -18,11 +19,18 @@ def test_yaml_save_rejects_malformed_or_non_object_payloads() -> None:
         content="- name: profile",
         headers={"content-type": "application/yaml"},
     )
+    empty_list = client.post(
+        "/water-profiles",
+        content="[]",
+        headers={"content-type": "application/yaml"},
+    )
 
     assert malformed.status_code == 400
     assert malformed.json()["detail"] == "Invalid request payload"
     assert non_object.status_code == 400
     assert non_object.json()["detail"] == "Request payload must be an object"
+    assert empty_list.status_code == 400
+    assert empty_list.json()["detail"] == "Request payload must be an object"
 
 
 def test_yaml_save_rejects_non_finite_target(monkeypatch, tmp_path) -> None:
@@ -84,6 +92,17 @@ def test_solve_rejects_non_finite_nested_water_osmosis() -> None:
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Invalid osmosis_percent value"
+
+
+@pytest.mark.parametrize("mg_per_l", [[], ""])
+def test_solve_rejects_non_object_nested_water_values(mg_per_l) -> None:
+    response = TestClient(api_app.app).post(
+        "/solve",
+        json={"water_profile": {"mg_per_l": mg_per_l}},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "water_profile.mg_per_l must be an object"
 
 
 def test_resource_list_skips_invalid_yaml(monkeypatch, tmp_path, caplog) -> None:

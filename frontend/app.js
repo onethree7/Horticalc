@@ -1,5 +1,6 @@
 const qs = (selector, root = document) => root.querySelector(selector);
 const qsa = (selector, root = document) => root.querySelectorAll(selector);
+const { createLatestRequestGate } = window.HorticalcRequestGate;
 
 const fertilizerSelectTableWrap = qs("#fertilizerSelectTableWrap");
 const calculatorTableWrap = qs("#calculatorTableWrap");
@@ -131,10 +132,10 @@ let waterUnit = "mg_l";
 let lastCalculation = null;
 let lastSolveResult = null;
 let recalculateTimer = null;
-let calculationRequestVersion = 0;
-let solveRequestVersion = 0;
-let profileRequestVersion = 0;
-let waterProfileRequestVersion = 0;
+const calculationRequests = createLatestRequestGate();
+const solveRequests = createLatestRequestGate();
+const profileRequests = createLatestRequestGate();
+const waterProfileRequests = createLatestRequestGate();
 let fertilizerSelectTable;
 let userPreferences = {};
 let preferenceLoadPromise = null;
@@ -854,7 +855,7 @@ const profileConfigs = {
 function setProfileMode(mode) {
   const nextMode = mode === "solver" ? "solver" : "calculator";
   if (nextMode !== currentProfileMode) {
-    profileRequestVersion += 1;
+    profileRequests.invalidate();
   }
   currentProfileMode = nextMode;
   const config = profileConfigs[currentProfileMode];
@@ -1642,7 +1643,7 @@ function solverResultDisplayKeys(data) {
 
 function renderSolverResults(data) {
   if (!data) {
-    solveRequestVersion += 1;
+    solveRequests.invalidate();
   }
   lastSolveResult = data || null;
   updateSolverResultActions();
@@ -2073,7 +2074,7 @@ function renderWaterTable() {
       input.classList.add("is-helper");
     }
     input.addEventListener("input", (event) => {
-      waterProfileRequestVersion += 1;
+      waterProfileRequests.invalidate();
       const parsed = decimalInputValue(event.target.value);
       waterValues[field.key] = waterUnit === "mol_l" ? molToMg(field.key, parsed) : parsed;
       const updatedKeys = applyWaterHelpers(waterValues, getMolarMass);
@@ -2216,7 +2217,7 @@ function unitLabelForKey(key) {
 }
 
 function scheduleRecalculate() {
-  const requestVersion = ++calculationRequestVersion;
+  const requestVersion = calculationRequests.reserve();
   if (recalculateTimer) {
     clearTimeout(recalculateTimer);
   }
@@ -2829,20 +2830,20 @@ async function calculate(payloadOverride = null) {
 }
 
 async function calculateAndRender(payloadOverride = null, requestVersion = null) {
-  const activeVersion = requestVersion ?? ++calculationRequestVersion;
-  if (activeVersion !== calculationRequestVersion) {
+  const activeVersion = requestVersion ?? calculationRequests.reserve();
+  if (!calculationRequests.isCurrent(activeVersion)) {
     return null;
   }
   let data;
   try {
     data = await calculate(payloadOverride);
   } catch (error) {
-    if (activeVersion !== calculationRequestVersion) {
+    if (!calculationRequests.isCurrent(activeVersion)) {
       return null;
     }
     throw error;
   }
-  if (activeVersion !== calculationRequestVersion) {
+  if (!calculationRequests.isCurrent(activeVersion)) {
     return null;
   }
   renderCalculation(data);
@@ -3068,7 +3069,7 @@ function syncSolverAllowedWithSelection(mode = "merge") {
 }
 
 function applyWaterProfile(profile) {
-  waterProfileRequestVersion += 1;
+  waterProfileRequests.invalidate();
   const mg = profile.normalized_mg_per_l || profile.mg_per_l || {};
   waterFieldDefinitions.forEach((field) => {
     waterValues[field.key] = Number(mg[field.key]) || 0;
@@ -3494,10 +3495,10 @@ solveButton.addEventListener("click", async () => {
     );
     return;
   }
-  const requestVersion = ++solveRequestVersion;
+  const requestVersion = solveRequests.reserve();
   try {
     const data = await solveRecipe();
-    if (requestVersion !== solveRequestVersion) {
+    if (!solveRequests.isCurrent(requestVersion)) {
       return;
     }
     renderSolverResults(data);
@@ -3505,7 +3506,7 @@ solveButton.addEventListener("click", async () => {
       applySolverResultToCalculator({ switchToCalculator: false });
     }
   } catch (error) {
-    if (requestVersion !== solveRequestVersion) {
+    if (!solveRequests.isCurrent(requestVersion)) {
       return;
     }
     reportError(error, t("errors.solveFailed"));
@@ -3527,7 +3528,7 @@ const applyRecipeProfile = async (recipe, context = "", requestVersion = null) =
       : `${recipe.water_profile}.yml`;
     waterProfile = await fetchWaterProfileData(recipe.water_profile);
   }
-  if (requestVersion !== null && requestVersion !== profileRequestVersion) {
+  if (requestVersion !== null && !profileRequests.isCurrent(requestVersion)) {
     return false;
   }
   solverAllowedContext = normalizeSolverAllowedContext(context || recipe?.filename || recipe?.name);
@@ -3560,12 +3561,12 @@ loadProfileButton.addEventListener("click", async () => {
     reportError(null, t("errors.profileRequired"));
     return;
   }
-  const requestVersion = ++profileRequestVersion;
+  const requestVersion = profileRequests.reserve();
   const profileMode = currentProfileMode;
   try {
     if (profileMode === "solver") {
       const solution = await fetchNutrientSolutionData(selection);
-      if (requestVersion !== profileRequestVersion || currentProfileMode !== profileMode) {
+      if (!profileRequests.isCurrent(requestVersion) || currentProfileMode !== profileMode) {
         return;
       }
       applyNutrientSolution(solution);
@@ -3578,7 +3579,7 @@ loadProfileButton.addEventListener("click", async () => {
       await applyRecipeProfile(recipe, selection, requestVersion);
     }
   } catch (error) {
-    if (requestVersion !== profileRequestVersion || currentProfileMode !== profileMode) {
+    if (!profileRequests.isCurrent(requestVersion) || currentProfileMode !== profileMode) {
       return;
     }
     reportError(error, t("errors.loadProfile"));
@@ -3586,7 +3587,7 @@ loadProfileButton.addEventListener("click", async () => {
 });
 
 resetProfileButton.addEventListener("click", async () => {
-  const requestVersion = ++profileRequestVersion;
+  const requestVersion = profileRequests.reserve();
   const profileMode = currentProfileMode;
   try {
     if (profileMode === "solver") {
@@ -3599,7 +3600,7 @@ resetProfileButton.addEventListener("click", async () => {
       await applyRecipeProfile(recipe, "default.yml", requestVersion);
     }
   } catch (error) {
-    if (requestVersion !== profileRequestVersion || currentProfileMode !== profileMode) {
+    if (!profileRequests.isCurrent(requestVersion) || currentProfileMode !== profileMode) {
       return;
     }
     reportError(error, t("errors.resetFailed"));
@@ -3671,16 +3672,16 @@ loadWaterProfileButton.addEventListener("click", async () => {
     reportError(null, t("errors.waterProfileRequired"));
     return;
   }
-  const requestVersion = ++waterProfileRequestVersion;
+  const requestVersion = waterProfileRequests.reserve();
   try {
     const profile = await fetchWaterProfileData(selection);
-    if (requestVersion !== waterProfileRequestVersion) {
+    if (!waterProfileRequests.isCurrent(requestVersion)) {
       return;
     }
     applyWaterProfile(profile);
     persistPreferences({ last_water_profile: selection });
   } catch (error) {
-    if (requestVersion !== waterProfileRequestVersion) {
+    if (!waterProfileRequests.isCurrent(requestVersion)) {
       return;
     }
     reportError(error, t("errors.loadWaterProfile"));
@@ -3688,17 +3689,17 @@ loadWaterProfileButton.addEventListener("click", async () => {
 });
 
 resetWaterProfileButton.addEventListener("click", async () => {
-  const requestVersion = ++waterProfileRequestVersion;
+  const requestVersion = waterProfileRequests.reserve();
   try {
     const profile = await fetchWaterProfileData("default");
-    if (requestVersion !== waterProfileRequestVersion) {
+    if (!waterProfileRequests.isCurrent(requestVersion)) {
       return;
     }
     waterProfileSelect.value = "default.yml";
     applyWaterProfile(profile);
     persistPreferences({ last_water_profile: "default.yml" });
   } catch (error) {
-    if (requestVersion !== waterProfileRequestVersion) {
+    if (!waterProfileRequests.isCurrent(requestVersion)) {
       return;
     }
     reportError(error, t("errors.loadWaterProfile"));
@@ -3716,7 +3717,7 @@ saveWaterProfileButton.addEventListener("click", async () => {
 });
 
 osmosisPercentInput.addEventListener("input", () => {
-  waterProfileRequestVersion += 1;
+  waterProfileRequests.invalidate();
   scheduleRecalculate();
 });
 osmosisPercentInput.addEventListener("change", () => {

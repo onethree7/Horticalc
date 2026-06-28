@@ -10,6 +10,7 @@ import horticalc.launcher as launcher
 from horticalc.launcher import (
     active_launcher_sessions,
     claim_lockfile,
+    cleanup_stale_profile_dirs,
     create_profile_dir,
     create_launcher_session,
     fail_fast,
@@ -17,6 +18,7 @@ from horticalc.launcher import (
     read_lockfile,
     remove_lockfile,
     wait_for_existing_server,
+    wait_for_existing_server_fallback,
     wait_for_fallback_shutdown,
     wait_for_launcher_sessions,
     write_lockfile,
@@ -121,6 +123,17 @@ def test_launcher_sessions_keep_live_processes_and_remove_stale_ones(tmp_path, m
     assert not stale.exists()
 
 
+def test_launcher_sessions_reject_reused_pid_identity(tmp_path, monkeypatch) -> None:
+    identity = {1234: 111}
+    monkeypatch.setattr(launcher, "_process_identity", lambda pid: identity.get(pid))
+    session = create_launcher_session(tmp_path, pid=1234)
+    monkeypatch.setattr(launcher, "_pid_is_running", lambda _pid: True)
+    identity[1234] = 222
+
+    assert active_launcher_sessions(tmp_path) == []
+    assert not session.exists()
+
+
 def test_live_launcher_session_delays_server_shutdown(tmp_path, monkeypatch) -> None:
     session = create_launcher_session(tmp_path)
     monkeypatch.setattr("horticalc.launcher._pid_is_running", lambda pid: session.exists())
@@ -162,6 +175,52 @@ def test_browser_profile_directories_are_unique(tmp_path, monkeypatch) -> None:
     assert first != second
     assert first.exists()
     assert second.exists()
+
+
+def test_stale_profile_cleanup_handles_dead_or_reused_owner(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(launcher.os, "getpid", lambda: 1234)
+    monkeypatch.setattr(launcher, "_process_identity", lambda _pid: 111)
+    profile = create_profile_dir(tmp_path)
+    old_time = 1_000.0
+    launcher.os.utime(profile, (old_time, old_time))
+    monkeypatch.setattr(launcher, "_pid_is_running", lambda _pid: True)
+    monkeypatch.setattr(launcher, "_process_identity", lambda _pid: 222)
+
+    cleanup_stale_profile_dirs(
+        tmp_path,
+        now=old_time + launcher.STALE_PROFILE_AGE_SECONDS,
+    )
+
+    assert not profile.exists()
+
+
+def test_stale_profile_cleanup_removes_legacy_dead_owner_profile(tmp_path, monkeypatch) -> None:
+    profile = tmp_path / "user" / launcher.PROFILE_DIR_NAME / "profile-1234-1700000000"
+    profile.mkdir(parents=True)
+    old_time = 1_000.0
+    launcher.os.utime(profile, (old_time, old_time))
+    monkeypatch.setattr(launcher, "_pid_is_running", lambda _pid: False)
+
+    cleanup_stale_profile_dirs(
+        tmp_path,
+        now=old_time + launcher.STALE_PROFILE_AGE_SECONDS,
+    )
+
+    assert not profile.exists()
+
+
+def test_existing_server_fallback_session_is_removed_on_exit(tmp_path, monkeypatch) -> None:
+    logger = types.SimpleNamespace(info=lambda *_args: None)
+
+    def stop_waiting(_seconds: float) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(launcher.time, "sleep", stop_waiting)
+
+    with pytest.raises(KeyboardInterrupt):
+        wait_for_existing_server_fallback(tmp_path, logger)
+
+    assert list(launcher.launcher_session_dir(tmp_path).iterdir()) == []
 
 
 def test_system_browser_fallback_waits_for_server_shutdown() -> None:

@@ -45,6 +45,9 @@ The test entrypoint creates `.venv` if needed, installs `.[dev]` when a required
 test dependency is missing, and always executes pytest with the repository
 virtual environment.
 
+Node.js is required for the small executable vanilla-JavaScript tests. They use
+only built-in Node modules; no npm install or frontend framework is required.
+
 Focused examples:
 
 ```bash

@@ -24,6 +24,14 @@ are removed safely. Lock and launcher-session records use durable replacement
 writes. Browser profile directories are collision-proof. When no supported
 app-mode browser is available, the system-browser fallback keeps the backend
 running until the launcher process is stopped; later launches reuse it.
+Fallback launchers connected to an existing backend keep their own session
+record alive, preventing the owner from stopping while the fallback tab is in
+use. Session records include process identity to detect PID reuse, and stale
+browser profiles are cleaned only after seven days.
+
+`pyproject.toml` owns runtime dependency declarations.
+`constraints-release.txt` pins the complete release build environment used by
+CI and local release builds.
 
 ## AppRoot Layout
 
@@ -57,10 +65,12 @@ dist/horticalc/
 
 Install build requirements:
 
-```bash
-python -m pip install -r requirements.txt
-python -m pip install pyinstaller
+```powershell
+$env:PIP_CONSTRAINT = "constraints-release.txt"
+python -m pip install . pyinstaller
 ```
+
+On Linux, use `PIP_CONSTRAINT=constraints-release.txt python -m pip install . pyinstaller`.
 
 Windows PowerShell:
 

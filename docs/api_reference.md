@@ -10,6 +10,8 @@ non-finite mapping values return HTTP 400. Non-finite model fields such as
 liters, fertilizer grams, fixed grams, and osmosis percentage return HTTP 422.
 Water values use the same allowed-key and finite-number validation in profile
 saves, `/calculate`, and `/solve`.
+Empty lists and strings are not treated as missing objects; malformed nested
+water mappings return HTTP 400.
 
 Resource-list routes skip an unreadable or malformed YAML file and log a
 warning so one damaged user file does not hide every valid profile. Directly

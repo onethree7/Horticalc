@@ -94,7 +94,9 @@ owner-aware so an older launcher cannot delete a newer owner's lock. Lock and
 session records are written durably, and startup claims the lock exclusively;
 concurrent launchers wait for the winning owner's health endpoint instead of
 starting a second backend. System-browser fallback cannot observe tab closure,
-so it keeps the reusable local server running until the launcher is stopped.
+so it keeps a PID-and-process-identity-backed session active until the launcher
+is stopped. Old browser profiles from dead or PID-reused owners are removed
+after a conservative seven-day grace period.
 
 ## Current Boundaries
 

@@ -1,7 +1,0 @@
-# Note (Linux runtime): a Chromium-based browser (chromium/chrome/edge) is recommended for app-window mode.
-PyYAML>=6.0
-fastapi>=0.136.3
-pydantic>=2.13.4
-uvicorn>=0.49.0
-numpy>=1.26.0
-tzdata>=2024.1; platform_system=="Windows"

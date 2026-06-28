@@ -5,6 +5,7 @@ import json
 import logging
 import logging.config
 import os
+import re
 import shutil
 import socket
 import sys
@@ -32,8 +33,10 @@ NO_BROWSER_ENV = "HORTICALC_NO_BROWSER"
 KEEP_SERVER_ENV = "HORTICALC_KEEP_SERVER"
 FALLBACK_GRACE_SECONDS = 5.0
 LOCK_READ_GRACE_SECONDS = 0.5
+STALE_PROFILE_AGE_SECONDS = 7 * 24 * 60 * 60
 PROFILE_DIR_NAME = "browser_profiles"
 SESSION_DIR_NAME = "launcher_sessions"
+PROFILE_DIR_PATTERN = re.compile(r"^profile-(\d+)-(?:(\d+)-.+|\d+)$")
 
 WINDOWS_BROWSER_CANDIDATES = (
     "msedge.exe",
@@ -301,10 +304,52 @@ def find_browser_executable() -> Path | None:
     return _which_first(LINUX_BROWSER_CANDIDATES)
 
 
+def _process_identity(pid: int) -> int | None:
+    if pid <= 0:
+        return None
+    if os.name == "nt":
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            process = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)
+            if not process:
+                return None
+            creation = wintypes.FILETIME()
+            exit_time = wintypes.FILETIME()
+            kernel = wintypes.FILETIME()
+            user = wintypes.FILETIME()
+            try:
+                if not ctypes.windll.kernel32.GetProcessTimes(
+                    process,
+                    ctypes.byref(creation),
+                    ctypes.byref(exit_time),
+                    ctypes.byref(kernel),
+                    ctypes.byref(user),
+                ):
+                    return None
+                return (creation.dwHighDateTime << 32) | creation.dwLowDateTime
+            finally:
+                ctypes.windll.kernel32.CloseHandle(process)
+        except (AttributeError, OSError):
+            return None
+    try:
+        return (Path("/proc") / str(pid)).stat().st_ctime_ns
+    except OSError:
+        return None
+
+
 def create_profile_dir(root: Path) -> Path:
     profile_root = root / "user" / PROFILE_DIR_NAME
     profile_root.mkdir(parents=True, exist_ok=True)
-    return Path(tempfile.mkdtemp(prefix=f"profile-{os.getpid()}-", dir=profile_root))
+    owner_pid = os.getpid()
+    identity = _process_identity(owner_pid) or 0
+    return Path(
+        tempfile.mkdtemp(
+            prefix=f"profile-{owner_pid}-{identity}-",
+            dir=profile_root,
+        )
+    )
 
 
 def launch_app_window(
@@ -351,7 +396,13 @@ def launcher_session_dir(root: Path) -> Path:
 def create_launcher_session(root: Path, pid: int | None = None) -> Path:
     owner_pid = pid or os.getpid()
     path = launcher_session_dir(root) / f"session-{owner_pid}-{time.time_ns()}.json"
-    _atomic_write_json(path, {"pid": owner_pid})
+    _atomic_write_json(
+        path,
+        {
+            "pid": owner_pid,
+            "process_identity": _process_identity(owner_pid),
+        },
+    )
     return path
 
 
@@ -386,13 +437,46 @@ def active_launcher_sessions(root: Path) -> list[Path]:
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
             pid = payload.get("pid")
+            expected_identity = payload.get("process_identity")
         except (OSError, json.JSONDecodeError):
             pid = None
-        if isinstance(pid, int) and _pid_is_running(pid):
+            expected_identity = None
+        current_identity = _process_identity(pid) if isinstance(pid, int) else None
+        identity_matches = (
+            expected_identity is None
+            or current_identity is None
+            or expected_identity == current_identity
+        )
+        if isinstance(pid, int) and _pid_is_running(pid) and identity_matches:
             active.append(path)
         else:
             path.unlink(missing_ok=True)
     return active
+
+
+def cleanup_stale_profile_dirs(root: Path, now: float | None = None) -> None:
+    profile_root = root / "user" / PROFILE_DIR_NAME
+    if not profile_root.exists():
+        return
+    current_time = time.time() if now is None else now
+    for profile_dir in profile_root.glob("profile-*"):
+        match = PROFILE_DIR_PATTERN.match(profile_dir.name)
+        if not match or not profile_dir.is_dir():
+            continue
+        owner_pid = int(match.group(1))
+        expected_identity = int(match.group(2)) if match.group(2) else None
+        try:
+            old_enough = current_time - profile_dir.stat().st_mtime >= STALE_PROFILE_AGE_SECONDS
+        except OSError:
+            continue
+        current_identity = _process_identity(owner_pid)
+        owner_matches = _pid_is_running(owner_pid) and (
+            expected_identity is None
+            or current_identity is None
+            or expected_identity == current_identity
+        )
+        if old_enough and not owner_matches:
+            cleanup_profile_dir(profile_dir)
 
 
 def wait_for_launcher_sessions(root: Path, grace_seconds: float = FALLBACK_GRACE_SECONDS) -> None:
@@ -462,10 +546,21 @@ def wait_for_fallback_shutdown(
     server_thread.join()
 
 
+def wait_for_existing_server_fallback(root: Path, logger: logging.Logger) -> None:
+    session_path = create_launcher_session(root)
+    logger.info("System-browser fallback keeps this launcher session active.")
+    try:
+        while True:
+            time.sleep(3600)
+    finally:
+        remove_lockfile(session_path)
+
+
 def main() -> None:
     root = app_root()
     try:
         ensure_portable_layout(root)
+        cleanup_stale_profile_dirs(root)
         logs_path = logs_dir(root)
     except RuntimeError as exc:
         message = str(exc) or PORTABLE_WRITE_ERROR
@@ -500,8 +595,10 @@ def main() -> None:
                 if not wait_for_app_window(url, root, profile_dir, logger, browser):
                     cleanup_profile_dir(profile_dir)
                     webbrowser.open(url)
+                    wait_for_existing_server_fallback(root, logger)
             else:
                 webbrowser.open(url)
+                wait_for_existing_server_fallback(root, logger)
             return
 
         port = find_free_port()

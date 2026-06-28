@@ -183,7 +183,9 @@ async def _parse_request_payload(request: Request) -> dict:
     try:
         if "yaml" in content_type:
             raw_body = await request.body()
-            payload = yaml.safe_load(raw_body.decode("utf-8")) or {}
+            payload = yaml.safe_load(raw_body.decode("utf-8"))
+            if payload is None:
+                payload = {}
         else:
             payload = await request.json()
     except (UnicodeDecodeError, ValueError, yaml.YAMLError) as exc:
@@ -433,7 +435,7 @@ def water_profile(profile_name: str) -> dict:
     if not profile_path.exists():
         raise HTTPException(status_code=404, detail="Water profile not found")
     data = load_water_profile_data(profile_path)
-    mg_per_l = _validated_water_mg_l(data.get("mg_per_l") or {})
+    mg_per_l = _validated_water_mg_l(data["mg_per_l"])
     data["mg_per_l"] = mg_per_l
     normalized = normalize_water_profile(MOLAR_MASSES, mg_per_l)
     data["normalized_mg_per_l"] = augment_water_profile_with_elements(MOLAR_MASSES, normalized)
@@ -584,7 +586,7 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
         if not profile_path.exists():
             raise HTTPException(status_code=404, detail="Water profile not found")
         profile = load_water_profile_data(profile_path)
-        mg_per_l = profile.get("mg_per_l") or {}
+        mg_per_l = profile["mg_per_l"]
         water_mg_l = _validated_water_mg_l(mg_per_l)
         osmosis_percent = _validated_osmosis_percent(profile.get("osmosis_percent"))
     elif payload.water_mg_l:
@@ -621,7 +623,16 @@ def solve(payload: SolveRequest) -> SolveResponse:
     water_profile_data: Dict[str, Any] | None = None
     if payload.water_profile:
         water_profile_data = dict(payload.water_profile)
-        mg_per_l = water_profile_data.get("mg_per_l") or {}
+        raw_mg_per_l = water_profile_data.get("mg_per_l")
+        if raw_mg_per_l is None:
+            mg_per_l = {}
+        elif isinstance(raw_mg_per_l, dict):
+            mg_per_l = raw_mg_per_l
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="water_profile.mg_per_l must be an object",
+            )
         water_profile_data["mg_per_l"] = _validated_water_mg_l(mg_per_l)
         water_profile_data["osmosis_percent"] = _validated_osmosis_percent(
             water_profile_data.get("osmosis_percent")

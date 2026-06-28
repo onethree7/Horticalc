@@ -75,3 +75,18 @@ def test_preferences_reject_advanced_solver_config(monkeypatch, tmp_path) -> Non
     )
     assert rejected.status_code == 400
     assert rejected.json()["detail"] == "Invalid solver config value: relative_weighting"
+
+
+def test_preferences_can_reset_solver_config_to_defaults(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+    client = TestClient(api_app.app)
+    assert client.put(
+        "/preferences",
+        json={"solver_config": {"relative_weighting": True}},
+    ).status_code == 200
+
+    response = client.put("/preferences", json={"solver_config": {}})
+
+    assert response.status_code == 200
+    assert response.json()["solver_config"] == {}
+    assert client.get("/preferences").json()["solver_config"] == {}

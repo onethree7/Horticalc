@@ -31,6 +31,12 @@ Water profiles, nutrient solutions, and recipes still copy shipped defaults
 into `user/` when a user copy is missing. Runtime edits are written to `user/`,
 not to shipped defaults.
 
+API list routes omit malformed or unreadable user YAML files and log a warning,
+allowing the remaining valid profiles to stay available. Numeric mappings must
+contain finite numbers; API save routes reject `NaN` and infinity rather than
+persisting them. Runtime liters, fertilizer grams, Solver fixed grams, and
+osmosis percentages must also be finite.
+
 `user/preferences.json` is a JSON object containing optional `theme`,
 `default_liters`, `solver_config`, and `last_water_profile` fields. The API
 validates partial updates and preserves JSON types. Preference `solver_config`

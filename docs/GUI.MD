@@ -44,6 +44,12 @@ rewriting the user's defaults. A water profile loaded with the water-profile
 controls becomes the next startup profile; a water profile loaded indirectly
 from a recipe does not. Missing remembered profiles fall back to `default.yml`.
 
+Independent startup resources load concurrently. If any required catalog or
+schema fails, the System indicator shows `Daten unvollständig` instead of
+claiming that the complete UI is ready. Calculation, Solver, recipe-profile,
+and water-profile requests use latest-request ownership: a slower response from
+an older edit or selection is discarded instead of overwriting newer UI state.
+
 The workflow menu and primary workspace headings reuse one inline SVG icon
 sprite from `frontend/index.html`. Its seven reduced scientific monoline
 symbols use `currentColor` for primary strokes and `--app-teal` for restrained
@@ -127,6 +133,9 @@ by `/schema/solver-config`, and is wired in `frontend/app.js`. The visible
 `N-total statt N-Formen` checkbox writes
 `solver_config.nitrogen_objective_mode`: checked sends `n_total_only`,
 unchecked sends `n_forms_only`.
+The explicit `Solver-Konfiguration zurücksetzen` button in the same advanced
+panel restores every schema default and persists an empty `solver_config`,
+removing previous preference overrides.
 
 ## API Use
 
@@ -160,7 +169,8 @@ Solver defaults, and last directly loaded water profile.
 Solver config is not restored from saved solution snapshots. Startup defaults
 come from preferences, while a non-empty config in an explicitly loaded recipe
 overrides the active controls. The UI fetches the backend schema from
-`/schema/solver-config`.
+`/schema/solver-config`. Use `Solver-Konfiguration zurücksetzen` inside
+`Erweitert` to discard non-default preference values.
 
 ## Stable Contracts
 

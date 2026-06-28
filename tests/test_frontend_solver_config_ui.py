@@ -62,6 +62,20 @@ def test_solver_advanced_config_lives_in_solver_panel() -> None:
     assert html_content.index('class="solver-advanced-config"') < html_content.index('id="solverUreaToggle"')
     assert html_content.index('class="solver-advanced-config"') < html_content.index('id="solverPhosphate"')
     assert html_content.index('id="solverTargetsResultsTable"') < html_content.index('class="solver-advanced-config"')
+    assert 'data-i18n="solver.resetConfig"' in html_content
+
+
+def test_solver_config_reset_clears_persisted_overrides() -> None:
+    js_content = read_frontend_file("app.js")
+    reset_block = js_content.split("if (solverConfigResetDefaultsButton)", 1)[1].split(
+        "[solverUreaToggle, solverPhosphateSelect]",
+        1,
+    )[0]
+
+    assert "applySolverConfig();" in reset_block
+    assert "renderSolverResults(null);" in reset_block
+    assert "persistPreferences({ solver_config: {} });" in reset_block
+    assert 'setSolverApplyStatus(t("solver.configResetDone"));' in reset_block
 
 def test_solver_ui_does_not_restore_hidden_solver_config_from_saved_solution() -> None:
     content = read_frontend_file("app.js")

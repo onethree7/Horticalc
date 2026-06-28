@@ -4,6 +4,17 @@ The FastAPI app lives in `api/app.py`. It serves JSON API routes and the static
 frontend from the same origin. Save endpoints also accept YAML request bodies
 for compatibility, but JSON is the documented API contract.
 
+JSON and YAML save bodies must decode to an object. Malformed bodies return
+HTTP 400, model-shape errors return HTTP 422, and unknown mapping keys or
+non-finite mapping values return HTTP 400. Non-finite model fields such as
+liters, fertilizer grams, fixed grams, and osmosis percentage return HTTP 422.
+Water values use the same allowed-key and finite-number validation in profile
+saves, `/calculate`, and `/solve`.
+
+Resource-list routes skip an unreadable or malformed YAML file and log a
+warning so one damaged user file does not hide every valid profile. Directly
+loading that damaged file still fails.
+
 ## Health And Schema
 
 | Method | Path | Purpose |
@@ -28,6 +39,9 @@ defaults. Water-profile values must be filenames rather than paths. Partial
 payloads are merged with existing preferences. Preferences are stored in
 `user/preferences.json` so they survive the launcher's temporary browser
 profiles.
+
+Sending `{"solver_config": {}}` removes saved Solver overrides and restores
+the schema defaults on the next load.
 
 Solver configuration is validated consistently for preferences, saved
 recipes, and `/solve`. Unknown keys, incorrect JSON types, unsupported

@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+import logging
 import math
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException
-from fastapi import Request
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, FiniteFloat, ValidationError
 
 import yaml
 
@@ -43,6 +45,9 @@ from horticalc.solver import solve_recipe_data
 from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS, validate_solver_config
 
 
+logger = logging.getLogger(__name__)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     load_app_data()
@@ -50,6 +55,16 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Horticalc API", version="0.1.0", lifespan=lifespan)
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_error(_request: Request, exc: RequestValidationError) -> JSONResponse:
+    errors = exc.errors()
+    for error in errors:
+        invalid_input = error.get("input")
+        if isinstance(invalid_input, float) and not math.isfinite(invalid_input):
+            error["input"] = str(invalid_input)
+    return JSONResponse(status_code=422, content={"detail": errors})
 
 
 FERTILIZERS: Dict[str, Fertilizer] = {}
@@ -60,7 +75,7 @@ FRONTEND_DIR = app_root() / "frontend"
 
 class FertilizerEntry(BaseModel):
     name: str
-    grams: float = Field(ge=0)
+    grams: FiniteFloat = Field(ge=0)
 
 
 class FertilizerPayload(BaseModel):
@@ -72,19 +87,19 @@ class FertilizerPayload(BaseModel):
 
 class PreferencesPayload(BaseModel):
     theme: Optional[str] = None
-    default_liters: Optional[float] = Field(default=None, gt=0)
+    default_liters: Optional[FiniteFloat] = Field(default=None, gt=0)
     solver_config: Optional[Dict[str, Any]] = None
     last_water_profile: Optional[str] = None
 
 
 class RecipeRequest(BaseModel):
-    liters: float = Field(default=10.0, gt=0)
+    liters: FiniteFloat = Field(default=10.0, gt=0)
     fertilizers: List[FertilizerEntry] = Field(default_factory=list)
     urea_as_nh4: bool = False
     phosphate_species: str = Field(default="H2PO4")
     water_profile_name: Optional[str] = None
     water_mg_l: Optional[Dict[str, float]] = None
-    osmosis_percent: float | None = 0
+    osmosis_percent: FiniteFloat | None = 0
 
 
 class CalculationResponse(BaseModel):
@@ -114,10 +129,10 @@ class CalculationResponse(BaseModel):
 
 class SolveRequest(BaseModel):
     targets: Dict[str, float] = Field(default_factory=dict)
-    liters: float = Field(default=10.0, gt=0)
+    liters: FiniteFloat = Field(default=10.0, gt=0)
     water_profile: Optional[Dict[str, Any]] = None
     fertilizers_allowed: List[str] = Field(default_factory=list)
-    fixed_grams: Dict[str, float] = Field(default_factory=dict)
+    fixed_grams: Dict[str, FiniteFloat] = Field(default_factory=dict)
     urea_as_nh4: bool = False
     phosphate_species: str = Field(default="H2PO4")
     solver_config: Dict[str, Any] = Field(default_factory=dict)
@@ -142,7 +157,7 @@ class WaterProfilePayload(BaseModel):
     name: str
     source: Optional[str] = ""
     mg_per_l: Dict[str, float] = Field(default_factory=dict)
-    osmosis_percent: float | None = 0
+    osmosis_percent: FiniteFloat | None = 0
 
 
 class NutrientSolutionPayload(BaseModel):
@@ -153,32 +168,36 @@ class NutrientSolutionPayload(BaseModel):
 
 class RecipePayload(BaseModel):
     name: str
-    liters: float = Field(default=10.0, gt=0)
+    liters: FiniteFloat = Field(default=10.0, gt=0)
     fertilizers: List[FertilizerEntry] = Field(default_factory=list)
     fertilizers_allowed: List[str] = Field(default_factory=list)
     urea_as_nh4: bool = False
     phosphate_species: str = Field(default="H2PO4")
     water_profile: Optional[str] = None
-    osmosis_percent: float | None = 0
+    osmosis_percent: FiniteFloat | None = 0
     solver_config: Dict[str, Any] = Field(default_factory=dict)
-
-
-def sanitize_water_profile(mg_per_l: Dict[str, float]) -> Dict[str, float]:
-    sanitized: Dict[str, float] = {}
-    for key, value in mg_per_l.items():
-        try:
-            sanitized[key] = float(value)
-        except (TypeError, ValueError):
-            sanitized[key] = 0.0
-    return sanitized
 
 
 async def _parse_request_payload(request: Request) -> dict:
     content_type = (request.headers.get("content-type") or "").lower()
-    if "yaml" in content_type:
-        raw_body = await request.body()
-        return yaml.safe_load(raw_body.decode("utf-8")) or {}
-    return await request.json()
+    try:
+        if "yaml" in content_type:
+            raw_body = await request.body()
+            payload = yaml.safe_load(raw_body.decode("utf-8")) or {}
+        else:
+            payload = await request.json()
+    except (UnicodeDecodeError, ValueError, yaml.YAMLError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid request payload") from exc
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Request payload must be an object")
+    return payload
+
+
+def _validated_request_model(model_type: type[BaseModel], payload: dict) -> BaseModel:
+    try:
+        return model_type.model_validate(payload)
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=exc.errors(include_url=False)) from exc
 
 
 def _model_dump(model: BaseModel) -> dict:
@@ -220,7 +239,11 @@ def _named_yaml_entries(
     for path in sorted(directory.glob("*.yml")):
         if skip and skip(path):
             continue
-        data = loader(path)
+        try:
+            data = loader(path)
+        except (AttributeError, OSError, TypeError, ValueError, yaml.YAMLError) as exc:
+            logger.warning("Skipping invalid YAML resource %s: %s", path, exc)
+            continue
         entries.append(
             {
                 "name": data.get("name") or path.stem,
@@ -240,14 +263,27 @@ def _validated_float_mapping(
         if key not in allowed_keys:
             raise HTTPException(status_code=400, detail=f"{invalid_key_prefix}: {key}")
         try:
-            result[key] = float(value)
+            numeric_value = float(value)
         except (TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=f"Invalid value for {key}") from exc
+        if not math.isfinite(numeric_value):
+            raise HTTPException(status_code=400, detail=f"Invalid value for {key}")
+        result[key] = numeric_value
     return result
 
 
 def _validated_water_mg_l(values: Dict[str, Any]) -> Dict[str, float]:
     return _validated_float_mapping(values, ALLOWED_WATER_KEYS, "Invalid water key")
+
+
+def _validated_osmosis_percent(value: Any) -> float:
+    try:
+        numeric_value = float(value or 0)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid osmosis_percent value") from exc
+    if not math.isfinite(numeric_value):
+        raise HTTPException(status_code=400, detail="Invalid osmosis_percent value")
+    return numeric_value
 
 
 def _validated_solver_config(
@@ -397,7 +433,7 @@ def water_profile(profile_name: str) -> dict:
     if not profile_path.exists():
         raise HTTPException(status_code=404, detail="Water profile not found")
     data = load_water_profile_data(profile_path)
-    mg_per_l = sanitize_water_profile(data.get("mg_per_l") or {})
+    mg_per_l = _validated_water_mg_l(data.get("mg_per_l") or {})
     data["mg_per_l"] = mg_per_l
     normalized = normalize_water_profile(MOLAR_MASSES, mg_per_l)
     data["normalized_mg_per_l"] = augment_water_profile_with_elements(MOLAR_MASSES, normalized)
@@ -424,16 +460,12 @@ def nutrient_solution(solution_name: str) -> dict:
 async def save_profile(request: Request) -> dict:
     payload = await _parse_request_payload(request)
 
-    profile = WaterProfilePayload(**payload)
+    profile = _validated_request_model(WaterProfilePayload, payload)
     name = _required_name(profile.name, "Profile name is required")
 
     mg_per_l = _validated_water_mg_l(profile.mg_per_l)
 
-    osmosis_percent = profile.osmosis_percent if profile.osmosis_percent is not None else 0
-    try:
-        osmosis_percent = float(osmosis_percent)
-    except (TypeError, ValueError) as exc:
-        raise HTTPException(status_code=400, detail="Invalid osmosis_percent value") from exc
+    osmosis_percent = _validated_osmosis_percent(profile.osmosis_percent)
     if not 0 <= osmosis_percent <= 100:
         raise HTTPException(status_code=400, detail="osmosis_percent must be between 0 and 100")
 
@@ -454,7 +486,7 @@ async def save_profile(request: Request) -> dict:
 async def save_nutrient_solution_profile(request: Request) -> dict:
     payload = await _parse_request_payload(request)
 
-    solution = NutrientSolutionPayload(**payload)
+    solution = _validated_request_model(NutrientSolutionPayload, payload)
     name = _required_name(solution.name, "Nutrient Solution name is required")
 
     targets_mg_per_l = _validated_float_mapping(
@@ -516,7 +548,7 @@ def recipe(recipe_name: str) -> dict:
 async def save_recipe_profile(request: Request) -> dict:
     payload = await _parse_request_payload(request)
 
-    recipe = RecipePayload(**payload)
+    recipe = _validated_request_model(RecipePayload, payload)
     name = _required_name(recipe.name, "Recipe name is required")
     solver_config = _validated_solver_config(recipe.solver_config)
 
@@ -554,11 +586,11 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
         profile = load_water_profile_data(profile_path)
         mg_per_l = profile.get("mg_per_l") or {}
         water_mg_l = _validated_water_mg_l(mg_per_l)
-        osmosis_percent = float(profile.get("osmosis_percent") or 0)
+        osmosis_percent = _validated_osmosis_percent(profile.get("osmosis_percent"))
     elif payload.water_mg_l:
         water_mg_l = _validated_water_mg_l(payload.water_mg_l)
         if payload.osmosis_percent is not None:
-            osmosis_percent = float(payload.osmosis_percent)
+            osmosis_percent = _validated_osmosis_percent(payload.osmosis_percent)
 
     recipe = {
         "liters": payload.liters,
@@ -590,9 +622,10 @@ def solve(payload: SolveRequest) -> SolveResponse:
     if payload.water_profile:
         water_profile_data = dict(payload.water_profile)
         mg_per_l = water_profile_data.get("mg_per_l") or {}
-        water_profile_data["mg_per_l"] = sanitize_water_profile(mg_per_l)
-        if "osmosis_percent" not in water_profile_data:
-            water_profile_data["osmosis_percent"] = 0.0
+        water_profile_data["mg_per_l"] = _validated_water_mg_l(mg_per_l)
+        water_profile_data["osmosis_percent"] = _validated_osmosis_percent(
+            water_profile_data.get("osmosis_percent")
+        )
 
     recipe = {
         "liters": payload.liters,

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import horticalc.data_io as data_io
 from horticalc.data_io import Fertilizer, load_fertilizers, save_fertilizers
 from horticalc import paths
 
@@ -65,6 +66,37 @@ def test_merged_catalog_is_sorted_after_user_overrides(
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
 
     assert list(load_fertilizers()) == ["Alpha", "Bravo", "Zulu"]
+
+
+def test_overlay_save_restores_overrides_when_disabled_write_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    shipped_csv = tmp_path / "data" / "fertilizers.csv"
+    _write_fertilizers_csv(shipped_csv, [("Keep", 0.1), ("Remove", 0.2)])
+    overrides_path = paths.user_fertilizer_overrides_path(tmp_path)
+    _write_fertilizers_csv(overrides_path, [("Previous Custom", 0.4)])
+    previous_overrides = overrides_path.read_text(encoding="utf-8")
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+
+    def fail_disabled_write(_names: list[str], _path: Path) -> None:
+        raise OSError("disabled write failed")
+
+    monkeypatch.setattr(data_io, "_write_disabled_fertilizers", fail_disabled_write)
+    incoming = {
+        "Keep": Fertilizer(
+            name="Keep",
+            liquid=False,
+            weight_factor=1.0,
+            comp={"N": 0.3},
+        )
+    }
+
+    with pytest.raises(OSError, match="disabled write failed"):
+        save_fertilizers(incoming)
+
+    assert overrides_path.read_text(encoding="utf-8") == previous_overrides
+    assert not paths.user_disabled_fertilizers_path(tmp_path).exists()
 
 def test_legacy_user_fertilizers_migrates_custom_rows_and_accepts_shipped_updates(
     monkeypatch: pytest.MonkeyPatch,

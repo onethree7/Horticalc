@@ -295,6 +295,13 @@ def _write_disabled_fertilizers(names: list[str], path: Path) -> None:
     _atomic_write_text(path, content)
 
 
+def _restore_text_file(path: Path, previous_content: str | None) -> None:
+    if previous_content is None:
+        path.unlink(missing_ok=True)
+    else:
+        _atomic_write_text(path, previous_content, newline="")
+
+
 def _migrate_legacy_user_fertilizers(root: Path) -> None:
     legacy_path = paths.user_fertilizers_path(root)
     overrides_path = paths.user_fertilizer_overrides_path(root)
@@ -435,6 +442,11 @@ def save_fertilizers(
         overrides, disabled = _fertilizer_overlay_changes(shipped, fertilizers)
 
         overrides_path = paths.user_fertilizer_overrides_path(layout.root)
+        previous_overrides = (
+            overrides_path.read_text(encoding="utf-8")
+            if overrides_path.exists()
+            else None
+        )
         if overrides:
             header = _read_csv_header(shipped_path)
             existing_header = _read_csv_header(overrides_path)
@@ -445,7 +457,17 @@ def save_fertilizers(
             _write_fertilizer_csv(overrides, overrides_path, header)
         else:
             overrides_path.unlink(missing_ok=True)
-        _write_disabled_fertilizers(disabled, paths.user_disabled_fertilizers_path(layout.root))
+        try:
+            _write_disabled_fertilizers(
+                disabled,
+                paths.user_disabled_fertilizers_path(layout.root),
+            )
+        except Exception:
+            try:
+                _restore_text_file(overrides_path, previous_overrides)
+            except OSError:
+                logger.exception("Failed to restore fertilizer overrides after overlay save failure")
+            raise
         return
 
     header = _read_csv_header(csv_path)

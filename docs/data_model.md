@@ -51,6 +51,10 @@ fertilizer CSV names must remain unique after whitespace and case
 normalization. All incoming fertilizers are validated before shipped/user
 overlay differences are calculated. Preference writers require a JSON object.
 
+The fertilizer override CSV and disabled-name file form one logical update.
+If the final disabled-name write fails, persistence restores the previous
+override CSV so a failed save cannot leave a partially updated overlay.
+
 `user/preferences.json` is a JSON object containing optional `theme`,
 `default_liters`, `solver_config`, and `last_water_profile` fields. The API
 validates partial updates and preserves JSON types. Preference `solver_config`

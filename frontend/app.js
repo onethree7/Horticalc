@@ -82,7 +82,6 @@ const solverAutoApplyInput = qs("#solverAutoApply");
 const solverApplyStatus = qs("#solverApplyStatus");
 const applySolverToCalculatorInlineButton = qs("#applySolverToCalculatorInline");
 const solverUreaToggle = qs("#solverUreaToggle");
-const solverPhosphateSelect = qs("#solverPhosphate");
 const solverConfigControls = {
   relative_weighting: qs("#solverConfigRelativeWeighting"),
   nitrogen_objective_mode: qs("#solverConfigNitrogenObjectiveMode"),
@@ -2771,7 +2770,6 @@ function buildSolvePayload() {
     fertilizers_allowed: solverAllowedFertilizers,
     fixed_grams: fixedGrams,
     urea_as_nh4: solverUreaToggle.checked,
-    phosphate_species: solverPhosphateSelect.value,
     solver_config: buildSolverConfigPayload(),
   };
 }
@@ -3202,14 +3200,13 @@ function refreshLocalizedUi() {
   }
 }
 
-function buildRecipePayload(name, fertilizers, liters, ureaAsNh4, phosphateSpecies) {
+function buildRecipePayload(name, fertilizers, liters, ureaAsNh4) {
   const payload = {
     name,
     liters,
     fertilizers,
     fertilizers_allowed: solverAllowedFertilizers,
     urea_as_nh4: ureaAsNh4,
-    phosphate_species: phosphateSpecies,
   };
   const waterProfileSelection = waterProfileSelect.value;
   if (waterProfileSelection) {
@@ -3224,7 +3221,7 @@ function buildRecipePayload(name, fertilizers, liters, ureaAsNh4, phosphateSpeci
 
 function buildRecipePayloadFromSelection(name) {
   const fertilizers = buildSelectedFertilizerEntries();
-  return buildRecipePayload(name, fertilizers, currentLiters, false, "H2PO4");
+  return buildRecipePayload(name, fertilizers, currentLiters, false);
 }
 
 function buildRecipePayloadFromSolver(name) {
@@ -3233,8 +3230,7 @@ function buildRecipePayloadFromSolver(name) {
     name,
     fertilizers,
     currentLiters,
-    solverUreaToggle.checked,
-    solverPhosphateSelect.value
+    solverUreaToggle.checked
   );
 }
 
@@ -3556,9 +3552,7 @@ if (solverConfigResetDefaultsButton) {
   });
 }
 
-[solverUreaToggle, solverPhosphateSelect].forEach((control) => {
-  control.addEventListener("change", () => renderSolverResults(null));
-});
+solverUreaToggle.addEventListener("change", () => renderSolverResults(null));
 
 solveButton.addEventListener("click", async () => {
   if (!solverAllowedFertilizers.length) {

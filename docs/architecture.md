@@ -47,7 +47,7 @@ html=True))` serves `frontend/index.html` and assets.
 Calculator flow:
 
 1. UI builds a recipe payload from selected fertilizers, water values, liters,
-   nitrogen handling, phosphate species, and osmosis percent.
+   nitrogen handling, and osmosis percent.
 2. UI posts to `/calculate`.
 3. `api/app.py` validates allowed water keys and fertilizer names.
 4. `compute_solution()` in `core.py` applies osmosis, normalizes water forms,

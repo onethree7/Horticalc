@@ -136,7 +136,6 @@ Recipe payload:
   "fertilizers": [{"name": "Calcinit", "grams": 4.5}],
   "fertilizers_allowed": ["Calcinit"],
   "urea_as_nh4": false,
-  "phosphate_species": "H2PO4",
   "water_profile": "default",
   "osmosis_percent": 0,
   "solver_config": {}
@@ -154,7 +153,6 @@ Request:
   "liters": 10,
   "fertilizers": [{"name": "Calcinit", "grams": 4.5}],
   "urea_as_nh4": false,
-  "phosphate_species": "H2PO4",
   "water_mg_l": {"Ca": 80},
   "osmosis_percent": 0
 }
@@ -187,7 +185,6 @@ Request:
   "fertilizers_allowed": ["Calcinit"],
   "fixed_grams": {},
   "urea_as_nh4": false,
-  "phosphate_species": "H2PO4",
   "solver_config": {}
 }
 ```

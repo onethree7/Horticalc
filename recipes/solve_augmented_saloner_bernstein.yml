@@ -2,7 +2,6 @@ name: augmented_saloner_bernstein_regression
 liters: 10.0
 water_profile: 65936
 osmosis_percent: 66.0
-phosphate_species: H2PO4
 urea_as_nh4: false
 fertilizers_allowed:
   - Yara Tera CALCINIT

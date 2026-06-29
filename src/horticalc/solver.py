@@ -505,7 +505,6 @@ def _build_solution_payload(
         "liters": liters,
         "fertilizers": ferts_out,
         "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
-        "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
     }
     return ferts_out, recipe_payload
 
@@ -606,7 +605,6 @@ def solve_recipe_data(
         "liters": liters,
         "fertilizers": [],
         "urea_as_nh4": bool(recipe.get("urea_as_nh4", False)),
-        "phosphate_species": recipe.get("phosphate_species", "H2PO4"),
     }
     water_only = compute_solution(
         water_only_recipe,

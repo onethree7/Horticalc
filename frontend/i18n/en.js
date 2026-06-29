@@ -151,7 +151,6 @@ window.HORTICALC_I18N.en = {
   "solver.resetConfig": "Reset solver configuration",
   "solver.configResetDone": "Solver configuration reset to defaults",
   "solver.ureaAsNh4": "Treat urea as NH4",
-  "solver.phosphateSpecies": "Phosphate species",
   "solver.nTotalInsteadForms": "N-total instead of N forms",
   "solver.sAsTarget": "S as solver target",
   "solver.irlsIterations": "IRLS iterations",

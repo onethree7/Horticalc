@@ -151,7 +151,6 @@ window.HORTICALC_I18N.de = {
   "solver.resetConfig": "Solver-Konfiguration zurücksetzen",
   "solver.configResetDone": "Solver-Konfiguration auf Standard zurückgesetzt",
   "solver.ureaAsNh4": "Harnstoff als NH4 behandeln",
-  "solver.phosphateSpecies": "Phosphat-Spezies",
   "solver.nTotalInsteadForms": "N-total statt N-Formen",
   "solver.sAsTarget": "S als Solver-Ziel",
   "solver.irlsIterations": "IRLS Iterationen",

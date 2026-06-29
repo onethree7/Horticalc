@@ -36,7 +36,6 @@ class TestSolverOsmosisConsistency(unittest.TestCase):
                 "K+S EPSO Top Bittersalz 16-39",
             ],
             "urea_as_nh4": False,
-            "phosphate_species": "H2PO4",
         }
 
         result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
@@ -46,7 +45,6 @@ class TestSolverOsmosisConsistency(unittest.TestCase):
                 "liters": recipe["liters"],
                 "fertilizers": result.fertilizers,
                 "urea_as_nh4": recipe["urea_as_nh4"],
-                "phosphate_species": recipe["phosphate_species"],
             },
             ferts,
             molar_masses,
@@ -70,7 +68,6 @@ class TestSolverOsmosisConsistency(unittest.TestCase):
                 {"name": "Biolchim Green-Go 12-12-36", "grams": 3.5},
             ],
             "urea_as_nh4": False,
-            "phosphate_species": "H2PO4",
         }
         water_profile = {
             "Ca": 80.0,

@@ -82,7 +82,8 @@ Unknown ion labels are reported in `coverage.ignored_ions` and warnings.
 
 - Molality is approximated from mol/L using fixed density.
 - Missing species such as H+, OH-, and complexes are not modelled.
-- Phosphate species depend on the core-selected `phosphate_species`.
+- All phosphorus in ion output is represented as `H2PO4-`; pH-dependent
+  phosphate speciation is not modelled.
 - Fallback ions do not get the McCleskey ionic-strength correction.
 
 ## Sources

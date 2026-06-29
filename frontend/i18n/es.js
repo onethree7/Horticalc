@@ -151,7 +151,6 @@ window.HORTICALC_I18N.es = {
   "solver.resetConfig": "Restablecer configuración del solver",
   "solver.configResetDone": "Configuración del solver restablecida",
   "solver.ureaAsNh4": "Tratar urea como NH4",
-  "solver.phosphateSpecies": "Especie de fosfato",
   "solver.nTotalInsteadForms": "N-total en lugar de formas de N",
   "solver.sAsTarget": "S como objetivo del Solver",
   "solver.irlsIterations": "Iteraciones IRLS",

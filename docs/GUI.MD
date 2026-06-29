@@ -139,9 +139,9 @@ Solver target/achieved/delta values, and ion mg/L values. It uses compact space-
 monospace copy/paste code blocks instead of tab-separated columns.
 
 The solver advanced config lives at the bottom of the Solver panel in
-`frontend/index.html`, includes the urea and phosphate solver options, is backed
-by `/schema/solver-config`, and is wired in `frontend/app.js`. The visible
-`N-total statt N-Formen` checkbox writes
+`frontend/index.html` and includes the urea representation control plus the
+solver-configuration controls wired in `frontend/app.js`. The latter are backed
+by `/schema/solver-config`. The visible `N-total statt N-Formen` checkbox writes
 `solver_config.nitrogen_objective_mode`: checked sends `n_total_only`,
 unchecked sends `n_forms_only`.
 The explicit `Reset solver configuration` button in the same advanced

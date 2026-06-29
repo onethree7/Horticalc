@@ -101,7 +101,6 @@ class RecipeRequest(BaseModel):
     liters: FiniteFloat = Field(default=10.0, gt=0)
     fertilizers: List[FertilizerEntry] = Field(default_factory=list)
     urea_as_nh4: bool = False
-    phosphate_species: str = Field(default="H2PO4")
     water_profile_name: Optional[str] = None
     water_mg_l: Optional[Dict[str, float]] = None
     osmosis_percent: FiniteFloat | None = 0
@@ -139,7 +138,6 @@ class SolveRequest(BaseModel):
     fertilizers_allowed: List[str] = Field(default_factory=list)
     fixed_grams: Dict[str, FiniteFloat] = Field(default_factory=dict)
     urea_as_nh4: bool = False
-    phosphate_species: str = Field(default="H2PO4")
     solver_config: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -177,7 +175,6 @@ class RecipePayload(BaseModel):
     fertilizers: List[FertilizerEntry] = Field(default_factory=list)
     fertilizers_allowed: List[str] = Field(default_factory=list)
     urea_as_nh4: bool = False
-    phosphate_species: str = Field(default="H2PO4")
     water_profile: Optional[str] = None
     osmosis_percent: FiniteFloat | None = 0
     solver_config: Dict[str, Any] = Field(default_factory=dict)
@@ -589,7 +586,6 @@ async def save_recipe_profile(request: Request) -> dict:
         "fertilizers": [_model_dump(entry) for entry in recipe.fertilizers],
         "fertilizers_allowed": [str(name) for name in recipe.fertilizers_allowed if str(name).strip()],
         "urea_as_nh4": recipe.urea_as_nh4,
-        "phosphate_species": recipe.phosphate_species,
     }
     if solver_config:
         payload_out["solver_config"] = solver_config
@@ -631,7 +627,6 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
         "liters": payload.liters,
         "fertilizers": [_model_dump(entry) for entry in payload.fertilizers],
         "urea_as_nh4": payload.urea_as_nh4,
-        "phosphate_species": payload.phosphate_species,
     }
 
     try:
@@ -677,7 +672,6 @@ def solve(payload: SolveRequest) -> SolveResponse:
         "fertilizers_allowed": payload.fertilizers_allowed,
         "fixed_grams": payload.fixed_grams,
         "urea_as_nh4": payload.urea_as_nh4,
-        "phosphate_species": payload.phosphate_species,
         "solver_config": _validated_solver_config(payload.solver_config),
     }
 

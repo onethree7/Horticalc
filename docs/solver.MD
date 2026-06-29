@@ -15,7 +15,6 @@ Solver recipes and `/solve` requests provide:
 - `fertilizers_allowed`: exact fertilizer names available to the solver.
 - `fixed_grams`: optional fixed amounts by fertilizer name.
 - `urea_as_nh4`: whether urea is represented as ammonium in the core output.
-- `phosphate_species`: `H2PO4` by default, or `HPO4`.
 - `solver_config`: optional advanced settings.
 
 `solve_recipe_data()` validates these inputs before solving: `liters` must be

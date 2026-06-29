@@ -43,7 +43,6 @@ class TestFertilizerIonBalance(unittest.TestCase):
                 {"name": "K+S soluSOP 52 Kaliumsulfat 52 (+54)", "grams": 5.0},
             ],
             "urea_as_nh4": False,
-            "phosphate_species": "H2PO4",
         }
 
         result = compute_solution(recipe, ferts, molar_masses, water_mg_l={})
@@ -119,7 +118,6 @@ class TestFertilizerIonBalance(unittest.TestCase):
                 {"name": "Agrolution pHLow 222 20-20-20+TE", "grams": 5.0},
             ],
             "urea_as_nh4": False,
-            "phosphate_species": "H2PO4",
         }
 
         result = compute_solution(recipe, ferts, molar_masses, water_mg_l={})

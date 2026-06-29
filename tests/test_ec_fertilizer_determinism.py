@@ -8,7 +8,6 @@ def _recipe_for_grams(grams: float) -> dict:
         "liters": 10.0,
         "fertilizers": [{"name": "Yara Tera CALCINIT", "grams": grams}],
         "urea_as_nh4": False,
-        "phosphate_species": "H2PO4",
     }
 
 def _fertilizer_ec_25c(result: dict) -> float:

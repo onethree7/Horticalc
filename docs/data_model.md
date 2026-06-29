@@ -170,7 +170,6 @@ liters: 10
 water_profile: default
 osmosis_percent: 0
 urea_as_nh4: false
-phosphate_species: H2PO4
 fertilizers:
   - name: Calcinit
     grams: 4.5
@@ -265,9 +264,10 @@ missing water-analysis ions are not reconstructed, guessed, or silently
 invented.
 
 The current ion set in `src/horticalc/core.py` is NH4+, K+, Ca2+, Mg2+, Na+,
-NO3-, phosphate as the configured H2PO4-/HPO4^2- species, SO4^2-, Cl-, HCO3-,
-and CO3^2-. Trace nutrients are not included in the ion balance unless they are
-explicitly modelled as charged species.
+NO3-, H2PO4-, SO4^2-, Cl-, HCO3-, and CO3^2-. All phosphorus in the ion output
+is represented as H2PO4-; pH-dependent phosphate speciation is not modelled.
+Trace nutrients are not included in the ion balance unless they are explicitly
+modelled as charged species.
 
 `npk_metrics` is produced by `src/horticalc/metrics.py`. It includes the
 existing oxide/form ratios in `npk_ratios` and a separate `npk_ratios_ion`

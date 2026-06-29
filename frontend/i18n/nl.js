@@ -151,7 +151,6 @@ window.HORTICALC_I18N.nl = {
   "solver.resetConfig": "Solverconfiguratie resetten",
   "solver.configResetDone": "Solverconfiguratie teruggezet naar standaardwaarden",
   "solver.ureaAsNh4": "Ureum als NH4 behandelen",
-  "solver.phosphateSpecies": "Fosfaatsoort",
   "solver.nTotalInsteadForms": "N-total in plaats van N-vormen",
   "solver.sAsTarget": "S als solver-doel",
   "solver.irlsIterations": "IRLS-iteraties",

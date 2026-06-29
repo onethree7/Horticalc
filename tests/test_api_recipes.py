@@ -28,7 +28,6 @@ def test_recipe_payload_persists_fertilizers_allowed() -> None:
         "liters": 10,
         "fertilizers": [{"name": "Calcinit", "grams": 1.5}],
         "fertilizers_allowed": ["Calcinit", "Hakaphos Rot"],
-        "phosphate_species": "H2PO4",
         "urea_as_nh4": False,
     }
 

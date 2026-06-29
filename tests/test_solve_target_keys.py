@@ -17,7 +17,6 @@ class TestSolveTargetKeys(unittest.TestCase):
                 "fertilizers_allowed": [],
                 "fixed_grams": {},
                 "urea_as_nh4": False,
-                "phosphate_species": "H2PO4",
             },
         )
 
@@ -33,7 +32,6 @@ class TestSolveTargetKeys(unittest.TestCase):
                 "fertilizers_allowed": ["Compo Basfoliar Top-N SL"],
                 "fixed_grams": {},
                 "urea_as_nh4": False,
-                "phosphate_species": "H2PO4",
                 "solver_config": {
                     "relative_weighting": True,
                     "overshoot_penalty": 1.5,

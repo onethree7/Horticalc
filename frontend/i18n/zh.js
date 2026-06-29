@@ -151,7 +151,6 @@ window.HORTICALC_I18N.zh = {
   "solver.resetConfig": "重置求解器配置",
   "solver.configResetDone": "求解器配置已恢复默认值",
   "solver.ureaAsNh4": "将尿素视为 NH4",
-  "solver.phosphateSpecies": "磷酸盐形态",
   "solver.nTotalInsteadForms": "使用 N-total 而不是 N 形态",
   "solver.sAsTarget": "将 S 作为 Solver 目标",
   "solver.irlsIterations": "IRLS 迭代",

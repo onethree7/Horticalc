@@ -60,7 +60,6 @@ def test_solver_advanced_config_lives_in_solver_panel() -> None:
     assert 'class="solver-advanced-config"' in html_content
     assert html_content.index('id="solverMode"') < html_content.index('id="solverConfigResetDefaults"')
     assert html_content.index('class="solver-advanced-config"') < html_content.index('id="solverUreaToggle"')
-    assert html_content.index('class="solver-advanced-config"') < html_content.index('id="solverPhosphate"')
     assert html_content.index('id="solverTargetsResultsTable"') < html_content.index('class="solver-advanced-config"')
     assert 'data-i18n="solver.resetConfig"' in html_content
 
@@ -68,7 +67,7 @@ def test_solver_advanced_config_lives_in_solver_panel() -> None:
 def test_solver_config_reset_clears_persisted_overrides() -> None:
     js_content = read_frontend_file("app.js")
     reset_block = js_content.split("if (solverConfigResetDefaultsButton)", 1)[1].split(
-        "[solverUreaToggle, solverPhosphateSelect]",
+        "solverUreaToggle.addEventListener",
         1,
     )[0]
 

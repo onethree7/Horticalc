@@ -245,7 +245,6 @@ def _compute_solution_state(
     forms_mg_l: Dict[str, float],
     water_forms: Dict[str, float],
     urea_as_nh4: bool,
-    phosphate_species: str,
 ) -> tuple[Dict[str, float], Dict[str, float], Dict[str, float], Dict[str, float], Dict[str, float | str]]:
     elements, nh4_mg_l_raw, no3_mg_l_raw = _compute_nitrogen(mm, forms_mg_l, water_forms, urea_as_nh4)
     oxides = _compute_oxides_and_elements(mm, forms_mg_l, water_forms, elements)
@@ -256,7 +255,6 @@ def _compute_solution_state(
         elements,
         nh4_mg_l_raw,
         no3_mg_l_raw,
-        phosphate_species,
     )
     return elements, oxides, ions_mmol, ions_meq, ion_balance
 
@@ -286,7 +284,6 @@ def _compute_ions(
     elements: Dict[str, float],
     nh4_mg_l_raw: float,
     no3_mg_l_raw: float,
-    phosphate_species: str,
 ) -> tuple[Dict[str, float], Dict[str, float], Dict[str, float | str]]:
     ions_mmol: Dict[str, float] = {}
     ions_meq: Dict[str, float] = {}
@@ -311,10 +308,7 @@ def _compute_ions(
     p_mg_l = elements.get("P", 0.0)
     if p_mg_l:
         po4_mg_l = p_mg_l * _mm(mm, "PO4") / _mm(mm, "P")
-        if phosphate_species.upper() == "HPO4":
-            add_ion("HPO4^2-", po4_mg_l, "PO4", charge=-2)
-        else:
-            add_ion("H2PO4-", po4_mg_l, "PO4", charge=-1)
+        add_ion("H2PO4-", po4_mg_l, "PO4", charge=-1)
 
     so4_mg_l = forms_mg_l.get("SO4", 0.0) + water_forms.get("SO4", 0.0)
     if so4_mg_l:
@@ -409,7 +403,6 @@ def compute_solution(
 
     liters = float(recipe.get("liters") or 10.0)
     urea_as_nh4 = bool(recipe.get("urea_as_nh4", False))
-    phosphate_species = str(recipe.get("phosphate_species", "H2PO4"))
 
     # 1) Contributions from fertilizers -> mg/L in their declared forms
     forms_mg_l: Dict[str, float] = {k: 0.0 for k in COMP_COLS}
@@ -443,7 +436,6 @@ def compute_solution(
         forms_mg_l,
         water_forms,
         urea_as_nh4,
-        phosphate_species,
     )
 
     # 4) Compute the water-only and fertilizer-only states
@@ -452,7 +444,6 @@ def compute_solution(
         {},
         water_forms,
         urea_as_nh4,
-        phosphate_species,
     )
     ec_water = compute_ec(water_ions_mmol)
     fert_elements, fert_oxides, fert_ions_mmol, fert_ions_meq, fert_ion_balance = _compute_solution_state(
@@ -460,7 +451,6 @@ def compute_solution(
         fertilizer_forms_mg_l,
         {},
         urea_as_nh4,
-        phosphate_species,
     )
     ec_fertilizer = compute_ec(fert_ions_mmol)
 

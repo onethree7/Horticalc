@@ -1,7 +1,6 @@
 name: trace_silicon_mix
 liters: 10.0
 water_profile: default
-phosphate_species: H2PO4
 urea_as_nh4: false
 fertilizers:
   - name: Biolchim Gold Dry

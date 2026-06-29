@@ -183,12 +183,12 @@ jobs:
           echo "CHECKSUM_PATH=${checksum}" >> "$GITHUB_ENV"
 
       - name: Attest release archive
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: ${{ env.ARCHIVE_PATH }}
 
       - name: Attest checksum file
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: ${{ env.CHECKSUM_PATH }}
 

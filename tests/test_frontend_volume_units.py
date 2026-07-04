@@ -52,3 +52,22 @@ def test_dose_unit_controls_convert_only_at_frontend_boundary() -> None:
     assert "persistPreferences({ liquid_dose_unit: liquidDoseUnit });" in app
     assert "grams: Number(row.grams) || 0" in app
     assert "dose:" not in app
+
+
+def test_display_preferences_are_collapsed_but_batch_amount_stays_visible() -> None:
+    html = read_frontend_file("index.html")
+    app = read_frontend_file("app.js")
+
+    details_start = html.index('<details class="rail-settings">')
+    details_end = html.index("</details>", details_start)
+    settings_markup = html[details_start:details_end]
+
+    assert html.index('id="configLiters"') < details_start
+    assert 'id="configUnitSummary"' in settings_markup
+    assert 'id="themeSelect"' in settings_markup
+    assert 'id="languageSelect"' in settings_markup
+    assert 'id="configVolumeUnit"' in settings_markup
+    assert 'id="configSolidDoseUnit"' in settings_markup
+    assert 'id="configLiquidDoseUnit"' in settings_markup
+    assert 'configUnitSummary.textContent = [' in app
+    assert '].join(" · ");' in app

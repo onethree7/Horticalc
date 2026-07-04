@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Horticalc GUI</title>
-    <link rel="stylesheet" href="styles.css?v=layout11" />
+    <link rel="stylesheet" href="styles.css?v=layout12" />
   </head>
   <body class="compact app-body">
     <svg class="icon-sprite" aria-hidden="true" focusable="false">
@@ -69,54 +69,66 @@
             <label class="rail-config-liters" for="configLiters" id="configLitersStatus">
               <span data-i18n="config.solutionLiters">NS:</span>
               <input id="configLiters" type="text" inputmode="decimal" min="0.1" step="0.1" value="10" aria-label="Nutrient solution volume" />
-              <select id="configVolumeUnit" aria-label="Volume unit" data-i18n-aria-label="aria.volumeUnit">
-                <option value="liter">L</option>
-                <option value="us_gallon">US gal</option>
-                <option value="imperial_gallon">Imp gal</option>
-                <option value="cubic_meter">m³</option>
-              </select>
+              <span id="configVolumeUnitSymbol" aria-hidden="true">L</span>
             </label>
           </div>
-          <label class="rail-theme-control" for="themeSelect">
-            <span data-i18n="config.design">Design</span>
-            <select id="themeSelect" aria-label="Select appearance" data-i18n-aria-label="aria.theme">
-              <option value="horticalc-dark">Horticalc Dark</option>
-              <option value="horticalc-light">Horticalc Light</option>
-              <option value="high-contrast">High Contrast</option>
-              <option value="soil">Soil</option>
-              <option value="gch-classic">g.ch Classic</option>
-              <option value="vt-green">VT Green</option>
-              <option value="blue-matrix">Blue Matrix</option>
-            </select>
-          </label>
-          <label class="rail-theme-control" for="languageSelect">
-            <span data-i18n="config.language">Language</span>
-            <select id="languageSelect" aria-label="Select language" data-i18n-aria-label="aria.language">
-              <option value="de" data-i18n="language.de">Deutsch</option>
-              <option value="en" data-i18n="language.en">English</option>
-              <option value="nl" data-i18n="language.nl">Nederlands</option>
-              <option value="es" data-i18n="language.es">Español</option>
-              <option value="zh" data-i18n="language.zh">中文（简体）</option>
-            </select>
-          </label>
-          <label class="rail-theme-control" for="configSolidDoseUnit">
-            <span data-i18n="config.solidDoseUnit">Solid dose</span>
-            <select id="configSolidDoseUnit" aria-label="Select solid dose unit" data-i18n-aria-label="aria.solidDoseUnit">
-              <option value="gram">g</option>
-              <option value="kilogram">kg</option>
-              <option value="ounce">oz</option>
-              <option value="pound">lb</option>
-            </select>
-          </label>
-          <label class="rail-theme-control" for="configLiquidDoseUnit">
-            <span data-i18n="config.liquidDoseUnit">Liquid dose</span>
-            <select id="configLiquidDoseUnit" aria-label="Select liquid dose unit" data-i18n-aria-label="aria.liquidDoseUnit">
-              <option value="milliliter">mL</option>
-              <option value="liter">L</option>
-              <option value="us_fluid_ounce">US fl oz</option>
-              <option value="imperial_fluid_ounce">Imp fl oz</option>
-            </select>
-          </label>
+          <details class="rail-settings">
+            <summary>
+              <span data-i18n="config.settings">Settings</span>
+              <span id="configUnitSummary" class="rail-settings-summary">L · g · mL</span>
+            </summary>
+            <div class="rail-settings-controls">
+              <label class="rail-theme-control" for="themeSelect">
+                <span data-i18n="config.design">Design</span>
+                <select id="themeSelect" aria-label="Select appearance" data-i18n-aria-label="aria.theme">
+                  <option value="horticalc-dark">Horticalc Dark</option>
+                  <option value="horticalc-light">Horticalc Light</option>
+                  <option value="high-contrast">High Contrast</option>
+                  <option value="soil">Soil</option>
+                  <option value="gch-classic">g.ch Classic</option>
+                  <option value="vt-green">VT Green</option>
+                  <option value="blue-matrix">Blue Matrix</option>
+                </select>
+              </label>
+              <label class="rail-theme-control" for="languageSelect">
+                <span data-i18n="config.language">Language</span>
+                <select id="languageSelect" aria-label="Select language" data-i18n-aria-label="aria.language">
+                  <option value="de" data-i18n="language.de">Deutsch</option>
+                  <option value="en" data-i18n="language.en">English</option>
+                  <option value="nl" data-i18n="language.nl">Nederlands</option>
+                  <option value="es" data-i18n="language.es">Español</option>
+                  <option value="zh" data-i18n="language.zh">中文（简体）</option>
+                </select>
+              </label>
+              <label class="rail-theme-control" for="configVolumeUnit">
+                <span data-i18n="config.volumeUnit">Batch volume unit</span>
+                <select id="configVolumeUnit" aria-label="Volume unit" data-i18n-aria-label="aria.volumeUnit">
+                  <option value="liter">L</option>
+                  <option value="us_gallon">US gal</option>
+                  <option value="imperial_gallon">Imp gal</option>
+                  <option value="cubic_meter">m³</option>
+                </select>
+              </label>
+              <label class="rail-theme-control" for="configSolidDoseUnit">
+                <span data-i18n="config.solidDoseUnit">Solid dose</span>
+                <select id="configSolidDoseUnit" aria-label="Select solid dose unit" data-i18n-aria-label="aria.solidDoseUnit">
+                  <option value="gram">g</option>
+                  <option value="kilogram">kg</option>
+                  <option value="ounce">oz</option>
+                  <option value="pound">lb</option>
+                </select>
+              </label>
+              <label class="rail-theme-control" for="configLiquidDoseUnit">
+                <span data-i18n="config.liquidDoseUnit">Liquid dose</span>
+                <select id="configLiquidDoseUnit" aria-label="Select liquid dose unit" data-i18n-aria-label="aria.liquidDoseUnit">
+                  <option value="milliliter">mL</option>
+                  <option value="liter">L</option>
+                  <option value="us_fluid_ounce">US fl oz</option>
+                  <option value="imperial_fluid_ounce">Imp fl oz</option>
+                </select>
+              </label>
+            </div>
+          </details>
         </section>
         <section class="rail-card rail-workflow" aria-label="Main controls" data-i18n-aria-label="aria.workflow" data-testid="workflow-nav">
           <div class="rail-card-heading">
@@ -640,6 +652,6 @@
     <script src="i18n/zh.js?v=i18n12"></script>
     <script src="i18n/runtime.js?v=i18n12"></script>
     <script src="request_gate.js?v=1"></script>
-    <script src="app.js?v=units2"></script>
+    <script src="app.js?v=settings1"></script>
   </body>
 </html>

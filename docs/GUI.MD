@@ -101,6 +101,12 @@ latest calculation's NPK totals, compact P-normalized and NPK-only bubbles,
 the ion-based `Ca:Mg` ratio, centered EC solution/water values, and compact
 mg/L ion-ratio chips from `npk_metrics.npk_ratios_ion`.
 
+Configuration keeps the calculation-relevant batch amount visible. Persistent
+appearance, language, and display-unit preferences live in a native, collapsed
+`details.rail-settings` disclosure. Its summary shows the active volume, solid,
+and liquid unit symbols so users can read the current unit context without
+opening the controls.
+
 The solver allowed-fertilizer picker in `frontend/index.html` is rendered by
 `frontend/app.js` as a compact searchable checkbox table using the same
 `grid grid--form` rendering as the surrounding Solver target and result tables.

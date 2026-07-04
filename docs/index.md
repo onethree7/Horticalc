@@ -34,4 +34,6 @@ historical report.
 
 ## Audits And History
 
+- [Science in Hydroponics blog research index](science_in_hydroponics_blog_research.md):
+  code-oriented synthesis and complete 2026-06-30 post inventory.
 - [Solver matrix deep run report 2026-05-31](solver_matrix_deep_run_2026_05_31.md): historical benchmark evidence.

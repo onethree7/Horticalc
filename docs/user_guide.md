@@ -86,9 +86,11 @@ CSV columns, or API fields.
 1. Load or edit the fertilizer list if needed.
 2. Select a water profile or enter water values.
 3. Load a recipe or select fertilizers manually.
-4. Choose the batch-volume, solid-dose, and liquid-dose display units in
-   Configuration, then enter the volume and fertilizer doses. Every calculator
-   row shows its actual unit according to the fertilizer's solid/liquid type.
+4. Open the compact **Settings** disclosure in Configuration to choose the
+   batch-volume, solid-dose, and liquid-dose display units, then enter the
+   always-visible batch amount and fertilizer doses. The closed disclosure
+   summarizes the active units, and every calculator row shows its actual unit
+   according to the fertilizer's solid/liquid type.
 5. Calculate and inspect the result tables and summary sidebar.
 
 Horticalc remembers the directly selected water profile, batch volume, and

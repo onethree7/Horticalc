@@ -41,6 +41,8 @@ const calculatorScaleUpButton = qs("#calculatorScaleUp");
 const calculatorScaleValue = qs("#calculatorScaleValue");
 const configLitersInput = qs("#configLiters");
 const configLitersStatus = qs("#configLitersStatus");
+const configVolumeUnitSymbol = qs("#configVolumeUnitSymbol");
+const configUnitSummary = qs("#configUnitSummary");
 const configVolumeUnitSelect = qs("#configVolumeUnit");
 const configSolidDoseUnitSelect = qs("#configSolidDoseUnit");
 const configLiquidDoseUnitSelect = qs("#configLiquidDoseUnit");
@@ -746,6 +748,7 @@ function setSolidDoseUnit(unitKey, { refresh = false } = {}) {
   if (refresh) {
     refreshDoseUnitDisplays();
   }
+  updateLitersDisplay();
 }
 
 function setLiquidDoseUnit(unitKey, { refresh = false } = {}) {
@@ -756,6 +759,7 @@ function setLiquidDoseUnit(unitKey, { refresh = false } = {}) {
   if (refresh) {
     refreshDoseUnitDisplays();
   }
+  updateLitersDisplay();
 }
 
 function updateLitersDisplay() {
@@ -769,6 +773,16 @@ function updateLitersDisplay() {
       "aria-label",
       `${t("config.solutionLiters")} ${displayValue} ${definition.symbol}`
     );
+  }
+  if (configVolumeUnitSymbol) {
+    configVolumeUnitSymbol.textContent = definition.symbol;
+  }
+  if (configUnitSummary) {
+    configUnitSummary.textContent = [
+      definition.symbol,
+      getMassUnitDefinition().symbol,
+      getLiquidVolumeUnitDefinition().symbol,
+    ].join(" · ");
   }
 }
 

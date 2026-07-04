@@ -65,16 +65,15 @@ def test_frontend_i18n_keeps_data_contract_names_literal() -> None:
     assert "NO3" in app_js
 
 
-def test_fertilizer_dose_header_covers_solids_and_liquids() -> None:
+def test_fertilizer_dose_header_uses_row_specific_units() -> None:
     catalogs = {locale: _catalog(locale) for locale in LOCALES}
     index_html = read_frontend_file("index.html")
 
-    assert catalogs["de"]["common.grams"] == "Gramm/ml"
-    assert catalogs["en"]["common.grams"] == "Grams/ml"
-    assert catalogs["nl"]["common.grams"] == "Gram/ml"
-    assert catalogs["es"]["common.grams"] == "Gramos/ml"
-    assert catalogs["zh"]["common.grams"] == "克/毫升"
-    assert '<th data-i18n="common.grams">Grams/ml</th>' in index_html
+    assert catalogs["de"]["common.amount"] == "Menge"
+    assert catalogs["en"]["common.amount"] == "Amount"
+    assert '<th data-i18n="common.amount">Amount</th>' in index_html
+    assert 'id="configSolidDoseUnit"' in index_html
+    assert 'id="configLiquidDoseUnit"' in index_html
 
 
 def test_calculator_fertilizer_metadata_uses_clear_labels() -> None:
@@ -82,6 +81,6 @@ def test_calculator_fertilizer_metadata_uses_clear_labels() -> None:
     app_js = read_frontend_file("app.js")
 
     assert catalogs["de"]["common.productType"] == "Typ"
-    assert catalogs["de"]["common.mass"] == "Masse"
+    assert catalogs["de"]["editor.densityFactor"] == "Dichte [g/mL] / Faktor"
     assert '{ labelKey: "common.productType", label: "Type" }' in app_js
-    assert '{ labelKey: "common.mass", label: "Mass" }' in app_js
+    assert '{ labelKey: "editor.densityFactor", label: "Density / factor" }' in app_js

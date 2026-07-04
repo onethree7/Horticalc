@@ -24,6 +24,7 @@ loading that damaged file still fails.
 | `GET` | `/health` | Returns `{"status": "ok"}`. |
 | `GET` | `/schema/fertilizer-comp-keys` | Returns fertilizer composition keys from `core.COMP_COLS`. |
 | `GET` | `/schema/solver-config` | Returns solver config definitions from `solver_config.py`. |
+| `GET` | `/schema/units` | Returns canonical volume/dose metadata and conversion factors from `units.py`. |
 | `GET` | `/molar-masses` | Returns `data/molar_masses.yml`. |
 
 ## Preferences
@@ -33,9 +34,16 @@ loading that damaged file still fails.
 | `GET` | `/preferences` | Return persisted UI preferences. |
 | `PUT` | `/preferences` | Validate and merge one or more UI preferences. |
 
-Accepted fields are `theme`, `locale`, positive `default_liters`,
-`solver_config`, and `last_water_profile`. `locale` accepts `de`, `en`, `nl`,
-`es`, or `zh`. Preference Solver keys and value types must match the
+Accepted fields are `theme`, `locale`, positive canonical `default_liters`,
+`volume_unit`, `solid_dose_unit`, `liquid_dose_unit`, `solver_config`, and
+`last_water_profile`. `locale` accepts `de`, `en`, `nl`, `es`, or `zh`.
+`volume_unit` accepts `liter`, `us_gallon`,
+`imperial_gallon`, or `cubic_meter`; it controls GUI presentation and does not
+change API recipe fields from liters. `solid_dose_unit` accepts `gram`,
+`kilogram`, `ounce`, or `pound`; `liquid_dose_unit` accepts `milliliter`,
+`liter`, `us_fluid_ounce`, or `imperial_fluid_ounce`. These are also GUI-only:
+API and recipe `grams` values stay canonical grams for solids and canonical mL
+for liquids. Preference Solver keys and value types must match the
 UI-visible definitions from `/schema/solver-config`; definitions marked
 `ui: false` remain available to recipes and `/solve` but are not preference
 defaults. Water-profile values must be filenames rather than paths. Partial
@@ -144,7 +152,8 @@ Recipe payload:
 
 ## Calculate
 
-`POST /calculate` computes a nutrient solution from explicit fertilizer grams.
+`POST /calculate` computes a nutrient solution from explicit canonical
+fertilizer doses: the `grams` field is grams for solids and mL for liquids.
 
 Request:
 
@@ -173,7 +182,8 @@ The `ion_balance` response object keeps legacy raw CBE fields
 
 ## Solve
 
-`POST /solve` solves target values into fertilizer grams.
+`POST /solve` solves target values into canonical fertilizer doses using the
+same solid-grams/liquid-mL `grams` field contract.
 
 Request:
 

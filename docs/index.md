@@ -15,6 +15,8 @@ historical report.
 
 - [API reference](api_reference.md): FastAPI routes and payload shapes.
 - [Data model](data_model.md): persisted files, units, conversions, and output fields.
+- [Unit handling](unit_handling.md): canonical units, configurable volume display,
+  HydroBuddy comparison, and safe extension rules.
 - [Nutrient solution profiles](nutrient_solution_profiles.md): cited formulations
   and conversion rules.
 - [GUI](GUI.MD): current frontend shell and workflow behavior.

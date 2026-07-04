@@ -41,6 +41,9 @@ const calculatorScaleUpButton = qs("#calculatorScaleUp");
 const calculatorScaleValue = qs("#calculatorScaleValue");
 const configLitersInput = qs("#configLiters");
 const configLitersStatus = qs("#configLitersStatus");
+const configVolumeUnitSelect = qs("#configVolumeUnit");
+const configSolidDoseUnitSelect = qs("#configSolidDoseUnit");
+const configLiquidDoseUnitSelect = qs("#configLiquidDoseUnit");
 const themeSelect = qs("#themeSelect");
 const languageSelect = qs("#languageSelect");
 
@@ -109,6 +112,27 @@ const apiStatus = qs("#apiStatus");
 const liveLastCalc = qs("#liveLastCalc");
 
 const DEFAULT_LITERS = 10.0;
+const DEFAULT_VOLUME_UNIT = "liter";
+const DEFAULT_SOLID_DOSE_UNIT = "gram";
+const DEFAULT_LIQUID_DOSE_UNIT = "milliliter";
+const FALLBACK_VOLUME_UNITS = [
+  { key: "liter", label: "Liter", symbol: "L", liters_per_unit: 1.0 },
+  { key: "us_gallon", label: "US gallon", symbol: "US gal", liters_per_unit: 3.785411784 },
+  { key: "imperial_gallon", label: "Imperial gallon", symbol: "Imp gal", liters_per_unit: 4.54609 },
+  { key: "cubic_meter", label: "Cubic meter", symbol: "m³", liters_per_unit: 1000.0 },
+];
+const FALLBACK_MASS_UNITS = [
+  { key: "gram", label: "Gram", symbol: "g", grams_per_unit: 1.0 },
+  { key: "kilogram", label: "Kilogram", symbol: "kg", grams_per_unit: 1000.0 },
+  { key: "ounce", label: "Ounce", symbol: "oz", grams_per_unit: 28.349523125 },
+  { key: "pound", label: "Pound", symbol: "lb", grams_per_unit: 453.59237 },
+];
+const FALLBACK_LIQUID_VOLUME_UNITS = [
+  { key: "milliliter", label: "Milliliter", symbol: "mL", milliliters_per_unit: 1.0 },
+  { key: "liter", label: "Liter", symbol: "L", milliliters_per_unit: 1000.0 },
+  { key: "us_fluid_ounce", label: "US fluid ounce", symbol: "US fl oz", milliliters_per_unit: 29.5735295625 },
+  { key: "imperial_fluid_ounce", label: "Imperial fluid ounce", symbol: "Imp fl oz", milliliters_per_unit: 28.4130625 },
+];
 const DEFAULT_THEME = "horticalc-dark";
 const FERTILIZER_EDITOR_SEARCH_DELAY_MS = 150;
 const THEME_STORAGE_KEY = "horticalc.theme";
@@ -156,6 +180,12 @@ let summaryView = "ion";
 let ionNitrogenExpanded = false;
 let fertilizerEditorPreferredKeys = [];
 let currentLiters = DEFAULT_LITERS;
+let volumeUnitDefinitions = [...FALLBACK_VOLUME_UNITS];
+let volumeUnit = DEFAULT_VOLUME_UNIT;
+let massUnitDefinitions = [...FALLBACK_MASS_UNITS];
+let liquidVolumeUnitDefinitions = [...FALLBACK_LIQUID_VOLUME_UNITS];
+let solidDoseUnit = DEFAULT_SOLID_DOSE_UNIT;
+let liquidDoseUnit = DEFAULT_LIQUID_DOSE_UNIT;
 let currentShellView = "fertilizers";
 
 const shellViewConfigs = {
@@ -248,11 +278,6 @@ const numberFormatter = new Intl.NumberFormat("en-US", {
 const nutrientFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 0,
   maximumFractionDigits: 2,
-  useGrouping: false,
-});
-const fertilizerTraceFormatter = new Intl.NumberFormat("en-US", {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 4,
   useGrouping: false,
 });
 const ionFormatter = new Intl.NumberFormat("en-US", {
@@ -545,17 +570,205 @@ function validLiters(value) {
   return Number.isFinite(liters) && liters > 0 ? liters : DEFAULT_LITERS;
 }
 
-function formatLiters(value) {
-  const liters = validLiters(value);
-  return Number.isInteger(liters) ? String(liters) : String(Math.round(liters * 10) / 10);
+function getVolumeUnitDefinition(unitKey = volumeUnit) {
+  return volumeUnitDefinitions.find((definition) => definition.key === unitKey)
+    || volumeUnitDefinitions.find((definition) => definition.key === DEFAULT_VOLUME_UNIT)
+    || FALLBACK_VOLUME_UNITS[0];
+}
+
+function normalizeVolumeUnit(unitKey) {
+  return volumeUnitDefinitions.some((definition) => definition.key === unitKey)
+    ? unitKey
+    : DEFAULT_VOLUME_UNIT;
+}
+
+function litersToDisplayVolume(liters, unitKey = volumeUnit) {
+  return validLiters(liters) / getVolumeUnitDefinition(unitKey).liters_per_unit;
+}
+
+function displayVolumeToLiters(value, unitKey = volumeUnit) {
+  const displayValue = parseDecimalInput(value);
+  if (!Number.isFinite(displayValue)) {
+    return null;
+  }
+  return displayValue * getVolumeUnitDefinition(unitKey).liters_per_unit;
+}
+
+function formatVolumeValue(value) {
+  if (!Number.isFinite(value)) {
+    return "";
+  }
+  return String(Math.round(value * 10000) / 10000);
+}
+
+function renderVolumeUnitOptions() {
+  if (!configVolumeUnitSelect) {
+    return;
+  }
+  configVolumeUnitSelect.replaceChildren();
+  volumeUnitDefinitions.forEach((definition) => {
+    const option = document.createElement("option");
+    option.value = definition.key;
+    option.textContent = definition.symbol;
+    option.title = definition.label;
+    configVolumeUnitSelect.appendChild(option);
+  });
+  configVolumeUnitSelect.value = normalizeVolumeUnit(volumeUnit);
+}
+
+function setVolumeUnit(unitKey) {
+  volumeUnit = normalizeVolumeUnit(unitKey);
+  if (configVolumeUnitSelect) {
+    configVolumeUnitSelect.value = volumeUnit;
+  }
+  updateLitersDisplay();
+}
+
+function getMassUnitDefinition(unitKey = solidDoseUnit) {
+  return massUnitDefinitions.find((definition) => definition.key === unitKey)
+    || massUnitDefinitions.find((definition) => definition.key === DEFAULT_SOLID_DOSE_UNIT)
+    || FALLBACK_MASS_UNITS[0];
+}
+
+function getLiquidVolumeUnitDefinition(unitKey = liquidDoseUnit) {
+  return liquidVolumeUnitDefinitions.find((definition) => definition.key === unitKey)
+    || liquidVolumeUnitDefinitions.find((definition) => definition.key === DEFAULT_LIQUID_DOSE_UNIT)
+    || FALLBACK_LIQUID_VOLUME_UNITS[0];
+}
+
+function normalizeSolidDoseUnit(unitKey) {
+  return massUnitDefinitions.some((definition) => definition.key === unitKey)
+    ? unitKey
+    : DEFAULT_SOLID_DOSE_UNIT;
+}
+
+function normalizeLiquidDoseUnit(unitKey) {
+  return liquidVolumeUnitDefinitions.some((definition) => definition.key === unitKey)
+    ? unitKey
+    : DEFAULT_LIQUID_DOSE_UNIT;
+}
+
+function renderLinearUnitOptions(select, definitions, selectedUnit) {
+  if (!select) {
+    return;
+  }
+  select.replaceChildren();
+  definitions.forEach((definition) => {
+    const option = document.createElement("option");
+    option.value = definition.key;
+    option.textContent = definition.symbol;
+    option.title = definition.label;
+    select.appendChild(option);
+  });
+  select.value = selectedUnit;
+}
+
+function fertilizerDefinition(fertilizerOrName) {
+  if (fertilizerOrName && typeof fertilizerOrName === "object") {
+    return fertilizerOrName;
+  }
+  return fertilizerOptions.find((fertilizer) => fertilizer.name === fertilizerOrName) || null;
+}
+
+function doseUnitDefinition(fertilizerOrName) {
+  return fertilizerDefinition(fertilizerOrName)?.liquid
+    ? getLiquidVolumeUnitDefinition()
+    : getMassUnitDefinition();
+}
+
+function canonicalDoseToDisplay(value, fertilizerOrName) {
+  const canonicalValue = Number(value) || 0;
+  const definition = doseUnitDefinition(fertilizerOrName);
+  const factor = fertilizerDefinition(fertilizerOrName)?.liquid
+    ? definition.milliliters_per_unit
+    : definition.grams_per_unit;
+  return canonicalValue / factor;
+}
+
+function displayDoseToCanonical(value, fertilizerOrName) {
+  const displayValue = parseDecimalInput(value);
+  if (!Number.isFinite(displayValue)) {
+    return null;
+  }
+  const definition = doseUnitDefinition(fertilizerOrName);
+  const factor = fertilizerDefinition(fertilizerOrName)?.liquid
+    ? definition.milliliters_per_unit
+    : definition.grams_per_unit;
+  return displayValue * factor;
+}
+
+function formatDoseValue(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return "-";
+  }
+  const absValue = Math.abs(numericValue);
+  const decimals = absValue >= 1 ? 4 : absValue >= 0.01 ? 6 : 8;
+  return numericValue
+    .toFixed(decimals)
+    .replace(/(\.\d*?[1-9])0+$/, "$1")
+    .replace(/\.0+$/, "");
+}
+
+function formatDoseDisplay(value, fertilizerOrName) {
+  return formatDoseValue(canonicalDoseToDisplay(value, fertilizerOrName));
+}
+
+function formatDoseInput(value, fertilizerOrName) {
+  const formatted = formatDoseValue(canonicalDoseToDisplay(value, fertilizerOrName));
+  return formatted === "-" ? "0" : formatted;
+}
+
+function appendDoseInput(valueCell, input, fertilizerOrName) {
+  const wrapper = document.createElement("span");
+  wrapper.className = "dose-input";
+  const unit = document.createElement("span");
+  unit.className = "dose-input-unit";
+  unit.textContent = doseUnitDefinition(fertilizerOrName).symbol;
+  wrapper.append(input, unit);
+  valueCell.appendChild(wrapper);
+}
+
+function refreshDoseUnitDisplays() {
+  renderSelectionTable();
+  renderCalculatorTable();
+  renderSolverFixedTable();
+  if (lastSolveResult) {
+    renderSolverResults(lastSolveResult);
+  }
+}
+
+function setSolidDoseUnit(unitKey, { refresh = false } = {}) {
+  solidDoseUnit = normalizeSolidDoseUnit(unitKey);
+  if (configSolidDoseUnitSelect) {
+    configSolidDoseUnitSelect.value = solidDoseUnit;
+  }
+  if (refresh) {
+    refreshDoseUnitDisplays();
+  }
+}
+
+function setLiquidDoseUnit(unitKey, { refresh = false } = {}) {
+  liquidDoseUnit = normalizeLiquidDoseUnit(unitKey);
+  if (configLiquidDoseUnitSelect) {
+    configLiquidDoseUnitSelect.value = liquidDoseUnit;
+  }
+  if (refresh) {
+    refreshDoseUnitDisplays();
+  }
 }
 
 function updateLitersDisplay() {
+  const definition = getVolumeUnitDefinition();
+  const displayValue = formatVolumeValue(litersToDisplayVolume(currentLiters));
   if (configLitersInput) {
-    configLitersInput.value = formatLiters(currentLiters);
+    configLitersInput.value = displayValue;
   }
   if (configLitersStatus) {
-    configLitersStatus.setAttribute("aria-label", `${t("config.solutionLiters")} ${formatLiters(currentLiters)} L`);
+    configLitersStatus.setAttribute(
+      "aria-label",
+      `${t("config.solutionLiters")} ${displayValue} ${definition.symbol}`
+    );
   }
 }
 
@@ -723,7 +936,7 @@ function initializeFertilizerTables() {
       { label: "#" },
       { labelKey: "calculator.fertilizerDropdown", label: "Fertilizer (dropdown)" },
       { labelKey: "common.productType", label: "Type" },
-      { labelKey: "common.mass", label: "Mass" },
+      { labelKey: "editor.densityFactor", label: "Density / factor" },
     ],
   });
   fertilizerSelectTableWrap.appendChild(selectTable.table);
@@ -736,7 +949,7 @@ function initializeFertilizerTables() {
     headerCells: [
       { label: "#" },
       { labelKey: "editor.fertilizerName", label: "Fertilizer name", colSpan: 2 },
-      { labelKey: "common.grams", label: "Grams/ml" },
+      { labelKey: "common.amount", label: "Amount" },
     ],
   });
   calculatorTableWrap.appendChild(calculator.table);
@@ -1268,7 +1481,7 @@ function renderFertilizerEditor() {
     { label: "#" },
     fertilizerEditorHeader("Fertilizer name", "name", "editor.fertilizerName"),
     fertilizerEditorHeader("Liquid", "liquid", "common.liquid"),
-    fertilizerEditorHeader("m [g]", "weight_factor"),
+    fertilizerEditorHeader("Density / factor", "weight_factor", "editor.densityFactor"),
     ...fertilizerEditorCompKeys.map((key) => fertilizerEditorHeader(key, `comp:${key}`)),
   ];
   const table = createTable({
@@ -1281,14 +1494,6 @@ function renderFertilizerEditor() {
   fertilizerEditorTable = table.table;
   fertilizerEditorTable.style.setProperty("--fert-editor-name-width", `${fertilizerEditorNameWidthPx}px`);
   addFertilizerNameColumnResizer(fertilizerEditorTable);
-  const massHeaderButton = fertilizerEditorTable.querySelector("thead th:nth-child(4) .table-sort-button");
-  const massSymbol = document.createElement("var");
-  massSymbol.className = "quantity-symbol";
-  massSymbol.textContent = "m";
-  const massUnit = document.createElement("span");
-  massUnit.className = "quantity-unit";
-  massUnit.textContent = " [g]";
-  massHeaderButton.replaceChildren(massSymbol, massUnit);
   fertilizerEditorTable.style.setProperty(
     "--fert-editor-index-width",
     `calc(${indexDigitCount}ch + (var(--space-2) * 2))`
@@ -1663,16 +1868,20 @@ function renderSolverFixedTable() {
     input.inputMode = "decimal";
     input.min = "0";
     input.step = "0.01";
-    input.value = solverFixedGrams[name] || 0;
+    input.value = formatDoseInput(solverFixedGrams[name] || 0, name);
     input.addEventListener("input", (event) => {
-      solverFixedGrams[name] = decimalInputValue(event.target.value);
+      const canonicalValue = displayDoseToCanonical(event.target.value, name);
+      if (canonicalValue === null || canonicalValue < 0) {
+        return;
+      }
+      solverFixedGrams[name] = canonicalValue;
       syncSolverOverridePanel({ forceOpen: solverFixedGrams[name] > 0 });
       renderSolverResults(null);
     });
     input.addEventListener("change", () => {
-      normalizeDecimalInputElement(input, solverFixedGrams[name]);
+      input.value = formatDoseInput(solverFixedGrams[name] || 0, name);
     });
-    valueCell.appendChild(input);
+    appendDoseInput(valueCell, input, name);
 
     row.append(nameCell, valueCell);
     solverFixedTable.appendChild(row);
@@ -1729,9 +1938,9 @@ function renderSolverResults(data) {
       const row = document.createElement("tr");
       const nameCell = document.createElement("td");
       nameCell.textContent = fert.name;
-      const gramsCell = document.createElement("td");
-      gramsCell.textContent = formatFertilizerGrams(Number(fert.grams));
-      row.append(nameCell, gramsCell);
+      const amountCell = document.createElement("td");
+      amountCell.textContent = `${formatDoseDisplay(Number(fert.grams), fert.name)} ${doseUnitDefinition(fert.name).symbol}`;
+      row.append(nameCell, amountCell);
       solverFertilizersTable.appendChild(row);
     });
   }
@@ -1908,17 +2117,21 @@ function buildSolverClipboardText() {
   const lines = [t("solver.clipboardTitle")];
   lines.push(
     ...buildClipboardRows(null, [
-      [t("solver.clipboardBatchLiters"), formatNumber(currentLiters)],
+      [
+        t("solver.clipboardBatchVolume", { unit: getVolumeUnitDefinition().symbol }),
+        formatVolumeValue(litersToDisplayVolume(currentLiters)),
+      ],
       [t("solver.clipboardOsmosis"), formatNumber(decimalInputValue(osmosisPercentInput.value))],
     ], [1])
   );
   lines.push("");
   lines.push(
     ...buildClipboardRows(
-      [t("common.fertilizer"), t("common.grams")],
+      [t("common.fertilizer"), t("common.amount"), t("common.unit")],
       fertilizers.map((fert) => [
         fert.name || "",
-        formatFertilizerGrams(Number(fert.grams)),
+        formatDoseDisplay(Number(fert.grams), fert.name),
+        doseUnitDefinition(fert.name).symbol,
       ]),
       [1]
     )
@@ -2064,7 +2277,15 @@ function renderSelectionTable() {
       : "-";
 
     const weightCell = document.createElement("td");
-    weightCell.textContent = selectedOption?.weight_factor || "-";
+    if (!selectedOption) {
+      weightCell.textContent = "-";
+    } else if (selectedOption.liquid) {
+      weightCell.textContent = `${formatNumber(selectedOption.weight_factor, nutrientFormatter)} g/mL`;
+    } else if (Number(selectedOption.weight_factor) !== 1) {
+      weightCell.textContent = `${formatNumber(selectedOption.weight_factor, nutrientFormatter)}×`;
+    } else {
+      weightCell.textContent = "—";
+    }
 
     row.append(indexCell, selectCell, liquidCell, weightCell);
     return row;
@@ -2094,18 +2315,21 @@ function renderCalculatorTable() {
     input.inputMode = "decimal";
     input.min = "0";
     input.step = "any";
-    input.value = formatFertilizerGramsInput(calculatorRow.grams);
+    input.value = formatDoseInput(calculatorRow.grams, calculatorRow.name);
     input.addEventListener("input", (event) => {
-      const rawValue = Math.max(0, decimalInputValue(event.target.value));
-      calculatorRow.grams = rawValue;
+      const canonicalValue = displayDoseToCanonical(event.target.value, calculatorRow.name);
+      if (canonicalValue === null || canonicalValue < 0) {
+        return;
+      }
+      calculatorRow.grams = canonicalValue;
       calculatorRow.baseGrams =
-        calculatorScaleFactor > 0 ? roundScaledValue(rawValue / calculatorScaleFactor) : 0;
+        calculatorScaleFactor > 0 ? roundScaledValue(canonicalValue / calculatorScaleFactor) : 0;
       scheduleRecalculate();
     });
     input.addEventListener("change", () => {
-      input.value = formatFertilizerGramsInput(calculatorRow.grams);
+      input.value = formatDoseInput(calculatorRow.grams, calculatorRow.name);
     });
-    amountCell.appendChild(input);
+    appendDoseInput(amountCell, input, calculatorRow.name);
 
     row.append(indexCell, nameCell, amountCell);
     return row;
@@ -2210,31 +2434,6 @@ function formatNumber(value, formatter = numberFormatter) {
     return formatter.format(value);
   }
   return "-";
-}
-
-function formatFertilizerGrams(value) {
-  if (!Number.isFinite(value)) {
-    return "-";
-  }
-  if (value === 0 || Math.abs(value) >= 0.01) {
-    return nutrientFormatter.format(value);
-  }
-
-  const formatted = fertilizerTraceFormatter.format(value);
-  return formatted === "0" ? "<0.0001" : formatted;
-}
-
-function formatFertilizerGramsInput(value) {
-  if (!Number.isFinite(Number(value))) {
-    return "0";
-  }
-  const numericValue = Number(value);
-  if (numericValue === 0 || Math.abs(numericValue) >= 0.01) {
-    return String(numericValue);
-  }
-
-  const formatted = fertilizerTraceFormatter.format(numericValue);
-  return formatted === "0" ? String(numericValue) : formatted;
 }
 
 function reportError(error, fallbackMessage = t("errors.unknown")) {
@@ -3007,6 +3206,38 @@ function renderCalculation(data) {
   updateLiveResultBar(data);
 }
 
+async function fetchVolumeUnitDefinitions() {
+  const data = await fetchJson(`${apiBase()}/schema/units`, t("errors.loadUnitSchema"));
+  const normalizeDefinitions = (entries, factorKey, canonicalKey) => {
+    if (!Array.isArray(entries) || !entries.length) {
+      throw new Error(t("errors.loadUnitSchema"));
+    }
+    const definitions = entries.filter(
+      (definition) => definition
+        && typeof definition.key === "string"
+        && typeof definition.symbol === "string"
+        && Number.isFinite(Number(definition[factorKey]))
+        && Number(definition[factorKey]) > 0
+    ).map((definition) => ({
+      ...definition,
+      [factorKey]: Number(definition[factorKey]),
+    }));
+    if (!definitions.some((definition) => definition.key === canonicalKey)) {
+      throw new Error(t("errors.loadUnitSchema"));
+    }
+    return definitions;
+  };
+  return {
+    volumeUnits: normalizeDefinitions(data.volume_units, "liters_per_unit", DEFAULT_VOLUME_UNIT),
+    massUnits: normalizeDefinitions(data.mass_units, "grams_per_unit", DEFAULT_SOLID_DOSE_UNIT),
+    liquidVolumeUnits: normalizeDefinitions(
+      data.liquid_volume_units,
+      "milliliters_per_unit",
+      DEFAULT_LIQUID_DOSE_UNIT
+    ),
+  };
+}
+
 function applyRecipe(recipe, { applyLiters = true } = {}) {
   if (applyLiters && recipe && recipe.liters !== undefined && recipe.liters !== null) {
     setCurrentLiters(recipe.liters, { scaleBatch: false, recalculate: false, invalidateSolver: false });
@@ -3278,6 +3509,7 @@ async function loadStartupResources() {
     fetchWaterProfiles(),
     fetchRecipes(),
     fetchNutrientSolutions(),
+    fetchVolumeUnitDefinitions(),
   ]);
   const errors = [];
   return {
@@ -3301,6 +3533,16 @@ async function loadStartupResources() {
       results[6],
       [],
       t("errors.loadNutrientSolutions"),
+      errors
+    ),
+    unitDefinitions: startupResourceValue(
+      results[7],
+      {
+        volumeUnits: [...FALLBACK_VOLUME_UNITS],
+        massUnits: [...FALLBACK_MASS_UNITS],
+        liquidVolumeUnits: [...FALLBACK_LIQUID_VOLUME_UNITS],
+      },
+      t("errors.loadUnitSchema"),
       errors
     ),
     errors,
@@ -3329,10 +3571,19 @@ async function init() {
   waterProfiles = startupResources.waterProfiles;
   recipeProfiles = startupResources.recipeProfiles;
   nutrientSolutions = startupResources.nutrientSolutions;
+  volumeUnitDefinitions = startupResources.unitDefinitions.volumeUnits;
+  massUnitDefinitions = startupResources.unitDefinitions.massUnits;
+  liquidVolumeUnitDefinitions = startupResources.unitDefinitions.liquidVolumeUnits;
   const startupErrors = startupResources.errors;
   startupErrors.forEach(({ error, message }) => reportError(error, message));
 
   applySolverConfig(preferences.solver_config || {});
+  renderVolumeUnitOptions();
+  setVolumeUnit(preferences.volume_unit || DEFAULT_VOLUME_UNIT);
+  solidDoseUnit = normalizeSolidDoseUnit(preferences.solid_dose_unit || DEFAULT_SOLID_DOSE_UNIT);
+  liquidDoseUnit = normalizeLiquidDoseUnit(preferences.liquid_dose_unit || DEFAULT_LIQUID_DOSE_UNIT);
+  renderLinearUnitOptions(configSolidDoseUnitSelect, massUnitDefinitions, solidDoseUnit);
+  renderLinearUnitOptions(configLiquidDoseUnitSelect, liquidVolumeUnitDefinitions, liquidDoseUnit);
   setCurrentLiters(preferences.default_liters || DEFAULT_LITERS, {
     scaleBatch: false,
     recalculate: false,
@@ -3506,7 +3757,7 @@ bindScaleButtons(
 
 if (configLitersInput) {
   configLitersInput.addEventListener("input", (event) => {
-    const nextLiters = parseDecimalInput(event.target.value);
+    const nextLiters = displayVolumeToLiters(event.target.value);
     if (nextLiters === null || nextLiters <= 0) {
       return;
     }
@@ -3549,6 +3800,27 @@ if (solverConfigResetDefaultsButton) {
     renderSolverResults(null);
     persistPreferences({ solver_config: {} });
     setSolverApplyStatus(t("solver.configResetDone"));
+  });
+}
+
+if (configVolumeUnitSelect) {
+  configVolumeUnitSelect.addEventListener("change", (event) => {
+    setVolumeUnit(event.target.value);
+    persistPreferences({ volume_unit: volumeUnit });
+  });
+}
+
+if (configSolidDoseUnitSelect) {
+  configSolidDoseUnitSelect.addEventListener("change", (event) => {
+    setSolidDoseUnit(event.target.value, { refresh: true });
+    persistPreferences({ solid_dose_unit: solidDoseUnit });
+  });
+}
+
+if (configLiquidDoseUnitSelect) {
+  configLiquidDoseUnitSelect.addEventListener("change", (event) => {
+    setLiquidDoseUnit(event.target.value, { refresh: true });
+    persistPreferences({ liquid_dose_unit: liquidDoseUnit });
   });
 }
 

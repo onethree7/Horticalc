@@ -80,8 +80,18 @@ Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`.
 - The frontend is a static Vanilla JS app.
 - The visible workflow areas are `DUENGER-EDITOR`, `WASSERWERTE`,
   `RECHNER`, and `SOLVER`.
-- The frontend fetches solver config schema from `/schema/solver-config`.
-- `user/preferences.json` stores theme, default batch liters, UI-visible Solver
+- The frontend fetches solver config schema from `/schema/solver-config` and
+  volume and dose definitions from `/schema/units`.
+- Batch volume is canonical liters in the core, API, CLI, and recipe files.
+  The GUI can present L, US gal, Imp gal, or m³ and converts only at its
+  boundary. US and Imperial gallons remain explicit rather than accepting an
+  ambiguous `gallon` unit.
+- The existing fertilizer dose contract remains deliberately compact: `grams`
+  is grams for catalogued solids and mL for catalogued liquids. The GUI may
+  present g/kg/oz/lb or mL/L/US fl oz/Imp fl oz, but converts back to that
+  canonical contract before calculation, solving, or saving.
+- `user/preferences.json` stores theme, default batch liters, selected volume
+  and dose display units, UI-visible Solver
   defaults, and the last directly loaded water profile. Advanced Solver fields
   marked `ui: false` remain recipe or direct solve inputs. Explicit recipe
   fields override active values without rewriting those user defaults.

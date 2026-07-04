@@ -31,6 +31,7 @@ flowchart LR
 | NPK and ratios | `src/horticalc/metrics.py` | Formats NPK strings and summary ratios. |
 | Sluijsmann | `src/horticalc/sluijsmann.py` | Computes CaO-equivalent alkalinity/acidity metric. |
 | Solver | `src/horticalc/solver.py`, `src/horticalc/solver_config.py` | Solves target profiles into fertilizer grams. |
+| Unit definitions | `src/horticalc/units.py` | Defines canonical volume conversions shared through the API schema. |
 | Data paths | `src/horticalc/paths.py` | Defines AppRoot, shipped defaults, user overrides, logs, and lockfile layout. |
 | Persistence IO | `src/horticalc/data_io.py` | Loads and saves CSV/YAML data. |
 | API | `api/app.py` | Exposes JSON API routes, accepts YAML request bodies on save endpoints, and serves the frontend. |
@@ -46,7 +47,8 @@ html=True))` serves `frontend/index.html` and assets.
 
 Calculator flow:
 
-1. UI builds a recipe payload from selected fertilizers, water values, liters,
+1. UI converts the selected batch-volume display unit to canonical liters and
+   builds a recipe payload from selected fertilizers, water values, liters,
    nitrogen handling, and osmosis percent.
 2. UI posts to `/calculate`.
 3. `api/app.py` validates allowed water keys and fertilizer names.

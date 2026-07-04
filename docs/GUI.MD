@@ -17,12 +17,12 @@ FastAPI from the same origin as the API.
 
 The active navigation has four user-facing areas:
 
-- `DUENGER-EDITOR`: fertilizer CSV editing, liquid checkbox, mass-factor column
-  labelled as italic `m [g]`, search, and add/delete rows.
+- `DUENGER-EDITOR`: fertilizer CSV editing, liquid checkbox, density/factor
+  column, search, and add/delete rows.
 - `WASSERWERTE`: water profiles, osmosis percent, helper conversions, mg/L or mmol/L display.
-- `RECHNER`: recipe profiles, fertilizer grams, calculation output, details.
+- `RECHNER`: recipe profiles, row-specific fertilizer doses, calculation output, details.
 - `SOLVER`: target values, compact searchable allowed-fertilizer picker,
-  optional override grams, solver config, solve result, and calculator handoff.
+  optional fixed doses, solver config, solve result, and calculator handoff.
 
 The workflow menu is the single owner of visible area navigation; it directly
 selects the matching calculator, water, solver, or fertilizer-editor panel.
@@ -31,9 +31,12 @@ their workflow is active and are removed from the DOM when another workflow is
 selected. Their JavaScript state remains intact across navigation.
 
 The `Konfiguration` card in `frontend/index.html` contains the global batch
-liters input, a `Design` selector, and a `Sprache` selector. `frontend/app.js`
+volume input with an L, US gal, Imp gal, or m³ selector, separate solid/liquid
+dose-unit selectors, a `Design` selector, and a `Sprache` selector.
+`frontend/app.js` gets all conversion factors from `/schema/units`, keeps the
+working values in canonical liters plus g-for-solids/mL-for-liquids, and
 applies the selected theme to `document.body.dataset.theme`. Theme, the user's
-default batch liters, Solver defaults, and the last directly loaded water
+default batch liters, volume/dose display units, Solver defaults, and the last directly loaded water
 profile are written through `/preferences` to `user/preferences.json`, because
 launcher-managed browser profiles are temporary. `frontend/i18n/runtime.js` stores the
 selected language under `horticalc.locale`, updates `document.documentElement.lang`,
@@ -70,9 +73,11 @@ target reticle containing one leaf.
 
 The calculator fertilizer-selection table labels the Boolean physical state as
 `Typ` and renders it as localized solid/liquid text. The adjacent
-`weight_factor` column is presented as `Masse`.
+`weight_factor` column is presented as `Dichte [g/mL] / Faktor`; liquid rows
+show density with `g/mL`, unit-factor solid rows show `×`, and ordinary solid
+rows show an em dash.
 
-In the fertilizer editor, the sticky `Liquid` and `m [g]` columns use fixed
+In the fertilizer editor, the sticky `Liquid` and `Dichte [g/mL] / Faktor` columns use fixed
 compact widths. The sticky fertilizer-name column starts at `18rem` and has a
 drag handle on its right edge; resizing is limited to 180-640 pixels and only
 affects the editor table. The four-column sticky base block uses theme-specific
@@ -110,7 +115,8 @@ grid. The allowed-fertilizer picker sits below it on the left, and
 Fertilizer amounts sit on the right. Before a solve result exists, Solver Results
 shows an instruction hint instead of the empty result table.
 
-Solver override grams live in the collapsed `solverOverrides` details panel.
+Solver fixed doses live in the collapsed `solverOverrides` details panel and
+use each fertilizer's selected display unit.
 `frontend/app.js` opens the panel when an override value is active and keeps
 zero-override use out of the main flow.
 
@@ -125,16 +131,16 @@ calculator-view actions remain below the result workbench.
 The solver result table always shows the standard nutrient rows after a solve;
 rows that were not active targets are muted so collateral nutrient changes are
 visible without implying they were optimized objectives. The fertilizer result
-table lets long product names wrap while keeping the `Gramm/ml` dose column
-compact and right-aligned. Solid doses are grams and liquid doses are
-milliliters. Doses below `0.01` use up to four decimal places in Solver results,
-the Solver clipboard export, and calculator inputs so a positive trace dose is
-not displayed as zero. Values below the display precision are labelled
-`<0.0001` in read-only Solver output while calculator inputs retain the numeric
-value.
+table lets long product names wrap while keeping the `Menge` column compact.
+Each value includes its explicit mass or liquid-volume unit. Dose formatting
+uses up to eight decimals for small converted quantities so unit switching does
+not display a positive dose as zero. The same conversion and formatting path is
+used by Solver results, the Solver clipboard export, fixed-dose controls, and
+calculator inputs.
 
-The solver clipboard export in `frontend/app.js` includes the batch liters,
-osmosis percent, fertilizer doses in grams or milliliters, NPK metrics, EC,
+The solver clipboard export in `frontend/app.js` includes the batch volume in
+the selected display unit, osmosis percent, fertilizer doses with a separate
+row-specific unit column, NPK metrics, EC,
 Solver target/achieved/delta values, and ion mg/L values. It uses compact space-aligned columns for
 monospace copy/paste code blocks instead of tab-separated columns.
 
@@ -175,7 +181,7 @@ The UI stores small workflow state in `localStorage`:
 - Selected frontend language.
 
 `user/preferences.json` stores the selected visual theme, default batch liters,
-Solver defaults, and last directly loaded water profile.
+volume and dose display units, Solver defaults, and last directly loaded water profile.
 
 Solver config is not restored from saved solution snapshots. Startup defaults
 come from preferences, while a non-empty config in an explicitly loaded recipe

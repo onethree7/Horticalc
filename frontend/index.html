@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Horticalc GUI</title>
-    <link rel="stylesheet" href="styles.css?v=layout9" />
+    <link rel="stylesheet" href="styles.css?v=layout11" />
   </head>
   <body class="compact app-body">
     <svg class="icon-sprite" aria-hidden="true" focusable="false">
@@ -68,8 +68,13 @@
             <span data-i18n="config.title">Configuration</span>
             <label class="rail-config-liters" for="configLiters" id="configLitersStatus">
               <span data-i18n="config.solutionLiters">NS:</span>
-              <input id="configLiters" type="text" inputmode="decimal" min="0.1" step="0.1" value="10" aria-label="Liter NL" />
-              <span>L</span>
+              <input id="configLiters" type="text" inputmode="decimal" min="0.1" step="0.1" value="10" aria-label="Nutrient solution volume" />
+              <select id="configVolumeUnit" aria-label="Volume unit" data-i18n-aria-label="aria.volumeUnit">
+                <option value="liter">L</option>
+                <option value="us_gallon">US gal</option>
+                <option value="imperial_gallon">Imp gal</option>
+                <option value="cubic_meter">m³</option>
+              </select>
             </label>
           </div>
           <label class="rail-theme-control" for="themeSelect">
@@ -92,6 +97,24 @@
               <option value="nl" data-i18n="language.nl">Nederlands</option>
               <option value="es" data-i18n="language.es">Español</option>
               <option value="zh" data-i18n="language.zh">中文（简体）</option>
+            </select>
+          </label>
+          <label class="rail-theme-control" for="configSolidDoseUnit">
+            <span data-i18n="config.solidDoseUnit">Solid dose</span>
+            <select id="configSolidDoseUnit" aria-label="Select solid dose unit" data-i18n-aria-label="aria.solidDoseUnit">
+              <option value="gram">g</option>
+              <option value="kilogram">kg</option>
+              <option value="ounce">oz</option>
+              <option value="pound">lb</option>
+            </select>
+          </label>
+          <label class="rail-theme-control" for="configLiquidDoseUnit">
+            <span data-i18n="config.liquidDoseUnit">Liquid dose</span>
+            <select id="configLiquidDoseUnit" aria-label="Select liquid dose unit" data-i18n-aria-label="aria.liquidDoseUnit">
+              <option value="milliliter">mL</option>
+              <option value="liter">L</option>
+              <option value="us_fluid_ounce">US fl oz</option>
+              <option value="imperial_fluid_ounce">Imp fl oz</option>
             </select>
           </label>
         </section>
@@ -462,7 +485,7 @@
 
                 <details id="solverOverrides" class="solver-overrides">
                   <summary>
-                    <span data-i18n="solver.overrideTitle">Override / fixed amount (g, optional)</span>
+                    <span data-i18n="solver.overrideTitle">Override / fixed amount (optional)</span>
                     <span class="inline-hint" id="solverOverrideSummary">0 aktiv</span>
                   </summary>
                   <div class="table-wrap solver-fixed-wrap">
@@ -470,7 +493,7 @@
                       <thead>
                         <tr>
                           <th data-i18n="common.fertilizer">Fertilizer</th>
-                          <th data-i18n="solver.overrideGrams">Override (g)</th>
+                          <th data-i18n="solver.overrideAmount">Override amount</th>
                         </tr>
                       </thead>
                       <tbody></tbody>
@@ -490,7 +513,7 @@
                     <thead>
                       <tr>
                         <th data-i18n="common.fertilizer">Fertilizer</th>
-                        <th data-i18n="common.grams">Grams/ml</th>
+                        <th data-i18n="common.amount">Amount</th>
                       </tr>
                     </thead>
                     <tbody></tbody>
@@ -610,13 +633,13 @@
       </section>
     </main>
 
-    <script src="i18n/de.js?v=i18n10"></script>
-    <script src="i18n/en.js?v=i18n10"></script>
-    <script src="i18n/nl.js?v=i18n10"></script>
-    <script src="i18n/es.js?v=i18n10"></script>
-    <script src="i18n/zh.js?v=i18n10"></script>
-    <script src="i18n/runtime.js?v=i18n10"></script>
+    <script src="i18n/de.js?v=i18n12"></script>
+    <script src="i18n/en.js?v=i18n12"></script>
+    <script src="i18n/nl.js?v=i18n12"></script>
+    <script src="i18n/es.js?v=i18n12"></script>
+    <script src="i18n/zh.js?v=i18n12"></script>
+    <script src="i18n/runtime.js?v=i18n12"></script>
     <script src="request_gate.js?v=1"></script>
-    <script src="app.js?v=i18n11"></script>
+    <script src="app.js?v=units2"></script>
   </body>
 </html>

@@ -15,7 +15,8 @@ def test_solver_copy_logic_present() -> None:
     assert "buildClipboardRows" in content
     assert "copySolverResultsToClipboard" in content
     assert "copyTextWithFallback" in content
-    assert 't("solver.clipboardBatchLiters")' in content
+    assert 't("solver.clipboardBatchVolume"' in content
+    assert "litersToDisplayVolume(currentLiters)" in content
     assert 't("solver.clipboardTargets")' in content
     assert "EC (mS/cm)" in content
     assert "\\t" not in content

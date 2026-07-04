@@ -1,7 +1,25 @@
 from fastapi.testclient import TestClient
+import pytest
 
 import api.app as api_app
 from horticalc import paths
+
+
+def test_unit_schema_exposes_canonical_volume_and_explicit_gallons() -> None:
+    response = TestClient(api_app.app).get("/schema/units")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["canonical_volume_unit"] == "liter"
+    assert payload["canonical_solid_dose_unit"] == "gram"
+    assert payload["canonical_liquid_dose_unit"] == "milliliter"
+    units = {entry["key"]: entry for entry in payload["volume_units"]}
+    assert units["us_gallon"]["liters_per_unit"] == pytest.approx(3.785411784)
+    assert units["imperial_gallon"]["liters_per_unit"] == pytest.approx(4.54609)
+    mass_units = {entry["key"]: entry for entry in payload["mass_units"]}
+    liquid_units = {entry["key"]: entry for entry in payload["liquid_volume_units"]}
+    assert mass_units["ounce"]["grams_per_unit"] == pytest.approx(28.349523125)
+    assert liquid_units["us_fluid_ounce"]["milliliters_per_unit"] == pytest.approx(29.5735295625)
 
 
 def test_portable_layout_resource_routes() -> None:

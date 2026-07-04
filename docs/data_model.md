@@ -58,7 +58,12 @@ If the final disabled-name write fails, persistence restores the previous
 override CSV so a failed save cannot leave a partially updated overlay.
 
 `user/preferences.json` is a JSON object containing optional `theme`, `locale`,
-`default_liters`, `solver_config`, and `last_water_profile` fields. The API
+`default_liters`, `volume_unit`, `solid_dose_unit`, `liquid_dose_unit`,
+`solver_config`, and `last_water_profile`
+fields. `default_liters` remains canonical liters; `volume_unit` selects GUI
+input and display as `liter`, `us_gallon`, `imperial_gallon`, or
+`cubic_meter`. Dose-unit preferences select GUI presentation while stored
+recipe/API doses remain grams for solids or mL for liquids. The API
 validates partial updates and preserves JSON types. Preference `solver_config`
 contains only UI-visible Solver defaults; advanced settings marked `ui: false`
 remain recipe or direct solve inputs. Source: `load_user_preferences()` in
@@ -128,6 +133,12 @@ same liquid by scale instead of volume, weigh `dose * Gewicht` grams.
 This means the UI/API label `grams` is literal for solids and historical for
 liquids. The chemistry remains mass-normalized because the density factor is
 applied before nutrient contributions are computed.
+
+The GUI uses fertilizer `liquid` metadata to label every dose row explicitly.
+It may present solid doses as g/kg/oz/lb and liquid doses as mL/L/US fl oz/Imp
+fl oz. Conversion occurs only in `frontend/app.js`; saved recipes, calculator
+payloads, Solver `fixed_grams`, and Solver responses retain the canonical
+contract above.
 
 ## Water Profiles
 

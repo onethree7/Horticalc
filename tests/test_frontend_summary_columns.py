@@ -19,23 +19,9 @@ def test_ion_balance_uses_sum_symbols_for_charge_totals():
     assert 'anions_meq_per_l: "E-"' not in content
 
 
-def test_fertilizer_editor_weight_header_uses_semantic_mass_symbol():
+def test_fertilizer_editor_weight_header_explains_density_and_factor():
     app_js = read_frontend_file("app.js")
-    styles_css = read_frontend_file("styles.css")
 
-    assert 'massHeaderButton = fertilizerEditorTable.querySelector(' in app_js
-    assert 'document.createElement("var")' in app_js
-    assert 'massSymbol.textContent = "m";' in app_js
-    assert 'massUnit.className = "quantity-unit";' in app_js
-    assert 'massUnit.textContent = " [g]";' in app_js
-    assert 'massHeaderButton.replaceChildren(massSymbol, massUnit);' in app_js
-    assert '{ labelKey: "common.grams", label: "Grams/ml" }' in app_js
-    assert 'amountHeader.replaceChildren' not in app_js
-    assert ".quantity-symbol" in styles_css
-    assert "font-style: italic;" in styles_css
-    assert '#fertilizerEditorTable .quantity-symbol' in styles_css
-    assert 'font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;' in styles_css
-    assert '#fertilizerEditorTable .quantity-unit' in styles_css
-    editor_mass_cell_css = styles_css.split("#fertilizerEditorTable td:nth-child(4) input", 1)[1].split("}", 1)[0]
-    assert "text-align: center;" in editor_mass_cell_css
-    assert "text-align: right;" not in editor_mass_cell_css
+    assert 'fertilizerEditorHeader("Density / factor", "weight_factor", "editor.densityFactor")' in app_js
+    assert '{ labelKey: "common.amount", label: "Amount" }' in app_js
+    assert 'massHeaderButton.replaceChildren' not in app_js

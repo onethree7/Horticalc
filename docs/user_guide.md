@@ -86,12 +86,15 @@ CSV columns, or API fields.
 1. Load or edit the fertilizer list if needed.
 2. Select a water profile or enter water values.
 3. Load a recipe or select fertilizers manually.
-4. Enter the batch volume and fertilizer doses. Solids use grams; liquids use
-   milliliters when their catalog entry includes the correct density factor.
+4. Choose the batch-volume, solid-dose, and liquid-dose display units in
+   Configuration, then enter the volume and fertilizer doses. Every calculator
+   row shows its actual unit according to the fertilizer's solid/liquid type.
 5. Calculate and inspect the result tables and summary sidebar.
 
-Horticalc remembers the directly selected water profile and batch volume as
-startup defaults. Loading a recipe can temporarily override its own liters,
+Horticalc remembers the directly selected water profile, batch volume, and
+volume and dose display units as startup defaults. Switching a unit converts
+the shown number without changing the physical batch or canonical dose. API and
+recipe data remain liters plus grams-for-solids/mL-for-liquids. Loading a recipe can temporarily override its own liters,
 water profile, and Solver configuration without changing those user defaults.
 
 Results include element and oxide totals, ions, ion balance, fertilizer-only

@@ -47,6 +47,17 @@ from horticalc.paths import (
 )
 from horticalc.solver import solve_recipe_data
 from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS, validate_solver_config
+from horticalc.units import (
+    CANONICAL_LIQUID_DOSE_UNIT,
+    CANONICAL_SOLID_DOSE_UNIT,
+    CANONICAL_VOLUME_UNIT,
+    LIQUID_VOLUME_UNIT_KEYS,
+    MASS_UNIT_KEYS,
+    VOLUME_UNIT_KEYS,
+    liquid_volume_units_schema,
+    mass_units_schema,
+    volume_units_schema,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -93,6 +104,9 @@ class PreferencesPayload(BaseModel):
     theme: Optional[str] = None
     locale: Optional[str] = None
     default_liters: Optional[FiniteFloat] = Field(default=None, gt=0)
+    volume_unit: Optional[str] = None
+    solid_dose_unit: Optional[str] = None
+    liquid_dose_unit: Optional[str] = None
     solver_config: Optional[Dict[str, Any]] = None
     last_water_profile: Optional[str] = None
 
@@ -339,6 +353,18 @@ def solver_config_schema() -> dict:
     return {"definitions": list(SOLVER_CONFIG_DEFINITIONS)}
 
 
+@app.get("/schema/units")
+def units_schema() -> dict:
+    return {
+        "canonical_volume_unit": CANONICAL_VOLUME_UNIT,
+        "canonical_solid_dose_unit": CANONICAL_SOLID_DOSE_UNIT,
+        "canonical_liquid_dose_unit": CANONICAL_LIQUID_DOSE_UNIT,
+        "volume_units": volume_units_schema(),
+        "mass_units": mass_units_schema(),
+        "liquid_volume_units": liquid_volume_units_schema(),
+    }
+
+
 THEME_OPTIONS = {
     "horticalc-dark",
     "horticalc-light",
@@ -363,6 +389,12 @@ def put_preferences(payload: PreferencesPayload) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail="Unknown theme")
     if "locale" in updates and payload.locale not in LOCALE_OPTIONS:
         raise HTTPException(status_code=400, detail="Unknown locale")
+    if "volume_unit" in updates and payload.volume_unit not in VOLUME_UNIT_KEYS:
+        raise HTTPException(status_code=400, detail="Unknown volume unit")
+    if "solid_dose_unit" in updates and payload.solid_dose_unit not in MASS_UNIT_KEYS:
+        raise HTTPException(status_code=400, detail="Unknown solid dose unit")
+    if "liquid_dose_unit" in updates and payload.liquid_dose_unit not in LIQUID_VOLUME_UNIT_KEYS:
+        raise HTTPException(status_code=400, detail="Unknown liquid dose unit")
     if payload.default_liters is not None and not math.isfinite(payload.default_liters):
         raise HTTPException(status_code=400, detail="Invalid default liters")
     if payload.last_water_profile is not None:

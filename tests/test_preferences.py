@@ -26,6 +26,35 @@ def test_theme_preference_rejects_unknown_theme(monkeypatch, tmp_path) -> None:
     assert response.status_code == 400
 
 
+def test_volume_unit_preference_persists_and_rejects_ambiguous_unit(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+    client = TestClient(api_app.app)
+
+    response = client.put("/preferences", json={"volume_unit": "us_gallon"})
+
+    assert response.status_code == 200
+    assert response.json()["volume_unit"] == "us_gallon"
+    rejected = client.put("/preferences", json={"volume_unit": "gallon"})
+    assert rejected.status_code == 400
+    assert rejected.json()["detail"] == "Unknown volume unit"
+
+
+def test_dose_unit_preferences_persist_and_validate_dimension(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+    client = TestClient(api_app.app)
+
+    response = client.put(
+        "/preferences",
+        json={"solid_dose_unit": "ounce", "liquid_dose_unit": "us_fluid_ounce"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["solid_dose_unit"] == "ounce"
+    assert response.json()["liquid_dose_unit"] == "us_fluid_ounce"
+    assert client.put("/preferences", json={"solid_dose_unit": "milliliter"}).status_code == 400
+    assert client.put("/preferences", json={"liquid_dose_unit": "gram"}).status_code == 400
+
+
 def test_preferences_merge_typed_workspace_defaults(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
     client = TestClient(api_app.app)

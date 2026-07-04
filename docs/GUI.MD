@@ -150,6 +150,9 @@ row-specific unit column, NPK metrics, EC,
 Solver target/achieved/delta values, and ion mg/L values. It uses compact space-aligned columns for
 monospace copy/paste code blocks instead of tab-separated columns.
 
+The calculator exports its current recipe and complete result report in the
+same format; input changes disable copying until recalculation finishes.
+
 The solver advanced config lives at the bottom of the Solver panel in
 `frontend/index.html` and includes the urea representation control plus the
 solver-configuration controls wired in `frontend/app.js`. The latter are backed

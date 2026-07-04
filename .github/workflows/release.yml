@@ -97,6 +97,16 @@ jobs:
           if not bin_path.exists():
               raise SystemExit(f"Packaged binary not found: {bin_path}")
 
+          user_dir = app_root / "user"
+          user_dir.mkdir(parents=True, exist_ok=True)
+          legacy_fertilizers = user_dir / "fertilizers.csv"
+          legacy_fertilizers.write_text(
+              "Nr.,Düngername,Form,Gewicht,N\n"
+              "1,Legacy Solid,Pulver,1,0.1\n"
+              "2,Legacy Liquid,Flüssig,1.25,0.2\n",
+              encoding="utf-8",
+          )
+
           env = os.environ.copy()
           env["HORTICALC_NO_BROWSER"] = "1"
 
@@ -145,6 +155,16 @@ jobs:
                   time.sleep(0.5)
               else:
                   raise SystemExit(f"Health check failed: {health_url}")
+
+              legacy_backup = legacy_fertilizers.with_suffix(".csv.legacy-backup")
+              overrides = user_dir / "fertilizers_overrides.csv"
+              if legacy_fertilizers.exists() or not legacy_backup.exists():
+                  raise SystemExit("Legacy fertilizer catalog was not migrated")
+              override_text = overrides.read_text(encoding="utf-8")
+              if "Legacy Solid,0,1.0,0.1" not in override_text:
+                  raise SystemExit("Migrated solid fertilizer is missing")
+              if "Legacy Liquid,1,1.25,0.2" not in override_text:
+                  raise SystemExit("Migrated liquid fertilizer is missing")
           finally:
               proc.terminate()
               try:

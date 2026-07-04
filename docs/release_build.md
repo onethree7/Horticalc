@@ -125,10 +125,10 @@ The workflow:
 1. Installs requirements and PyInstaller.
 2. Resolves the release version from the tag or current commit.
 3. Builds the platform package.
-4. Starts the packaged binary with `HORTICALC_NO_BROWSER=1`.
+4. Seeds a legacy fertilizer catalog and starts the packaged binary.
 5. Reads `AppRoot/user/horticalc.lock.json`.
 6. Polls `/health`.
-7. Checks that `frontend/`, `data/`, `recipes/`, `README.txt`, `LICENSE`, and
+7. Checks migration plus `frontend/`, `data/`, `recipes/`, `README.txt`, `LICENSE`, and
    `logs/` exist.
 8. Removes smoke-test `user/` and `logs/` state from the staging directory.
 9. Computes a SHA-256 checksum file for each platform archive.

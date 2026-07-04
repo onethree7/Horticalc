@@ -347,12 +347,16 @@
         </section>
 
         <section class="block" data-panel-anchor="calculate" data-testid="calculate-panel">
-          <div class="block-heading">
+          <div class="block-heading calculator-block-heading">
             <div class="section-heading">
               <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-calculator"></use></svg></span>
               <h2 data-i18n="calculator.title">Hydroponic Solution Calculator</h2>
             </div>
-            <button id="calculateBtn" class="btn btn--solver-primary" type="button" data-i18n="calculator.calculate">Calculate</button>
+            <div class="heading-actions">
+              <button id="copyCalculatorResults" class="btn btn--outline" type="button" data-i18n="common.copyClipboard" disabled>Copy to clipboard</button>
+              <button id="calculateBtn" class="btn btn--solver-primary" type="button" data-i18n="calculator.calculate">Calculate</button>
+              <span class="inline-hint" id="copyCalculatorResultsStatus" aria-live="polite"></span>
+            </div>
           </div>
           <p class="hint" data-i18n="calculator.hint">Enter amounts and start calculation.</p>
           <div class="actions inline-actions">
@@ -534,8 +538,8 @@
               </div>
             </div>
           </div>
-          <div class="actions solver-actions">
-            <button id="copySolverResults" class="btn btn--outline" type="button" data-i18n="solver.copyClipboard">Copy to clipboard</button>
+          <div class="actions result-actions">
+            <button id="copySolverResults" class="btn btn--outline" type="button" data-i18n="common.copyClipboard">Copy to clipboard</button>
             <button id="applySolverToCalculatorInline" class="btn btn--outline" type="button" data-i18n="profile.viewInCalculator">View in calculator</button>
             <span class="inline-hint" id="copySolverResultsStatus" aria-live="polite"></span>
             <span class="inline-hint" id="solverApplyStatus" aria-live="polite"></span>

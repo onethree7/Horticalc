@@ -25,7 +25,8 @@ catalog first, then user overrides are applied, and names listed in
 `user/fertilizers_disabled.txt` are removed. Legacy `user/fertilizers.csv`
 snapshots are migrated once: custom names move into
 `user/fertilizers_overrides.csv`, and the original file is retained as a
-`.legacy-backup`.
+`.legacy-backup`. Pre-`Liquid` catalogs map `Form=Flüssig` to liquid; other
+legacy forms remain solid.
 
 Water profiles, nutrient solutions, and recipes are read from shipped defaults
 with `user/` files layered on top by filename. Runtime edits are written only

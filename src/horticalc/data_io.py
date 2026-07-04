@@ -51,7 +51,7 @@ def _is_number_field(field: str | None) -> bool:
 def _is_base_fertilizer_field(field: str | None) -> bool:
     if field is None:
         return False
-    return _is_number_field(field) or field in (*FERTILIZER_NAME_FIELDS, "Liquid", "Gewicht")
+    return _is_number_field(field) or field in (*FERTILIZER_NAME_FIELDS, "Form", "Liquid", "Gewicht")
 
 
 def _fertilizer_is_liquid(row: dict[str, str | None]) -> bool:
@@ -61,6 +61,13 @@ def _fertilizer_is_liquid(row: dict[str, str | None]) -> bool:
     if liquid == "0":
         return False
     raise ValueError(f"Liquid must be 0 or 1: {row.get('Liquid')}")
+
+
+def _legacy_fertilizer_is_liquid(row: dict[str, str | None]) -> bool:
+    if "Liquid" in row:
+        return _fertilizer_is_liquid(row)
+    form = str(row.get("Form") or "").strip().casefold()
+    return form in {"flüssig", "fluessig", "liquid"}
 
 
 def _fertilizer_name_from_row(row: dict[str, str | None]) -> str:
@@ -181,7 +188,11 @@ def _float_mapping(data: dict, location: str) -> Dict[str, float]:
     }
 
 
-def _load_fertilizer_csv(csv_path: Path) -> Dict[str, Fertilizer]:
+def _load_fertilizer_csv(
+    csv_path: Path,
+    *,
+    allow_legacy_schema: bool = False,
+) -> Dict[str, Fertilizer]:
     ferts: Dict[str, Fertilizer] = {}
     seen_names: set[str] = set()
     with csv_path.open("r", encoding="utf-8", newline="") as f:
@@ -189,7 +200,8 @@ def _load_fertilizer_csv(csv_path: Path) -> Dict[str, Fertilizer]:
         fields = set(reader.fieldnames or [])
         if not fields.intersection(FERTILIZER_NAME_FIELDS):
             raise ValueError("Fertilizer CSV requires Düngername or Duengername")
-        for required_field in ("Liquid", "Gewicht"):
+        required_fields = ("Gewicht",) if allow_legacy_schema else ("Liquid", "Gewicht")
+        for required_field in required_fields:
             if required_field not in fields:
                 raise ValueError(f"Fertilizer CSV requires {required_field}")
         for row in reader:
@@ -200,7 +212,11 @@ def _load_fertilizer_csv(csv_path: Path) -> Dict[str, Fertilizer]:
             if name_key in seen_names:
                 raise ValueError(f"{csv_path}: duplicate fertilizer name: {name}")
             seen_names.add(name_key)
-            liquid = _fertilizer_is_liquid(row)
+            liquid = (
+                _legacy_fertilizer_is_liquid(row)
+                if allow_legacy_schema
+                else _fertilizer_is_liquid(row)
+            )
             weight = _positive_float(
                 row.get("Gewicht") or 1.0,
                 f"{csv_path}: Gewicht for {name}",
@@ -309,7 +325,7 @@ def _migrate_legacy_user_fertilizers(root: Path) -> None:
     if not legacy_path.exists() or overrides_path.exists() or disabled_path.exists():
         return
 
-    legacy_fertilizers = _load_fertilizer_csv(legacy_path)
+    legacy_fertilizers = _load_fertilizer_csv(legacy_path, allow_legacy_schema=True)
     shipped_path = paths.shipped_fertilizers_path(root)
     shipped_keys = _shipped_fertilizer_catalog_keys(shipped_path) if shipped_path.exists() else set()
     custom_fertilizers = {

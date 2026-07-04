@@ -5,6 +5,8 @@ const { createLatestRequestGate } = window.HorticalcRequestGate;
 const fertilizerSelectTableWrap = qs("#fertilizerSelectTableWrap");
 const calculatorTableWrap = qs("#calculatorTableWrap");
 const calculateButton = qs("#calculateBtn");
+const copyCalculatorResultsButton = qs("#copyCalculatorResults");
+const copyCalculatorResultsStatus = qs("#copyCalculatorResultsStatus");
 const addRowButton = qs("#addFertilizerRow");
 const removeRowButton = qs("#removeFertilizerRow");
 const waterTableBody = qs("#waterValuesTable tbody");
@@ -156,6 +158,7 @@ let recipeProfiles = [];
 let nutrientSolutions = [];
 let waterUnit = "mg_l";
 let lastCalculation = null;
+let calculatorResultCurrent = false;
 let lastSolveResult = null;
 let recalculateTimer = null;
 const calculationRequests = createLatestRequestGate();
@@ -169,6 +172,7 @@ let preferenceWritePromise = Promise.resolve();
 let calculatorTable;
 let currentProfileMode = "calculator";
 let copySolverStatusTimer = null;
+let copyCalculatorStatusTimer = null;
 let solverApplyStatusTimer = null;
 let fertilizerEditorRows = [];
 let fertilizerEditorSelectedIndex = 0;
@@ -2040,6 +2044,34 @@ function setCopySolverStatus(message) {
   }, 2000);
 }
 
+function setCopyCalculatorStatus(message) {
+  if (!copyCalculatorResultsStatus) {
+    return;
+  }
+  copyCalculatorResultsStatus.textContent = message;
+  if (copyCalculatorStatusTimer) {
+    window.clearTimeout(copyCalculatorStatusTimer);
+  }
+  if (!message) {
+    copyCalculatorStatusTimer = null;
+    return;
+  }
+  copyCalculatorStatusTimer = window.setTimeout(() => {
+    copyCalculatorResultsStatus.textContent = "";
+    copyCalculatorStatusTimer = null;
+  }, 2000);
+}
+
+function setCalculatorResultCurrent(isCurrent) {
+  calculatorResultCurrent = Boolean(isCurrent && lastCalculation);
+  if (copyCalculatorResultsButton) {
+    copyCalculatorResultsButton.disabled = !calculatorResultCurrent;
+  }
+  if (!calculatorResultCurrent) {
+    setCopyCalculatorStatus("");
+  }
+}
+
 function setSolverApplyStatus(message) {
   if (!solverApplyStatus) {
     return;
@@ -2217,6 +2249,119 @@ function buildSolverClipboardText() {
   });
 }
 
+function buildCalculatorClipboardText() {
+  const fertilizers = buildSelectedFertilizerEntries();
+  const lines = [t("calculator.clipboardTitle")];
+  lines.push(
+    ...buildClipboardRows(null, [
+      [
+        t("solver.clipboardBatchVolume", { unit: getVolumeUnitDefinition().symbol }),
+        formatVolumeValue(litersToDisplayVolume(currentLiters)),
+      ],
+      [t("solver.clipboardOsmosis"), formatNumber(decimalInputValue(osmosisPercentInput.value))],
+    ], [1])
+  );
+  lines.push("");
+  lines.push(
+    ...buildClipboardRows(
+      [t("common.fertilizer"), t("common.amount"), t("common.unit")],
+      fertilizers.map((fertilizer) => [
+        fertilizer.name,
+        formatDoseDisplay(fertilizer.grams, fertilizer.name),
+        doseUnitDefinition(fertilizer.name).symbol,
+      ]),
+      [1]
+    )
+  );
+
+  const npkMetrics = lastCalculation?.npk_metrics || {};
+  lines.push("");
+  lines.push(t("solver.clipboardNpk"));
+  lines.push(
+    ...buildClipboardRows(null, [
+      [t("live.npkTotal"), npkMetrics.npk_all_pct || "-"],
+      ["NPK P-Norm", npkMetrics.npk_p_norm || "-"],
+      [t("live.npkRatio"), npkMetrics.npk_npk_pct || "-"],
+    ], [1])
+  );
+
+  const solutionEc = lastCalculation?.ec?.ec_mS_per_cm || {};
+  const waterEc = lastCalculation?.ec_water?.ec_mS_per_cm || {};
+  lines.push("");
+  lines.push("EC (mS/cm)");
+  lines.push(
+    ...buildClipboardRows(null, [
+      [`${t("live.solution")} 25°C`, formatNumber(Number(solutionEc["25.0"]))],
+      [`${t("live.solution")} 18°C`, formatNumber(Number(solutionEc["18.0"]))],
+      [`${t("live.water")} 25°C`, formatNumber(Number(waterEc["25.0"]))],
+      [`${t("live.water")} 18°C`, formatNumber(Number(waterEc["18.0"]))],
+    ], [1])
+  );
+
+  const elementValues = lastCalculation?.elements_mg_per_l || {};
+  lines.push("");
+  lines.push(t("solver.clipboardIons"));
+  lines.push(
+    ...buildClipboardRows(
+      null,
+      summaryColumnOrder.map((column) => [
+        column.ionHeaderLabel,
+        formatNumber(Number(elementValues[column.element]), nutrientFormatter),
+      ]),
+      [1]
+    )
+  );
+
+  const oxideValues = lastCalculation?.oxides_mg_per_l || {};
+  lines.push("");
+  lines.push(`${t("calculator.oxideForms")} (mg/L)`);
+  lines.push(
+    ...buildClipboardRows(
+      null,
+      summaryColumnOrder.map((column) => [
+        column.oxideHeaderLabel,
+        formatOxideValue(column.oxide, Number(oxideValues[column.oxide])),
+      ]),
+      [1]
+    )
+  );
+
+  const ionValues = lastCalculation?.ions_meq_per_l || {};
+  lines.push("");
+  lines.push(`${t("calculator.ions")} (meq/L)`);
+  lines.push(
+    ...buildClipboardRows(
+      null,
+      Object.entries(ionValues)
+        .filter(([, value]) => Number.isFinite(Number(value)))
+        .map(([key, value]) => [key, formatNumber(Number(value), ionFormatter)]),
+      [1]
+    )
+  );
+
+  const balance = lastCalculation?.ion_balance || {};
+  const rawCbe = Number(balance.raw_cbe_percent_signed ?? balance.error_percent_signed);
+  const dinCbe = Number.isFinite(Number(balance.din_38402_62_percent_signed))
+    ? Number(balance.din_38402_62_percent_signed)
+    : rawCbe * 2;
+  lines.push("");
+  lines.push(t("calculator.ionBalance"));
+  lines.push(
+    ...buildClipboardRows(
+      [t("common.parameter"), t("common.value"), t("common.unit")],
+      [
+        ["Σ+", formatNumber(Number(balance.cations_meq_per_l), ionFormatter), "meq/L"],
+        ["Σ-", formatNumber(Number(balance.anions_meq_per_l), ionFormatter), "meq/L"],
+        ["CBE-raw", formatNumber(rawCbe, ionFormatter), "%"],
+        ["DIN-raw", formatNumber(dinCbe, ionFormatter), "%"],
+      ],
+      [1]
+    )
+  );
+
+  return lines.join("\n");
+}
+
 function copyTextWithFallback(text) {
   if (navigator.clipboard?.writeText) {
     return navigator.clipboard.writeText(text);
@@ -2260,6 +2405,21 @@ async function copySolverResultsToClipboard() {
   } catch (error) {
     reportError(error, t("errors.copyFailed"));
     setCopySolverStatus(t("status.copyFailed"));
+  }
+}
+
+async function copyCalculatorResultsToClipboard() {
+  if (!lastCalculation || !calculatorResultCurrent) {
+    reportError(null, t("calculator.noResult"));
+    return;
+  }
+
+  try {
+    await copyTextWithFallback(buildCalculatorClipboardText());
+    setCopyCalculatorStatus(t("status.copied"));
+  } catch (error) {
+    reportError(error, t("errors.copyFailed"));
+    setCopyCalculatorStatus(t("status.copyFailed"));
   }
 }
 
@@ -2491,6 +2651,7 @@ function unitLabelForKey(key) {
 
 function scheduleRecalculate() {
   const requestVersion = calculationRequests.reserve();
+  setCalculatorResultCurrent(false);
   if (recalculateTimer) {
     clearTimeout(recalculateTimer);
   }
@@ -3106,6 +3267,7 @@ async function calculateAndRender(payloadOverride = null, requestVersion = null)
   if (!calculationRequests.isCurrent(activeVersion)) {
     return null;
   }
+  setCalculatorResultCurrent(false);
   let data;
   try {
     data = await calculate(payloadOverride);
@@ -3190,7 +3352,7 @@ function renderIonRatios(metrics) {
   });
 }
 
-function renderCalculation(data) {
+function renderCalculation(data, { resultCurrent = true } = {}) {
   lastCalculation = data;
   const oxides = data.oxides_mg_per_l || {};
   const elements = data.elements_mg_per_l || {};
@@ -3218,6 +3380,7 @@ function renderCalculation(data) {
   const waterEc = data.ec_water || {};
   renderEcPair(waterEc.ec_mS_per_cm || {}, ecWater18Value, ecWater25Value);
   updateLiveResultBar(data);
+  setCalculatorResultCurrent(resultCurrent);
 }
 
 async function fetchVolumeUnitDefinitions() {
@@ -3436,7 +3599,7 @@ function refreshLocalizedUi() {
     renderSelectionTable();
     renderCalculatorTable();
     if (lastCalculation) {
-      renderCalculation(lastCalculation);
+      renderCalculation(lastCalculation, { resultCurrent: calculatorResultCurrent });
     } else {
       renderWaterSummaryTable(waterSummaryTable, {});
       renderOxideSummaryTable(oxideSummaryTable, {});
@@ -3690,6 +3853,12 @@ calculateButton.addEventListener("click", async () => {
     reportError(error, t("errors.calculateFailed"));
   }
 });
+
+if (copyCalculatorResultsButton) {
+  copyCalculatorResultsButton.addEventListener("click", () => {
+    copyCalculatorResultsToClipboard();
+  });
+}
 
 if (summaryViewToggle) {
   summaryViewToggle.addEventListener("click", (event) => {

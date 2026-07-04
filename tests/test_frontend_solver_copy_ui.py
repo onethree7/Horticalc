@@ -5,7 +5,7 @@ def test_solver_copy_button_present() -> None:
     content = read_frontend_file("index.html")
 
     assert 'id="copySolverResults"' in content
-    assert 'data-i18n="solver.copyClipboard"' in content
+    assert 'data-i18n="common.copyClipboard"' in content
     assert 'id="copySolverResultsStatus"' in content
 
 def test_solver_copy_logic_present() -> None:

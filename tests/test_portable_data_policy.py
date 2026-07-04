@@ -19,6 +19,22 @@ def _write_fertilizers_csv(path: Path, rows: list[tuple[str, float]] | None = No
         encoding="utf-8",
     )
 
+
+def _write_pre_liquid_fertilizers_csv(
+    path: Path,
+    rows: list[tuple[str, str, float, float]],
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "Nr.,Düngername,Form,Gewicht,N,Information\n"
+        + "".join(
+            f"{index},{name},{form},{weight},{value},legacy\n"
+            for index, (name, form, weight, value) in enumerate(rows, start=1)
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_portable_layout_uses_shipped_catalog_and_user_overlay(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -144,6 +160,39 @@ def test_legacy_user_fertilizers_migrates_custom_rows_and_accepts_shipped_update
     assert "New Shipped" in ferts
     assert not paths.user_fertilizers_path(tmp_path).exists()
     assert paths.user_fertilizers_path(tmp_path).with_suffix(".csv.legacy-backup").exists()
+
+
+def test_pre_liquid_user_fertilizers_migrate_without_blocking_startup(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    shipped_csv = tmp_path / "data" / "fertilizers.csv"
+    _write_fertilizers_csv(shipped_csv, [("Existing", 0.2)])
+    legacy_path = paths.user_fertilizers_path(tmp_path)
+    _write_pre_liquid_fertilizers_csv(
+        legacy_path,
+        [
+            ("Existing", "Pulver", 1.0, 0.1),
+            ("Custom Solid", "Pulver", 1.0, 0.3),
+            ("Custom Liquid", "Flüssig", 1.25, 0.4),
+            ("Custom Blank Form", "", 1.0, 0.5),
+        ],
+    )
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+
+    fertilizers = load_fertilizers()
+
+    assert fertilizers["Existing"].comp == {"N": 0.2}
+    assert fertilizers["Custom Solid"].liquid is False
+    assert fertilizers["Custom Blank Form"].liquid is False
+    assert fertilizers["Custom Liquid"].liquid is True
+    assert fertilizers["Custom Liquid"].weight_factor == pytest.approx(1.25)
+    overrides_path = paths.user_fertilizer_overrides_path(tmp_path)
+    with overrides_path.open("r", encoding="utf-8", newline="") as handle:
+        assert next(csv.reader(handle)) == ["Düngername", "Liquid", "Gewicht", "N"]
+    assert not legacy_path.exists()
+    assert legacy_path.with_suffix(".csv.legacy-backup").exists()
+
 
 def test_legacy_migration_uses_shipped_replace_aliases_to_avoid_duplicates(
     monkeypatch: pytest.MonkeyPatch,

@@ -74,6 +74,7 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert 'legacy_fertilizers = user_dir / "fertilizers.csv"' in release_workflow
     assert 'Legacy Liquid,Flüssig,1.25,0.2' in release_workflow
     assert 'legacy_fertilizers.with_suffix(".csv.legacy-backup")' in release_workflow
+    assert "csv.DictReader(handle)" in release_workflow
     assert "Clean smoke-test runtime state" in release_workflow
     cleanup_index = release_workflow.index("Clean smoke-test runtime state")
     assert cleanup_index < release_workflow.index("Package artifact (Linux)")

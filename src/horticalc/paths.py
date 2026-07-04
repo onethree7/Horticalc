@@ -139,9 +139,24 @@ def shipped_nutrient_solutions_dir(root: Path | None = None) -> Path:
     return shipped_data_dir(root) / "nutrient_solutions"
 
 
+def _contained_path(folder: Path, filename: str) -> Path:
+    folder_path = os.path.realpath(folder)
+    candidate_path = os.path.realpath(os.path.join(folder_path, filename))
+    folder_prefix = folder_path.rstrip(os.sep) + os.sep
+    try:
+        inside_folder = os.path.commonpath((folder_path, candidate_path)) == folder_path
+    except ValueError:
+        inside_folder = False
+    if not inside_folder:
+        raise ValueError("Resource path must stay inside its configured directory")
+    if not candidate_path.startswith(folder_prefix):
+        raise ValueError("Resource path must stay inside its configured directory")
+    return Path(candidate_path)
+
+
 def resolve_layered_yaml_path(filename: str, user_folder: Path, shipped_folder: Path) -> Path:
-    user_path = user_folder / filename
-    return user_path if user_path.exists() else shipped_folder / filename
+    user_path = _contained_path(user_folder, filename)
+    return user_path if user_path.exists() else _contained_path(shipped_folder, filename)
 
 
 def _resolve_yaml_path(value: str | Path, folders: tuple[Path, ...], fallback_folder: Path) -> Path:
@@ -169,6 +184,16 @@ def resolve_water_profile_path(value: str | Path, root: Path | None = None) -> P
     base = root or app_root()
     shipped = shipped_water_profiles_dir(base)
     return _resolve_yaml_path(value, (user_water_profiles_dir(base), shipped), shipped)
+
+
+def resolve_water_profile_name(value: str, root: Path | None = None) -> Path:
+    filename = value if value.endswith(".yml") else f"{os.path.splitext(value)[0]}.yml"
+    base = root or app_root()
+    return resolve_layered_yaml_path(
+        filename,
+        user_water_profiles_dir(base),
+        shipped_water_profiles_dir(base),
+    )
 
 
 def _normalized_file_hash(path: Path) -> str:

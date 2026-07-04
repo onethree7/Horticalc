@@ -32,6 +32,11 @@ with `user/` files layered on top by filename. Runtime edits are written only
 to `user/`; shipped files remain unchanged. Startup removes byte-identical
 copied defaults and known untouched legacy nutrient-solution copies so existing
 installations migrate to the overlay model without losing edits.
+Layered resource lookups canonicalize the requested name and require the result
+to remain inside the configured shipped or user directory, including after
+symbolic-link resolution. Recipe `water_profile` values therefore select a
+layered profile name rather than an arbitrary filesystem path. Explicit CLI
+path arguments remain path-capable. Source: `src/horticalc/paths.py`.
 
 API list routes omit malformed or unreadable user YAML files and log a warning,
 allowing the remaining valid profiles to stay available. Numeric mappings must

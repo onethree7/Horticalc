@@ -219,3 +219,35 @@ def test_edited_legacy_nutrient_solution_is_not_overwritten(
     )
 
     assert user.read_bytes() == b"name: User edit\nsource: custom\n"
+
+
+@pytest.mark.parametrize("filename", ["../outside.yml", "subdir/../../outside.yml"])
+def test_layered_yaml_path_rejects_directory_escape(tmp_path: Path, filename: str) -> None:
+    with pytest.raises(ValueError, match="configured directory"):
+        paths.resolve_layered_yaml_path(
+            filename,
+            paths.user_water_profiles_dir(tmp_path),
+            paths.shipped_water_profiles_dir(tmp_path),
+        )
+
+
+def test_layered_yaml_path_rejects_absolute_path(tmp_path: Path) -> None:
+    outside = tmp_path.parent / "outside.yml"
+
+    with pytest.raises(ValueError, match="configured directory"):
+        paths.resolve_layered_yaml_path(
+            str(outside),
+            paths.user_water_profiles_dir(tmp_path),
+            paths.shipped_water_profiles_dir(tmp_path),
+        )
+
+
+def test_water_profile_name_resolves_only_layered_profiles(tmp_path: Path) -> None:
+    shipped = paths.shipped_water_profiles_dir(tmp_path)
+    shipped.mkdir(parents=True)
+    expected = shipped / "default.yml"
+    expected.write_text("name: Default\nmg_per_l: {}\n", encoding="utf-8")
+
+    assert paths.resolve_water_profile_name("default", tmp_path) == expected
+    with pytest.raises(ValueError, match="configured directory"):
+        paths.resolve_water_profile_name("../outside", tmp_path)

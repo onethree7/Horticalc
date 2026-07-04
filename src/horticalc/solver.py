@@ -27,7 +27,7 @@ from .data_io import (
     load_recipe,
     load_water_profile_data,
 )
-from .paths import resolve_water_profile_path
+from .paths import resolve_water_profile_name
 from .solver_config import (
     NITROGEN_OBJECTIVE_MODES,
     SOLVER_CONFIG_DEFAULTS,
@@ -523,7 +523,7 @@ def _resolve_water_profile(
         return water_profile_value
     if not water_profile_value:
         water_profile_value = "default"
-    return load_water_profile_data(resolve_water_profile_path(str(water_profile_value)))
+    return load_water_profile_data(resolve_water_profile_name(str(water_profile_value)))
 
 
 def solve_recipe_data(

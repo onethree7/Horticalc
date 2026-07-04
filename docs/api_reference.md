@@ -15,7 +15,9 @@ water mappings return HTTP 400.
 
 Resource-list routes skip an unreadable or malformed YAML file and log a
 warning so one damaged user file does not hide every valid profile. Directly
-loading that damaged file still fails.
+loading that damaged file still fails. Resource names are resolved only inside
+the configured shipped and user directories; absolute paths and directory
+traversal are rejected by `src/horticalc/paths.py`.
 
 ## Health And Schema
 

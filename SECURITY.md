@@ -2,6 +2,9 @@
 
 Status: current-state security and release verification notes.
 
+Pull requests must pass tests, dependency review, and CodeQL. Dependabot and
+secret scanning monitor the default branch; release tags are protected.
+
 ## Supported Releases
 
 Security fixes target the latest GitHub release and the current default
@@ -78,7 +81,5 @@ Please include:
 
 ## Report A Security Issue
 
-Please open a GitHub security advisory or contact the maintainer privately if
-the issue should not be public yet. Include reproduction steps, affected
-version, operating system, and whether the issue affects source usage,
-packaged releases, or both.
+Please use GitHub's private vulnerability reporting. Include reproduction
+steps, affected version, operating system, and affected distribution.

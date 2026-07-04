@@ -9,7 +9,48 @@ updates:
       timezone: "Europe/Berlin"
     open-pull-requests-limit: 5
     groups:
-      python-minor-and-patch:
+      python-security:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
+      fastapi-stack:
+        applies-to: "version-updates"
+        patterns:
+          - "fastapi"
+          - "starlette"
+          - "uvicorn"
+          - "anyio"
+          - "h11"
+        update-types:
+          - "minor"
+          - "patch"
+      pydantic-stack:
+        applies-to: "version-updates"
+        patterns:
+          - "pydantic"
+          - "pydantic-core"
+          - "annotated-*"
+          - "typing-*"
+        update-types:
+          - "minor"
+          - "patch"
+      packaging-stack:
+        applies-to: "version-updates"
+        patterns:
+          - "pyinstaller*"
+          - "altgraph"
+          - "packaging"
+          - "pefile"
+          - "pywin32-ctypes"
+          - "setuptools"
+        update-types:
+          - "minor"
+          - "patch"
+      test-stack:
+        applies-to: "version-updates"
+        patterns:
+          - "pytest"
+          - "httpx2"
         update-types:
           - "minor"
           - "patch"
@@ -23,7 +64,14 @@ updates:
       timezone: "Europe/Berlin"
     open-pull-requests-limit: 5
     groups:
+      github-actions-security:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
       github-actions-minor-and-patch:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
         update-types:
           - "minor"
           - "patch"

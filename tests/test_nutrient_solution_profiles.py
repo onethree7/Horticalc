@@ -8,7 +8,7 @@ from horticalc.data_io import load_nutrient_solution_data
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE_DIR = ROOT / "data" / "nutrient_solutions"
-BERNSTEIN_SHA256 = "a0bbb4c22fdb8abc26fe6b99a36f5e9bedf29c79a4528fc38f396342694ba988"
+BERNSTEIN_SHA256 = "234b8e9edd19a589e7a1f56f44b355fa32c0f6b4b39f6e610fd966d5efb4c737"
 
 
 def _profile_paths() -> list[Path]:
@@ -86,4 +86,5 @@ def test_steiner_matches_reported_element_table_including_micronutrients() -> No
 
 def test_bernstein_profile_is_unchanged() -> None:
     path = PROFILE_DIR / "Saloner_Bernstein_Cannabis_NPK_Target_Optimization.yml"
-    assert sha256(path.read_bytes()).hexdigest() == BERNSTEIN_SHA256
+    normalized = path.read_text(encoding="utf-8").encode("utf-8")
+    assert sha256(normalized).hexdigest() == BERNSTEIN_SHA256

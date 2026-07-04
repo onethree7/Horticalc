@@ -84,6 +84,7 @@ jobs:
           HORTICALC_NO_BROWSER: "1"
         run: |
           python - <<'PY'
+          import csv
           import json
           import os
           import subprocess
@@ -160,10 +161,19 @@ jobs:
               overrides = user_dir / "fertilizers_overrides.csv"
               if legacy_fertilizers.exists() or not legacy_backup.exists():
                   raise SystemExit("Legacy fertilizer catalog was not migrated")
-              override_text = overrides.read_text(encoding="utf-8")
-              if "Legacy Solid,0,1.0,0.1" not in override_text:
+              with overrides.open(encoding="utf-8", newline="") as handle:
+                  migrated = {
+                      row["Düngername"]: row for row in csv.DictReader(handle)
+                  }
+              solid = migrated.get("Legacy Solid", {})
+              liquid = migrated.get("Legacy Liquid", {})
+              if solid.get("Liquid") != "0" or float(solid.get("N", "nan")) != 0.1:
                   raise SystemExit("Migrated solid fertilizer is missing")
-              if "Legacy Liquid,1,1.25,0.2" not in override_text:
+              if (
+                  liquid.get("Liquid") != "1"
+                  or float(liquid.get("Gewicht", "nan")) != 1.25
+                  or float(liquid.get("N", "nan")) != 0.2
+              ):
                   raise SystemExit("Migrated liquid fertilizer is missing")
           finally:
               proc.terminate()

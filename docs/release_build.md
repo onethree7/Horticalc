@@ -106,6 +106,7 @@ On Windows, `scripts/packaging/build_windows.ps1` also generates a PyInstaller
 version resource with `scripts/packaging/write_windows_version_info.py`. CI
 passes the Git tag or short commit through `HORTICALC_VERSION`; local builds
 can set the same environment variable before running the script.
+PR CI verifies that release constraints resolve on Python 3.11.
 
 ## CI Release Workflow
 

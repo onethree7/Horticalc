@@ -78,3 +78,11 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     cleanup_index = release_workflow.index("Clean smoke-test runtime state")
     assert cleanup_index < release_workflow.index("Package artifact (Linux)")
     assert cleanup_index < release_workflow.index("Package artifact (Windows)")
+
+
+def test_ci_resolves_release_constraints() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+
+    assert "Release dependency resolution" in workflow
+    assert "PIP_CONSTRAINT: constraints-release.txt" in workflow
+    assert "python -m pip install --dry-run . pyinstaller" in workflow

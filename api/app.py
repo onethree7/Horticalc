@@ -98,6 +98,7 @@ class FertilizerPayload(BaseModel):
     liquid: bool
     weight_factor: float | None = None
     comp: Dict[str, float] | None = None
+    solver_max_dose_per_l: FiniteFloat | None = Field(default=None, ge=0)
 
 
 class PreferencesPayload(BaseModel):
@@ -422,6 +423,7 @@ def fertilizers() -> List[dict]:
             "liquid": fert.liquid,
             "weight_factor": fert.weight_factor,
             "comp": fert.comp,
+            "solver_max_dose_per_l": fert.solver_max_dose_per_l,
         }
         for fert in FERTILIZERS.values()
     ]
@@ -454,7 +456,13 @@ def put_fertilizers(payload: List[FertilizerPayload]) -> dict:
                     continue
                 comp[key] = value
 
-        new_ferts[name] = Fertilizer(name=name, liquid=entry.liquid, weight_factor=weight, comp=comp)
+        new_ferts[name] = Fertilizer(
+            name=name,
+            liquid=entry.liquid,
+            weight_factor=weight,
+            comp=comp,
+            solver_max_dose_per_l=entry.solver_max_dose_per_l,
+        )
 
     global FERTILIZERS
     save_fertilizers(new_ferts)

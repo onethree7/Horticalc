@@ -78,7 +78,8 @@ The in-memory effective catalog is replaced only after persistence succeeds.
     "name": "Example",
     "liquid": false,
     "weight_factor": 1.0,
-    "comp": {"NO3": 0.1, "K2O": 0.2}
+    "comp": {"NO3": 0.1, "K2O": 0.2},
+    "solver_max_dose_per_l": 0.25
   }
 ]
 ```
@@ -89,6 +90,8 @@ deltas under `user/`. `liquid` is required and Boolean; the API does not accept
 localized form strings. Names must be non-empty and unique, weight factors must
 be positive finite numbers, and nutrient values must be finite; violations
 return HTTP 400 with English error details.
+`solver_max_dose_per_l` is optional, finite, and non-negative. `null` means no
+Solver limit.
 
 ## Water Profiles
 

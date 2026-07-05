@@ -469,6 +469,10 @@ main {
   width: var(--fert-editor-weight-width);
 }
 
+#fertilizerEditorTable.grid--fertilizer-editor .col-solver-max {
+  width: 8rem;
+}
+
 #fertilizerEditorTable th:nth-child(3) .table-sort-button,
 #fertilizerEditorTable th:nth-child(4) .table-sort-button {
   padding-left: 4px;

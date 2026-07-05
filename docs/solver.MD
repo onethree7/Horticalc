@@ -111,8 +111,14 @@ The base solve is deterministic non-negative least squares:
 
 ```text
 minimize || A x - b ||_2
-subject to x >= 0
+subject to 0 <= x <= product maximum * liters
 ```
+
+The upper bound comes from optional fertilizer CSV field
+`SolverMaxDosePerL`. An empty field is unlimited and therefore follows the
+original NNLS path exactly. Explicit `fixed_grams` are user instructions and
+override a product maximum. Relative weighting, IRLS, and singleton underfill
+passes use the same upper bounds.
 
 ## Optional Behavior
 

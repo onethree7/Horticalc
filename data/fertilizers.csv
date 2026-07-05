@@ -1,4 +1,4 @@
-Düngername,Liquid,Gewicht,NH4,NO3,P2O5,K2O,CaO,MgO,Na2O,SO4,Fe,Mn,Cu,Zn,B,Mo,Cl,CO3,HCO3,SiO2,UREA,Information
+Düngername,Liquid,Gewicht,NH4,NO3,P2O5,K2O,CaO,MgO,Na2O,SO4,Fe,Mn,Cu,Zn,B,Mo,Cl,CO3,HCO3,SiO2,UREA,Information,SolverMaxDosePerL
 Agrolution pHLow 114 10-10-40+TE,0,1,0,0.1,0.1,0.4,0,0,0,0,0.0016,0.0006,0.0001,0.0001,0.0001,6e-05,0,0,0,0,0,Quelle: https://www.duengerexperte.de/de/Agrolution-pHLow-114.html | Gebinde: 25 kg | NPK label: 10-10-40+TE 25 kg | RAW extras: N_total: Gesamtstickstoff (N)=10%
 Agrolution pHLow 222 20-20-20+TE,0,1,0.029,0.054,0.2,0.2,0,0,0,0,0.0016,0.0006,0.0001,0.0001,0.0001,6e-05,0,0,0,0,0.117,Quelle: https://www.duengerexperte.de/de/Agrolution-pHLow-222.html | Gebinde: 25 kg | NPK label: 20-20-20+TE 25 kg | RAW extras: N_total: Gesamtstickstoff (N)=20%
 Agrolution Special 313 14-7-14+14CaO+TE,0,1.0,0.0,0.117,0.07,0.14,0.14,0.0,0.0,0.0,0.0016,0.0016,0.0001,0.0001,0.0001,0.0001,0.0,0.0,0.0,0.0,0.023,
@@ -54,7 +54,7 @@ Compo Blattgrün-Turbo Eisenchelat Fe-EDTA 13%,0,1,0,0,0,0,0,0,0,0,0.13,0,0,0,0,
 Compo Complete Pflanzendünger 6-4-6(+1.3CaO+2MgO+TE),1,1.257,0.015,0.045,0.04,0.06,0.013,0.02,0,0,0.00093,0.00013,0.00003,0.00003,0.00014,0.00001,0,0,0,0,0,"Quelle: eigenes Flaschenlabel 2026 | COMPO COMPLETE Pflanzendünger | PFC 1(C)(I)(b)(i) | N-P-K(+CaO+MgO) 6-4-6(+1.3+2) | Nettomasse 1257 g = 1 L | B/Cu/Fe/Mn/Mo/Zn wasserlöslich; Cu/Fe/Mn/Zn als EDTA-Chelat | Online-Abgleich: ältere/Shop-Daten teils 6+4+6(+2) mit 2% CaO, daher CaO vom aktuellen Flaschenlabel übernommen"
 Compo Easy Start TE-Max,0,1.0,0.11,0,0.48,0,0,0,0,0.006675855,0.006,0.001,0,0.01,0,0,0,0,0,0,0,Quelle: https://compo-expert.com/sites/default/files/2024-10/Easy%20Start%20TE-Max%20FT%20%281%29.pdf | 2 % S mit M(S)/M(SO4) in SO4 umgerechnet
 Compo Fetrilon 13,0,1.0,0,0,0,0,0,0,0,0,0.13,0,0,0,0,0,0,0,0,0,0,Quelle: https://compo-expert.com/de-DE/produkte/fetrilon-13 | Fe-Duenger 13 % | Fe wasserloeslich und 100 % EDTA-chelatisiert | chloridarm; Cl nicht quantifiziert
-Compo Fetrilon Combi 1,0,1.0,0.033,0,0,0,0,0,0,0,0.04,0.04,0.015,0.015,0.005,0.001,0,0,0,0,0,"Quelle: https://compo-expert.com/de-DE/produkte/fetrilon-combi-1 | 3,3 % NH4-N plus B 0,5 %, Cu 1,5 %, Fe 4 %, Mn 4 %, Mo 0,1 %, Zn 1,5 % | Cu, Fe, Mn und Zn EDTA-chelatisiert | chloridarm; Cl nicht quantifiziert"
+Compo Fetrilon Combi 1,0,1.0,0.033,0,0,0,0,0,0,0,0.04,0.04,0.015,0.015,0.005,0.001,0,0,0,0,0,"Quelle: https://compo-expert.com/de-DE/produkte/fetrilon-combi-1 | 3,3 % NH4-N plus B 0,5 %, Cu 1,5 %, Fe 4 %, Mn 4 %, Mo 0,1 %, Zn 1,5 % | Cu, Fe, Mn und Zn EDTA-chelatisiert | chloridarm; Cl nicht quantifiziert",0.025
 "Compo Hakaphos Amarillo 17-5-19(+1,5)",0,1.0,0.098,0.072,0.05,0.19,0,0,0,0.191693083,0.0005,0.0005,0.0002,0.0002,0.0001,0.00001,0,0,0,0,0,Quelle: https://compo-expert.com/de-DE/produkte/hakaphos-amarillo-17-5-19 | 23 % SO3 mit M(SO3)/M(SO4) in SO4 umgerechnet
 Compo Hakaphos Azerka 20-7-10(+3),0,1.0,0.119,0.081,0.07,0.1,0.0,0.03,0.0,0.0,0.00075,0.0005,0.0002,0.00015,0.0001,1e-05,0,0.0,0.0,0.0,0.0,Audit 2026-06-13: kein aktueller deutscher Produktseiteneintrag im offiziellen COMPO-EXPERT-Sitemap gefunden; bestehende Naehrstoffwerte vorerst beibehalten | unbelegten pauschalen Cl-Wert entfernt
 Compo Hakaphos Basis3 3-15-36(+4),0,1.0,0,0.03,0.15,0.36,0,0.04,0,0.187525843,0.002,0.0005,0.0002,0.0002,0.0001,0.00001,0,0,0,0,0,"Quelle: https://compo-expert.com/de-DE/produkte/hakaphos-basis-3-3-15-364 | 22,5 % SO3 mit M(SO3)/M(SO4) in SO4 umgerechnet"
@@ -115,8 +115,8 @@ Harnstoffphosphat 17-44-0,0,1.0,0.03825,0.13175,0.44,0.0,0.0,0.0,0.0,0.0,0.0,0.0
 hesi hydro blüte incomplete,1,1.1,0.0,0.03,0.039,0.051,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,nur für NPK werte
 hesi hydro wuchs incomplete,1,1.1,0.0,0.03,0.019,0.036,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,nur für NPK werte INCOMPLETE WEIL HESI LEUTE...
 hesi pk1314,1,1.1,0.0,0.0,0.09,0.072,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,
-HuminTech AMINO POWER Plus Liquid,1,1.2,0.02,0.06,0.0,0.0,0.0,0.0,0.0,0.0,0.002,0.001,0.0001,0.0001,0.0005,0.0001,0.0,0.0,0.0,0.0,0.0,Aminosäure und Spurenelemente
-HuminTech Fulvital Plus Liquid,1,1.2,0.0,0.0,0.0,0.0,0.0,0.0315,0.0,0.0389,0.012,0.006,0.004,0.008,0.0,0.0,0.0,0.0,0.0,0.0,0.0,Fulvosäuren und Spurenelemente
+HuminTech AMINO POWER Plus Liquid,1,1.2,0.02,0.06,0.0,0.0,0.0,0.0,0.0,0.0,0.002,0.001,0.0001,0.0001,0.0005,0.0001,0.0,0.0,0.0,0.0,0.0,Aminosäure und Spurenelemente,0.13
+HuminTech Fulvital Plus Liquid,1,1.2,0.0,0.0,0.0,0.0,0.0,0.0315,0.0,0.0389,0.012,0.006,0.004,0.008,0.0,0.0,0.0,0.0,0.0,0.0,0.0,Fulvosäuren und Spurenelemente,0.03
 ICL Nova PeKacid 0-60-20,0,1,0,0,0.6,0.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,Quelle: https://www.duengerexperte.de/de/ICL-Duenger-PeKazid-0-60-20.html | NPK label: 0-60-20 | RAW extras: N_total: Gesamtstickstoff (N)=0%
 "K+S EPSO Bortop Bittersalz+Bor 12,6-",0,1.0,0.0,0.0,0.0,0.0,0.0,0.126,0.0,0.2996,0.0,0.0,0.0,0.0,0.04,0.0,0.0,0.0,0.0,0.0,0.0,"Weiches Wasser,Magnesium mit Schwefel+Bor"
 K+S EPSO Combitop Bittersalz+Spuren 13-41,0,1.0,0.0,0.0,0.0,0.0,0.0,0.13,0.0,0.4074,0.0,0.04,0.0,0.01,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"Weiches Wasser,Magnesium mit Schwefel+Spuren"
@@ -165,7 +165,7 @@ Planta Ferty 4 MEGA,0,1.0,0.026,0.074,0.2,0.3,0.0,0.027,0.0,0.0,0.001,0.0005,0.0
 Planta Ferty 6 MEGA,0,1.0,0.08,0.1,0.18,0.18,0.0,0.0,0.0,0.0,0.001,0.0005,0.0004,0.0001,0.0002,2e-05,0.0,0.0,0.0,0.0,0.0,Mittleres Wasser
 Planta Ferty 8 MEGA,0,1.0,0.076,0.104,0.0,0.22,0.0,0.033,0.0,0.0,0.001,0.0005,0.0004,0.0001,0.0002,2e-05,0.0,0.0,0.0,0.0,0.0,Mittleres Wasser
 Planta Ferty Primula,0,1.0,0.02,0.095,0.1,0.35,0.0,0.02,0.0,0.0,0.001,0.0005,0.0004,0.0001,0.0002,2e-05,0.0,0.0,0.0,0.0,0.0,Weiches Wasser
-S3 Kaliwasser 28 Be,1,1.26,0.0,0.0,0.0,0.08,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.21,0.0,Kalium /Silcate
+S3 Kaliwasser 28 Be,1,1.26,0.0,0.0,0.0,0.08,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.21,0.0,Kalium /Silcate,0.1
 Salpetersäure 38%,1,1.0,0.0,0.3739211579,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,pH-Minus Regulierung
 Salpetersäure 5%,1,1.0,0.0,0.0492,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,pH-Minus Regulierung
 Schwefelsäure 20%,1,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.1958,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,pH-Minus Regulierung

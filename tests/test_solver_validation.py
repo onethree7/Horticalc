@@ -83,6 +83,22 @@ def test_solve_recipe_data_rejects_fixed_grams_outside_allowed_list() -> None:
     with pytest.raises(ValueError, match="fixed_grams not in fertilizers_allowed"):
         solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
 
+
+def test_solve_recipe_data_rejects_duplicate_fertilizers_allowed() -> None:
+    molar_masses = load_molar_masses()
+    ferts = {
+        "K test": Fertilizer("K test", False, 1.0, {"K2O": 1.0}),
+    }
+    recipe = {
+        "liters": 1,
+        "water_profile": {"mg_per_l": {}},
+        "fertilizers_allowed": ["K test", "K test"],
+        "targets": {"K": 100.0},
+    }
+
+    with pytest.raises(ValueError, match="fertilizers_allowed must not contain duplicates"):
+        solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
+
 def test_solve_recipe_data_does_not_use_water_elements_as_targets() -> None:
     molar_masses = load_molar_masses()
     ferts = {

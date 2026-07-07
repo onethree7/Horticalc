@@ -206,6 +206,8 @@ solver_config: {}
 
 The calculator uses `fertilizers`. The solver uses `targets`,
 `fertilizers_allowed`, `fixed_grams`, and `solver_config`.
+`fertilizers_allowed` stores exact fertilizer names and must not repeat the
+same name within one recipe.
 
 ## Nutrient Solution Target Profiles
 

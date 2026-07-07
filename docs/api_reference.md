@@ -204,6 +204,11 @@ Request:
 }
 ```
 
+`fertilizers_allowed` must list each fertilizer name at most once. Solver
+config integer overrides use the shared backend contract in
+`src/horticalc/solver_config.py`, including the current ceilings
+`irls_max_outer_iter <= 12` and `singleton_underfill_max_iter <= 8`.
+
 Response follows `SolveResult.to_dict()` in `src/horticalc/solver.py`.
 
 ## Static Frontend

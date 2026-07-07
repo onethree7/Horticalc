@@ -319,6 +319,22 @@ def _validated_solver_config(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+def _validated_unique_names(values: List[str], *, field_name: str) -> List[str]:
+    normalized = [str(value) for value in values]
+    seen: set[str] = set()
+    duplicates: list[str] = []
+    for name in normalized:
+        if name in seen and name not in duplicates:
+            duplicates.append(name)
+        seen.add(name)
+    if duplicates:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name} must not contain duplicates: {duplicates}",
+        )
+    return normalized
+
+
 def _portable_layout() -> PortableLayout:
     _ensure_initialized()
     if PORTABLE_LAYOUT is None:
@@ -619,12 +635,16 @@ async def save_recipe_profile(request: Request) -> dict:
     recipe = _validated_request_model(RecipePayload, payload)
     name = _required_name(recipe.name, "Recipe name is required")
     solver_config = _validated_solver_config(recipe.solver_config)
+    fertilizers_allowed = _validated_unique_names(
+        [str(entry) for entry in recipe.fertilizers_allowed if str(entry).strip()],
+        field_name="fertilizers_allowed",
+    )
 
     payload_out = {
         "name": name,
         "liters": recipe.liters,
         "fertilizers": [_model_dump(entry) for entry in recipe.fertilizers],
-        "fertilizers_allowed": [str(name) for name in recipe.fertilizers_allowed if str(name).strip()],
+        "fertilizers_allowed": fertilizers_allowed,
         "urea_as_nh4": recipe.urea_as_nh4,
     }
     if solver_config:
@@ -706,10 +726,14 @@ def solve(payload: SolveRequest) -> SolveResponse:
             water_profile_data.get("osmosis_percent")
         )
 
+    fertilizers_allowed = _validated_unique_names(
+        payload.fertilizers_allowed,
+        field_name="fertilizers_allowed",
+    )
     recipe = {
         "liters": payload.liters,
         "targets": _validated_float_mapping(payload.targets, ALLOWED_TARGET_KEYS, "Invalid target key"),
-        "fertilizers_allowed": payload.fertilizers_allowed,
+        "fertilizers_allowed": fertilizers_allowed,
         "fixed_grams": payload.fixed_grams,
         "urea_as_nh4": payload.urea_as_nh4,
         "solver_config": _validated_solver_config(payload.solver_config),

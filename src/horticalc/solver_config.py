@@ -11,18 +11,32 @@ from .chemistry import N_FORM_KEYS
 
 
 NITROGEN_OBJECTIVE_MODES = ("as_targets", "n_total_only", "n_forms_only")
+MAX_IRLS_MAX_OUTER_ITER = 12
+MAX_SINGLETON_UNDERFILL_MAX_ITER = 8
 
 SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"key": "relative_weighting", "type": "boolean", "default": False},
     {"key": "overshoot_penalty", "type": "number", "default": 1.0},
-    {"key": "irls_max_outer_iter", "type": "integer", "default": 4},
+    {
+        "key": "irls_max_outer_iter",
+        "type": "integer",
+        "default": 4,
+        "minimum": 0,
+        "maximum": MAX_IRLS_MAX_OUTER_ITER,
+    },
     {"key": "scale_eps_mg_per_l", "type": "number", "default": 1.0},
     {"key": "singleton_supplier_enabled", "type": "boolean", "default": False},
     {"key": "singleton_share_threshold", "type": "number", "default": 0.85},
     {"key": "singleton_max_regress_pp", "type": "number", "default": 0.25},
     {"key": "singleton_underfill_enabled", "type": "boolean", "default": True},
     {"key": "singleton_underfill_share_threshold", "type": "number", "default": 0.85},
-    {"key": "singleton_underfill_max_iter", "type": "integer", "default": 2},
+    {
+        "key": "singleton_underfill_max_iter",
+        "type": "integer",
+        "default": 2,
+        "minimum": 0,
+        "maximum": MAX_SINGLETON_UNDERFILL_MAX_ITER,
+    },
     {
         "key": "nitrogen_objective_mode",
         "type": "string",
@@ -37,6 +51,11 @@ SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
 
 SOLVER_CONFIG_TYPES = {definition["key"]: definition["type"] for definition in SOLVER_CONFIG_DEFINITIONS}
 SOLVER_CONFIG_DEFAULTS = {definition["key"]: definition.get("default") for definition in SOLVER_CONFIG_DEFINITIONS}
+SOLVER_CONFIG_MAXIMUMS = {
+    definition["key"]: definition["maximum"]
+    for definition in SOLVER_CONFIG_DEFINITIONS
+    if "maximum" in definition
+}
 BOOLEAN_SOLVER_KEYS = tuple(
     definition["key"] for definition in SOLVER_CONFIG_DEFINITIONS if definition["type"] == "boolean"
 )
@@ -164,6 +183,9 @@ def validate_solver_config(
         elif value_type == "integer":
             if not isinstance(value, int) or isinstance(value, bool):
                 raise ValueError(f"Invalid solver config value: {key}")
+            maximum = SOLVER_CONFIG_MAXIMUMS.get(key)
+            if maximum is not None and value > maximum:
+                raise ValueError(f"Invalid solver config value: {key} must be <= {maximum}")
         elif value_type == "number":
             if (
                 not isinstance(value, (int, float))

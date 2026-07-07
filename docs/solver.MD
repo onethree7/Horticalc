@@ -20,7 +20,8 @@ Solver recipes and `/solve` requests provide:
 `solve_recipe_data()` validates these inputs before solving: `liters` must be
 greater than zero, target keys must be in `ALLOWED_TARGET_KEYS`, target values
 must be finite numbers, and `fixed_grams` must be finite, non-negative amounts
-for fertilizers also listed in `fertilizers_allowed`.
+for fertilizers also listed in `fertilizers_allowed`. The
+`fertilizers_allowed` list must not contain duplicates.
 
 ## Objective Elements
 
@@ -85,6 +86,8 @@ the three documented modes. The CLI's `KEY=VALUE` form is the only boundary
 that converts text values. `n_form_priority_weights` remains an advanced
 mapping for `N_NH4`, `N_NO3`, and `N_UREA` with finite, non-negative weights.
 It is accepted in recipes and direct solve inputs, but not in UI preferences.
+The current integer ceilings are `irls_max_outer_iter <= 12` and
+`singleton_underfill_max_iter <= 8`.
 
 Note: the 2026-05-31 historical solver-matrix report recommended
 `relative_weighting=true`, but the current implementation and tests default it

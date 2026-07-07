@@ -633,6 +633,14 @@ def solve_recipe_data(
     allowed_names = [str(name) for name in recipe.get("fertilizers_allowed", [])]
     if not allowed_names:
         raise ValueError("fertilizers_allowed must list at least one fertilizer")
+    seen_allowed_names: set[str] = set()
+    duplicate_allowed_names: list[str] = []
+    for name in allowed_names:
+        if name in seen_allowed_names and name not in duplicate_allowed_names:
+            duplicate_allowed_names.append(name)
+        seen_allowed_names.add(name)
+    if duplicate_allowed_names:
+        raise ValueError(f"fertilizers_allowed must not contain duplicates: {duplicate_allowed_names}")
 
     allowed = []
     for name in allowed_names:

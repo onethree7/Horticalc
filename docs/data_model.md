@@ -85,6 +85,12 @@ Required columns:
 - `Liquid`
 - `Gewicht`
 
+Optional solver metadata:
+
+- `SolverMaxDosePerL`: non-negative maximum dose the Solver may choose per
+  liter. Empty means unlimited; `0` excludes the product from variable Solver
+  dosing. Explicit recipe `fixed_grams` overrides this maximum.
+
 All other numeric columns are interpreted as composition fractions. A value of
 `0.14` means 14 percent by mass. `NR` or `Nr.` is accepted only for legacy CSV
 compatibility and ignored during loading; newly written catalogs omit it.
@@ -110,6 +116,9 @@ labels are frontend presentation only. `Gewicht` is a `weight_factor` and
 multiplies the fertilizer dose to effective product mass. It must be a finite
 number greater than zero; invalid values are rejected instead of being silently
 converted during persistence.
+`SolverMaxDosePerL` uses the same canonical dose convention as Solver results:
+g/L for solids and mL/L for liquids. It limits product dose, not nutrient
+mg/L. The fertilizer editor exposes it as its final column.
 
 ### Dose Units, Mass, And Liquid Fertilizers
 
@@ -197,6 +206,8 @@ solver_config: {}
 
 The calculator uses `fertilizers`. The solver uses `targets`,
 `fertilizers_allowed`, `fixed_grams`, and `solver_config`.
+`fertilizers_allowed` stores exact fertilizer names and must not repeat the
+same name within one recipe.
 
 ## Nutrient Solution Target Profiles
 

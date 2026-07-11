@@ -82,3 +82,17 @@ def test_recipe_save_rejects_invalid_solver_config() -> None:
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Invalid solver config value: relative_weighting"
+
+
+def test_recipe_save_rejects_duplicate_fertilizers_allowed() -> None:
+    client = TestClient(api_app.app)
+    response = client.post(
+        "/recipes",
+        json={
+            "name": "invalid_duplicate_recipe",
+            "fertilizers_allowed": ["Calcinit", "Calcinit"],
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "fertilizers_allowed must not contain duplicates: ['Calcinit']"

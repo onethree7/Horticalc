@@ -61,4 +61,13 @@ def test_fertilizer_api_uses_liquid_boolean_schema() -> None:
         "liquid",
         "weight_factor",
         "comp",
+        "solver_max_dose_per_l",
     }
+
+
+def test_fertilizer_editor_places_solver_max_after_nutrients() -> None:
+    app = read_frontend_file("app.js")
+
+    columns = app.split("const headerCells = [", 1)[1].split("];", 1)[0]
+    assert columns.index("...fertilizerEditorCompKeys") < columns.index("Solver max / L")
+    assert "solver_max_dose_per_l" in app

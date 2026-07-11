@@ -182,6 +182,7 @@ window.HORTICALC_I18N.nl = {
   "editor.searchPlaceholder": "Zoeken...",
   "editor.fertilizerName": "Meststofnaam",
   "editor.densityFactor": "Dichtheid [g/mL] / factor",
+  "editor.solverMaxDosePerL": "Solvermaximum / L",
   "editor.nameRequired": "Voer een meststofnaam in.",
   "editor.uniqueNames": "Meststofnamen moeten uniek zijn.",
   "editor.resizeNameColumn": "Breedte van meststofnaamkolom aanpassen",

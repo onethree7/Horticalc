@@ -5,6 +5,10 @@ def test_heavy_workflow_tables_are_lazy_and_editor_search_reuses_rows() -> None:
     app = read_frontend_file("app.js")
 
     assert "const FERTILIZER_EDITOR_SEARCH_DELAY_MS = 150;" in app
+    assert "const SOLVER_ALLOWED_SEARCH_DELAY_MS = 150;" in app
+    assert "solverAllowedSearchTimer" in app
+    assert "window.setTimeout(() => {" in app
+    assert "renderSolverAllowedOptions();" in app
     assert 'currentShellView !== "editor"' in app
     assert 'currentShellView !== "solver"' in app
     assert "function releaseInactiveHeavyViews()" in app

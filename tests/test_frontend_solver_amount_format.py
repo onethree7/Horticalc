@@ -13,7 +13,8 @@ def test_fertilizer_amounts_use_adaptive_small_value_formatting() -> None:
 def test_calculator_accepts_and_displays_small_fertilizer_amounts() -> None:
     content = read_frontend_file("app.js")
 
-    assert 'input.step = "any";' in content
+    assert 'input.type = "text";' in content
+    assert 'input.inputMode = "decimal";' in content
     assert "input.value = formatDoseInput(calculatorRow.grams, calculatorRow.name);" in content
     assert "function formatDoseInput(value, fertilizerOrName)" in content
     assert "canonicalDoseToDisplay(value, fertilizerOrName)" in content

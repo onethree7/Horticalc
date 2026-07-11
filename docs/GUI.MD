@@ -8,7 +8,19 @@ FastAPI from the same origin as the API.
 ## Files
 
 - `frontend/index.html`: DOM structure, workflow panels, stable IDs.
-- `frontend/app.js`: state, API calls, rendering, workflow navigation.
+- `frontend/app/`: modular JavaScript loaded in dependency order.
+  - `frontend/app/app.js`: entry point and `init()` wiring.
+  - `frontend/app/state.js`: top-level shared state and constants.
+  - `frontend/app/api.js`: fetch/persistence helpers and payload builders.
+  - `frontend/app/units.js`: unit conversion and dose formatting.
+  - `frontend/app/dom.js`: shared DOM helpers and table rendering.
+  - `frontend/app/calculator.js`: selection/calculator tables, scaling, and calculator clipboard.
+  - `frontend/app/water.js`: water table, profiles, and water summary.
+  - `frontend/app/solver.js`: solver targets, allowed picker, fixed doses, results, and solver clipboard.
+  - `frontend/app/editor.js`: fertilizer editor rendering, sorting, and save/load.
+  - `frontend/app/shell.js`: workflow navigation and heavy view lifecycle.
+  - `frontend/app/i18n-controls.js`: theme/language controls and `refreshLocalizedUi`.
+  - `frontend/app/notifications.js`: status, error, and copy status helpers.
 - `frontend/request_gate.js`: executable latest-request ownership state.
 - `frontend/i18n/`: frontend-only translation catalogs and runtime.
 - `frontend/styles.css`: app frame layout, tables, responsive rules.
@@ -33,9 +45,10 @@ selected. Their JavaScript state remains intact across navigation.
 The `Konfiguration` card in `frontend/index.html` contains the global batch
 volume input with an L, US gal, Imp gal, or m³ selector, separate solid/liquid
 dose-unit selectors, a `Design` selector, and a `Sprache` selector.
-`frontend/app.js` gets all conversion factors from `/schema/units`, keeps the
-working values in canonical liters plus g-for-solids/mL-for-liquids, and
-applies the selected theme to `document.body.dataset.theme`. Theme, the user's
+`frontend/app/api.js` fetches unit definitions from `/schema/units`,
+`frontend/app/units.js` keeps the working values in canonical liters plus
+g-for-solids/mL-for-liquids, and `frontend/app/i18n-controls.js` applies the
+selected theme to `document.body.dataset.theme`. Theme, the user's
 default batch liters, volume/dose display units, Solver defaults, and the last directly loaded water
 profile are written through `/preferences` to `user/preferences.json`, because
 launcher-managed browser profiles are temporary. `frontend/i18n/runtime.js` stores the
@@ -96,7 +109,8 @@ section labels use translation keys. Data contracts such as API route names,
 JSON keys, CSV fields like `Düngername` and `Liquid`, element symbols, solver
 config keys, and units remain literal and are not translated.
 
-The live sidebar in `frontend/index.html` and `frontend/app.js` displays the
+The live sidebar in `frontend/index.html` is populated by `frontend/app/calculator.js`
+(render) and `frontend/app/shell.js` (live-result timestamp). It displays the
 latest calculation's NPK totals, compact P-normalized and NPK-only bubbles,
 the ion-based `Ca:Mg` ratio, centered EC solution/water values, and compact
 mg/L ion-ratio chips from `npk_metrics.npk_ratios_ion`.
@@ -108,7 +122,7 @@ and liquid unit symbols so users can read the current unit context without
 opening the controls.
 
 The solver allowed-fertilizer picker in `frontend/index.html` is rendered by
-`frontend/app.js` as a compact searchable checkbox table using the same
+`frontend/app/solver.js` as a compact searchable checkbox table using the same
 `grid grid--form` rendering as the surrounding Solver target and result tables.
 The equal-width action controls can merge the calculator fertilizer selection,
 select all fertilizers, hide inactive rows for a focused selected-only view, or
@@ -123,7 +137,7 @@ shows an instruction hint instead of the empty result table.
 
 Solver fixed doses live in the collapsed `solverOverrides` details panel and
 use each fertilizer's selected display unit.
-`frontend/app.js` opens the panel when an override value is active and keeps
+`frontend/app/solver.js` opens the panel when an override value is active and keeps
 zero-override use out of the main flow.
 
 The solver can automatically apply a successful solve result to the calculator.
@@ -144,7 +158,7 @@ not display a positive dose as zero. The same conversion and formatting path is
 used by Solver results, the Solver clipboard export, fixed-dose controls, and
 calculator inputs.
 
-The solver clipboard export in `frontend/app.js` includes the batch volume in
+The solver clipboard export in `frontend/app/solver.js` includes the batch volume in
 the selected display unit, osmosis percent, fertilizer doses with a separate
 row-specific unit column, NPK metrics, EC,
 Solver target/achieved/delta values, and ion mg/L values. It uses compact space-aligned columns for
@@ -155,8 +169,8 @@ same format; input changes disable copying until recalculation finishes.
 
 The solver advanced config lives at the bottom of the Solver panel in
 `frontend/index.html` and includes the urea representation control plus the
-solver-configuration controls wired in `frontend/app.js`. The latter are backed
-by `/schema/solver-config`. The visible `N-total statt N-Formen` checkbox writes
+solver-configuration controls wired in `frontend/app/app.js` (with logic in
+`frontend/app/solver.js`). The latter are backed by `/schema/solver-config`. The visible `N-total statt N-Formen` checkbox writes
 `solver_config.nitrogen_objective_mode`: checked sends `n_total_only`,
 unchecked sends `n_forms_only`.
 The explicit `Reset solver configuration` button in the same advanced
@@ -204,13 +218,13 @@ Tests rely on these categories of frontend contracts:
 
 - Workflow buttons with `data-shell-view`.
 - Panels with `data-panel-anchor` and `data-testid`.
-- Calculator, water, solver, and editor IDs used by `app.js`.
+- Calculator, water, solver, and editor IDs used by the `frontend/app/` modules.
 - Solver copy/apply controls.
 - Summary tabs and output tables.
 - Reduced solver config controls from `/schema/solver-config`.
 - Frontend i18n catalogs with matching keys for `de`, `en`, `nl`, `es`, and `zh`.
 
-Before changing IDs or panel names, search tests and `frontend/app.js`.
+Before changing IDs or panel names, search tests and the `frontend/app/` modules.
 
 ## Verification
 

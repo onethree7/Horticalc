@@ -60,7 +60,7 @@
         <section class="rail-card rail-api-card api-config" aria-label="System status" data-i18n-aria-label="aria.system" data-testid="rail-api-controls">
           <div class="rail-card-heading">
             <span>System</span>
-            <span class="api-status" id="apiStatus" data-testid="api-status">API bereit</span>
+            <span class="api-status" id="apiStatus" data-testid="api-status" data-i18n="status.apiReady">API ready</span>
           </div>
         </section>
         <section class="rail-card rail-config" aria-label="Current configuration" data-i18n-aria-label="aria.config" data-testid="rail-config-controls">
@@ -68,7 +68,7 @@
             <span data-i18n="config.title">Configuration</span>
             <label class="rail-config-liters" for="configLiters" id="configLitersStatus">
               <span data-i18n="config.solutionLiters">NS:</span>
-              <input id="configLiters" type="text" inputmode="decimal" min="0.1" step="0.1" value="10" aria-label="Nutrient solution volume" />
+              <input id="configLiters" type="text" inputmode="decimal" value="10" aria-label="Nutrient solution volume" />
               <span id="configVolumeUnitSymbol" aria-hidden="true">L</span>
             </label>
           </div>
@@ -81,13 +81,13 @@
               <label class="rail-theme-control" for="themeSelect">
                 <span data-i18n="config.design">Design</span>
                 <select id="themeSelect" aria-label="Select appearance" data-i18n-aria-label="aria.theme">
-                  <option value="horticalc-dark">Horticalc Dark</option>
-                  <option value="horticalc-light">Horticalc Light</option>
-                  <option value="high-contrast">High Contrast</option>
-                  <option value="soil">Soil</option>
-                  <option value="gch-classic">g.ch Classic</option>
-                  <option value="vt-green">VT Green</option>
-                  <option value="blue-matrix">Blue Matrix</option>
+                  <option value="horticalc-dark" data-i18n="theme.horticalcDark">Horticalc Dark</option>
+                  <option value="horticalc-light" data-i18n="theme.horticalcLight">Horticalc Light</option>
+                  <option value="high-contrast" data-i18n="theme.highContrast">High Contrast</option>
+                  <option value="soil" data-i18n="theme.soil">Soil</option>
+                  <option value="gch-classic" data-i18n="theme.gchClassic">g.ch Classic</option>
+                  <option value="vt-green" data-i18n="theme.vtGreen">VT Green</option>
+                  <option value="blue-matrix" data-i18n="theme.blueMatrix">Blue Matrix</option>
                 </select>
               </label>
               <label class="rail-theme-control" for="languageSelect">
@@ -214,7 +214,7 @@
             <strong id="caMgRatio">-</strong>
           </div>
           <div class="live-ec">
-            <div class="metric-title">EC (mS/cm)</div>
+            <div class="metric-title" data-i18n="live.ec">EC (mS/cm)</div>
             <div class="ec-lines">
               <div class="ec-line ec-primary">
                 <span class="ec-temp">25&nbsp;°C</span>
@@ -277,7 +277,7 @@
             <div class="water-control-group water-settings">
               <div>
                 <label for="osmosisPercent" data-i18n="water.osmosisPercent">Osmosis share (%)</label>
-                <input id="osmosisPercent" type="text" inputmode="decimal" min="0" max="100" step="1" value="0" />
+                <input id="osmosisPercent" type="text" inputmode="decimal" value="0" />
               </div>
               <label class="toggle">
                 <input id="waterUnitToggle" type="checkbox" />
@@ -339,8 +339,8 @@
             <h2 data-i18n="calculator.fertilizerComponents">Fertilizer components</h2>
           </div>
           <div class="actions inline-actions">
-            <button id="addFertilizerRow" class="btn btn--outline btn--icon icon-button" type="button">+</button>
-            <button id="removeFertilizerRow" class="btn btn--outline btn--icon icon-button" type="button">-</button>
+            <button id="addFertilizerRow" class="btn btn--outline btn--icon icon-button" type="button" data-i18n-aria-label="aria.addFertilizerRow" data-i18n-title="aria.addFertilizerRow">+</button>
+            <button id="removeFertilizerRow" class="btn btn--outline btn--icon icon-button" type="button" data-i18n-aria-label="aria.removeFertilizerRow" data-i18n-title="aria.removeFertilizerRow">-</button>
             <span class="inline-hint" data-i18n="calculator.componentHint">Choose fertilizers from the database; the plus adds more rows.</span>
           </div>
           <div class="table-wrap" id="fertilizerSelectTableWrap"></div>
@@ -360,8 +360,8 @@
           </div>
           <p class="hint" data-i18n="calculator.hint">Enter amounts and start calculation.</p>
           <div class="actions inline-actions">
-            <button id="calculatorScaleDown" class="btn btn--outline btn--icon icon-button" type="button">-</button>
-            <button id="calculatorScaleUp" class="btn btn--outline btn--icon icon-button" type="button">+</button>
+            <button id="calculatorScaleDown" class="btn btn--outline btn--icon icon-button" type="button" data-i18n-aria-label="aria.scaleDown" data-i18n-title="aria.scaleDown">-</button>
+            <button id="calculatorScaleUp" class="btn btn--outline btn--icon icon-button" type="button" data-i18n-aria-label="aria.scaleUp" data-i18n-title="aria.scaleUp">+</button>
             <span class="inline-hint"><span data-i18n="calculator.scale">Scaling</span> <span id="calculatorScaleValue">1.00x</span></span>
           </div>
           <div class="table-wrap" id="calculatorTableWrap"></div>
@@ -441,8 +441,8 @@
               <div class="solver-panel solver-panel--targets">
                 <h3 data-i18n="solver.targetsTitle">Target values (mg/L)</h3>
                 <div class="actions inline-actions">
-                  <button id="solverTargetScaleDown" class="btn btn--outline btn--icon icon-button" type="button">-</button>
-                  <button id="solverTargetScaleUp" class="btn btn--outline btn--icon icon-button" type="button">+</button>
+                  <button id="solverTargetScaleDown" class="btn btn--outline btn--icon icon-button" type="button" data-i18n-aria-label="aria.scaleDown" data-i18n-title="aria.scaleDown">-</button>
+                  <button id="solverTargetScaleUp" class="btn btn--outline btn--icon icon-button" type="button" data-i18n-aria-label="aria.scaleUp" data-i18n-title="aria.scaleUp">+</button>
                   <span class="inline-hint"><span data-i18n="calculator.scale">Scaling</span> <span id="solverTargetScaleValue">1.00x</span></span>
                 </div>
                 <div class="table-wrap solver-target-wrap">
@@ -472,7 +472,7 @@
                         <th data-i18n="common.target">Target</th>
                         <th data-i18n="common.achieved">Achieved</th>
                         <th data-i18n="common.delta">Delta</th>
-                        <th>Delta %</th>
+                        <th><span data-i18n="common.delta">Delta</span> <span data-i18n="common.percent">%</span></th>
                       </tr>
                     </thead>
                     <tbody></tbody>
@@ -502,7 +502,7 @@
                 <details id="solverOverrides" class="solver-overrides">
                   <summary>
                     <span data-i18n="solver.overrideTitle">Override / fixed amount (optional)</span>
-                    <span class="inline-hint" id="solverOverrideSummary">0 aktiv</span>
+                    <span class="inline-hint" id="solverOverrideSummary" data-i18n="status.activeCount" data-i18n-count="0">0 active</span>
                   </summary>
                   <div class="table-wrap solver-fixed-wrap">
                     <table class="grid grid--form" id="solverFixedTable">
@@ -559,8 +559,8 @@
             <button id="solverConfigResetDefaults" class="btn btn--outline rail-config-reset" type="button" data-i18n="solver.resetConfig">Reset solver configuration</button>
             <div class="rail-config-grid rail-config-grid--advanced">
               <label class="toggle">
-                <input id="solverConfigRelativeWeighting" type="checkbox" checked />
-                <span>Relative weighting</span>
+                <input id="solverConfigRelativeWeighting" type="checkbox" />
+                <span data-i18n="solver.config.relativeWeighting">Relative weighting</span>
               </label>
               <label class="toggle">
                 <input id="solverConfigNitrogenObjectiveMode" type="checkbox" checked />
@@ -571,48 +571,48 @@
                 <span data-i18n="solver.sAsTarget">S as solver target</span>
               </label>
               <label>
-                Overshoot penalty
-                <input id="solverConfigOvershootPenalty" type="text" inputmode="decimal" min="0" step="0.1" value="1" />
+                <span data-i18n="solver.config.overshootPenalty">Overshoot penalty</span>
+                <input id="solverConfigOvershootPenalty" type="text" inputmode="decimal" value="1" />
               </label>
               <label>
                 <span data-i18n="solver.irlsIterations">IRLS iterations</span>
-                <input id="solverConfigIrlsMaxOuterIter" type="text" inputmode="decimal" min="1" step="1" value="4" />
+                <input id="solverConfigIrlsMaxOuterIter" type="text" inputmode="decimal" value="4" />
               </label>
               <label>
-                Scale epsilon mg/L
-                <input id="solverConfigScaleEpsMgPerL" type="text" inputmode="decimal" min="0" step="0.1" value="1" />
+                <span data-i18n="solver.config.scaleEpsilon">Scale epsilon mg/L</span>
+                <input id="solverConfigScaleEpsMgPerL" type="text" inputmode="decimal" value="1" />
               </label>
               <label class="toggle">
                 <input id="solverConfigSingletonSupplierEnabled" type="checkbox" checked />
-                <span>Singleton overshoot pass</span>
+                <span data-i18n="solver.config.singletonOvershootPass">Singleton overshoot pass</span>
               </label>
               <label>
-                Singleton share
-                <input id="solverConfigSingletonShareThreshold" type="text" inputmode="decimal" min="0" max="1" step="0.01" value="0.85" />
+                <span data-i18n="solver.config.singletonShare">Singleton share</span>
+                <input id="solverConfigSingletonShareThreshold" type="text" inputmode="decimal" value="0.85" />
               </label>
               <label>
-                Singleton max regress pp
-                <input id="solverConfigSingletonMaxRegressPp" type="text" inputmode="decimal" min="0" step="0.01" value="0.25" />
+                <span data-i18n="solver.config.singletonMaxRegress">Singleton max regress pp</span>
+                <input id="solverConfigSingletonMaxRegressPp" type="text" inputmode="decimal" value="0.25" />
               </label>
               <label class="toggle">
                 <input id="solverConfigSingletonUnderfillEnabled" type="checkbox" checked />
-                <span>Singleton underfill pass</span>
+                <span data-i18n="solver.config.singletonUnderfillPass">Singleton underfill pass</span>
               </label>
               <label>
-                Underfill share
-                <input id="solverConfigSingletonUnderfillShareThreshold" type="text" inputmode="decimal" min="0" max="1" step="0.01" value="0.85" />
+                <span data-i18n="solver.config.underfillShare">Underfill share</span>
+                <input id="solverConfigSingletonUnderfillShareThreshold" type="text" inputmode="decimal" value="0.85" />
               </label>
               <label>
-                Underfill max iter
-                <input id="solverConfigSingletonUnderfillMaxIter" type="text" inputmode="decimal" min="1" step="1" value="2" />
+                <span data-i18n="solver.config.underfillMaxIter">Underfill max iter</span>
+                <input id="solverConfigSingletonUnderfillMaxIter" type="text" inputmode="decimal" value="2" />
               </label>
               <label class="toggle">
                 <input id="solverConfigNTotalGovernorEnabled" type="checkbox" />
-                <span>N-total governor</span>
+                <span data-i18n="solver.config.nTotalGovernor">N-total governor</span>
               </label>
               <label>
-                N-governor weight
-                <input id="solverConfigNTotalGovernorWeight" type="text" inputmode="decimal" min="0" step="0.01" value="1" />
+                <span data-i18n="solver.config.nGovernorWeight">N-governor weight</span>
+                <input id="solverConfigNTotalGovernorWeight" type="text" inputmode="decimal" value="1" />
               </label>
             </div>
           </details>
@@ -639,8 +639,8 @@
 
           <div class="actions inline-actions">
             <input id="fertEditorSearch" type="text" placeholder="Search..." data-i18n-placeholder="editor.searchPlaceholder" />
-            <button id="fertEditorAddRow" class="btn btn--outline btn--icon icon-button" type="button">+</button>
-            <button id="fertEditorDeleteRow" class="btn btn--outline btn--icon icon-button" type="button">-</button>
+            <button id="fertEditorAddRow" class="btn btn--outline btn--icon icon-button" type="button" data-i18n-aria-label="aria.addFertilizerEditorRow" data-i18n-title="aria.addFertilizerEditorRow">+</button>
+            <button id="fertEditorDeleteRow" class="btn btn--outline btn--icon icon-button" type="button" data-i18n-aria-label="aria.deleteFertilizerEditorRow" data-i18n-title="aria.deleteFertilizerEditorRow">-</button>
           </div>
 
           <div class="table-wrap table-wrap--editor" id="fertilizerEditorTableWrap"></div>
@@ -656,6 +656,17 @@
     <script src="i18n/zh.js?v=i18n12"></script>
     <script src="i18n/runtime.js?v=i18n12"></script>
     <script src="request_gate.js?v=1"></script>
-    <script src="app.js?v=settings1"></script>
-  </body>
+    <script src="app/dom.js?v=1"></script>
+    <script src="app/state.js?v=1"></script>
+    <script src="app/units.js?v=1"></script>
+    <script src="app/notifications.js?v=1"></script>
+    <script src="app/shell.js?v=1"></script>
+    <script src="app/api.js?v=1"></script>
+    <script src="app/calculator.js?v=1"></script>
+    <script src="app/water.js?v=1"></script>
+    <script src="app/solver.js?v=1"></script>
+    <script src="app/editor.js?v=1"></script>
+    <script src="app/i18n-controls.js?v=1"></script>
+    <script src="app/app.js?v=1"></script>
+</body>
 </html>

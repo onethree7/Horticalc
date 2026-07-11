@@ -27,7 +27,7 @@ def test_startup_resources_load_together_and_own_system_status() -> None:
         "function finishStartupStatus", 1
     )[0]
     report_error_block = app_js.split("function reportError", 1)[1].split(
-        "function getMolarMass", 1
+        "function finishStartupStatus", 1
     )[0]
 
     assert "Promise.allSettled([" in startup_block

@@ -62,10 +62,12 @@
 
   function applyDomTranslations(root = document) {
     qsa("[data-i18n]", root).forEach((element) => {
-      element.textContent = t(element.dataset.i18n);
+      const params = element.dataset.i18nCount ? { count: element.dataset.i18nCount } : {};
+      element.textContent = t(element.dataset.i18n, params);
     });
     qsa("[data-i18n-placeholder]", root).forEach((element) => {
-      element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder));
+      const params = element.dataset.i18nCount ? { count: element.dataset.i18nCount } : {};
+      element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder, params));
     });
     qsa("[data-i18n-aria-label]", root).forEach((element) => {
       element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));

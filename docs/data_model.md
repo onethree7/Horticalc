@@ -151,7 +151,7 @@ applied before nutrient contributions are computed.
 
 The GUI uses fertilizer `liquid` metadata to label every dose row explicitly.
 It may present solid doses as g/kg/oz/lb and liquid doses as mL/L/US fl oz/Imp
-fl oz. Conversion occurs only in `frontend/app.js`; saved recipes, calculator
+fl oz. Conversion occurs only in the `frontend/app/` modules; saved recipes, calculator
 payloads, Solver `fixed_grams`, and Solver responses retain the canonical
 contract above.
 

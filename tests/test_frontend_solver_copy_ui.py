@@ -18,7 +18,7 @@ def test_solver_copy_logic_present() -> None:
     assert 't("solver.clipboardBatchVolume"' in content
     assert "litersToDisplayVolume(currentLiters)" in content
     assert 't("solver.clipboardTargets")' in content
-    assert "EC (mS/cm)" in content
+    assert 't("live.ec")' in content
     assert "\\t" not in content
     assert '.join("  ")' in content
 

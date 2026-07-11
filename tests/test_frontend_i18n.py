@@ -32,7 +32,7 @@ def test_frontend_loads_i18n_before_app_js() -> None:
     assert 'src="i18n/zh.js' in content
     assert 'src="i18n/runtime.js' in content
     assert content.index('src="i18n/zh.js') < content.index('src="i18n/runtime.js')
-    assert content.index('src="i18n/runtime.js') < content.index('src="app.js')
+    assert content.index('src="i18n/runtime.js') < content.index('src="app/app.js')
 
 def test_language_selector_detects_and_persists_frontend_locale() -> None:
     index_html = read_frontend_file("index.html")
@@ -45,10 +45,59 @@ def test_language_selector_detects_and_persists_frontend_locale() -> None:
     assert "detectBrowserLocale" in runtime_js
     assert "navigator.languages" in runtime_js
     assert "document.documentElement.lang = currentLocale;" in runtime_js
+    assert "dataset.i18nCount" in runtime_js
     assert "initializeLanguageControl();" in app_js
     assert "persistPreferences({ locale: i18n.getLocale() });" in app_js
     assert "preferences.locale" in app_js
     assert 'window.addEventListener("horticalc:localechange", refreshLocalizedUi);' in app_js
+
+
+def test_all_catalogs_have_new_localization_keys() -> None:
+    catalogs = {locale: _catalog(locale) for locale in LOCALES}
+    keys = [
+        "status.apiReady",
+        "status.activeCount",
+        "live.ec",
+        "live.npkPNorm",
+        "common.ec",
+        "common.percent",
+        "common.delta",
+        "theme.horticalcDark",
+        "theme.horticalcLight",
+        "theme.highContrast",
+        "theme.soil",
+        "theme.gchClassic",
+        "theme.vtGreen",
+        "theme.blueMatrix",
+        "solver.config.relativeWeighting",
+        "solver.config.overshootPenalty",
+        "solver.config.scaleEpsilon",
+        "solver.config.singletonOvershootPass",
+        "solver.config.singletonShare",
+        "solver.config.singletonMaxRegress",
+        "solver.config.singletonUnderfillPass",
+        "solver.config.underfillShare",
+        "solver.config.underfillMaxIter",
+        "solver.config.nTotalGovernor",
+        "solver.config.nGovernorWeight",
+        "solver.nTotal",
+        "solver.nNo3",
+        "solver.nNh4",
+        "solver.nUrea",
+        "calculator.ionBalance.cations",
+        "calculator.ionBalance.anions",
+        "calculator.ionBalance.cbeRaw",
+        "calculator.ionBalance.dinRaw",
+        "aria.addFertilizerRow",
+        "aria.removeFertilizerRow",
+        "aria.addFertilizerEditorRow",
+        "aria.deleteFertilizerEditorRow",
+        "aria.scaleDown",
+        "aria.scaleUp",
+    ]
+    for locale, catalog in catalogs.items():
+        for key in keys:
+            assert key in catalog, (locale, key)
 
 def test_frontend_i18n_keeps_data_contract_names_literal() -> None:
     catalogs = {locale: _catalog(locale) for locale in LOCALES}

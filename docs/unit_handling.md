@@ -21,7 +21,7 @@ quantity.
 
 `src/horticalc/units.py` owns volume, mass, and liquid-volume definitions. The
 FastAPI route `GET /schema/units` exposes those definitions to the frontend.
-`frontend/app.js` converts the selected display value to liters before building
+`frontend/app/units.js` converts the selected display value to liters before building
 calculator, solver, or recipe payloads. Fertilizer display values are likewise
 converted back to canonical grams for solids or canonical milliliters for
 liquids before payload construction. API fields, CLI results, and recipe YAML

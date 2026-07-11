@@ -1,5 +1,7 @@
 # Data Model
 
+Status: `current-state`.
+
 ## File Layout
 
 Shipped defaults:
@@ -19,61 +21,11 @@ Runtime user overrides:
 - `user/nutrient_solutions/*.yml`
 - `user/recipes/*.yml`
 
-`ensure_portable_layout()` creates writable runtime folders. Fertilizers are
-loaded by `load_fertilizers()` in `src/horticalc/data_io.py` from the shipped
-catalog first, then user overrides are applied, and names listed in
-`user/fertilizers_disabled.txt` are removed. Legacy `user/fertilizers.csv`
-snapshots are migrated once: custom names move into
-`user/fertilizers_overrides.csv`, and the original file is retained as a
-`.legacy-backup`. Pre-`Liquid` catalogs map `Form=Flüssig` to liquid; other
-legacy forms remain solid.
+`ensure_portable_layout()` in `src/horticalc/paths.py` creates writable runtime folders. Fertilizers are loaded by `load_fertilizers()` in `src/horticalc/data_io.py` from the shipped catalog first, then user overrides are applied, and names listed in `user/fertilizers_disabled.txt` are removed. Legacy `user/fertilizers.csv` snapshots are migrated once: custom names move into `user/fertilizers_overrides.csv`, and the original is retained as a `.legacy-backup`. Pre-`Liquid` catalogs map `Form=Flüssig` to liquid.
 
-Water profiles, nutrient solutions, and recipes are read from shipped defaults
-with `user/` files layered on top by filename. Runtime edits are written only
-to `user/`; shipped files remain unchanged. Startup removes byte-identical
-copied defaults and known untouched legacy nutrient-solution copies so existing
-installations migrate to the overlay model without losing edits.
-Layered resource lookups canonicalize the requested name and require the result
-to remain inside the configured shipped or user directory, including after
-symbolic-link resolution. Recipe `water_profile` values therefore select a
-layered profile name rather than an arbitrary filesystem path. Explicit CLI
-path arguments remain path-capable. Source: `src/horticalc/paths.py`.
+Water profiles, nutrient solutions, and recipes are read from shipped defaults with `user/` files layered on top by filename. Runtime edits are written only to `user/`; shipped files remain unchanged. Startup removes byte-identical copies and known untouched legacy nutrient-solution copies so existing installations migrate to the overlay model.
 
-API list routes omit malformed or unreadable user YAML files and log a warning,
-allowing the remaining valid profiles to stay available. Numeric mappings must
-contain finite numbers; API save routes reject `NaN` and infinity rather than
-persisting them. Runtime liters, fertilizer grams, Solver fixed grams, and
-osmosis percentages must also be finite.
-
-Persistence writes for YAML, preferences JSON, fertilizer CSV, and disabled
-fertilizer names use a temporary file followed by an atomic replacement. A
-failed replacement therefore leaves the previous file intact. YAML files must
-contain a top-level mapping, and YAML/JSON/CSV persistence rejects non-finite
-numbers. Invalid preferences are logged and retain the empty-preferences
-fallback; invalid resource YAML remains visible to API logging and is skipped
-from resource lists.
-
-Explicitly malformed profile fields are not treated as missing defaults:
-numeric mappings must be mappings, osmosis percentages must be numeric, and
-fertilizer CSV names must remain unique after whitespace and case
-normalization. All incoming fertilizers are validated before shipped/user
-overlay differences are calculated. Preference writers require a JSON object.
-
-The fertilizer override CSV and disabled-name file form one logical update.
-If the final disabled-name write fails, persistence restores the previous
-override CSV so a failed save cannot leave a partially updated overlay.
-
-`user/preferences.json` is a JSON object containing optional `theme`, `locale`,
-`default_liters`, `volume_unit`, `solid_dose_unit`, `liquid_dose_unit`,
-`solver_config`, and `last_water_profile`
-fields. `default_liters` remains canonical liters; `volume_unit` selects GUI
-input and display as `liter`, `us_gallon`, `imperial_gallon`, or
-`cubic_meter`. Dose-unit preferences select GUI presentation while stored
-recipe/API doses remain grams for solids or mL for liquids. The API
-validates partial updates and preserves JSON types. Preference `solver_config`
-contains only UI-visible Solver defaults; advanced settings marked `ui: false`
-remain recipe or direct solve inputs. Source: `load_user_preferences()` in
-`src/horticalc/data_io.py` and `/preferences` in `api/app.py`.
+API list routes omit malformed or unreadable user YAML files and log a warning. Numeric mappings must contain finite numbers; API save routes reject `NaN` and infinity. Persistence writes for YAML, preferences JSON, fertilizer CSV, and disabled names use a temporary file followed by an atomic replacement. Invalid preferences are logged and fall back to empty preferences; invalid resource YAML is skipped from resource lists.
 
 ## Fertilizers CSV
 
@@ -103,12 +55,7 @@ empty rather than causing columns to disappear. Source: `save_fertilizers()` in
 by normalized fertilizer name. The API, GUI, solver, and CLI therefore share
 the same default order. Source: `src/horticalc/data_io.py`.
 
-Composition keys are defined by `COMP_COLS` in `src/horticalc/core.py`:
-
-- `NO3`, `NH4`, `UREA`
-- `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O`
-- `SO4`, `Cl`, `CO3`, `HCO3`, `SiO2`
-- `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`
+Composition keys are defined by `COMP_COLS` in `src/horticalc/core.py`: `NO3`, `NH4`, `UREA`, `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O`, `SO4`, `Cl`, `CO3`, `HCO3`, `SiO2`, `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`.
 
 `Liquid` is strictly `0` for a solid fertilizer or `1` for a liquid
 fertilizer. It is exposed by the API as the Boolean field `liquid`; localized
@@ -122,38 +69,19 @@ mg/L. The fertilizer editor exposes it as its final column.
 
 ### Dose Units, Mass, And Liquid Fertilizers
 
-Recipes and solver results use the API field `grams` because this is the
-canonical field name in `api/app.py`, `src/horticalc/core.py`, and
-`src/horticalc/solver.py`. In practice, the value is the user-facing fertilizer
-dose:
+Recipes and solver results use the `grams` field. In practice, the value is the user-facing dose:
 
-- For solid fertilizers, enter and measure the value as grams.
-- For liquid fertilizers, enter and measure the value as milliliters when
-  `Liquid = 1` and `Gewicht` stores the product density in `g/mL`.
+- For solid fertilizers, enter grams.
+- For liquid fertilizers, enter milliliters when `Liquid = 1` and `Gewicht` stores the product density in g/mL.
 
-The calculation core in `compute_solution()` converts the dose to effective
-product mass before applying composition fractions:
+`compute_solution()` in `src/horticalc/core.py` converts the dose to effective product mass:
 
 ```text
 effective product mass in g = dose * Gewicht
 nutrient mg/L = dose * Gewicht * composition_fraction * 1000 / liters
 ```
 
-Composition fractions are mass fractions for the product. For example, `0.04`
-means four percent by product mass. A liquid fertilizer with `Gewicht = 1.136`
-therefore turns a solver result of `10` into `10 mL` in practice, while the
-calculation uses `10 * 1.136 = 11.36 g` product mass internally. If dosing the
-same liquid by scale instead of volume, weigh `dose * Gewicht` grams.
-
-This means the UI/API label `grams` is literal for solids and historical for
-liquids. The chemistry remains mass-normalized because the density factor is
-applied before nutrient contributions are computed.
-
-The GUI uses fertilizer `liquid` metadata to label every dose row explicitly.
-It may present solid doses as g/kg/oz/lb and liquid doses as mL/L/US fl oz/Imp
-fl oz. Conversion occurs only in the `frontend/app/` modules; saved recipes, calculator
-payloads, Solver `fixed_grams`, and Solver responses retain the canonical
-contract above.
+The UI may present solid doses as g/kg/oz/lb and liquid doses as mL/L/US fl oz/Imp fl oz, but saved recipes, API payloads, solver output, and CLI output keep the canonical contract.
 
 ## Water Profiles
 
@@ -169,16 +97,7 @@ mg_per_l:
   HCO3: 120
 ```
 
-Shipped water profiles may include optional source metadata such as `region`,
-`zone`, `year`, `pdf_url`, `source_url`, `source_quality`, `ph`, `ec_us_cm`,
-`hardness_dh`, `limit_policy`, and `raw_mg_per_l`. These fields document the
-published analysis source and detection-limit handling. `load_water_profile_data()`
-in `src/horticalc/data_io.py` returns only `name`, `source`, `osmosis_percent`,
-and numeric `mg_per_l` for runtime calculation.
-
-Accepted input keys include direct forms, element helpers, oxide helpers, and
-carbonate helpers. `normalize_water_profile()` converts helper keys into the
-forms used by the calculation core.
+`load_water_profile_data()` in `src/horticalc/data_io.py` returns `name`, `source`, `osmosis_percent`, and numeric `mg_per_l`. `normalize_water_profile()` in `src/horticalc/core.py` converts helper keys into the forms used by the calculation core.
 
 Osmosis behavior:
 
@@ -215,41 +134,18 @@ Target profile YAML:
 
 ```yaml
 name: Example Target
-source: Example Author (2026), table 1, DOI 10.example/example
-note: Elemental mg/L calculated from source mmol/L values.
+source: Example Author (2026)
 targets_mg_per_l:
-  N_total: 140.067
-  N_NO3: 140.067
-  S: 64.13
+  N_total: 140
+  P: 30
+  K: 180
 ```
 
-Targets are element mg/L. The accepted solver target keys live in
-`ALLOWED_TARGET_KEYS` in `src/horticalc/solver.py`; oxide aliases such as
-`K2O` and `P2O5` are fertilizer composition keys, not target keys. Some target
-keys may be reported but ignored by the solver objective; see
-[Solver](solver.MD).
-
-Shipped scientific profiles keep a short citation and, only when conversion
-was required, one concise `note`. They do not duplicate the source table.
-`load_nutrient_solution_data()` deliberately returns only `name`, `source`,
-and `targets_mg_per_l`; the note is provenance text rather than solver input.
-Unknown nutrients are omitted instead of being encoded as zero. See
-[Nutrient solution profiles](nutrient_solution_profiles.md).
-
-Nutrient-solution target profiles are not fertilizer recipes. They must not
-contain compound quantities, stock-solution instructions, or substance masses.
-Those belong to calculator recipes or fertilizer data. Scientific target YAMLs
-retain only a concise citation and reported elemental or ionic concentrations.
-
-The target key `S` is elemental sulfur. A source value reported as sulfate or
-`SO3` must be converted toward elemental `S` using molar masses. `SO4` remains
-a fertilizer composition, water-profile, and ion-output form; it is not an
-accepted solver target key.
+Targets are element mg/L. Accepted keys live in `ALLOWED_TARGET_KEYS` in `src/horticalc/solver.py`. Oxide aliases such as `K2O` and `P2O5` are fertilizer composition keys, not target keys. `S` is elemental sulfur; `SO4` is not a target key. `load_nutrient_solution_data()` returns only `name`, `source`, and `targets_mg_per_l`.
 
 ## Calculation Output
 
-`CalcResult.to_dict()` in `src/horticalc/core.py` is the canonical output
-schema:
+`CalcResult.to_dict()` in `src/horticalc/core.py` produces:
 
 1. `liters`
 2. `elements_mg_per_l`
@@ -274,38 +170,15 @@ schema:
 21. `sluijsmann`
 22. `osmosis_percent`
 
-`ion_balance`, `fertilizer_ion_balance`, and `water_ion_balance` are produced
-by `src/horticalc/core.py`. They contain `cations_meq_per_l`,
-`anions_meq_per_l`, legacy compatibility fields `error_percent_signed` and
-`error_percent_abs`, explicit raw CBE fields `raw_cbe_percent_signed` and
-`raw_cbe_percent_abs`, DIN formula fields `din_38402_62_percent_signed` and
-`din_38402_62_percent_abs`, and `balance_method`.
+The three `ion_balance` objects contain `cations_meq_per_l`, `anions_meq_per_l`, `error_percent_signed`, `error_percent_abs`, `raw_cbe_percent_signed`, `raw_cbe_percent_abs`, `din_38402_62_percent_signed`, `din_38402_62_percent_abs`, and `balance_method`. The raw CBE is `(cations_sum - anions_sum) / (cations_sum + anions_sum) * 100`. The DIN formula is `(cations_sum - anions_sum) / (0.5 * (cations_sum + anions_sum)) * 100`.
 
-`error_percent_signed` and `error_percent_abs` remain aliases for the raw CBE:
-`(cations_sum - anions_sum) / (cations_sum + anions_sum) * 100`. The DIN value
-shown as "Ionenbilanzabweichung nach DIN 38402-62 Formel" uses
-`(cations_sum - anions_sum) / (0.5 * (cations_sum + anions_sum)) * 100`.
+The current ion set in `src/horticalc/core.py` is `NH4+`, `K+`, `Ca2+`, `Mg2+`, `Na+`, `NO3-`, `H2PO4-`, `SO4^2-`, `Cl-`, `HCO3-`, and `CO3^2-`. All phosphorus in the ion output is `H2PO4-`; pH-dependent speciation is not modelled.
 
-The ion-balance deviation is calculated with the DIN 38402-62 formula.
-Horticalc includes only the analytical ion totals represented by the model;
-missing water-analysis ions are not reconstructed, guessed, or silently
-invented.
-
-The current ion set in `src/horticalc/core.py` is NH4+, K+, Ca2+, Mg2+, Na+,
-NO3-, H2PO4-, SO4^2-, Cl-, HCO3-, and CO3^2-. All phosphorus in the ion output
-is represented as H2PO4-; pH-dependent phosphate speciation is not modelled.
-Trace nutrients are not included in the ion balance unless they are explicitly
-modelled as charged species.
-
-`npk_metrics` is produced by `src/horticalc/metrics.py`. It includes the
-existing oxide/form ratios in `npk_ratios` and a separate `npk_ratios_ion`
-mapping for dissolved mg/L element or form comparisons such as `Ca:Mg`,
-`Ca:K`, `N:K`, `SO4:P`, and `P:K`.
+`npk_metrics` is produced by `src/horticalc/metrics.py`. It includes `npk_ratios` and `npk_ratios_ion` mappings for dissolved mg/L comparisons such as `Ca:Mg`, `Ca:K`, `N:K`, `SO4:P`, and `P:K`.
 
 ## Solver Output
 
-`SolveResult.to_dict()` in `src/horticalc/solver.py` is the canonical solver
-schema:
+`SolveResult.to_dict()` in `src/horticalc/solver.py` produces:
 
 1. `liters`
 2. `fertilizers`
@@ -315,5 +188,4 @@ schema:
 6. `errors_mg_per_l`
 7. `errors_percent`
 
-`objective_elements` is important: it is the list actually optimized by the
-solver and by the solver matrix score.
+`objective_elements` is the authoritative list of what the solver optimized. The solver matrix benchmark scores this list.

@@ -1,77 +1,48 @@
 # Architecture
 
-Horticalc has five active runtime layers:
+Status: `current-state`.
 
-1. Calculation core in `src/horticalc/`.
+Horticalc has five runtime layers:
+
+1. Static browser UI in `frontend/`.
 2. FastAPI app in `api/app.py`.
-3. Static browser UI in `frontend/`.
-4. Portable launcher in `src/horticalc/launcher.py`.
-5. Packaged release workflow in `scripts/packaging/` and `.github/workflows/release.yml`.
-
-## Runtime Map
-
-```mermaid
-flowchart LR
-    User["User"] --> Browser["Browser UI"]
-    Launcher["horticalc.launcher"] --> API["FastAPI app"]
-    Browser --> API
-    CLI["python -m horticalc"] --> Core["Calculation core"]
-    API --> Core
-    Core --> Data["AppRoot data and user files"]
-    API --> Data
-    Launcher --> Logs["AppRoot logs"]
-```
+3. Calculation core in `src/horticalc/`.
+4. Solver in `src/horticalc/solver.py` and `src/horticalc/solver_config.py`.
+5. Portable launcher and packaging in `src/horticalc/launcher.py`, `scripts/packaging/`, and `.github/workflows/release.yml`.
 
 ## Source Of Truth By Concern
 
 | Concern | Source files | Notes |
 | --- | --- | --- |
-| Recipe calculation | `src/horticalc/core.py` | Converts fertilizer grams and water values into solution output. |
+| Recipe calculation | `src/horticalc/core.py` | Converts fertilizer doses and water values into solution output. |
 | EC | `src/horticalc/ec.py` | Computes ion-based EC at 18 C and 25 C. |
 | NPK and ratios | `src/horticalc/metrics.py` | Formats NPK strings and summary ratios. |
-| Sluijsmann | `src/horticalc/sluijsmann.py` | Computes CaO-equivalent alkalinity/acidity metric. |
-| Solver | `src/horticalc/solver.py`, `src/horticalc/solver_config.py` | Solves target profiles into fertilizer grams. |
-| Unit definitions | `src/horticalc/units.py` | Defines canonical volume conversions shared through the API schema. |
-| Data paths | `src/horticalc/paths.py` | Defines AppRoot, shipped defaults, user overrides, logs, and lockfile layout. |
-| Persistence IO | `src/horticalc/data_io.py` | Loads and saves CSV/YAML data. |
-| API | `api/app.py` | Exposes JSON API routes, accepts YAML request bodies on save endpoints, and serves the frontend. |
-| UI | `frontend/index.html`, `frontend/app/*.js`, `frontend/styles.css` | Static app frame, workflows, and browser state. |
-| Launcher | `src/horticalc/launcher.py` | Starts API, waits for health, opens browser, and manages the owner lock plus active launcher sessions. |
-| Packaging | `scripts/packaging/*`, `.github/workflows/release.yml` | Builds and smoke-tests onedir release artifacts. |
+| Sluijsmann | `src/horticalc/sluijsmann.py` | CaO-equivalent alkalinity/acidity metric. |
+| Solver | `src/horticalc/solver.py`, `src/horticalc/solver_config.py` | Solves target profiles into fertilizer doses. |
+| Unit definitions | `src/horticalc/units.py` | Canonical volume and dose conversions. |
+| Data paths | `src/horticalc/paths.py` | AppRoot, shipped defaults, user overrides, logs, lockfile. |
+| Persistence IO | `src/horticalc/data_io.py` | Loads and saves CSV, YAML, and JSON. |
+| API | `api/app.py` | JSON routes, YAML save support, and static frontend. |
+| UI | `frontend/index.html`, `frontend/app/*.js`, `frontend/styles.css` | Static app frame, workflows, browser state. |
+| Launcher | `src/horticalc/launcher.py` | Starts API, waits for health, opens browser, manages lock and sessions. |
+| Packaging | `scripts/packaging/*`, `.github/workflows/release.yml` | PyInstaller onedir builds and smoke tests. |
 
-## Request Flow
+## Request Flows
 
-The UI is served by the backend from the same origin. API routes are declared
-before the catch-all static mount, then `app.mount("/", StaticFiles(...,
-html=True))` serves `frontend/index.html` and assets.
+### Calculator
 
-Calculator flow:
+1. UI converts the selected batch volume and doses to canonical units and posts to `/calculate`.
+2. `api/app.py` validates allowed water keys and fertilizer names.
+3. `compute_solution()` in `src/horticalc/core.py` applies osmosis, normalizes water forms, calculates elements, oxides, ions, ion balance, EC, NPK, Sluijsmann, and returns the output.
 
-1. UI converts the selected batch-volume display unit to canonical liters and
-   builds a recipe payload from selected fertilizers, water values, liters,
-   nitrogen handling, and osmosis percent.
-2. UI posts to `/calculate`.
-3. `api/app.py` validates allowed water keys and fertilizer names.
-4. `compute_solution()` in `core.py` applies osmosis, normalizes water forms,
-   calculates elements, oxides, ions, ion balance, EC, NPK, Sluijsmann, and
-   returns the solution output.
+### Solver
 
-Solver flow:
+1. UI posts target values, allowed fertilizers, optional fixed doses, water profile, and solver config to `/solve`.
+2. `solve_recipe_data()` in `src/horticalc/solver.py` subtracts the water baseline, builds the fertilizer contribution matrix, solves non-negative doses, recomputes the achieved solution with `compute_solution()`, and returns solver errors.
 
-1. UI builds target values, allowed fertilizers, optional fixed grams, water
-   profile data, and solver config.
-2. UI posts to `/solve`.
-3. `solve_recipe_data()` subtracts water baseline, builds the fertilizer
-   contribution matrix, solves non-negative grams, recomputes the achieved
-   solution with the core path, and returns solver errors.
-4. The user may copy the solver result or apply it to the calculator.
+## AppRoot And Portable Data Layout
 
-## AppRoot And Portable Data
-
-`app_root()` is the repository root in development, the executable folder in
-PyInstaller releases, and the install prefix for wheel installs when the
-packaged `frontend/`, `data/`, and `recipes/` assets are present. Runtime
-writes are portable and stay under AppRoot:
+`app_root()` in `src/horticalc/paths.py` resolves to the repository root in development, the executable folder in PyInstaller releases, or the install prefix when the packaged assets are present.
 
 ```text
 AppRoot/
@@ -82,29 +53,14 @@ AppRoot/
   logs/       rotating launcher/server logs
 ```
 
-On startup, `ensure_portable_layout()` creates `user/` and `logs/`, checks that
-they are writable, and removes redundant YAML copies left by older releases.
-API resource lookup layers user YAML over shipped YAML by filename. The
-fertilizer catalog stays in `data/fertilizers.csv`; `data_io.py` applies
-`user/fertilizers_overrides.csv` and `user/fertilizers_disabled.txt` with the
-same shipped-default/user-overlay policy.
+`ensure_portable_layout()` creates `user/` and `logs/`, checks they are writable, and prunes redundant YAML copies from older releases. API resource lookup layers user YAML over shipped YAML by filename. The fertilizer catalog is shipped in `data/fertilizers.csv`; user edits are stored as `user/fertilizers_overrides.csv` and `user/fertilizers_disabled.txt`.
 
-The launcher lock records the backend owner's PID. Each Chromium app window
-also gets a PID-backed session file under `user/launcher_sessions/`. The backend
-owner waits until all live launcher sessions have ended, plus a short grace
-period for immediate reopen, before stopping the server. Lock cleanup is
-owner-aware so an older launcher cannot delete a newer owner's lock. Lock and
-session records are written durably, and startup claims the lock exclusively;
-concurrent launchers wait for the winning owner's health endpoint instead of
-starting a second backend. System-browser fallback cannot observe tab closure,
-so it keeps a PID-and-process-identity-backed session active until the launcher
-is stopped. Old browser profiles from dead or PID-reused owners are removed
-after a conservative seven-day grace period.
+The launcher lock records the backend owner's PID. Each Chromium app window gets a session file under `user/launcher_sessions/`. The backend owner waits until all live sessions end, plus a short grace period, before stopping. Concurrent launchers wait for the winning owner's health endpoint. System-browser fallback keeps the server running until the launcher is stopped because tab closure cannot be observed reliably. Stale browser profiles are removed after a seven-day grace period.
 
 ## Current Boundaries
 
 - The core does not know about HTTP or the DOM.
-- The API owns request validation and persistence endpoints.
+- The API owns request validation and persistence.
 - The UI owns presentation, local browser state, and workflow navigation.
 - The solver matrix is a research tool, not product runtime.
-- Packaged releases use PyInstaller onedir; onefile is not the project default.
+- Packaged releases use PyInstaller onedir.

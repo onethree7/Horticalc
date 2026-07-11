@@ -1,9 +1,8 @@
 # Solver
 
-Status: current-state.
+Status: `current-state`.
 
-The solver lives in `src/horticalc/solver.py`. It computes non-negative
-fertilizer grams for target element concentrations in mg/L.
+The solver lives in `src/horticalc/solver.py` and `src/horticalc/solver_config.py`. It computes non-negative fertilizer doses for target element concentrations in mg/L.
 
 ## Inputs
 
@@ -25,25 +24,15 @@ for fertilizers also listed in `fertilizers_allowed`. The
 
 ## Objective Elements
 
-`_objective_keys()` decides which target keys are optimized.
+`_objective_keys()` in `src/horticalc/solver.py` decides which target keys are optimized:
 
-Current rules:
-
-- Accepted target keys are defined by `ALLOWED_TARGET_KEYS` in
-  `src/horticalc/solver.py`. Oxide/form aliases such as `K2O`, `P2O5`,
-  lowercase keys, and unknown keys are rejected instead of becoming zero-column
-  objectives.
-- Numeric zero targets are skipped, except N-form zero targets in
-  `n_forms_only` mode.
+- Accepted target keys are in `ALLOWED_TARGET_KEYS` in `src/horticalc/solver.py`. Oxide/form aliases such as `K2O`, `P2O5`, lowercase keys, and unknown keys are rejected.
+- Numeric zero targets are skipped, except N-form zero targets in `n_forms_only` mode.
 - `Na` and `Cl` are report-only and ignored as objectives.
-- `S` is report-only by default. Set `solver_config.s_objective_enabled=true`
-  to allow elemental sulfur as an objective. `SO4` is not a solver target key;
-  it remains a fertilizer, water-profile, and ion-output form.
+- `S` is report-only by default. Set `solver_config.s_objective_enabled=true` to allow elemental sulfur as an objective. `SO4` is not a solver target key.
 - Nitrogen form handling depends on `nitrogen_objective_mode`.
 
-The output field `objective_elements` is the authoritative list. The solver
-matrix benchmark also scores this list and does not invent its own objective
-policy.
+The output field `objective_elements` is the authoritative list. The solver matrix benchmark scores this list.
 
 ## Nitrogen Modes
 
@@ -51,14 +40,13 @@ policy.
 
 - `as_targets`: legacy behavior; use non-zero N keys as provided.
 - `n_total_only`: optimize `N_total` and exclude `N_NH4`, `N_NO3`, `N_UREA`.
-- `n_forms_only`: optimize N forms, exclude `N_total`, and keep zero N-form
-  targets when present.
+- `n_forms_only`: optimize N forms, exclude `N_total`, and keep zero N-form targets when present.
 
 Current default: `n_total_only`.
 
-## Solver Config Defaults
+## Solver Config Defaults And Validation
 
-The canonical defaults are in `src/horticalc/solver_config.py`.
+The canonical defaults are in `src/horticalc/solver_config.py`:
 
 | Key | Default |
 | --- | --- |
@@ -96,19 +84,7 @@ and tests change too.
 
 ## Optimization Model
 
-The solver builds a contribution matrix:
-
-- Rows are objective elements.
-- Columns are allowed fertilizers.
-- Values are mg/L contribution per gram for the current batch size.
-
-Water baseline is computed with the same core calculation path and subtracted
-from targets before solving. Fixed grams are also subtracted before optimizing
-the remaining variable fertilizers.
-
-`targets` or `targets_mg_per_l` are the only target sources. Calculation output
-fields such as `water_elements_mg_per_l` are not treated as desired solver
-targets.
+The solver builds a contribution matrix: rows are objective elements, columns are allowed fertilizers, and values are mg/L contribution per gram for the current batch size. Water baseline is computed with `compute_solution()` and subtracted from targets before solving. Fixed grams are subtracted before optimizing the remaining variable fertilizers.
 
 The base solve is deterministic non-negative least squares:
 
@@ -125,33 +101,11 @@ passes use the same upper bounds.
 
 ## Optional Behavior
 
-Relative weighting scales rows by target/residual magnitude so small trace
-targets can matter more. IRLS can increase weights for overshoot rows.
+- `relative_weighting` scales rows by target/residual magnitude.
+- `overshoot_penalty` and IRLS increase weights for overshoot rows.
+- Singleton passes can reduce dominant-supplier overshoot or top up underfilled dominant nutrients.
+- The default portfolio path may compare a small set of candidate variants when `nitrogen_objective_mode` is `n_total_only` and the config matches the default portfolio.
 
-Singleton passes can reduce dominant-supplier overshoot or top up underfilled
-dominant nutrients. The overshoot pass checks per-objective regression budgets;
-the underfill pass keeps the broader max-error budget used by the default
-portfolio behavior.
+## CLI Examples
 
-Legacy stage optimization and macro priority controls were removed from the
-backend config after default-off matrix runs showed no current benefit.
-
-The default portfolio path may compare a small set of candidate variants when
-`nitrogen_objective_mode` is `n_total_only` and the config matches the default
-portfolio.
-
-## CLI
-
-```bash
-python -m horticalc solve recipes/solve_golden.yml --pretty
-python -m horticalc solve recipes/solve_golden.yml --nitrogen-objective-mode n_forms_only --pretty
-python -m horticalc solve recipes/solve_golden.yml --solver-config n_form_priority_weights='{"N_NO3": 3.0}'
-```
-
-## Verification
-
-```bash
-python scripts/test.py tests/test_solver_golden.py tests/test_solver_weighting.py -q
-python scripts/test.py tests/test_solver_n_total_governor.py tests/test_cli_solver_config.py -q
-python scripts/test.py tests/test_solver_matrix.py -q
-```
+For copy/paste solver commands, see [commands.md](commands.md#cli-recipes).

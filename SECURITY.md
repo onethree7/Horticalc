@@ -1,14 +1,13 @@
 # Security
 
-Status: current-state security and release verification notes.
+Status: `current-state`.
 
-Pull requests must pass tests, dependency review, and CodeQL. Dependabot and
-secret scanning monitor the default branch; release tags are protected.
+Security and release verification notes for Horticalc.
 
 ## Supported Releases
 
-Security fixes target the latest GitHub release and the current default
-branch. Older prereleases may be replaced instead of patched.
+Security fixes target the latest GitHub release and the current default branch.
+Older prereleases may be replaced instead of patched.
 
 ## Release Integrity
 
@@ -20,42 +19,22 @@ The release workflow:
 - publishes a `.sha256` checksum file beside each release archive;
 - creates GitHub Artifact Attestations for each archive and checksum file.
 
-The Windows executable is not Authenticode code-signed. Git commit signing,
-tag signing, checksums, and GitHub Artifact Attestations prove source and build
+The Windows executable is not Authenticode code-signed. Git commit signing, tag
+signing, checksums, and GitHub Artifact Attestations prove source and build
 provenance, but they do not make Windows show a verified publisher for
 `Horticalc.exe`.
 
 ## Verify A Download
 
-Compare the checksum file against the downloaded archive.
-
-Windows PowerShell:
-
-```powershell
-Get-FileHash -Algorithm SHA256 .\horticalc-vX.Y.Z-windows.zip
-Get-Content .\horticalc-vX.Y.Z-windows.zip.sha256
-```
-
-Linux:
-
-```bash
-sha256sum -c horticalc-vX.Y.Z-linux.tar.gz.sha256
-```
-
-If the GitHub CLI is available, verify the build attestation against this
-repository:
-
-```bash
-gh attestation verify horticalc-vX.Y.Z-windows.zip --repo onethree7/Horticalc
-gh attestation verify horticalc-vX.Y.Z-linux.tar.gz --repo onethree7/Horticalc
-```
+For the exact checksum and attestation commands, see the release verification
+section in [docs/release_build.md](docs/release_build.md).
 
 ## Antivirus False Positives
 
 Horticalc is an open-source local calculator packaged as a portable app. The
 launcher starts a FastAPI server bound to `127.0.0.1`, opens a local browser
-window, and writes runtime data only below the extracted app folder. The
-runtime model is documented in `docs/release_build.md` and implemented in
+window, and writes runtime data only below the extracted app folder. The runtime
+model is documented in `docs/release_build.md` and implemented in
 `src/horticalc/launcher.py` and `src/horticalc/paths.py`.
 
 Unsigned PyInstaller-built Windows executables can trigger reputation or
@@ -64,10 +43,7 @@ include the GitHub release URL, file SHA-256, and this repository URL in a
 false-positive report.
 
 If you report an antivirus or operating-system warning to this project, include
-the exact environment and detection details. A report that only says "my
-antivirus blocked it" is not actionable.
-
-Please include:
+the exact environment and detection details:
 
 - operating system and version, for example Windows 11 24H2;
 - security product name and version, for example Microsoft Defender,
@@ -81,5 +57,5 @@ Please include:
 
 ## Report A Security Issue
 
-Please use GitHub's private vulnerability reporting. Include reproduction
-steps, affected version, operating system, and affected distribution.
+Please use GitHub's private vulnerability reporting. Include reproduction steps,
+affected version, operating system, and affected distribution.

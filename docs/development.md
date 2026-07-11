@@ -1,76 +1,40 @@
 # Development Guide
 
-## Setup
+Status: `operation-guide`.
 
-From the repository root:
+## Setup And Run From Source
 
-```bash
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
-```
+See [commands.md](commands.md#install-and-run-from-source) for the exact venv and pip commands.
 
-On bash-like shells, replace `.\.venv\Scripts\python.exe` with the active
-virtualenv's `python`.
+## Test Structure
 
-## Run
+- Calculation and unit tests: `tests/test_ec.py`, `tests/test_core.py`, `tests/test_units.py`.
+- Solver tests: `tests/test_solver_*.py`.
+- Frontend and UI tests: `tests/test_frontend_*.py`.
+- API tests: `tests/test_api_*.py`.
+- Packaging and launcher tests: `tests/test_portable_data_policy.py`, `tests/test_launcher_*.py`.
+- Solver matrix tests: `tests/test_solver_matrix.py`.
 
-API and UI:
+Run the standard suite and focused examples: see [commands.md](commands.md#run-tests).
 
-```bash
-python -m uvicorn api.app:app --host 127.0.0.1 --port 8000
-```
+## Packaging And Release Entry Points
 
-Launcher:
+- Local PyInstaller build scripts: `scripts/packaging/build_linux.sh`, `scripts/packaging/build_windows.ps1`.
+- CI release workflow: `.github/workflows/release.yml`.
+- Release verification and checksum commands are in [commands.md](commands.md#release-verification).
 
-```bash
-python -m horticalc.launcher
-```
+## How To Update Docs
 
-CLI:
+When you change an API route, output key, solver default, file path, launcher behavior, persistence rule, or UI workflow, update the matching doc in the same change. See [documentation_architecture.md](documentation_architecture.md#update-triggers) for the mapping.
 
-```bash
-python -m horticalc recipes/golden.yml --pretty
-python -m horticalc solve recipes/solve_golden.yml --pretty
-```
+## Node.js Requirement
 
-## Tests
-
-Standard verification:
-
-```bash
-python scripts/test.py
-```
-
-The test entrypoint creates `.venv` if needed, installs `.[dev]` when a required
-test dependency is missing, and always executes pytest with the repository
-virtual environment.
-
-Node.js is required for the small executable vanilla-JavaScript tests. They use
-only built-in Node modules; no npm install or frontend framework is required.
-
-Focused examples:
-
-```bash
-python scripts/test.py tests/test_frontend_serving.py -q
-python scripts/test.py tests/test_solver_golden.py tests/test_solver_weighting.py -q
-python scripts/test.py tests/test_portable_data_policy.py tests/test_launcher_smoke.py -q
-```
-
-## Docs Checks
-
-For documentation changes:
-
-```bash
-rg -n "TODO|UNDECIDED|Task [0-9]|Implementation Roadmap" docs README.md --glob "!**/development.md" --glob "!**/documentation_maintenance.md"
-```
-
-The full test suite also protects frontend contracts, API schemas, portable
-data policy, solver defaults, and release-facing behavior.
+The small executable vanilla-JavaScript tests use only Node.js built-in modules. No `npm install` or frontend bundler is required.
 
 ## Generated And Ignored Files
 
-- `user/`: user-created and edited runtime overrides in development.
-- `logs/`: launcher logs and solver-matrix output.
+- `user/`: runtime overrides.
+- `logs/`: launcher and solver-matrix logs.
 - `dist/`, `build/`: packaging output.
 - `_docs_backup/`: ignored documentation backups.
 

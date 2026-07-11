@@ -18,16 +18,26 @@ Use **Plan -> Edit -> Verify** for every change.
 
 - [README.md](README.md): user entrypoint and fastest run commands.
 - [AGENTS.md](AGENTS.md): automation and contributor contract.
+- [docs/documentation_architecture.md](docs/documentation_architecture.md): docs charter, status taxonomy, and single-source rules.
 - [docs/index.md](docs/index.md): docs map.
+- [docs/quickstart.md](docs/quickstart.md): install and first run.
+- [docs/user_guide.md](docs/user_guide.md): UI and workflow.
+- [docs/cli_reference.md](docs/cli_reference.md): CLI command reference.
+- [docs/commands.md](docs/commands.md): single source of truth for commands.
+- [docs/development.md](docs/development.md): setup, tests, packaging, and docs updates.
 - [docs/architecture.md](docs/architecture.md): current subsystem map.
-- [docs/user_guide.md](docs/user_guide.md): how to use UI and CLI.
 - [docs/api_reference.md](docs/api_reference.md): FastAPI surface.
 - [docs/data_model.md](docs/data_model.md): files, units, output fields.
-- [docs/solver.MD](docs/solver.MD): solver behavior.
-- [docs/GUI.MD](docs/GUI.MD): frontend behavior.
-- [docs/release_build.md](docs/release_build.md): packaging and release.
+- [docs/unit_handling.md](docs/unit_handling.md): canonical and display units.
+- [docs/solver.md](docs/solver.md): solver behavior.
+- [docs/ec.md](docs/ec.md): electrical conductivity model.
+- [docs/gui.md](docs/gui.md): frontend behavior.
+- [docs/nutrient_solution_profiles.md](docs/nutrient_solution_profiles.md): cited formulations.
+- [docs/release_build.md](docs/release_build.md): packaging, release, and verification.
 - [docs/decisions.md](docs/decisions.md): accepted decisions and current defaults.
-- [docs/documentation_maintenance.md](docs/documentation_maintenance.md): anti-drift rules.
+- [docs/terminology_style_guide.md](docs/terminology_style_guide.md): canonical terms and units.
+- [docs/solver_matrix.md](docs/solver_matrix.md): removable solver research harness.
+- [docs/historical/index.md](docs/historical/index.md): historical reports.
 
 ## Documentation Law
 
@@ -57,10 +67,4 @@ python scripts/test.py
 Pass pytest arguments after the script name for focused runs, for example
 `python scripts/test.py tests/test_ec.py -q`.
 
-For docs-only changes, also check links and stale references:
-
-```bash
-rg -n "TODO|UNDECIDED|Task [0-9]|Implementation Roadmap" docs README.md --glob "!**/development.md" --glob "!**/documentation_maintenance.md"
-```
-
-Investigate any hit before merging, then skim this file for the same issues.
+For docs-only changes, also check links and stale references using the docs anti-drift command in `docs/commands.md`.

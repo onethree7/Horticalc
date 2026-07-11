@@ -27,10 +27,12 @@ class Fertilizer:
     weight_factor: float
     # composition fractions (mass fraction, e.g. 0.14 = 14%)
     comp: Dict[str, float]
+    solver_max_dose_per_l: float | None = None
 
 
 FERTILIZER_NAME_FIELDS = ("Düngername", "Duengername")
 FERTILIZER_BASE_FIELDS = ["Düngername", "Liquid", "Gewicht"]
+FERTILIZER_SOLVER_MAX_FIELD = "SolverMaxDosePerL"
 REPLACED_ROW_PATTERN = re.compile(r'replace existing row\s+"([^"]+)"', re.IGNORECASE)
 
 
@@ -51,7 +53,13 @@ def _is_number_field(field: str | None) -> bool:
 def _is_base_fertilizer_field(field: str | None) -> bool:
     if field is None:
         return False
-    return _is_number_field(field) or field in (*FERTILIZER_NAME_FIELDS, "Form", "Liquid", "Gewicht")
+    return _is_number_field(field) or field in (
+        *FERTILIZER_NAME_FIELDS,
+        "Form",
+        "Liquid",
+        "Gewicht",
+        FERTILIZER_SOLVER_MAX_FIELD,
+    )
 
 
 def _fertilizer_is_liquid(row: dict[str, str | None]) -> bool:
@@ -221,6 +229,17 @@ def _load_fertilizer_csv(
                 row.get("Gewicht") or 1.0,
                 f"{csv_path}: Gewicht for {name}",
             )
+            raw_solver_max = row.get(FERTILIZER_SOLVER_MAX_FIELD)
+            solver_max = None
+            if raw_solver_max is not None and str(raw_solver_max).strip() != "":
+                solver_max = _finite_float(
+                    raw_solver_max,
+                    f"{csv_path}: {FERTILIZER_SOLVER_MAX_FIELD} for {name}",
+                )
+                if solver_max < 0.0:
+                    raise ValueError(
+                        f"{csv_path}: {FERTILIZER_SOLVER_MAX_FIELD} for {name} must be >= 0"
+                    )
 
             comp: Dict[str, float] = {}
             for k, v in row.items():
@@ -239,7 +258,13 @@ def _load_fertilizer_csv(
                     continue
                 comp[k] = value
 
-            ferts[name] = Fertilizer(name=name, liquid=liquid, weight_factor=weight, comp=comp)
+            ferts[name] = Fertilizer(
+                name=name,
+                liquid=liquid,
+                weight_factor=weight,
+                comp=comp,
+                solver_max_dose_per_l=solver_max,
+            )
 
     return ferts
 
@@ -285,6 +310,8 @@ def _fertilizers_equal(left: Fertilizer, right: Fertilizer) -> bool:
     if left.liquid != right.liquid:
         return False
     if abs(float(left.weight_factor) - float(right.weight_factor)) > 1e-12:
+        return False
+    if left.solver_max_dose_per_l != right.solver_max_dose_per_l:
         return False
     if set(left.comp) != set(right.comp):
         return False
@@ -375,6 +402,9 @@ def _header_for_fertilizers(fertilizers: Dict[str, Fertilizer], existing_header:
                 header.append(key)
     if not any(field in header for field in FERTILIZER_NAME_FIELDS):
         header.insert(1, "Düngername")
+    if FERTILIZER_SOLVER_MAX_FIELD in header:
+        header.remove(FERTILIZER_SOLVER_MAX_FIELD)
+    header.append(FERTILIZER_SOLVER_MAX_FIELD)
     return header
 
 
@@ -382,6 +412,13 @@ def _validate_fertilizer(fertilizer: Fertilizer) -> None:
     _positive_float(fertilizer.weight_factor, f"Weight for {fertilizer.name}")
     for key, value in fertilizer.comp.items():
         _finite_float(value, f"Composition {key} for {fertilizer.name}")
+    if fertilizer.solver_max_dose_per_l is not None:
+        maximum = _finite_float(
+            fertilizer.solver_max_dose_per_l,
+            f"Solver maximum for {fertilizer.name}",
+        )
+        if maximum < 0.0:
+            raise ValueError(f"Solver maximum for {fertilizer.name} must be >= 0")
 
 
 def _write_fertilizer_csv(
@@ -404,6 +441,8 @@ def _write_fertilizer_csv(
         row[name_field] = fert.name
         row["Liquid"] = "1" if fert.liquid else "0"
         row["Gewicht"] = format(weight, ".10g")
+        if fert.solver_max_dose_per_l is not None:
+            row[FERTILIZER_SOLVER_MAX_FIELD] = format(float(fert.solver_max_dose_per_l), ".10g")
         for key in header:
             if _is_base_fertilizer_field(key):
                 continue

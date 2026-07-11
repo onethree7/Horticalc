@@ -182,6 +182,7 @@ window.HORTICALC_I18N.en = {
   "editor.searchPlaceholder": "Search...",
   "editor.fertilizerName": "Fertilizer name",
   "editor.densityFactor": "Density [g/mL] / factor",
+  "editor.solverMaxDosePerL": "Solver max / L",
   "editor.nameRequired": "Please enter a fertilizer name.",
   "editor.uniqueNames": "Fertilizer names must be unique.",
   "editor.resizeNameColumn": "Resize fertilizer name column",

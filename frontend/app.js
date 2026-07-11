@@ -286,6 +286,11 @@ const nutrientFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
   useGrouping: false,
 });
+const solverMaxFormatter = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 6,
+  useGrouping: false,
+});
 const ionFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
@@ -1306,6 +1311,9 @@ function setFertilizerEditorData(fertilizers) {
     liquid: Boolean(fert.liquid),
     weight_factor: Number.isFinite(fert.weight_factor) ? fert.weight_factor : null,
     comp: { ...(fert.comp || {}) },
+    solver_max_dose_per_l: Number.isFinite(fert.solver_max_dose_per_l)
+      ? fert.solver_max_dose_per_l
+      : null,
   }));
   fertilizerEditorSelectedIndex = 0;
   fertilizerEditorCompKeys = buildFertilizerCompKeys(fertilizerEditorRows);
@@ -1372,8 +1380,8 @@ function fertilizerEditorSortValue(row, key) {
   if (key.startsWith("comp:")) {
     return Number(row.comp?.[key.slice(5)]);
   }
-  if (key === "weight_factor") {
-    return row.weight_factor === null ? Number.NaN : Number(row.weight_factor);
+  if (key === "weight_factor" || key === "solver_max_dose_per_l") {
+    return row[key] === null ? Number.NaN : Number(row[key]);
   }
   if (key === "liquid") {
     return row.liquid ? 1 : 0;
@@ -1494,6 +1502,7 @@ function renderFertilizerEditor() {
     "col-liquid",
     "col-weight",
     ...fertilizerEditorCompKeys.map(() => "col-nutrient"),
+    "col-solver-max",
   ];
   const headerCells = [
     { label: "#" },
@@ -1501,6 +1510,7 @@ function renderFertilizerEditor() {
     fertilizerEditorHeader("Liquid", "liquid", "common.liquid"),
     fertilizerEditorHeader("Density / factor", "weight_factor", "editor.densityFactor"),
     ...fertilizerEditorCompKeys.map((key) => fertilizerEditorHeader(key, `comp:${key}`)),
+    fertilizerEditorHeader("Solver max / L", "solver_max_dose_per_l", "editor.solverMaxDosePerL"),
   ];
   const table = createTable({
     id: "fertilizerEditorTable",
@@ -1611,6 +1621,26 @@ function renderFertilizerEditor() {
       colIndex += 1;
     });
 
+    const solverMaxCell = document.createElement("td");
+    const solverMaxInput = document.createElement("input");
+    solverMaxInput.type = "text";
+    solverMaxInput.inputMode = "decimal";
+    solverMaxInput.value = Number.isFinite(row.solver_max_dose_per_l)
+      ? formatNumber(row.solver_max_dose_per_l, solverMaxFormatter)
+      : "";
+    solverMaxInput.dataset.rowIndex = index;
+    solverMaxInput.dataset.field = "solver_max_dose_per_l";
+    solverMaxInput.dataset.colIndex = colIndex;
+    solverMaxInput.addEventListener("input", (event) => {
+      row.solver_max_dose_per_l = parseDecimalInput(event.target.value);
+    });
+    solverMaxInput.addEventListener("change", () => {
+      normalizeDecimalInputElement(solverMaxInput, row.solver_max_dose_per_l, "");
+    });
+    solverMaxInput.addEventListener("keydown", handleEditorEnterKey);
+    solverMaxCell.appendChild(solverMaxInput);
+    tr.appendChild(solverMaxCell);
+
     table.tbody.appendChild(tr);
   });
   applyFertilizerEditorFilter();
@@ -1680,6 +1710,9 @@ async function saveFertilizerEditor() {
       liquid: Boolean(row.liquid),
       weight_factor: weight,
       comp,
+      solver_max_dose_per_l: Number.isFinite(row.solver_max_dose_per_l)
+        ? row.solver_max_dose_per_l
+        : null,
     });
   }
   try {
@@ -1705,7 +1738,13 @@ function addFertilizerEditorRow() {
     clearTimeout(fertilizerEditorSearchTimer);
     fertilizerEditorSearchTimer = null;
   }
-  fertilizerEditorRows.push({ name: "", liquid: false, weight_factor: null, comp: {} });
+  fertilizerEditorRows.push({
+    name: "",
+    liquid: false,
+    weight_factor: null,
+    comp: {},
+    solver_max_dose_per_l: null,
+  });
   fertilizerEditorSelectedIndex = fertilizerEditorRows.length - 1;
   renderFertilizerEditor();
   focusEditorInput(fertilizerEditorSelectedIndex, "name");

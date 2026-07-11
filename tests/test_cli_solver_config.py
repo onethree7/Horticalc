@@ -7,6 +7,8 @@ import pytest
 
 import horticalc.__main__ as cli
 from horticalc.solver_config import (
+    MAX_IRLS_MAX_OUTER_ITER,
+    MAX_SINGLETON_UNDERFILL_MAX_ITER,
     SOLVER_CONFIG_DEFAULTS,
     SOLVER_CONFIG_DEFINITIONS,
     resolve_solver_config,
@@ -21,12 +23,22 @@ def test_solver_config_definitions_use_data_backed_defaults() -> None:
     assert defaults["singleton_supplier_enabled"] is False
     assert defaults["singleton_underfill_enabled"] is True
     assert defaults["n_form_priority_weights"] == {}
+    assert defaults["irls_max_outer_iter"] <= MAX_IRLS_MAX_OUTER_ITER
+    assert defaults["singleton_underfill_max_iter"] <= MAX_SINGLETON_UNDERFILL_MAX_ITER
     nitrogen_definition = next(
         definition
         for definition in SOLVER_CONFIG_DEFINITIONS
         if definition["key"] == "nitrogen_objective_mode"
     )
     assert nitrogen_definition["choices"] == ["as_targets", "n_total_only", "n_forms_only"]
+    assert next(
+        definition for definition in SOLVER_CONFIG_DEFINITIONS if definition["key"] == "irls_max_outer_iter"
+    )["maximum"] == MAX_IRLS_MAX_OUTER_ITER
+    assert next(
+        definition
+        for definition in SOLVER_CONFIG_DEFINITIONS
+        if definition["key"] == "singleton_underfill_max_iter"
+    )["maximum"] == MAX_SINGLETON_UNDERFILL_MAX_ITER
     assert "macro_priority_enabled" not in defaults
     assert "stage_optimization_enabled" not in defaults
 
@@ -133,8 +145,16 @@ def test_solver_config_validation_preserves_valid_partial_values() -> None:
         ({"mystery": True}, "Unknown solver config key"),
         ({"relative_weighting": "false"}, "Invalid solver config value"),
         ({"irls_max_outer_iter": 1.9}, "Invalid solver config value"),
+        (
+            {"irls_max_outer_iter": MAX_IRLS_MAX_OUTER_ITER + 1},
+            f"Invalid solver config value: irls_max_outer_iter must be <= {MAX_IRLS_MAX_OUTER_ITER}",
+        ),
         ({"overshoot_penalty": float("nan")}, "Invalid solver config value"),
         ({"nitrogen_objective_mode": "chaos_mode"}, "Invalid solver config value"),
+        (
+            {"singleton_underfill_max_iter": MAX_SINGLETON_UNDERFILL_MAX_ITER + 1},
+            "Invalid solver config value: singleton_underfill_max_iter must be <=",
+        ),
         ({"n_form_priority_weights": {"K": 2.0}}, "Invalid n_form_priority_weights key"),
         ({"n_form_priority_weights": {"N_NO3": -1.0}}, "Invalid n_form_priority_weights value"),
     ],

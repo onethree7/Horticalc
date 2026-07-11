@@ -182,6 +182,7 @@ window.HORTICALC_I18N.de = {
   "editor.searchPlaceholder": "Suchen...",
   "editor.fertilizerName": "Düngername",
   "editor.densityFactor": "Dichte [g/mL] / Faktor",
+  "editor.solverMaxDosePerL": "Solver-Maximum / L",
   "editor.nameRequired": "Bitte einen Düngernamen angeben.",
   "editor.uniqueNames": "Düngernamen müssen eindeutig sein.",
   "editor.resizeNameColumn": "Düngername-Spalte breiter oder schmaler ziehen",

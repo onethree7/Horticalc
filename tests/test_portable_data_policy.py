@@ -60,7 +60,13 @@ def test_portable_layout_uses_shipped_catalog_and_user_overlay(
     assert overrides_csv.exists()
     assert "Extra" in overrides_csv.read_text(encoding="utf-8")
     with overrides_csv.open("r", encoding="utf-8", newline="") as handle:
-        assert next(csv.reader(handle)) == ["Düngername", "Liquid", "Gewicht", "N"]
+        assert next(csv.reader(handle)) == [
+            "Düngername",
+            "Liquid",
+            "Gewicht",
+            "N",
+            "SolverMaxDosePerL",
+        ]
     assert disabled_txt.read_text(encoding="utf-8").strip() == "Remove Me"
     assert "Extra" not in shipped_csv.read_text(encoding="utf-8")
 
@@ -189,7 +195,13 @@ def test_pre_liquid_user_fertilizers_migrate_without_blocking_startup(
     assert fertilizers["Custom Liquid"].weight_factor == pytest.approx(1.25)
     overrides_path = paths.user_fertilizer_overrides_path(tmp_path)
     with overrides_path.open("r", encoding="utf-8", newline="") as handle:
-        assert next(csv.reader(handle)) == ["Düngername", "Liquid", "Gewicht", "N"]
+        assert next(csv.reader(handle)) == [
+            "Düngername",
+            "Liquid",
+            "Gewicht",
+            "N",
+            "SolverMaxDosePerL",
+        ]
     assert not legacy_path.exists()
     assert legacy_path.with_suffix(".csv.legacy-backup").exists()
 

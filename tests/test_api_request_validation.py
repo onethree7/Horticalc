@@ -66,6 +66,21 @@ def test_solve_rejects_unknown_water_key() -> None:
     assert response.json()["detail"] == "Invalid water key: UNKNOWN"
 
 
+def test_solve_rejects_duplicate_fertilizers_allowed() -> None:
+    response = TestClient(api_app.app).post(
+        "/solve",
+        json={
+            "targets": {"N_total": 10},
+            "fertilizers_allowed": ["Yara Tera CALCINIT", "Yara Tera CALCINIT"],
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == (
+        "fertilizers_allowed must not contain duplicates: ['Yara Tera CALCINIT']"
+    )
+
+
 def test_requests_reject_non_finite_runtime_numbers() -> None:
     client = TestClient(api_app.app)
     requests = [

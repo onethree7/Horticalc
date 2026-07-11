@@ -90,6 +90,49 @@ def _nnls(A: np.ndarray, b: np.ndarray, tol: float = 1e-10, max_iter: int = 500)
     return x
 
 
+def _bounded_nnls(
+    A: np.ndarray,
+    b: np.ndarray,
+    upper_bounds: np.ndarray,
+    *,
+    tol: float = 1e-10,
+    max_iter: int = 10000,
+) -> np.ndarray:
+    """Solve non-negative least squares with optional per-column upper bounds."""
+    if A.size == 0:
+        return np.zeros(A.shape[1])
+    upper = np.asarray(upper_bounds, dtype=float)
+    if upper.shape != (A.shape[1],):
+        raise ValueError("upper_bounds must match the number of fertilizer columns")
+    if np.any(np.isnan(upper)) or np.any(upper < 0.0):
+        raise ValueError("upper_bounds must be non-negative")
+    if np.all(np.isinf(upper)):
+        return _nnls(A, b, tol=tol)
+
+    unconstrained = _nnls(A, b, tol=tol)
+    x = np.clip(unconstrained, 0.0, upper)
+    spectral_norm = float(np.linalg.norm(A, ord=2))
+    if spectral_norm <= tol:
+        return np.zeros(A.shape[1])
+    step = 1.0 / (spectral_norm * spectral_norm)
+    y = x.copy()
+    momentum = 1.0
+    for _ in range(max_iter):
+        gradient = A.T @ (A @ y - b)
+        updated = np.clip(y - step * gradient, 0.0, upper)
+        if np.max(np.abs(updated - x), initial=0.0) <= tol * max(
+            1.0,
+            np.max(np.abs(x), initial=0.0),
+        ):
+            x = updated
+            break
+        next_momentum = (1.0 + np.sqrt(1.0 + 4.0 * momentum * momentum)) / 2.0
+        y = updated + ((momentum - 1.0) / next_momentum) * (updated - x)
+        x = updated
+        momentum = next_momentum
+    return np.clip(x, 0.0, upper)
+
+
 def _normalize_targets(targets: Dict[str, float]) -> Dict[str, float]:
     cleaned: Dict[str, float] = {}
     for key, value in (targets or {}).items():
@@ -189,6 +232,7 @@ def _nnls_weighted_irls(
     max_outer_iter: int,
     tol: float,
     rtol: float,
+    upper_bounds: np.ndarray,
 ) -> np.ndarray:
     if A.size == 0:
         return np.array([])
@@ -200,13 +244,13 @@ def _nnls_weighted_irls(
         overshoot_only = np.zeros_like(base_w)
     A_weighted = A * base_w[:, None]
     b_weighted = b * base_w
-    x = _nnls(A_weighted, b_weighted, tol=tol)
+    x = _bounded_nnls(A_weighted, b_weighted, upper_bounds, tol=tol)
     for _ in range(max_outer_iter - 1):
         r = A @ x - b
         w = base_w * (1.0 + overshoot_penalty * (r > 0)) + overshoot_only * (r > 0)
         A_weighted = A * w[:, None]
         b_weighted = b * w
-        x_new = _nnls(A_weighted, b_weighted, tol=tol)
+        x_new = _bounded_nnls(A_weighted, b_weighted, upper_bounds, tol=tol)
         if np.max(np.abs(x_new - x)) <= rtol * max(1.0, np.max(np.abs(x))):
             x = x_new
             break
@@ -264,6 +308,7 @@ def _solve_weights(
     overshoot_penalty: float = 1.0,
     irls_max_outer_iter: int = 4,
     scale_eps_mg_per_l: float = 1.0,
+    upper_bounds: np.ndarray | None = None,
 ) -> np.ndarray:
     if A.size == 0:
         return np.array([])
@@ -272,8 +317,13 @@ def _solve_weights(
     A_var = A[:, variable_mask]
     if A_var.size == 0:
         return np.zeros(int(variable_mask.sum()))
+    variable_upper_bounds = (
+        np.full(A_var.shape[1], np.inf)
+        if upper_bounds is None
+        else np.asarray(upper_bounds, dtype=float)[variable_mask]
+    )
     if not relative_weighting:
-        return _nnls(A_var, b)
+        return _bounded_nnls(A_var, b, variable_upper_bounds)
     if objective_keys is None or targets_raw is None:
         raise ValueError("objective_keys and targets_raw are required when relative_weighting is enabled")
     scales = _build_row_scales(objective_keys, targets_raw, b, eps_mg_per_l=scale_eps_mg_per_l)
@@ -300,6 +350,7 @@ def _solve_weights(
         max_outer_iter=irls_max_outer_iter,
         tol=1e-10,
         rtol=1e-6,
+        upper_bounds=variable_upper_bounds,
     )
 
 
@@ -428,6 +479,7 @@ def _singleton_supplier_pass(
     recompute_achieved_fn: Callable[[np.ndarray], Dict[str, float]],
     mode: str = "overshoot",
     use_potential_share: bool = False,
+    upper_bounds_full: np.ndarray | None = None,
 ) -> tuple[np.ndarray, Dict[str, float]]:
     adjusted = x_full.copy()
     skip = skip_keys or set()
@@ -473,6 +525,8 @@ def _singleton_supplier_pass(
                 continue
             proposed = adjusted.copy()
             proposed[j_star] = adjusted[j_star] + delta_g
+            if upper_bounds_full is not None:
+                proposed[j_star] = min(proposed[j_star], upper_bounds_full[j_star])
         else:
             raise ValueError(f"Unknown singleton supplier mode: {mode}")
         achieved_new = recompute_achieved_fn(proposed)
@@ -579,6 +633,14 @@ def solve_recipe_data(
     allowed_names = [str(name) for name in recipe.get("fertilizers_allowed", [])]
     if not allowed_names:
         raise ValueError("fertilizers_allowed must list at least one fertilizer")
+    seen_allowed_names: set[str] = set()
+    duplicate_allowed_names: list[str] = []
+    for name in allowed_names:
+        if name in seen_allowed_names and name not in duplicate_allowed_names:
+            duplicate_allowed_names.append(name)
+        seen_allowed_names.add(name)
+    if duplicate_allowed_names:
+        raise ValueError(f"fertilizers_allowed must not contain duplicates: {duplicate_allowed_names}")
 
     allowed = []
     for name in allowed_names:
@@ -600,6 +662,12 @@ def solve_recipe_data(
         raise ValueError(f"fixed_grams not in fertilizers_allowed: {unknown_fixed}")
     fixed_weights = np.array([fixed_grams.get(fert.name, 0.0) for fert in allowed], dtype=float)
     variable_mask = np.array([fert.name not in fixed_grams for fert in allowed], dtype=bool)
+    solver_upper_bounds = np.array([
+        np.inf
+        if fert.name in fixed_grams or fert.solver_max_dose_per_l is None
+        else fert.solver_max_dose_per_l * liters
+        for fert in allowed
+    ], dtype=float)
 
     water_only_recipe = {
         "liters": liters,
@@ -669,6 +737,7 @@ def solve_recipe_data(
             overshoot_penalty=overshoot_penalty,
             irls_max_outer_iter=irls_max_outer_iter,
             scale_eps_mg_per_l=scale_eps_mg_per_l,
+            upper_bounds=solver_upper_bounds,
         )
         x_full_local = fixed_weights.copy()
         x_full_local[variable_mask] += solved_weights
@@ -699,6 +768,7 @@ def solve_recipe_data(
                 recompute_achieved_fn=recompute_achieved_fn,
                 mode=mode,
                 use_potential_share=use_potential_share,
+                upper_bounds_full=solver_upper_bounds,
             )
             if not np.any(np.abs(x_full_updated - x_full_local) > 1e-12):
                 return False

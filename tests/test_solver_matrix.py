@@ -117,7 +117,7 @@ def test_benchmark_corpus_and_recipe_union_are_explicit() -> None:
 
 
 def test_shipped_fertilizers_define_no_solver_dose_limits() -> None:
-    fertilizers = load_fertilizers()
+    fertilizers = load_fertilizers(solver_matrix.ROOT / "data" / "fertilizers.csv")
 
     assert all(fertilizer.solver_max_dose_per_l is None for fertilizer in fertilizers.values())
 

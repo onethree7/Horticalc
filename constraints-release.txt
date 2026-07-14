@@ -15,7 +15,7 @@ h11==0.16.0
 idna==3.18
 typing-inspection==0.4.2
 typing_extensions==4.16.0
-tzdata==2026.2; platform_system == "Windows"
+tzdata==2026.3; platform_system == "Windows"
 pyinstaller==6.21.0
 pyinstaller-hooks-contrib==2026.6
 altgraph==0.17.5

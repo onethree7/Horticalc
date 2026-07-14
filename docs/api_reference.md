@@ -1,33 +1,20 @@
 # API Reference
 
-The FastAPI app lives in `api/app.py`. It serves JSON API routes and the static
-frontend from the same origin. Save endpoints also accept YAML request bodies
-for compatibility, but JSON is the documented API contract.
+Status: `current-state`.
 
-JSON and YAML save bodies must decode to an object. Malformed bodies return
-HTTP 400, model-shape errors return HTTP 422, and unknown mapping keys or
-non-finite mapping values return HTTP 400. Non-finite model fields such as
-liters, fertilizer grams, fixed grams, and osmosis percentage return HTTP 422.
-Water values use the same allowed-key and finite-number validation in profile
-saves, `/calculate`, and `/solve`.
-Empty lists and strings are not treated as missing objects; malformed nested
-water mappings return HTTP 400.
+The FastAPI app lives in `api/app.py`. It serves JSON API routes and the static frontend from the same origin. Save endpoints also accept YAML request bodies for compatibility, but JSON is the documented contract.
 
-Resource-list routes skip an unreadable or malformed YAML file and log a
-warning so one damaged user file does not hide every valid profile. Directly
-loading that damaged file still fails. Resource names are resolved only inside
-the configured shipped and user directories; absolute paths and directory
-traversal are rejected by `src/horticalc/paths.py`.
+Malformed bodies return HTTP 400, model-shape errors return HTTP 422, and unknown mapping keys or non-finite mapping values return HTTP 400. Non-finite model fields such as liters, fertilizer grams, fixed grams, and osmosis percentage return HTTP 422. Resource list routes skip unreadable or malformed YAML and log a warning so one damaged file does not hide all valid profiles. Resource names are resolved only inside the configured shipped and user directories; absolute paths and directory traversal are rejected by `src/horticalc/paths.py`.
 
 ## Health And Schema
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/health` | Returns `{"status": "ok"}`. |
-| `GET` | `/schema/fertilizer-comp-keys` | Returns fertilizer composition keys from `core.COMP_COLS`. |
-| `GET` | `/schema/solver-config` | Returns solver config definitions from `solver_config.py`. |
-| `GET` | `/schema/units` | Returns canonical volume/dose metadata and conversion factors from `units.py`. |
-| `GET` | `/molar-masses` | Returns `data/molar_masses.yml`. |
+| `GET` | `/health` | `{"status": "ok"}` |
+| `GET` | `/schema/fertilizer-comp-keys` | Fertilizer composition keys from `COMP_COLS` in `src/horticalc/core.py`. |
+| `GET` | `/schema/solver-config` | Solver config definitions from `src/horticalc/solver_config.py`. |
+| `GET` | `/schema/units` | Volume and dose conversion metadata from `src/horticalc/units.py`. |
+| `GET` | `/molar-masses` | `data/molar_masses.yml`. |
 
 ## Preferences
 
@@ -36,30 +23,9 @@ traversal are rejected by `src/horticalc/paths.py`.
 | `GET` | `/preferences` | Return persisted UI preferences. |
 | `PUT` | `/preferences` | Validate and merge one or more UI preferences. |
 
-Accepted fields are `theme`, `locale`, positive canonical `default_liters`,
-`volume_unit`, `solid_dose_unit`, `liquid_dose_unit`, `solver_config`, and
-`last_water_profile`. `locale` accepts `de`, `en`, `nl`, `es`, or `zh`.
-`volume_unit` accepts `liter`, `us_gallon`,
-`imperial_gallon`, or `cubic_meter`; it controls GUI presentation and does not
-change API recipe fields from liters. `solid_dose_unit` accepts `gram`,
-`kilogram`, `ounce`, or `pound`; `liquid_dose_unit` accepts `milliliter`,
-`liter`, `us_fluid_ounce`, or `imperial_fluid_ounce`. These are also GUI-only:
-API and recipe `grams` values stay canonical grams for solids and canonical mL
-for liquids. Preference Solver keys and value types must match the
-UI-visible definitions from `/schema/solver-config`; definitions marked
-`ui: false` remain available to recipes and `/solve` but are not preference
-defaults. Water-profile values must be filenames rather than paths. Partial
-payloads are merged with existing preferences. Preferences are stored in
-`user/preferences.json` so they survive the launcher's temporary browser
-profiles.
+Accepted fields are `theme`, `locale`, positive `default_liters`, `volume_unit`, `solid_dose_unit`, `liquid_dose_unit`, `solver_config`, and `last_water_profile`. `locale` accepts `de`, `en`, `nl`, `es`, or `zh`. `volume_unit` accepts `liter`, `us_gallon`, `imperial_gallon`, or `cubic_meter`. `solid_dose_unit` accepts `gram`, `kilogram`, `ounce`, or `pound`. `liquid_dose_unit` accepts `milliliter`, `liter`, `us_fluid_ounce`, or `imperial_fluid_ounce`. These are GUI-only; API and recipe `grams` stay canonical. `solver_config` in preferences is restricted to UI-visible keys; advanced keys marked `ui: false` are only accepted in recipes and `/solve`.
 
-Sending `{"solver_config": {}}` removes saved Solver overrides and restores
-the schema defaults on the next load.
-
-Solver configuration is validated consistently for preferences, saved
-recipes, and `/solve`. Unknown keys, incorrect JSON types, unsupported
-`nitrogen_objective_mode` values, non-finite numbers, and invalid
-`n_form_priority_weights` mappings return HTTP 400.
+Preferences are stored in `user/preferences.json` so they survive the launcher's temporary browser profiles. Partial payloads merge with existing preferences. Sending `{"solver_config": {}}` removes saved solver overrides.
 
 ## Fertilizers
 
@@ -98,38 +64,20 @@ Solver limit.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/water-profiles` | List shipped profiles with user overrides layered by filename. |
-| `GET` | `/water-profiles/{profile_name}` | Load one water profile and include normalized values. |
+| `GET` | `/water-profiles/{profile_name}` | Load one water profile with normalized values. |
 | `POST`/`PUT` | `/water-profiles` | Save a water profile. |
 
-Allowed water keys are defined in `api/app.py` as `ALLOWED_WATER_KEYS`.
-Current keys include nitrogen forms, oxide forms, element helpers, carbonate
-helpers, trace elements, and `KH`.
-
-Save payload:
-
-```json
-{
-  "name": "My Water",
-  "source": "",
-  "mg_per_l": {"Ca": 80, "Mg": 20, "HCO3": 120},
-  "osmosis_percent": 0
-}
-```
+Allowed water keys are defined in `src/horticalc/chemistry.py` and reused as `ALLOWED_WATER_KEYS` in `api/app.py`.
 
 ## Nutrient Solution Targets
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/nutrient-solutions` | List target profiles. |
-| `GET` | `/nutrient-solutions/{solution_name}` | Load target profile. |
-| `POST`/`PUT` | `/nutrient-solutions` | Save target profile. |
+| `GET` | `/nutrient-solutions/{solution_name}` | Load a target profile. |
+| `POST`/`PUT` | `/nutrient-solutions` | Save a target profile. |
 
-Allowed target keys are defined in `src/horticalc/solver.py` as
-`ALLOWED_TARGET_KEYS` and reused by `api/app.py`.
-
-GET responses expose only the runtime contract: `name`, `source`, and
-`targets_mg_per_l`. Optional shipped-profile conversion notes are not returned
-by the API. POST/PUT uses the same three-field contract.
+Allowed target keys are defined in `src/horticalc/solver.py` as `ALLOWED_TARGET_KEYS` and reused by `api/app.py`.
 
 ## Recipes
 
@@ -140,50 +88,13 @@ by the API. POST/PUT uses the same three-field contract.
 | `GET` | `/recipes/{recipe_name}` | Load a recipe. |
 | `POST`/`PUT` | `/recipes` | Save a recipe. |
 
-Recipe payload:
-
-```json
-{
-  "name": "Example Recipe",
-  "liters": 10,
-  "fertilizers": [{"name": "Calcinit", "grams": 4.5}],
-  "fertilizers_allowed": ["Calcinit"],
-  "urea_as_nh4": false,
-  "water_profile": "default",
-  "osmosis_percent": 0,
-  "solver_config": {}
-}
-```
+Recipe payloads use `name`, `liters`, `fertilizers`, `fertilizers_allowed`, `urea_as_nh4`, `water_profile`, `osmosis_percent`, and `solver_config`. The calculator uses `fertilizers`; the solver uses `fertilizers_allowed`, `fixed_grams`, and `solver_config`.
 
 ## Calculate
 
-`POST /calculate` computes a nutrient solution from explicit canonical
-fertilizer doses: the `grams` field is grams for solids and mL for liquids.
+`POST /calculate` computes a nutrient solution from explicit doses. The `grams` field is canonical grams for solids and canonical mL for liquids.
 
-Request:
-
-```json
-{
-  "liters": 10,
-  "fertilizers": [{"name": "Calcinit", "grams": 4.5}],
-  "urea_as_nh4": false,
-  "water_mg_l": {"Ca": 80},
-  "osmosis_percent": 0
-}
-```
-
-Instead of `water_mg_l`, callers may pass `water_profile_name`.
-
-Response follows `CalcResult.to_dict()` in `src/horticalc/core.py`; see
-[Data model](data_model.md).
-This includes the fertilizer-only element, oxide, ion-balance, and EC fields,
-plus the Sluijsmann result.
-
-The `ion_balance` response object keeps legacy raw CBE fields
-`error_percent_signed` and `error_percent_abs` and also includes explicit
-`raw_cbe_percent_signed`, `raw_cbe_percent_abs`,
-`din_38402_62_percent_signed`, `din_38402_62_percent_abs`, and
-`balance_method` fields.
+Instead of `water_mg_l`, callers may pass `water_profile_name`. The response follows `CalcResult.to_dict()` in `src/horticalc/core.py` and is documented in [data_model.md](data_model.md).
 
 ## Solve
 
@@ -209,9 +120,9 @@ config integer overrides use the shared backend contract in
 `src/horticalc/solver_config.py`, including the current ceilings
 `irls_max_outer_iter <= 12` and `singleton_underfill_max_iter <= 8`.
 
-Response follows `SolveResult.to_dict()` in `src/horticalc/solver.py`.
+Response follows `SolveResult.to_dict()` in `src/horticalc/solver.py` and is
+documented in [data_model.md](data_model.md).
 
 ## Static Frontend
 
-`app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")`
-serves `frontend/index.html` and static assets after API routes are registered.
+`app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")` in `api/app.py` serves `frontend/index.html` and assets after API routes are registered.

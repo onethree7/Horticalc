@@ -186,31 +186,19 @@ def test_brand_window_uses_single_clean_leaf() -> None:
     assert '.rail-logo .brand-leaf-shape' in styles
     assert '.rail-logo .brand-leaf-vein' in styles
 
-def test_app_js_shell_helpers_are_top_level_and_initialized() -> None:
-    content = read_frontend_file("app.js")
-
-    for helper in [
-        "function bindShellNavigation()",
-        "function showShellView(view",
-        "function scrollToPanelAnchor(anchor",
-        "function updateLiveResultBar(data = lastCalculation)",
-    ]:
-        assert helper in content
-
-    assert "bindShellNavigation();" in content
-    assert "function buildSolverConfigPayload()" in content
-    assert "let currentLiters = DEFAULT_LITERS;" in content
-    assert "CALC_LITERS" not in content
-    assert "solverLitersInput" not in content
-    assert "applyScaleToCalcLiters" not in content
-    assert 'showShellView("fertilizers", { scroll: false });' in content
-    assert "renderCalculation(data)" in content
-    assert "updateLiveResultBar(data);" in content
-    assert "applySolverResultToCalculator" in content
-    assert "solverAutoApplyEnabled" in content
-    assert "modeToggleInputs" not in content
-    assert "activeShellView" not in content
-    assert "activeMode" not in content
+def test_shell_controller_owns_navigation_and_main_composes_workflows() -> None:
+    shell = read_frontend_file("app/shell.js")
+    main = read_frontend_file("app/main.js")
+    solver = read_frontend_file("app/solver.js")
+    assert "export function createShellController" in shell
+    assert "function scrollToAnchor(anchor)" in shell
+    assert "function updateLiveResult(data = lastCalculation)" in shell
+    assert "function show(view" in shell
+    assert 'show("fertilizers", { scroll: false });' in shell
+    assert "createShellController({" in main
+    assert "onViewChange(nextView, previousView)" in main
+    assert "function buildSolverConfigPayload()" in solver
+    assert "applySolverResultToCalculator" in read_frontend_file("app/calculator.js")
 
 def test_framed_shell_styles_present() -> None:
     content = read_frontend_file("styles.css")
@@ -269,35 +257,39 @@ def test_framed_shell_styles_present() -> None:
     assert ".wheel-" not in content
 
 def test_theme_selector_persists_browser_design_state() -> None:
-    app_js = read_frontend_file("app.js")
+    constants = read_frontend_file("app/constants.js")
+    settings = read_frontend_file("app/settings.js")
+    api = read_frontend_file("app/api.js")
 
-    assert 'const THEME_STORAGE_KEY = "horticalc.theme";' in app_js
-    assert 'const DEFAULT_THEME = "horticalc-dark";' in app_js
-    assert 'document.body.dataset.theme = nextTheme;' in app_js
-    assert "async function initializeThemeControl()" in app_js
-    assert "lsGet(THEME_STORAGE_KEY, DEFAULT_THEME)" in app_js
-    assert 'fetch(`${apiBase()}/preferences`' in app_js
-    assert "persistPreferences({ theme: nextTheme });" in app_js
-    assert "body: JSON.stringify(updates)" in app_js
-    assert "keepalive: true" in app_js
+    assert 'THEME_STORAGE_KEY = "horticalc.theme"' in constants
+    assert 'DEFAULT_THEME = "horticalc-dark"' in constants
+    assert 'document.body.dataset.theme = nextTheme;' in settings
+    assert "storageGet(THEME_STORAGE_KEY, DEFAULT_THEME)" in settings
+    assert "persistPreferences({ theme: applyTheme(event.target.value) });" in settings
+    assert "body: JSON.stringify(payload)" in api
+    assert "keepalive" in api
 
 
 def test_workspace_preferences_persist_without_overwriting_explicit_recipe_loads() -> None:
-    app_js = read_frontend_file("app.js")
+    settings = read_frontend_file("app/settings.js")
+    solver = read_frontend_file("app/solver.js")
+    water = read_frontend_file("app/water.js")
+    api = read_frontend_file("app/api.js")
+    main = read_frontend_file("app/main.js")
 
-    assert "persistPreferences({ default_liters: nextLiters });" in app_js
-    assert "persistPreferences({ solver_config: buildSolverConfigPayload() });" in app_js
-    assert "persistPreferences({ last_water_profile: selection });" in app_js
-    assert 'persistPreferences({ last_water_profile: "default.yml" });' in app_js
-    assert "let preferenceWritePromise = Promise.resolve();" in app_js
-    assert "preferenceWritePromise = preferenceWritePromise.then(() =>" in app_js
-    assert "return preferenceWritePromise;" in app_js
-    assert "applyRecipe(recipe, { applyLiters: false });" in app_js
-    assert "applyRecipe(recipe);" in app_js
+    assert "persistPreferences({ default_liters: liters });" in settings
+    assert "api.persistPreferences({ solver_config: buildSolverConfigPayload() });" in solver
+    assert "api.persistPreferences({ last_water_profile: waterProfileSelect.value });" in water
+    assert 'api.persistPreferences({ last_water_profile: "default.yml" });' in water
+    assert "let preferenceWritePromise = Promise.resolve();" in api
+    assert "preferenceWritePromise = preferenceWritePromise.then(() =>" in api
+    assert "return preferenceWritePromise;" in api
+    assert "calculator.applyRecipe(recipe);" in main
+    assert "calculator.applyRecipe(recipe, { applyLiters: false });" in main
 
 def test_fertilizer_editor_sticky_columns_size_from_visible_content() -> None:
     styles = read_frontend_file("styles.css")
-    app_js = read_frontend_file("app.js")
+    app_js = read_frontend_file("app/editor.js")
 
     assert "--fert-editor-index-width" in styles
     assert "--fert-editor-liquid-width" in styles
@@ -352,7 +344,7 @@ def test_live_result_bar_uses_consistent_high_visibility_type() -> None:
     assert "Ca:Mg ratio (mg/L)" in index
 
 def test_sidebar_omits_co3_si_ratio_chip() -> None:
-    app_js = read_frontend_file("app.js")
+    app_js = read_frontend_file("app/water.js")
     render_block = app_js.split("function renderIonRatios", 1)[1].split("function renderCalculation", 1)[0]
 
     assert '"CO3:Si"' not in render_block

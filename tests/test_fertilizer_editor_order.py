@@ -20,7 +20,7 @@ def test_fertilizer_editor_n_form_order() -> None:
 
 
 def test_fertilizer_editor_headers_are_sortable() -> None:
-    app = read_frontend_file("app.js")
+    app = read_frontend_file("app/editor.js")
     styles = read_frontend_file("styles.css")
 
     assert "fertilizerEditorSort" in app
@@ -33,19 +33,20 @@ def test_fertilizer_editor_headers_are_sortable() -> None:
 
 
 def test_fertilizer_editor_refreshes_catalog_without_restarting_app() -> None:
-    app = read_frontend_file("app.js")
-    save_block = app.split("async function saveFertilizerEditor()", 1)[1].split(
+    editor = read_frontend_file("app/editor.js")
+    main = read_frontend_file("app/main.js")
+    save_block = editor.split("async function saveFertilizerEditor()", 1)[1].split(
         "async function reloadFertilizerEditor()",
         1,
     )[0]
 
-    assert "async function refreshFertilizerCatalog()" in app
+    assert "async function refreshFertilizerCatalog()" in editor
     assert "await refreshFertilizerCatalog();" in save_block
     assert "await init();" not in save_block
-    assert "availableNames" in app
-    assert 'updateSolverAllowedFertilizers(availableSolverNames, "replace")' in app
-    assert "renderSolverResults(null);" in app
-    assert app.count("init();") == 1
+    assert "onCatalogChange(refreshedFertilizers);" in editor
+    assert "calculator.setFertilizers(fertilizers);" in main
+    assert "solver.setFertilizers(fertilizers);" in main
+    assert "calculator.scheduleRecalculate();" in main
 
 
 def test_fertilizer_api_uses_liquid_boolean_schema() -> None:
@@ -66,7 +67,7 @@ def test_fertilizer_api_uses_liquid_boolean_schema() -> None:
 
 
 def test_fertilizer_editor_places_solver_max_after_nutrients() -> None:
-    app = read_frontend_file("app.js")
+    app = read_frontend_file("app/editor.js")
 
     columns = app.split("const headerCells = [", 1)[1].split("];", 1)[0]
     assert columns.index("...fertilizerEditorCompKeys") < columns.index("Solver max / L")

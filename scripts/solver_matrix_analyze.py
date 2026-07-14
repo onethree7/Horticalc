@@ -1,70 +1,16 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter, defaultdict
 import csv
+from dataclasses import dataclass, field
 import json
 import math
+from pathlib import Path
+import statistics
 import sys
 import time
-from collections import Counter, defaultdict
-from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
-
-
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
-from horticalc.solver_config import MATRIX_BOOLEAN_SOLVER_KEYS  # noqa: E402
-
-
-@dataclass
-class ScoreStats:
-    count: int = 0
-    total: float = 0.0
-    minimum: float = math.inf
-    maximum: float = -math.inf
-    values: list[float] = field(default_factory=list)
-
-    def add(self, value: float, *, keep_value: bool = False) -> None:
-        if not math.isfinite(value):
-            return
-        self.count += 1
-        self.total += value
-        self.minimum = min(self.minimum, value)
-        self.maximum = max(self.maximum, value)
-        if keep_value:
-            self.values.append(value)
-
-    @property
-    def avg(self) -> float:
-        return self.total / self.count if self.count else 0.0
-
-    def percentile(self, fraction: float) -> float:
-        if not self.values:
-            return 0.0
-        values = sorted(self.values)
-        index = min(len(values) - 1, max(0, int(round((len(values) - 1) * fraction))))
-        return values[index]
-
-    def to_dict(self, *, percentiles: bool = False) -> dict[str, Any]:
-        result = {
-            "count": self.count,
-            "avg": self.avg,
-            "min": 0.0 if math.isinf(self.minimum) else self.minimum,
-            "max": 0.0 if math.isinf(self.maximum) else self.maximum,
-        }
-        if percentiles:
-            result.update(
-                {
-                    "p05": self.percentile(0.05),
-                    "p50": self.percentile(0.50),
-                    "p95": self.percentile(0.95),
-                }
-            )
-        return result
 
 
 def _set_csv_field_limit() -> None:
@@ -74,7 +20,7 @@ def _set_csv_field_limit() -> None:
             csv.field_size_limit(limit)
             return
         except OverflowError:
-            limit = int(limit / 10)
+            limit //= 10
 
 
 def _loads(value: str, fallback: Any) -> Any:
@@ -86,31 +32,90 @@ def _loads(value: str, fallback: Any) -> Any:
         return fallback
 
 
-def _score(row: dict[str, str]) -> float:
-    try:
-        return float(row.get("composite_score") or math.inf)
-    except ValueError:
-        return math.inf
+def _json(value: Any) -> str:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
-def _stat_bucket(mapping: dict[str, ScoreStats], key: str, value: float, *, keep_value: bool = False) -> None:
-    mapping.setdefault(key, ScoreStats()).add(value, keep_value=keep_value)
+def _percentile(values: list[float], fraction: float) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    index = max(0, math.ceil(len(ordered) * fraction) - 1)
+    return ordered[index]
 
 
-def _compact_best_row(row: dict[str, str]) -> dict[str, Any]:
-    solver_config = _loads(row.get("solver_config", ""), {})
-    fertilizers_allowed = _loads(row.get("fertilizers_allowed", ""), [])
-    used_fertilizers = _loads(row.get("used_fertilizers", ""), [])
-    ignored_targets = _loads(row.get("ignored_targets", ""), {})
+@dataclass
+class ComparisonStats:
+    scores: list[float] = field(default_factory=list)
+    deltas: list[float] = field(default_factory=list)
+    improvements_percent: list[float] = field(default_factory=list)
+    elapsed: list[float] = field(default_factory=list)
+    wins: int = 0
+    ties: int = 0
+    losses: int = 0
+
+    def add(self, score: float, baseline: float, elapsed: float) -> None:
+        delta = score - baseline
+        improvement = ((baseline - score) / baseline * 100.0) if baseline else 0.0
+        self.scores.append(score)
+        self.deltas.append(delta)
+        self.improvements_percent.append(improvement)
+        self.elapsed.append(elapsed)
+        tolerance = max(1e-9, abs(baseline) * 1e-12)
+        if delta < -tolerance:
+            self.wins += 1
+        elif delta > tolerance:
+            self.losses += 1
+        else:
+            self.ties += 1
+
+    def to_dict(self) -> dict[str, Any]:
+        count = len(self.scores)
+        if not count:
+            return {
+                "count": 0,
+                "avg_score": 0.0,
+                "median_score": 0.0,
+                "avg_delta": 0.0,
+                "median_delta": 0.0,
+                "avg_improvement_percent": 0.0,
+                "avg_elapsed_seconds": 0.0,
+                "p95_elapsed_seconds": 0.0,
+                "wins": 0,
+                "ties": 0,
+                "losses": 0,
+            }
+        return {
+            "count": count,
+            "avg_score": statistics.fmean(self.scores),
+            "median_score": statistics.median(self.scores),
+            "min_score": min(self.scores),
+            "max_score": max(self.scores),
+            "avg_delta": statistics.fmean(self.deltas),
+            "median_delta": statistics.median(self.deltas),
+            "avg_improvement_percent": statistics.fmean(self.improvements_percent),
+            "avg_elapsed_seconds": statistics.fmean(self.elapsed),
+            "p95_elapsed_seconds": _percentile(self.elapsed, 0.95),
+            "wins": self.wins,
+            "ties": self.ties,
+            "losses": self.losses,
+        }
+
+
+def _compact_row(row: dict[str, str]) -> dict[str, Any]:
     return {
+        "run_id": row.get("run_id", ""),
         "profile_id": row.get("profile_id", ""),
         "profile_name": row.get("profile_name", ""),
-        "score": _score(row),
-        "mode": row.get("nitrogen_objective_mode", ""),
+        "profile_group": row.get("profile_group", ""),
         "phase": row.get("phase", ""),
+        "portfolio_id": row.get("portfolio_id", ""),
+        "omitted_fertilizer": row.get("omitted_fertilizer", ""),
+        "experiment_id": row.get("experiment_id", ""),
+        "config_id": row.get("config_id", ""),
         "config_name": row.get("config_name", ""),
-        "solver_config": solver_config,
-        "subset_size": int(row.get("subset_size") or 0),
+        "solver_config": _loads(row.get("solver_config", ""), {}),
+        "score": float(row["composite_score"]),
         "macro_score": float(row.get("macro_score") or 0.0),
         "n_form_score": float(row.get("n_form_score") or 0.0),
         "micro_score": float(row.get("micro_score") or 0.0),
@@ -118,383 +123,352 @@ def _compact_best_row(row: dict[str, str]) -> dict[str, Any]:
         "ignored_score": float(row.get("ignored_score") or 0.0),
         "max_error_key": row.get("max_error_key", ""),
         "max_error_score": float(row.get("max_error_score") or 0.0),
+        "elapsed_seconds": float(row.get("elapsed_seconds") or 0.0),
         "total_grams": float(row.get("total_grams") or 0.0),
-        "used_fertilizer_count": int(row.get("used_fertilizer_count") or 0),
-        "fertilizers_allowed": fertilizers_allowed,
-        "used_fertilizers": used_fertilizers,
-        "ignored_keys": sorted(ignored_targets),
+        "used_fertilizers": _loads(row.get("used_fertilizers", ""), []),
+        "fertilizers_allowed": _loads(row.get("fertilizers_allowed", ""), []),
+        "objective_elements": _loads(row.get("objective_elements", ""), []),
     }
 
 
-def _top_stats(stats_by_key: dict[str, ScoreStats], *, limit: int, reverse: bool = False) -> list[dict[str, Any]]:
-    rows = [
-        {"key": key, **stats.to_dict()}
-        for key, stats in stats_by_key.items()
-        if stats.count
-    ]
-    rows.sort(key=lambda item: item["avg"], reverse=reverse)
-    return rows[:limit]
+def _ranked(stats: dict[Any, ComparisonStats]) -> list[tuple[Any, dict[str, Any]]]:
+    rows = [(key, value.to_dict()) for key, value in stats.items()]
+    rows.sort(
+        key=lambda item: (
+            -item[1]["avg_improvement_percent"],
+            item[1]["avg_delta"],
+            item[1]["avg_score"],
+            str(item[0]),
+        )
+    )
+    return rows
 
 
-def _stats_dict(stats_by_key: dict[str, ScoreStats], *, percentiles: bool = False) -> dict[str, dict[str, Any]]:
-    return {key: stats.to_dict(percentiles=percentiles) for key, stats in sorted(stats_by_key.items())}
-
-
-def analyze_run(run_dir: Path, *, baseline_dir: Path | None = None, top_limit: int = 30) -> dict[str, Any]:
+def analyze_run(run_dir: Path, *, top_limit: int = 30) -> dict[str, Any]:
     start = time.perf_counter()
-    summary_path = run_dir / "summary.json"
     results_csv = run_dir / "results.csv"
-    if not summary_path.exists():
-        raise FileNotFoundError(f"Missing summary.json in {run_dir}")
-    if not results_csv.exists():
-        raise FileNotFoundError(f"Missing results.csv in {run_dir}")
+    summary_path = run_dir / "summary.json"
+    manifest_path = run_dir / "run_manifest.json"
+    for path in (results_csv, summary_path, manifest_path):
+        if not path.exists():
+            raise FileNotFoundError(f"Missing solver-matrix output: {path}")
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if int(summary.get("schema_version") or 0) != 2:
+        raise ValueError("Only solver-matrix schema_version 2 can be analyzed")
 
     _set_csv_field_limit()
-    summary = json.loads(summary_path.read_text(encoding="utf-8"))
-    allowed_fertilizers = list(summary.get("allowed_fertilizers") or [])
-
-    counts: dict[str, Counter[str]] = {
-        "status": Counter(),
-        "mode": Counter(),
-        "phase": Counter(),
-        "profiles": Counter(),
-    }
-    score_by_mode: dict[str, ScoreStats] = {}
-    score_by_phase_mode: dict[str, ScoreStats] = {}
-    profile_mode_stats: dict[str, dict[str, ScoreStats]] = defaultdict(dict)
-    base_flag_effects: dict[str, dict[str, dict[str, ScoreStats]]] = defaultdict(
-        lambda: defaultdict(lambda: {"true": ScoreStats(), "false": ScoreStats()})
-    )
-    config_base_stats: dict[str, ScoreStats] = {}
-    subset_base_stats: dict[str, dict[str, ScoreStats]] = defaultdict(dict)
-    fertilizer_stats: dict[str, dict[str, dict[str, ScoreStats]]] = defaultdict(
-        lambda: {
-            name: {"present": ScoreStats(), "absent": ScoreStats()}
-            for name in allowed_fertilizers
-        }
-    )
-    max_error_counts: dict[str, Any] = {
-        "all": Counter(),
-        "by_mode": defaultdict(Counter),
-        "by_profile": defaultdict(Counter),
-    }
-    refine_mutation_stats: dict[str, ScoreStats] = {}
-    best_by_profile: dict[str, dict[str, Any]] = {}
-
     with results_csv.open("r", encoding="utf-8", newline="") as handle:
-        reader = csv.DictReader(handle)
-        for row in reader:
-            status = row.get("status", "")
-            mode = row.get("nitrogen_objective_mode", "")
-            phase = row.get("phase", "")
-            profile_id = row.get("profile_id", "")
-            counts["status"][status] += 1
-            counts["mode"][mode] += 1
-            counts["phase"][phase] += 1
-            counts["profiles"][profile_id] += 1
-            if status != "ok":
-                continue
+        raw_rows = list(csv.DictReader(handle))
+    ok_rows = [row for row in raw_rows if row.get("status") == "ok"]
 
-            score = _score(row)
-            _stat_bucket(score_by_mode, mode, score, keep_value=True)
-            _stat_bucket(score_by_phase_mode, f"{phase}|{mode}", score, keep_value=True)
-            profile_mode_stats[profile_id].setdefault(mode, ScoreStats()).add(score)
-
-            current = best_by_profile.get(profile_id)
-            if current is None or score < float(current["score"]):
-                best_by_profile[profile_id] = _compact_best_row(row)
-
-            max_key = row.get("max_error_key", "")
-            if max_key:
-                max_error_counts["all"][max_key] += 1
-                max_error_counts["by_mode"][mode][max_key] += 1
-                max_error_counts["by_profile"][profile_id][max_key] += 1
-
-            if phase == "base":
-                solver_config = _loads(row.get("solver_config", ""), {})
-                for key in MATRIX_BOOLEAN_SOLVER_KEYS:
-                    value = "true" if bool(solver_config.get(key)) else "false"
-                    base_flag_effects[mode][key][value].add(score)
-                _stat_bucket(config_base_stats, row.get("config_name", ""), score)
-                subset_size = row.get("subset_size", "0")
-                subset_base_stats[mode].setdefault(subset_size, ScoreStats()).add(score)
-                subset = set(_loads(row.get("fertilizers_allowed", ""), []))
-                for fertilizer in allowed_fertilizers:
-                    bucket = "present" if fertilizer in subset else "absent"
-                    fertilizer_stats[mode][fertilizer][bucket].add(score)
-            elif phase == "refine":
-                config_name = row.get("config_name", "")
-                mutation = config_name.split(";", 1)[1] if ";" in config_name else "(no mutation label)"
-                _stat_bucket(refine_mutation_stats, mutation, score)
-
-    best_counts = {
-        "mode": Counter(row["mode"] for row in best_by_profile.values()),
-        "phase": Counter(row["phase"] for row in best_by_profile.values()),
-        "subset_size": Counter(str(row["subset_size"]) for row in best_by_profile.values()),
-        "fertilizer": Counter(
-            fertilizer
-            for row in best_by_profile.values()
-            for fertilizer in row["fertilizers_allowed"]
-        ),
+    counts = {
+        "status": Counter(row.get("status", "") for row in raw_rows),
+        "phase": Counter(row.get("phase", "") for row in raw_rows),
+        "profile": Counter(row.get("profile_id", "") for row in raw_rows),
+        "profile_group": Counter(row.get("profile_group", "") for row in raw_rows),
+        "experiment": Counter(row.get("experiment_id", "") for row in raw_rows),
+        "portfolio": Counter(row.get("portfolio_id", "") for row in raw_rows),
     }
 
-    fertilizer_effect = {}
-    for mode, by_fertilizer in fertilizer_stats.items():
-        rows = []
-        for fertilizer, buckets in by_fertilizer.items():
-            present = buckets["present"]
-            absent = buckets["absent"]
-            rows.append(
-                {
-                    "fertilizer": fertilizer,
-                    "present": present.to_dict(),
-                    "absent": absent.to_dict(),
-                    "omission_delta": absent.avg - present.avg if present.count and absent.count else None,
-                }
+    baseline_rows = {
+        row["profile_id"]: row
+        for row in ok_rows
+        if row.get("phase") == "settings"
+        and row.get("experiment_id") == "baseline"
+        and row.get("config_id") == "canonical"
+    }
+    expected_profiles = set(summary.get("profiles") or [])
+    missing_baselines = sorted(expected_profiles - set(baseline_rows))
+    if missing_baselines:
+        raise ValueError(f"Missing canonical baseline rows for: {', '.join(missing_baselines)}")
+    baseline_scores = {
+        profile_id: float(row["composite_score"])
+        for profile_id, row in baseline_rows.items()
+    }
+
+    manifest_configs = {
+        (str(item["experiment_id"]), str(item["config_id"])): item
+        for item in manifest.get("solver_configs") or []
+    }
+    config_stats: dict[tuple[str, str], ComparisonStats] = defaultdict(ComparisonStats)
+    parameter_stats: dict[str, dict[str, dict[str, dict[str, Any]]]] = defaultdict(
+        lambda: defaultdict(dict)
+    )
+    best_by_profile: dict[str, dict[str, Any]] = {}
+    best_setting_by_profile: dict[str, dict[str, Any]] = {}
+
+    for row in ok_rows:
+        compact = _compact_row(row)
+        profile_id = compact["profile_id"]
+        current = best_by_profile.get(profile_id)
+        if current is None or compact["score"] < current["score"]:
+            best_by_profile[profile_id] = compact
+        if compact["phase"] != "settings":
+            continue
+        current_setting = best_setting_by_profile.get(profile_id)
+        if current_setting is None or compact["score"] < current_setting["score"]:
+            best_setting_by_profile[profile_id] = compact
+        baseline = baseline_scores[profile_id]
+        key = (compact["experiment_id"], compact["config_id"])
+        config_stats[key].add(compact["score"], baseline, compact["elapsed_seconds"])
+        config_meta = manifest_configs.get(key) or {}
+        for parameter in config_meta.get("varied_keys") or []:
+            value = compact["solver_config"][parameter]
+            value_key = _json(value)
+            bucket = parameter_stats[compact["experiment_id"]][parameter].setdefault(
+                value_key,
+                {"value": value, "stats": ComparisonStats()},
             )
-        rows.sort(key=lambda item: float("-inf") if item["omission_delta"] is None else -item["omission_delta"])
-        fertilizer_effect[mode] = rows
+            bucket["stats"].add(compact["score"], baseline, compact["elapsed_seconds"])
 
-    baseline_comparison = None
-    if baseline_dir is not None:
-        baseline_comparison = compare_best_profiles(
-            baseline_dir / "summary.json",
-            best_by_profile,
+    settings_by_experiment: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    global_ranked = []
+    for key, stats in _ranked(config_stats):
+        experiment_id, config_id = key
+        meta = manifest_configs.get(key) or {}
+        item = {
+            "experiment_id": experiment_id,
+            "config_id": config_id,
+            "config_name": meta.get("name", f"{experiment_id}:{config_id}"),
+            "solver_config": meta.get("values", {}),
+            "varied_keys": meta.get("varied_keys", []),
+            **stats,
+        }
+        settings_by_experiment[experiment_id].append(item)
+        global_ranked.append(item)
+
+    setting_effects: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    for experiment_id, parameters in sorted(parameter_stats.items()):
+        setting_effects[experiment_id] = {}
+        for parameter, buckets in sorted(parameters.items()):
+            rows = [
+                {"value": bucket["value"], **bucket["stats"].to_dict()}
+                for bucket in buckets.values()
+            ]
+            rows.sort(
+                key=lambda item: (
+                    -item["avg_improvement_percent"],
+                    item["avg_delta"],
+                    _json(item["value"]),
+                )
+            )
+            setting_effects[experiment_id][parameter] = rows
+
+    mass_stats: dict[str, ComparisonStats] = defaultdict(ComparisonStats)
+    mass_meta: dict[str, dict[str, Any]] = {}
+    omission_stats: dict[str, ComparisonStats] = defaultdict(ComparisonStats)
+    for row in ok_rows:
+        if row.get("phase") != "mass_barrage":
+            continue
+        profile_id = row["profile_id"]
+        portfolio_id = row["portfolio_id"]
+        score = float(row["composite_score"])
+        elapsed = float(row.get("elapsed_seconds") or 0.0)
+        mass_stats[portfolio_id].add(score, baseline_scores[profile_id], elapsed)
+        mass_meta[portfolio_id] = {
+            "portfolio_source": row.get("portfolio_source", ""),
+            "omitted_fertilizer": row.get("omitted_fertilizer", ""),
+            "product_count": int(row.get("subset_size") or 0),
+        }
+        omitted = row.get("omitted_fertilizer", "")
+        if omitted:
+            omission_stats[omitted].add(score, baseline_scores[profile_id], elapsed)
+
+    portfolio_comparison = [
+        {"portfolio_id": key, **mass_meta[key], **stats}
+        for key, stats in _ranked(mass_stats)
+    ]
+    omission_impact = [
+        {"fertilizer": key, **stats}
+        for key, stats in _ranked(omission_stats)
+    ]
+    # For omission results, positive delta means the removed product was useful.
+    omission_impact.sort(key=lambda item: (-item["avg_delta"], item["fertilizer"]))
+
+    baseline_by_profile = {
+        profile_id: _compact_row(row)
+        for profile_id, row in sorted(baseline_rows.items())
+    }
+    global_ranked.sort(
+        key=lambda item: (
+            -item["avg_improvement_percent"],
+            item["avg_delta"],
+            item["avg_score"],
+            item["config_name"],
         )
-
+    )
     return {
+        "schema_version": 2,
         "meta": {
-            "source_dir": str(run_dir),
-            "source_csv": str(results_csv),
-            "source_summary": str(summary_path),
+            "source_dir": str(run_dir.resolve()),
+            "source_csv": str(results_csv.resolve()),
+            "source_summary": str(summary_path.resolve()),
+            "source_manifest": str(manifest_path.resolve()),
             "elapsed_analysis_seconds": time.perf_counter() - start,
-            "file_sizes": {
-                "results.csv": results_csv.stat().st_size,
-                "summary.json": summary_path.stat().st_size,
-            },
             "summary_total_runs": summary.get("total_runs"),
             "summary_failed_runs": summary.get("failed_runs"),
-            "allowed_fertilizers": allowed_fertilizers,
+            "planned_runs": summary.get("planned_runs"),
+            "primary_portfolio": summary.get("primary_portfolio"),
+            "allowed_fertilizers": summary.get("allowed_fertilizers", []),
             "profiles": summary.get("profiles", []),
-            "nitrogen_objective_modes": summary.get("nitrogen_objective_modes", []),
+            "unresolved_profiles": manifest.get("unresolved_profiles", []),
+            "solver_baseline": manifest.get("solver_baseline", {}),
         },
         "counts": {key: dict(counter) for key, counter in counts.items()},
-        "distributions": {
-            "score_by_mode": _stats_dict(score_by_mode, percentiles=True),
-            "score_by_phase_mode": _stats_dict(score_by_phase_mode, percentiles=True),
-        },
-        "profile_mode_stats": {
-            profile: _stats_dict(stats)
-            for profile, stats in sorted(profile_mode_stats.items())
-        },
+        "baseline_by_profile": baseline_by_profile,
+        "best_setting_by_profile": dict(sorted(best_setting_by_profile.items())),
         "best_final_by_profile": dict(sorted(best_by_profile.items())),
-        "best_counts": {
-            key: dict(counter)
-            for key, counter in best_counts.items()
-        },
-        "base_flag_effects_by_mode": {
-            mode: {
-                key: {state: stats.to_dict() for state, stats in states.items()}
-                for key, states in by_key.items()
-            }
-            for mode, by_key in sorted(base_flag_effects.items())
-        },
-        "fair_base_config_top": _top_stats(config_base_stats, limit=top_limit),
-        "fair_base_config_bottom": _top_stats(config_base_stats, limit=top_limit, reverse=True),
-        "fertilizer_effect_base_by_mode": fertilizer_effect,
-        "max_error_key": {
-            "all": max_error_counts["all"].most_common(),
-            "by_mode": {
-                mode: counter.most_common()
-                for mode, counter in sorted(max_error_counts["by_mode"].items())
-            },
-            "by_profile": {
-                profile: counter.most_common()
-                for profile, counter in sorted(max_error_counts["by_profile"].items())
-            },
-        },
-        "subset_size_base_by_mode": {
-            mode: _stats_dict(stats)
-            for mode, stats in sorted(subset_base_stats.items())
-        },
-        "refine_mutation_top": _top_stats(refine_mutation_stats, limit=top_limit),
-        "baseline_comparison": baseline_comparison,
-    }
-
-
-def compare_best_profiles(
-    baseline_summary_path: Path,
-    current_best_by_profile: dict[str, dict[str, Any]],
-) -> dict[str, Any]:
-    if not baseline_summary_path.exists():
-        raise FileNotFoundError(f"Missing baseline summary: {baseline_summary_path}")
-    baseline = json.loads(baseline_summary_path.read_text(encoding="utf-8"))
-    rows = []
-    for profile_id, current in sorted(current_best_by_profile.items()):
-        old = (baseline.get("best_by_profile") or {}).get(profile_id)
-        if not old:
-            continue
-        old_score = float(old.get("composite_score", old.get("score", math.inf)))
-        new_score = float(current["score"])
-        improvement_percent = ((old_score - new_score) / old_score * 100.0) if old_score else 0.0
-        rows.append(
-            {
-                "profile_id": profile_id,
-                "baseline_score": old_score,
-                "current_score": new_score,
-                "improvement_percent": improvement_percent,
-            }
-        )
-    avg_improvement = sum(row["improvement_percent"] for row in rows) / len(rows) if rows else 0.0
-    return {
-        "baseline_summary": str(baseline_summary_path),
-        "rows": rows,
-        "avg_improvement_percent": avg_improvement,
+        "settings_global_top": global_ranked[:top_limit],
+        "settings_global_bottom": list(reversed(global_ranked[-top_limit:])),
+        "settings_by_experiment": dict(sorted(settings_by_experiment.items())),
+        "setting_effects": setting_effects,
+        "mass_barrage_portfolios": portfolio_comparison,
+        "fertilizer_omission_impact": omission_impact,
     }
 
 
 def _fmt(value: float, digits: int = 3) -> str:
-    if abs(value) < 1e-9:
-        return "0.000"
+    if abs(value) < 0.5 * (10 ** -digits):
+        return f"{0.0:.{digits}f}"
     return f"{value:.{digits}f}"
 
 
 def write_markdown_report(analysis: dict[str, Any], path: Path) -> None:
-    mode_stats = analysis["distributions"]["score_by_mode"]
-    best_by_profile = analysis["best_final_by_profile"]
+    meta = analysis["meta"]
     lines = [
         "# Solver Matrix Analysis",
         "",
-        "Generated from solver-matrix output files. Lower scores are better.",
+        "Status: generated benchmark report. Lower scores are better; deltas are paired against the canonical baseline for the same target profile.",
         "",
-        "## Source",
+        "## Run Contract",
         "",
         "| Item | Value |",
         "|---|---:|",
-        f"| Total rows | {analysis['meta'].get('summary_total_runs', 0):,} |",
-        f"| Failed rows | {analysis['meta'].get('summary_failed_runs', 0):,} |",
-        f"| Profiles | {len(analysis['meta'].get('profiles', []))} |",
-        f"| Fertilizers | {len(analysis['meta'].get('allowed_fertilizers', []))} |",
-        f"| Analysis seconds | {_fmt(float(analysis['meta'].get('elapsed_analysis_seconds', 0.0)), 1)} |",
+        f"| Completed rows | {int(meta.get('summary_total_runs') or 0):,} |",
+        f"| Failed rows | {int(meta.get('summary_failed_runs') or 0):,} |",
+        f"| Target profiles | {len(meta.get('profiles', []))} |",
+        f"| Primary allowed fertilizers | {len(meta.get('allowed_fertilizers', []))} |",
+        f"| Nitrogen objective | `{meta['solver_baseline'].get('nitrogen_objective_mode')}` |",
+        f"| Elemental S objective | `{str(meta['solver_baseline'].get('s_objective_enabled')).lower()}` |",
         "",
-        "## Nitrogen Modes",
-        "",
-        "| Mode | Rows | Avg | Median | P95 | Best |",
-        "|---|---:|---:|---:|---:|---:|",
     ]
-    for mode, stats in sorted(mode_stats.items()):
-        lines.append(
-            f"| `{mode}` | {stats['count']:,} | {_fmt(stats['avg'])} | "
-            f"{_fmt(stats.get('p50', 0.0))} | {_fmt(stats.get('p95', 0.0))} | {_fmt(stats['min'])} |"
-        )
+    unresolved = meta.get("unresolved_profiles") or []
+    if unresolved:
+        lines.extend(["Unresolved requested profiles:", ""])
+        for item in unresolved:
+            lines.append(f"- `{item.get('id')}` — {item.get('reason')}")
+        lines.append("")
 
     lines.extend(
         [
+            "## Canonical Baseline",
             "",
-            "## Best Rows By Profile",
-            "",
-            "| Profile | Score | Mode | Phase | Subset | Macro | Micro | Worst key | Worst score |",
-            "|---|---:|---|---|---:|---:|---:|---|---:|",
+            "| Profile | Group | Score | Macro | Micro | Worst target | Worst score |",
+            "|---|---|---:|---:|---:|---|---:|",
         ]
     )
-    for profile_id, row in best_by_profile.items():
+    for profile_id, row in analysis["baseline_by_profile"].items():
         lines.append(
-            f"| `{profile_id}` | {_fmt(row['score'])} | `{row['mode']}` | `{row['phase']}` | "
-            f"{row['subset_size']} | {_fmt(row['macro_score'])} | {_fmt(row['micro_score'])} | "
+            f"| `{profile_id}` | {row['profile_group']} | {_fmt(row['score'])} | "
+            f"{_fmt(row['macro_score'])} | {_fmt(row['micro_score'])} | "
             f"`{row['max_error_key']}` | {_fmt(row['max_error_score'])} |"
         )
 
     lines.extend(
         [
             "",
-            "## Top Fair Base Configurations",
+            "## Best Setting By Profile",
             "",
-            "| Rank | Avg score | Config |",
-            "|---:|---:|---|",
+            "| Profile | Score | Improvement from baseline | Experiment | Configuration |",
+            "|---|---:|---:|---|---|",
         ]
     )
-    for index, row in enumerate(analysis["fair_base_config_top"][:10], start=1):
-        lines.append(f"| {index} | {_fmt(row['avg'])} | `{row['key']}` |")
+    for profile_id, row in analysis["best_setting_by_profile"].items():
+        baseline = analysis["baseline_by_profile"][profile_id]["score"]
+        improvement = ((baseline - row["score"]) / baseline * 100.0) if baseline else 0.0
+        lines.append(
+            f"| `{profile_id}` | {_fmt(row['score'])} | {_fmt(improvement)}% | "
+            f"`{row['experiment_id']}` | `{row['config_name']}` |"
+        )
 
     lines.extend(
         [
             "",
-            "## Boolean Feature Effects",
+            "## Best Setting Configurations",
             "",
+            "| Rank | Experiment | Average delta | Improvement | Wins / ties / losses | Runtime ms | Configuration |",
+            "|---:|---|---:|---:|---:|---:|---|",
         ]
     )
-    for mode, features in analysis["base_flag_effects_by_mode"].items():
-        lines.extend(
-            [
-                f"### `{mode}`",
-                "",
-                "| Feature | False avg | True avg | Better |",
-                "|---|---:|---:|---|",
-            ]
+    for index, row in enumerate(analysis["settings_global_top"][:15], start=1):
+        lines.append(
+            f"| {index} | `{row['experiment_id']}` | {_fmt(row['avg_delta'])} | "
+            f"{_fmt(row['avg_improvement_percent'])}% | {row['wins']} / {row['ties']} / {row['losses']} | "
+            f"{_fmt(row['avg_elapsed_seconds'] * 1000.0, 2)} | `{row['config_name']}` |"
         )
-        for feature, states in features.items():
-            false_avg = float(states["false"]["avg"])
-            true_avg = float(states["true"]["avg"])
-            better = "true" if true_avg < false_avg else "false"
-            lines.append(f"| `{feature}` | {_fmt(false_avg)} | {_fmt(true_avg)} | `{better}` |")
-        lines.append("")
 
-    lines.extend(
-        [
-            "## Fertilizer Omission Impact",
-            "",
-            "Positive omission delta means the score got worse when the fertilizer was absent.",
-            "",
-        ]
-    )
-    for mode, rows in analysis["fertilizer_effect_base_by_mode"].items():
-        lines.extend(
-            [
-                f"### `{mode}`",
-                "",
-                "| Fertilizer | Omission delta | Present avg | Absent avg |",
-                "|---|---:|---:|---:|",
-            ]
-        )
-        for row in rows:
-            delta = row["omission_delta"]
-            lines.append(
-                f"| `{row['fertilizer']}` | {_fmt(float(delta or 0.0))} | "
-                f"{_fmt(row['present']['avg'])} | {_fmt(row['absent']['avg'])} |"
+    lines.extend(["", "## Controlled Setting Effects", ""])
+    for experiment_id, parameters in analysis["setting_effects"].items():
+        lines.extend([f"### `{experiment_id}`", ""])
+        for parameter, rows in parameters.items():
+            lines.extend(
+                [
+                    f"#### `{parameter}`",
+                    "",
+                    "| Value | Average delta | Improvement | Wins / ties / losses | Runtime ms |",
+                    "|---|---:|---:|---:|---:|",
+                ]
             )
-        lines.append("")
+            for row in rows:
+                lines.append(
+                    f"| `{_json(row['value'])}` | {_fmt(row['avg_delta'])} | "
+                    f"{_fmt(row['avg_improvement_percent'])}% | {row['wins']} / {row['ties']} / {row['losses']} | "
+                    f"{_fmt(row['avg_elapsed_seconds'] * 1000.0, 2)} |"
+                )
+            lines.append("")
 
-    comparison = analysis.get("baseline_comparison")
-    if comparison:
+    if analysis["mass_barrage_portfolios"]:
         lines.extend(
             [
-                "## Baseline Comparison",
+                "## Nutrient-Portfolio Mass Barrage",
                 "",
-                f"Baseline: `{comparison['baseline_summary']}`",
-                "",
-                "| Profile | Baseline | Current | Improvement |",
-                "|---|---:|---:|---:|",
+                "| Portfolio | Products | Average delta | Improvement | Wins / ties / losses |",
+                "|---|---:|---:|---:|---:|",
             ]
         )
-        for row in comparison["rows"]:
+        for row in analysis["mass_barrage_portfolios"]:
             lines.append(
-                f"| `{row['profile_id']}` | {_fmt(row['baseline_score'])} | "
-                f"{_fmt(row['current_score'])} | {row['improvement_percent']:.1f}% |"
+                f"| `{row['portfolio_id']}` | {row['product_count']} | {_fmt(row['avg_delta'])} | "
+                f"{_fmt(row['avg_improvement_percent'])}% | {row['wins']} / {row['ties']} / {row['losses']} |"
             )
-        lines.append("")
-        lines.append(f"Average improvement: {comparison['avg_improvement_percent']:.1f}%")
-        lines.append("")
+
+        lines.extend(
+            [
+                "",
+                "### Leave-One-Out Fertilizer Impact",
+                "",
+                "Positive deltas mean removing the fertilizer worsened the solver score.",
+                "",
+                "| Fertilizer omitted | Average delta | Wins / ties / losses |",
+                "|---|---:|---:|",
+            ]
+        )
+        for row in analysis["fertilizer_omission_impact"]:
+            lines.append(
+                f"| `{row['fertilizer']}` | {_fmt(row['avg_delta'])} | "
+                f"{row['wins']} / {row['ties']} / {row['losses']} |"
+            )
 
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Analyze solver_matrix.py output directories.")
-    parser.add_argument("run_dir", type=Path, help="Directory containing results.csv and summary.json.")
-    parser.add_argument("--baseline-dir", type=Path, default=None, help="Optional prior run directory for comparison.")
+    parser = argparse.ArgumentParser(description="Analyze schema-v2 solver matrix output.")
+    parser.add_argument("run_dir", type=Path, help="Directory containing results, summary, and manifest files.")
     parser.add_argument("--out-json", type=Path, default=None, help="Analysis JSON output path.")
     parser.add_argument("--out-md", type=Path, default=None, help="Markdown report output path.")
-    parser.add_argument("--top", type=int, default=30, help="Number of ranked rows to keep in top/bottom sections.")
+    parser.add_argument("--top", type=int, default=30, help="Number of ranked configurations to retain.")
     parser.add_argument("--no-markdown", action="store_true", help="Only write JSON.")
     return parser
 
@@ -504,8 +478,11 @@ def main(argv: list[str] | None = None) -> int:
     run_dir = args.run_dir
     out_json = args.out_json or run_dir / "analysis_summary.json"
     out_md = args.out_md or run_dir / "analysis_report.md"
-    analysis = analyze_run(run_dir, baseline_dir=args.baseline_dir, top_limit=args.top)
-    out_json.write_text(json.dumps(analysis, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    analysis = analyze_run(run_dir, top_limit=args.top)
+    out_json.write_text(
+        json.dumps(analysis, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     print(f"Analysis JSON: {out_json}")
     if not args.no_markdown:
         write_markdown_report(analysis, out_md)

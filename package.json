@@ -1,0 +1,11 @@
+{
+  "name": "horticalc-frontend-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:browser": "node scripts/frontend_smoke.cjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.61.1"
+  }
+}

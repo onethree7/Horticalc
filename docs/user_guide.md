@@ -1,162 +1,63 @@
 # User Guide
 
-## TL;DR Quick Start
+Status: `current-state`.
 
-Download the latest release, extract the archive, and start Horticalc:
-
-- **Windows:** run `Horticalc.exe`.
-- **Linux:** run `./horticalc`.
-
-The app opens in your browser. That's it.
-
-Horticalc can be used through its local browser GUI or from the command line.
-Both interfaces use the same calculation core.
+Horticalc can be used through a local browser GUI or the command line. Both use the same calculation core in `src/horticalc/`.
 
 ## Choose An Interface
 
-Use the **GUI** for interactive work: editing fertilizers and water values,
-building recipes, comparing results, and exploring solver targets.
+- **GUI**: interactive work, editing fertilizers and water, building recipes, comparing results, and exploring solver targets.
+- **CLI**: repeatable calculations, scripts, and automation. See [cli_reference.md](cli_reference.md) and [commands.md](commands.md).
 
-Use the **CLI** for repeatable calculations, scripts, automated comparisons,
-and recipes stored in version control. Editable profiles and recipes are YAML;
-CLI output, API payloads, GUI data exchange, and automation results are JSON.
+## GUI Workflows
 
-## Start The GUI
+### Fertilizer Editor
 
-Running from source requires Python 3.10 or newer and a writable checkout of
-the repository.
+Inspect, search, and edit fertilizer products and composition values in one continuous table. The final **Solver max / L** column optionally limits the dose the Solver may choose; leave it empty for no limit. Changes are saved to `user/fertilizers_overrides.csv` and `user/fertilizers_disabled.txt`. Source: `src/horticalc/data_io.py`.
 
-### Windows
+### Water Values
 
-From PowerShell in the repository root:
+Load, edit, save, and mix water profiles with reverse-osmosis water. The osmosis share is the percentage of the batch that is RO water (modelled as 0 mg/L). Source: `src/horticalc/core.py` and `frontend/app/water.js`.
 
-```powershell
-py -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e .
-.\.venv\Scripts\python.exe -m horticalc.launcher
-```
+### Calculator
 
-### Linux
-
-From a terminal in the repository root:
-
-```bash
-python3 -m venv .venv
-./.venv/bin/python -m pip install -e .
-./.venv/bin/python -m horticalc.launcher
-```
-
-The launcher starts a server on `127.0.0.1`, waits for its health check, and
-opens Horticalc in Edge, Chrome, or Chromium when available. Otherwise, it uses
-the system browser.
-
-For a packaged release, extract the complete archive to a writable folder and
-run `Horticalc.exe` on Windows or `./horticalc` on Linux. Keep the executable
-beside the included `_internal/`, `frontend/`, `data/`, and `recipes/` folders.
-The packaged `README.txt` explains backup, reset, and troubleshooting. Back up
-`user/` to preserve saved profiles and settings; shipped defaults remain in
-`data/` and `recipes/` and are not duplicated into `user/`.
-
-### Development Server
-
-To run the server directly instead of using the launcher:
-
-```bash
-python -m uvicorn api.app:app --host 127.0.0.1 --port 8000
-```
-
-Then open `http://127.0.0.1:8000/`.
-
-## GUI Areas
-
-- **Fertilizer editor:** inspect, search, and edit fertilizer products and
-  composition values in one continuous table. The final **Solver max / L**
-  column optionally limits the dose the Solver may choose; leave it empty for
-  no limit.
-- **Water values:** load, edit, save, and mix water profiles with reverse-
-  osmosis water.
-- **Calculator:** select fertilizers and doses, calculate a recipe, and inspect
-  its nutrient, ion, ratio, balance, and EC results.
-- **Solver:** enter a nutrient target and calculate matching fertilizer doses.
+1. Select a water profile or enter water values.
+2. Select fertilizers and doses.
+3. Click **Calculate**.
+4. Inspect element totals, oxides, ions, ion balance, fertilizer-only and water-only contributions, EC, NPK metrics, and Sluijsmann.
 
 The GUI supports German, English, Dutch, Spanish, and Simplified Chinese. The
 language setting changes interface text but not recipe keys, element symbols,
 CSV columns, or API fields.
 
-## Calculator Workflow
-
-1. Load or edit the fertilizer list if needed.
-2. Select a water profile or enter water values.
-3. Load a recipe or select fertilizers manually.
-4. Open the compact **Settings** disclosure in Configuration to choose the
-   batch-volume, solid-dose, and liquid-dose display units, then enter the
-   always-visible batch amount and fertilizer doses. The closed disclosure
-   summarizes the active units, and every calculator row shows its actual unit
-   according to the fertilizer's solid/liquid type.
-5. Calculate and inspect the result tables and summary sidebar.
-
-Horticalc remembers the directly selected water profile, batch volume, and
-volume and dose display units as startup defaults. Switching a unit converts
-the shown number without changing the physical batch or canonical dose. API and
-recipe data remain liters plus grams-for-solids/mL-for-liquids. Loading a recipe can temporarily override its own liters,
-water profile, and Solver configuration without changing those user defaults.
-
-Results include element and oxide totals, ions, ion balance, fertilizer-only
-and water-only contributions, EC, NPK metrics, nutrient ratios, and Sluijsmann.
-
-## Solver Workflow
+### Solver
 
 1. Load a target profile or enter target values.
 2. Select the fertilizers the solver may use.
-3. Add fixed doses only when a fertilizer amount must remain unchanged.
-4. Calculate the solution.
-5. Review target, achieved, and difference values, then copy the result or
-   apply it to the calculator.
+3. Add fixed doses if a fertilizer amount must remain unchanged.
+4. Click **Calculate**.
+5. Review target, achieved, and difference values. The `objective_elements` list shows what was actually optimized. Apply the result to the calculator or copy it.
 
-The solver only optimizes the nutrients listed in `objective_elements` in its
-result. Other displayed nutrients show side effects of the proposed recipe.
-Sulfur targets are report-only by default; enable the sulfur objective in the
-advanced solver settings when sulfur should affect the fit.
+Sulfur targets are report-only by default; enable the sulfur objective in the advanced solver settings if sulfur should affect the fit.
 
-## CLI
+## UI Preferences, Units, Language, And Persistence
 
-Run these examples from the repository root after installing Horticalc. If the
-virtual environment is not active, replace `python` with
-`.\.venv\Scripts\python.exe` on Windows or `./.venv/bin/python` on Linux.
+The **Configuration** card in `frontend/index.html` controls:
 
-Calculate a recipe:
+- batch volume and volume unit,
+- solid dose unit,
+- liquid dose unit,
+- visual theme,
+- language.
 
-```bash
-python -m horticalc recipes/golden.yml --pretty
-```
+These are stored in `user/preferences.json` because the launcher's browser profiles are temporary. Theme, language, and display-unit choices are presentation-only; recipe, API, and solver inputs remain canonical. Source: `api/app.py`, `src/horticalc/data_io.py`, and `frontend/app/settings.js`.
 
-Solve a target recipe:
+Switching a display unit changes the shown number without changing the physical batch or canonical dose. Loading a recipe can temporarily override its own liters and solver config without rewriting user defaults.
 
-```bash
-python -m horticalc solve recipes/solve_golden.yml --pretty
-```
+## Persistence Notes
 
-Override the recipe's water profile:
+- Saved fertilizers, water profiles, nutrient-solution targets, and recipes are written to `user/`.
+- Shipped defaults in `data/` and `recipes/` are layered underneath user overrides.
+- Back up `user/` to preserve profiles and settings.
 
-```bash
-python -m horticalc recipes/golden.yml --load-water 65936 --pretty
-```
-
-Write JSON output to a file:
-
-```bash
-python -m horticalc recipes/golden.yml \
-  --out solutions/example_output.json --pretty
-```
-
-Override a solver setting for one run:
-
-```bash
-python -m horticalc solve recipes/solve_golden.yml \
-  --nitrogen-objective-mode n_forms_only --pretty
-```
-
-Use `python -m horticalc --help` or `python -m horticalc solve --help` for all
-available options. Recipe fields, units, and output keys are documented in the
-[data model](data_model.md), with solver behavior covered in
-[solver.MD](solver.MD).
+For command-line workflows, see [cli_reference.md](cli_reference.md) and [commands.md](commands.md).

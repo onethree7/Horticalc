@@ -1,6 +1,6 @@
 # Decisions Log
 
-Status: decision-log.
+Status: `decision-log`.
 
 ## Entry Template
 
@@ -11,122 +11,73 @@ Status: decision-log.
 - Source files:
 - Links:
 
-## Current Accepted Decisions
-
-### License
+## License
 
 - Horticalc is licensed under `GPL-3.0-or-later`.
-- Source distributions and portable release archives include the canonical
-  GPLv3 `LICENSE` text.
-- The portable README identifies the copyright holder, warranty disclaimer,
-  license, and corresponding-source location.
-- The portable README states that Horticalc is independent from named
-  manufacturers and data sources. Bundled product data and manufacturer
-  schedules are documented as point-in-time snapshots without warranty;
-  current official manufacturer documents take precedence.
+- Source distributions and portable release archives include the canonical GPLv3 `LICENSE` text.
+- The portable README identifies the copyright holder, warranty disclaimer, license, and corresponding-source location.
 
-Source: `LICENSE`, `pyproject.toml`, `README.md`,
-`scripts/packaging/README.txt`.
+Source: `LICENSE`, `pyproject.toml`, `README.md`, `scripts/packaging/README.txt`.
 
-### Packaging
+## Packaging
 
 - PyInstaller mode: onedir.
 - Windows executable name: `Horticalc.exe`.
 - Linux executable name: `horticalc`.
 - Windows includes `tzdata` as a hidden import.
-- Release artifacts include `frontend/`, `data/`, `recipes/`, the portable
-  `README.txt`, and `LICENSE`, but exclude runtime state created by packaging
-  smoke tests.
+- Release artifacts include `frontend/`, `data/`, `recipes/`, the portable `README.txt`, and `LICENSE`.
 
-Source: `scripts/packaging/horticalc.spec`,
-`scripts/packaging/build_windows.ps1`, `scripts/packaging/build_linux.sh`.
+Source: `scripts/packaging/horticalc.spec`, `scripts/packaging/build_windows.ps1`, `scripts/packaging/build_linux.sh`.
 
-### Runtime And Networking
+## Runtime And Networking
 
 - Bind address: `127.0.0.1`.
 - Port policy: scan `8000..8100`.
 - Health endpoint: `/health`.
 - Lockfile: `AppRoot/user/horticalc.lock.json`.
-- App-window sessions: PID-backed files in `AppRoot/user/launcher_sessions/`;
-  the backend stops only after all live sessions end and the reopen grace
-  period expires.
-- Logs: rotating `AppRoot/logs/launcher.log` files; packaged builds suppress
-  routine HTTP access entries.
+- App-window sessions: PID-backed files in `AppRoot/user/launcher_sessions/`.
+- Logs: rotating `AppRoot/logs/launcher.log` files.
 - Preferred browser: Edge, Chrome, or Chromium in app mode.
-- Browser fallback: system default browser; the local server remains running
-  because generic browser-tab closure cannot be observed reliably.
+- Browser fallback: system default browser; the local server remains running.
 - No-browser CI mode: `HORTICALC_NO_BROWSER=1`.
-- Compatibility alias: `HORTICALC_KEEP_SERVER=1` remains accepted but is no
-  longer required because fallback servers now stay running by default.
 
 Source: `src/horticalc/launcher.py`.
 
-### Portable Data
+## Portable Data
 
-- AppRoot is the repo root in development and the executable folder in release.
+- AppRoot is the repo root in dev and the executable folder in release.
 - Runtime writes stay under `AppRoot/user/` and `AppRoot/logs/`.
-- The shipped fertilizer catalog remains in `data/fertilizers.csv`; user
-  fertilizer edits are stored as overrides and disabled names under `user/`.
-- Shipped YAML defaults stay in place; user YAML overrides are layered by
-  filename, and redundant copies from older releases are pruned on startup.
-- AppRoot must be writable; otherwise startup fails fast.
+- The shipped fertilizer catalog remains in `data/fertilizers.csv`; user edits are stored as overrides and disabled names under `user/`.
+- Shipped YAML defaults stay in place; user YAML overrides are layered by filename, and redundant copies from older releases are pruned on startup.
 
 Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`.
 
-### API And Frontend
+## API And Frontend
 
 - The backend serves the frontend from the same origin at `/`.
 - API routes are registered before the static frontend mount.
-- The frontend is a static Vanilla JS app.
-- The visible workflow areas are `DUENGER-EDITOR`, `WASSERWERTE`,
-  `RECHNER`, and `SOLVER`.
-- The frontend fetches solver config schema from `/schema/solver-config` and
-  volume and dose definitions from `/schema/units`.
-- Batch volume is canonical liters in the core, API, CLI, and recipe files.
-  The GUI can present L, US gal, Imp gal, or m³ and converts only at its
-  boundary. US and Imperial gallons remain explicit rather than accepting an
-  ambiguous `gallon` unit.
-- The existing fertilizer dose contract remains deliberately compact: `grams`
-  is grams for catalogued solids and mL for catalogued liquids. The GUI may
-  present g/kg/oz/lb or mL/L/US fl oz/Imp fl oz, but converts back to that
-  canonical contract before calculation, solving, or saving.
-- `user/preferences.json` stores theme, default batch liters, selected volume
-  and dose display units, UI-visible Solver
-  defaults, and the last directly loaded water profile. Advanced Solver fields
-  marked `ui: false` remain recipe or direct solve inputs. Explicit recipe
-  fields override active values without rewriting those user defaults.
-- Legacy macro/stage solver controls are removed from the backend config and UI.
-- Frontend i18n is implemented without a bundler or external dependency in
-  `frontend/i18n/`. Browser locale detection falls back to English; German,
-  English, Dutch, Spanish, and Simplified Chinese catalogs keep the same keys.
-  Explicit language selection is stored in browser storage and
-  `user/preferences.json`.
-- API keys, CSV fields, element symbols, units, persisted recipe fields, and
-  solver config keys remain literal data contracts and are not translated.
-- Numeric values use `.` as the decimal separator in GUI output, clipboard
-  output, API payloads, and persisted data. GUI numeric inputs accept either
-  `.` or `,`; accepted values are converted to numbers and shown with `.` when
-  the edit is committed.
-- Fertilizer physical state is stored as the required Boolean API field
-  `liquid` and CSV field `Liquid` (`0` solid, `1` liquid). Localized words for
-  solid and liquid exist only in the frontend.
+- The frontend is a static Vanilla JS app with one native ES-module entrypoint, controller-owned feature state, and no production bundler.
+- Batch volume is canonical liters in the core, API, CLI, and recipe files; the GUI can display L, US gal, Imp gal, or m³.
+- The fertilizer dose contract remains `grams`: grams for solids, mL for liquids, with `weight_factor` as liquid density.
+- `user/preferences.json` stores theme, default batch liters, volume and dose display units, UI-visible solver defaults, and the last directly loaded water profile.
+- Frontend i18n is implemented without a bundler in `frontend/i18n/`; language selection is stored in `localStorage` and `user/preferences.json`.
+- Numeric values use `.` as the decimal separator in output and persistence; GUI inputs accept `.` or `,`.
+- Fertilizer physical state is stored as Boolean `liquid` and CSV `Liquid` (`0` solid, `1` liquid).
 
-Source: `api/app.py`, `frontend/`, `tests/test_frontend_solver_config_ui.py`,
-`tests/test_frontend_i18n.py`, `tests/test_frontend_decimal_separator.py`.
+Source: `api/app.py`, `frontend/`, `src/horticalc/data_io.py`.
 
-### Solver
+## Solver
 
 - Default `nitrogen_objective_mode`: `n_total_only`.
 - Default `relative_weighting`: `false`.
 - Default `singleton_supplier_enabled`: `false`.
 - Default `singleton_underfill_enabled`: `true`.
-- Report-only ignored target keys: `S`, `Na`, `Cl`. `SO4` is not a target key.
+- Report-only ignored target keys: `Na`, `Cl`. `S` is report-only unless `s_objective_enabled` is true.
 - Solver matrix scoring follows `result.objective_elements`.
 
-Source: `src/horticalc/solver_config.py`, `src/horticalc/solver.py`,
-`tests/test_cli_solver_config.py`, `tests/test_solver_matrix.py`.
+Source: `src/horticalc/solver_config.py`, `src/horticalc/solver.py`.
 
-### CI/Release
+## CI/Release
 
 - Release trigger: tags matching `v*` and manual workflow dispatch.
 - CI OSes: `ubuntu-22.04` and `windows-latest`.

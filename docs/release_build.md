@@ -1,39 +1,23 @@
 # Release Builds
 
-Status: operation-guide.
+Status: `operation-guide`.
 
-Horticalc releases use PyInstaller onedir builds. The packaged executable
-starts the local API, serves the frontend, opens a browser window, and writes
-only inside the extracted app folder.
+Horticalc releases use PyInstaller onedir builds. The packaged executable starts the local API, serves the frontend, opens a browser window, and writes only inside the extracted app folder.
 
 ## Runtime Model
 
-1. The launcher executable starts a FastAPI/uvicorn server on `127.0.0.1`.
+1. The launcher starts a FastAPI/uvicorn server on `127.0.0.1`.
 2. The server exposes API routes and serves `frontend/` at `/`.
 3. The launcher waits for `/health`.
 4. The launcher prefers Edge, Chrome, or Chromium in app-window mode.
-5. If the app is already running, the lockfile points to the active port and a
-   second launch opens the existing server instead of starting another one.
+5. If the app is already running, the lockfile points to the active port and a second launch opens the existing server.
 6. Runtime writes go to `AppRoot/user/` and `AppRoot/logs/`.
-7. Browser profiles are created under `AppRoot/user/browser_profiles/` and
-   removed after the app window closes.
-8. Runtime logs rotate at 2 MiB with two backups; packaged builds suppress
-   routine HTTP access lines.
+7. Browser profiles are created under `AppRoot/user/browser_profiles/` and removed after the app window closes.
+8. Runtime logs rotate at 2 MiB with two backups.
 
-Lock ownership is claimed exclusively before uvicorn starts. Concurrent
-launches wait for that owner to become healthy, while dead or malformed locks
-are removed safely. Lock and launcher-session records use durable replacement
-writes. Browser profile directories are collision-proof. When no supported
-app-mode browser is available, the system-browser fallback keeps the backend
-running until the launcher process is stopped; later launches reuse it.
-Fallback launchers connected to an existing backend keep their own session
-record alive, preventing the owner from stopping while the fallback tab is in
-use. Session records include process identity to detect PID reuse, and stale
-browser profiles are cleaned only after seven days.
+Lock ownership is claimed exclusively before uvicorn starts. Concurrent launches wait for the owner to become healthy. Dead or malformed locks are removed safely. Lock and session records use durable replacement writes. Browser profile directories are collision-proof. System-browser fallback keeps the backend running until the launcher is stopped because tab closure cannot be observed reliably. Stale browser profiles are removed after seven days.
 
-`pyproject.toml` owns runtime dependency declarations.
-`constraints-release.txt` pins the complete release build environment used by
-CI and local release builds.
+`pyproject.toml` owns runtime dependency declarations. `constraints-release.txt` pins the complete release build environment used by CI and local release builds.
 
 ## AppRoot Layout
 
@@ -69,44 +53,13 @@ dist/horticalc/
 
 ## Build Locally
 
-Install build requirements:
+Install build requirements with the release constraints, then run the platform build script.
 
-```powershell
-$env:PIP_CONSTRAINT = "constraints-release.txt"
-python -m pip install . pyinstaller
-```
+For the exact commands, see [commands.md](commands.md#release-build-pyinstaller).
 
-On Linux, use `PIP_CONSTRAINT=constraints-release.txt python -m pip install . pyinstaller`.
+The build scripts run PyInstaller with `scripts/packaging/horticalc.spec`, then copy `frontend/`, `data/`, and `recipes/` into the onedir app root and add the portable `README.txt` and GPLv3 `LICENSE`. The portable README states that Horticalc is independent from named manufacturers and data sources, and that bundled product data are point-in-time snapshots without warranty.
 
-Windows PowerShell:
-
-```powershell
-.\scripts\packaging\build_windows.ps1
-```
-
-Linux:
-
-```bash
-chmod +x scripts/packaging/build_linux.sh
-./scripts/packaging/build_linux.sh
-```
-
-The build scripts run PyInstaller with
-`scripts/packaging/horticalc.spec`, then copy `frontend/`, `data/`, and
-`recipes/` into the onedir app root and add the portable `README.txt` and
-GPLv3 `LICENSE`.
-
-The portable README also carries the product-data disclaimer. It states that
-Horticalc is independent from named manufacturers and data sources, that bundled
-product data and manufacturer schedules are point-in-time snapshots without
-warranty, and that current official manufacturer labels, safety and technical
-data sheets, and application schedules take precedence.
-
-On Windows, `scripts/packaging/build_windows.ps1` also generates a PyInstaller
-version resource with `scripts/packaging/write_windows_version_info.py`. CI
-passes the Git tag or short commit through `HORTICALC_VERSION`; local builds
-can set the same environment variable before running the script.
-PR CI verifies that release constraints resolve on Python 3.11.
+On Windows, `scripts/packaging/build_windows.ps1` also generates a version resource with `scripts/packaging/write_windows_version_info.py`. CI passes the Git tag or short commit through `HORTICALC_VERSION`; local builds can set the same variable.
 
 ## CI Release Workflow
 
@@ -121,65 +74,13 @@ Matrix:
 - `windows-latest`
 - Python `3.11.9`
 
-The workflow:
-
-1. Installs requirements and PyInstaller.
-2. Resolves the release version from the tag or current commit.
-3. Builds the platform package.
-4. Seeds a legacy fertilizer catalog and starts the packaged binary.
-5. Reads `AppRoot/user/horticalc.lock.json`.
-6. Polls `/health`.
-7. Checks migration plus `frontend/`, `data/`, `recipes/`, `README.txt`, `LICENSE`, and
-   `logs/` exist.
-8. Removes smoke-test `user/` and `logs/` state from the staging directory.
-9. Computes a SHA-256 checksum file for each platform archive.
-10. Creates GitHub Artifact Attestations for each archive and checksum file.
-11. Uploads artifacts.
-12. Attaches release assets for `v*` tags.
-
-## Cut A Release
-
-```bash
-git tag vX.Y.Z
-git push origin vX.Y.Z
-```
-
-GitHub Actions builds and publishes:
-
-- `horticalc-vX.Y.Z-linux.tar.gz`
-- `horticalc-vX.Y.Z-linux.tar.gz.sha256`
-- `horticalc-vX.Y.Z-windows.zip`
-- `horticalc-vX.Y.Z-windows.zip.sha256`
+The workflow installs, builds, smoke-tests the packaged binary, computes SHA-256 checksums, creates GitHub Artifact Attestations, and attaches release assets for `v*` tags.
 
 ## Release Verification
 
-`.github/workflows/release.yml` owns release archive checksums and GitHub
-Artifact Attestations. These prove file integrity and GitHub Actions build
-provenance; they are not Windows Authenticode signatures and do not make
-Windows show a verified publisher for `Horticalc.exe`.
+`.github/workflows/release.yml` owns release archive checksums and GitHub Artifact Attestations. These prove file integrity and GitHub Actions build provenance; they are not Windows Authenticode signatures and do not make Windows show a verified publisher for `Horticalc.exe`.
 
-Windows PowerShell:
-
-```powershell
-Get-FileHash -Algorithm SHA256 .\horticalc-vX.Y.Z-windows.zip
-Get-Content .\horticalc-vX.Y.Z-windows.zip.sha256
-```
-
-Linux:
-
-```bash
-sha256sum -c horticalc-vX.Y.Z-linux.tar.gz.sha256
-```
-
-With the GitHub CLI:
-
-```bash
-gh attestation verify horticalc-vX.Y.Z-windows.zip --repo onethree7/Horticalc
-gh attestation verify horticalc-vX.Y.Z-linux.tar.gz --repo onethree7/Horticalc
-```
-
-For security reporting and antivirus false-positive notes, see
-[SECURITY.md](../SECURITY.md).
+For the exact checksum and attestation commands, see [commands.md](commands.md#release-verification).
 
 ## Portable Data Policy
 
@@ -187,37 +88,16 @@ For security reporting and antivirus false-positive notes, see
 
 - AppRoot is the repo root in dev and the executable folder in release.
 - Shipped defaults live in `data/` and `recipes/`.
-- User-created and edited overrides live in `user/`; shipped YAML remains in
-  `data/` and `recipes/` and is layered underneath those overrides.
+- User-created and edited overrides live in `user/`.
 - Rotating logs live in `logs/`.
-- If AppRoot is not writable, startup fails with:
+- If AppRoot is not writable, startup fails fast with:
 
 ```text
 Extract to a writable folder (e.g. Desktop/Downloads). Do not run from Program Files.
 ```
 
-Do not introduce writes to OS user directories, the registry, XDG paths,
-`%APPDATA%`, or `%LOCALAPPDATA%`.
+Do not introduce writes to OS user directories, the registry, XDG paths, `%APPDATA%`, or `%LOCALAPPDATA%`.
 
 ## Verification
 
-Standard:
-
-```bash
-python scripts/test.py
-```
-
-Packaging smoke:
-
-```bash
-python -m horticalc.launcher
-```
-
-CI-style no-browser smoke:
-
-```bash
-set HORTICALC_NO_BROWSER=1
-python -m horticalc.launcher
-```
-
-Stop the process after `/health` is confirmed.
+Standard test suite, packaging smoke, and no-browser smoke are in [commands.md](commands.md#run-tests) and [commands.md](commands.md#release-build-pyinstaller).

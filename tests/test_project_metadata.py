@@ -40,6 +40,8 @@ def test_pyproject_packages_app_assets_for_wheel_installs() -> None:
     data_files = pyproject["tool"]["setuptools"]["data-files"]
 
     assert "frontend/index.html" in data_files["frontend"]
+    assert "frontend/app.js" not in data_files["frontend"]
+    assert data_files["frontend/app"] == ["frontend/app/*.js"]
     assert "frontend/i18n/*.js" in data_files["frontend/i18n"]
     assert "data/*.csv" in data_files["data"]
     assert "data/water_profiles/*.yml" in data_files["data/water_profiles"]

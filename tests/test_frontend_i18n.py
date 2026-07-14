@@ -10,8 +10,8 @@ LOCALES = ("de", "en", "nl", "es", "zh")
 
 def _catalog(locale: str) -> dict[str, str]:
     content = frontend_path(f"i18n/{locale}.js").read_text(encoding="utf-8")
-    match = re.search(rf"window\.HORTICALC_I18N\.{locale}\s*=\s*(\{{.*\}});", content, re.S)
-    assert match, f"catalog assignment missing for {locale}"
+    match = re.search(r"export default\s*(\{.*\});", content, re.S)
+    assert match, f"catalog export missing for {locale}"
     return json.loads(match.group(1))
 
 def test_i18n_catalogs_exist_and_have_matching_keys() -> None:
@@ -22,22 +22,21 @@ def test_i18n_catalogs_exist_and_have_matching_keys() -> None:
     for locale, catalog in catalogs.items():
         assert set(catalog) == base_keys, locale
 
-def test_frontend_loads_i18n_before_app_js() -> None:
-    content = read_frontend_file("index.html")
-
-    assert 'src="i18n/de.js' in content
-    assert 'src="i18n/en.js' in content
-    assert 'src="i18n/nl.js' in content
-    assert 'src="i18n/es.js' in content
-    assert 'src="i18n/zh.js' in content
-    assert 'src="i18n/runtime.js' in content
-    assert content.index('src="i18n/zh.js') < content.index('src="i18n/runtime.js')
-    assert content.index('src="i18n/runtime.js') < content.index('src="app/app.js')
+def test_frontend_imports_i18n_through_the_module_graph() -> None:
+    index = read_frontend_file("index.html")
+    runtime = read_frontend_file("i18n/runtime.js")
+    main = read_frontend_file("app/main.js")
+    assert index.count('type="module"') == 1
+    assert 'src="app/main.js' in index
+    for locale in LOCALES:
+        assert f'import {locale} from "./{locale}.js";' in runtime
+    assert 'from "../i18n/runtime.js"' in main
 
 def test_language_selector_detects_and_persists_frontend_locale() -> None:
     index_html = read_frontend_file("index.html")
     runtime_js = read_frontend_file("i18n/runtime.js")
-    app_js = read_frontend_file("app.js")
+    settings = read_frontend_file("app/settings.js")
+    main = read_frontend_file("app/main.js")
 
     assert '<select id="languageSelect"' in index_html
     assert 'const DEFAULT_LOCALE = "en";' in runtime_js
@@ -46,10 +45,10 @@ def test_language_selector_detects_and_persists_frontend_locale() -> None:
     assert "navigator.languages" in runtime_js
     assert "document.documentElement.lang = currentLocale;" in runtime_js
     assert "dataset.i18nCount" in runtime_js
-    assert "initializeLanguageControl();" in app_js
-    assert "persistPreferences({ locale: i18n.getLocale() });" in app_js
-    assert "preferences.locale" in app_js
-    assert 'window.addEventListener("horticalc:localechange", refreshLocalizedUi);' in app_js
+    assert "i18n.onLocaleChange" in settings
+    assert "persistPreferences({ locale: i18n.getLocale() });" in settings
+    assert "preferences.locale" in settings
+    assert "onLocaleChange: refreshLocalizedUi" in main
 
 
 def test_all_catalogs_have_new_localization_keys() -> None:
@@ -101,7 +100,7 @@ def test_all_catalogs_have_new_localization_keys() -> None:
 
 def test_frontend_i18n_keeps_data_contract_names_literal() -> None:
     catalogs = {locale: _catalog(locale) for locale in LOCALES}
-    app_js = read_frontend_file("app.js")
+    app_js = read_frontend_file("app/calculator.js") + read_frontend_file("app/solver.js")
 
     assert catalogs["de"]["editor.fertilizerName"] == "Düngername"
     assert catalogs["en"]["editor.fertilizerName"] == "Fertilizer name"
@@ -127,9 +126,9 @@ def test_fertilizer_dose_header_uses_row_specific_units() -> None:
 
 def test_calculator_fertilizer_metadata_uses_clear_labels() -> None:
     catalogs = {locale: _catalog(locale) for locale in LOCALES}
-    app_js = read_frontend_file("app.js")
+    app_js = read_frontend_file("app/calculator.js")
 
     assert catalogs["de"]["common.productType"] == "Typ"
     assert catalogs["de"]["editor.densityFactor"] == "Dichte [g/mL] / Faktor"
-    assert '{ labelKey: "common.productType", label: "Type" }' in app_js
-    assert '{ labelKey: "editor.densityFactor", label: "Density / factor" }' in app_js
+    assert '{ labelKey: "common.productType", label: t("common.productType") }' in app_js
+    assert '{ labelKey: "editor.densityFactor", label: t("editor.densityFactor") }' in app_js

@@ -1,5 +1,4 @@
-window.HORTICALC_I18N = window.HORTICALC_I18N || {};
-window.HORTICALC_I18N.zh = {
+export default {
   "app.tagline": "水培营养液计算器和强大的营养 Solver。",
   "aria.rail": "Horticalc 控制栏",
   "aria.system": "系统状态",

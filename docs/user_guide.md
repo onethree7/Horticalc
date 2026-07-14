@@ -50,7 +50,7 @@ The **Configuration** card in `frontend/index.html` controls:
 - visual theme,
 - language.
 
-These are stored in `user/preferences.json` because the launcher's browser profiles are temporary. Theme, language, and display-unit choices are presentation-only; recipe, API, and solver inputs remain canonical. Source: `api/app.py`, `src/horticalc/data_io.py`, and `frontend/app/i18n-controls.js`.
+These are stored in `user/preferences.json` because the launcher's browser profiles are temporary. Theme, language, and display-unit choices are presentation-only; recipe, API, and solver inputs remain canonical. Source: `api/app.py`, `src/horticalc/data_io.py`, and `frontend/app/settings.js`.
 
 Switching a display unit changes the shown number without changing the physical batch or canonical dose. Loading a recipe can temporarily override its own liters and solver config without rewriting user defaults.
 

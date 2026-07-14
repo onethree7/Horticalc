@@ -1,5 +1,4 @@
-window.HORTICALC_I18N = window.HORTICALC_I18N || {};
-window.HORTICALC_I18N.es = {
+export default {
   "app.tagline": "Calculadora de solución hidropónica y potente Solver de nutrientes.",
   "aria.rail": "Barra de control de Horticalc",
   "aria.system": "Estado del sistema",

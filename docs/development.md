@@ -27,15 +27,18 @@ Run the standard suite and focused examples: see [commands.md](commands.md#run-t
 
 When you change an API route, output key, solver default, file path, launcher behavior, persistence rule, or UI workflow, update the matching doc in the same change. See [documentation_architecture.md](documentation_architecture.md#update-triggers) for the mapping.
 
-## Node.js Requirement
+## Frontend Test Requirement
 
-The small executable vanilla-JavaScript tests use only Node.js built-in modules. No `npm install` or frontend bundler is required.
+The production frontend uses native ES modules and has no bundler or runtime npm dependency. Frontend verification uses Node.js, the Playwright development dependency in `package.json`, and an installed Chrome/Chromium browser. `python scripts/test.py` runs `npm ci` automatically when `node_modules/playwright` is missing, then includes the browser workflow smoke test in pytest.
+
+Set `HORTICALC_BROWSER_PATH` when Chrome/Chromium is installed outside the standard Windows or Linux locations. Set `HORTICALC_TEST_URL` only when running `node scripts/frontend_smoke.cjs` against an already-running development server.
 
 ## Generated And Ignored Files
 
 - `user/`: runtime overrides.
 - `logs/`: launcher and solver-matrix logs.
 - `dist/`, `build/`: packaging output.
+- `node_modules/`: installed frontend test dependencies.
 - `_docs_backup/`: ignored documentation backups.
 
 Do not commit generated runtime data unless the task explicitly asks for it.

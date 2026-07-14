@@ -1,3 +1,141 @@
+import {
+  FALLBACK_SOLVER_CONFIG_DEFINITIONS,
+  LAST_FERTILIZERS_ALLOWED_CONTEXT_KEY_PREFIX,
+  NUTRIENT_FORMATTER,
+  SOLVER_AUTO_APPLY_KEY,
+  SUMMARY_COLUMN_ORDER,
+} from "./constants.js";
+import { qs } from "./dom.js";
+import {
+  buildAlignedRows,
+  decimalInputValue,
+  formatNumber,
+  normalizeDecimalInputElement,
+  parseDecimalInput,
+  roundScaledValue,
+} from "./formatting.js";
+import { bindScaleButtons, scaledValues } from "./scaling.js";
+import { storageGet, storageSet } from "./storage.js";
+import { createLatestRequestGate } from "../request_gate.js";
+
+export function createSolverController({
+  api, i18n, notifications, units, water, getSelectedFertilizers,
+  onApplyResult, isActive,
+}) {
+const solverTargetsTable = qs("#solverTargetsTable tbody");
+const solverAllowedFertilizersSelect = qs("#solverAllowedFertilizers");
+const solverAllowedSearchInput = qs("#solverAllowedSearch");
+const solverAllowedCount = qs("#solverAllowedCount");
+const solverAllowedClearButton = qs("#solverAllowedClear");
+const solverAllowedFromRecipeButton = qs("#solverAllowedFromRecipe");
+const solverAllowedAllButton = qs("#solverAllowedAll");
+const solverAllowedHideInactiveInput = qs("#solverAllowedHideInactive");
+const solverOverridesDetails = qs("#solverOverrides");
+const solverOverrideSummary = qs("#solverOverrideSummary");
+const solverFixedTable = qs("#solverFixedTable tbody");
+const solverFertilizersTable = qs("#solverFertilizersTable tbody");
+const solverTargetsResultsTableEl = qs("#solverTargetsResultsTable");
+const solverTargetsResultsTable = qs("#solverTargetsResultsTable tbody");
+const solverTargetsResultsEmpty = qs("#solverTargetsResultsEmpty");
+const solverTargetScaleDownButton = qs("#solverTargetScaleDown");
+const solverTargetScaleUpButton = qs("#solverTargetScaleUp");
+const solverTargetScaleValue = qs("#solverTargetScaleValue");
+const solveButton = qs("#solveBtn");
+const copySolverResultsButton = qs("#copySolverResults");
+const solverAutoApplyInput = qs("#solverAutoApply");
+const applySolverToCalculatorInlineButton = qs("#applySolverToCalculatorInline");
+const saveSolverAsRecipeButton = qs("#saveSolverAsRecipe");
+const applySolverToCalculatorButton = qs("#applySolverToCalculator");
+const solverUreaToggle = qs("#solverUreaToggle");
+const solverConfigResetDefaultsButton = qs("#solverConfigResetDefaults");
+const solverConfigControls = {
+  relative_weighting: qs("#solverConfigRelativeWeighting"),
+  nitrogen_objective_mode: qs("#solverConfigNitrogenObjectiveMode"),
+  overshoot_penalty: qs("#solverConfigOvershootPenalty"),
+  irls_max_outer_iter: qs("#solverConfigIrlsMaxOuterIter"),
+  scale_eps_mg_per_l: qs("#solverConfigScaleEpsMgPerL"),
+  s_objective_enabled: qs("#solverConfigSObjectiveEnabled"),
+  singleton_supplier_enabled: qs("#solverConfigSingletonSupplierEnabled"),
+  singleton_share_threshold: qs("#solverConfigSingletonShareThreshold"),
+  singleton_max_regress_pp: qs("#solverConfigSingletonMaxRegressPp"),
+  singleton_underfill_enabled: qs("#solverConfigSingletonUnderfillEnabled"),
+  singleton_underfill_share_threshold: qs("#solverConfigSingletonUnderfillShareThreshold"),
+  singleton_underfill_max_iter: qs("#solverConfigSingletonUnderfillMaxIter"),
+  n_total_governor_enabled: qs("#solverConfigNTotalGovernorEnabled"),
+  n_total_governor_weight: qs("#solverConfigNTotalGovernorWeight"),
+};
+const solverTargetDefinitions = [
+  "N_total", "N_NH4", "N_NO3", "N_UREA", "P", "K", "Ca", "Mg", "S",
+  "Fe", "Mn", "Cu", "Zn", "B", "Mo", "Si", "Cl", "Na", "HCO3",
+].map((key) => ({ key, label: key }));
+const solverTargetValues = Object.fromEntries(solverTargetDefinitions.map(({ key }) => [key, 0]));
+const solverTargetBaseValues = { ...solverTargetValues };
+const solverAllowedFertilizers = [];
+const solverFixedGrams = {};
+const solveRequests = createLatestRequestGate();
+const t = (key, params) => i18n.t(key, params);
+const nutrientFormatter = NUTRIENT_FORMATTER;
+const summaryColumnOrder = SUMMARY_COLUMN_ORDER;
+const NITROGEN_OBJECTIVE_TOTAL_ONLY = "n_total_only";
+const NITROGEN_OBJECTIVE_FORMS_ONLY = "n_forms_only";
+let solverConfigDefinitions = [...FALLBACK_SOLVER_CONFIG_DEFINITIONS];
+let fertilizerOptions = [];
+let lastSolveResult = null;
+let solverTargetScaleFactor = 1;
+let solverAllowedContext = "global";
+let solverAllowedFilter = "";
+let solverAllowedHideInactive = false;
+let searchTimer;
+let mounted = false;
+
+const buildClipboardRows = buildAlignedRows;
+const formatClipboardIonLabel = (key) => key === "N_total" ? "N" : key;
+const formatDoseInput = (...args) => units.formatDoseInput(...args);
+const formatDoseDisplay = (...args) => units.formatDoseDisplay(...args);
+const displayDoseToCanonical = (...args) => units.displayDoseToCanonical(...args);
+const doseUnitDefinition = (...args) => units.doseUnitDefinition(...args);
+const getVolumeUnitDefinition = (...args) => units.getVolumeUnitDefinition(...args);
+const litersToDisplayVolume = (...args) => units.litersToDisplayVolume(...args);
+const formatVolumeValue = (...args) => units.formatVolumeValue(...args);
+const appendDoseInput = (cell, input, fertilizer) => {
+  const wrapper = document.createElement("span");
+  wrapper.className = "dose-input";
+  const unit = document.createElement("span");
+  unit.className = "dose-input-unit";
+  unit.textContent = doseUnitDefinition(fertilizer).symbol;
+  wrapper.append(input, unit);
+  cell.appendChild(wrapper);
+};
+const reportError = (...args) => notifications.reportError(...args);
+const copyTextWithFallback = (...args) => notifications.copyText(...args);
+const setCopySolverStatus = (...args) => notifications.setCopySolverStatus(...args);
+
+function updateSolverTargetScaleDisplay() {
+  if (solverTargetScaleValue) solverTargetScaleValue.textContent = `${solverTargetScaleFactor.toFixed(2)}x`;
+}
+
+function applySolverTargetScaleFactor(nextFactor) {
+  const scaled = scaledValues(solverTargetDefinitions, nextFactor, (field) => solverTargetBaseValues[field.key]);
+  solverTargetScaleFactor = scaled.factor;
+  solverTargetDefinitions.forEach((field, index) => { solverTargetValues[field.key] = scaled.values[index]; });
+  updateSolverTargetScaleDisplay();
+  renderSolverTargetsTable();
+}
+
+function buildSolvePayload() {
+  const targets = Object.fromEntries(Object.entries(solverTargetValues).filter(([, value]) => Number(value) > 0));
+  const fixed = Object.fromEntries(Object.entries(solverFixedGrams).filter(([, value]) => Number(value) > 0));
+  return {
+    liters: units.liters,
+    targets,
+    water_profile: { mg_per_l: water.buildWaterPayload(), osmosis_percent: water.osmosisPercent },
+    fertilizers_allowed: solverAllowedFertilizers,
+    fixed_grams: fixed,
+    urea_as_nh4: solverUreaToggle.checked,
+    solver_config: buildSolverConfigPayload(),
+  };
+}
+
 function normalizeSolverConfigDefinitions(definitions = []) {
   if (!Array.isArray(definitions)) {
     return [...FALLBACK_SOLVER_CONFIG_DEFINITIONS];
@@ -158,7 +296,7 @@ function renderSolverAllowedOptions() {
   if (!solverAllowedFertilizersSelect) {
     return;
   }
-  if (currentShellView !== "solver") {
+  if (!isActive()) {
     updateSolverAllowedCount();
     return;
   }
@@ -266,7 +404,7 @@ function syncSolverOverridePanel({ forceOpen = false } = {}) {
 }
 
 function renderSolverFixedTable() {
-  if (currentShellView !== "solver") {
+  if (!isActive()) {
     return;
   }
   solverFixedTable.innerHTML = "";
@@ -434,7 +572,7 @@ function restoreSolverAutoApplyPreference() {
   if (!solverAutoApplyInput) {
     return;
   }
-  const stored = lsGet(SOLVER_AUTO_APPLY_KEY, true);
+  const stored = storageGet(SOLVER_AUTO_APPLY_KEY, true);
   solverAutoApplyInput.checked = stored !== false;
 }
 
@@ -442,7 +580,7 @@ function persistSolverAutoApplyPreference() {
   if (!solverAutoApplyInput) {
     return;
   }
-  lsSet(SOLVER_AUTO_APPLY_KEY, solverAutoApplyInput.checked);
+  storageSet(SOLVER_AUTO_APPLY_KEY, solverAutoApplyInput.checked);
 }
 
 function buildSolverClipboardText() {
@@ -452,9 +590,9 @@ function buildSolverClipboardText() {
     ...buildClipboardRows(null, [
       [
         t("solver.clipboardBatchVolume", { unit: getVolumeUnitDefinition().symbol }),
-        formatVolumeValue(litersToDisplayVolume(currentLiters)),
+        formatVolumeValue(litersToDisplayVolume(units.liters)),
       ],
-      [t("solver.clipboardOsmosis"), formatNumber(decimalInputValue(osmosisPercentInput.value))],
+      [t("solver.clipboardOsmosis"), formatNumber(water.osmosisPercent)],
     ], [1])
   );
   lines.push("");
@@ -471,13 +609,13 @@ function buildSolverClipboardText() {
   );
 
   const calculateData = {
-    liters: currentLiters,
+    liters: units.liters,
     fertilizers,
-    water_mg_l: buildWaterPayloadForApi(waterValues),
-    osmosis_percent: decimalInputValue(osmosisPercentInput.value),
+    water_mg_l: water.buildWaterPayload(),
+    osmosis_percent: water.osmosisPercent,
   };
 
-  return calculate(calculateData).then((data) => {
+  return api.calculate(calculateData, t("errors.calculateFailed")).then((data) => {
     const npkMetrics = data?.npk_metrics || {};
     const ecValues = data?.ec?.ec_mS_per_cm || {};
     const ionValues = data?.elements_mg_per_l || {};
@@ -554,7 +692,7 @@ async function copySolverResultsToClipboard() {
 
 async function solveRecipe() {
   const payload = buildSolvePayload();
-  return postJson(`${apiBase()}/solve`, payload, t("errors.solveFailed"));
+  return api.solve(payload, t("errors.solveFailed"));
 }
 
 function applyNutrientSolution(solution) {
@@ -637,11 +775,11 @@ function solverAllowedStorageKey(context = solverAllowedContext) {
 }
 
 function persistSolverAllowedToStorage(context = solverAllowedContext) {
-  lsSet(solverAllowedStorageKey(context), solverAllowedFertilizers);
+  storageSet(solverAllowedStorageKey(context), solverAllowedFertilizers);
 }
 
 function syncSolverAllowedWithSelection(mode = "merge") {
-  const names = collectSelectedFertilizerNames();
+  const names = getSelectedFertilizers();
   if (!names.length) {
     return false;
   }
@@ -651,7 +789,7 @@ function syncSolverAllowedWithSelection(mode = "merge") {
 
 function restoreSolverAllowedFromStorage(context = solverAllowedContext) {
   const contextKey = solverAllowedStorageKey(context);
-  const storedContextAllowed = lsGet(contextKey, null);
+  const storedContextAllowed = storageGet(contextKey, null);
   if (!Array.isArray(storedContextAllowed)) {
     return false;
   }
@@ -662,4 +800,146 @@ function restoreSolverAllowedFromStorage(context = solverAllowedContext) {
   renderSolverAllowedOptions();
   renderSolverFixedTable();
   return true;
+}
+
+function setFertilizers(fertilizers) {
+  fertilizerOptions = fertilizers || [];
+  const available = new Set(fertilizerOptions.map(({ name }) => name));
+  updateSolverAllowedFertilizers(
+    solverAllowedFertilizers.filter((name) => available.has(name)),
+    "replace",
+  );
+}
+
+function setAllowedContext(context) {
+  solverAllowedContext = normalizeSolverAllowedContext(context);
+  return restoreSolverAllowedFromStorage(solverAllowedContext);
+}
+
+function scaleFixedAmounts(previousLiters, nextLiters) {
+  const factor = nextLiters / previousLiters;
+  Object.keys(solverFixedGrams).forEach((key) => {
+    solverFixedGrams[key] = roundScaledValue((Number(solverFixedGrams[key]) || 0) * factor);
+  });
+  renderSolverFixedTable();
+}
+
+function bindConfigEvents() {
+  solverConfigDefinitions.forEach((definition) => {
+    const input = solverConfigControls[definition.key];
+    if (!input || input.dataset.solverBound === "true") return;
+    input.dataset.solverBound = "true";
+    const eventName = definition.type === "boolean" || definition.key === "nitrogen_objective_mode"
+      ? "change"
+      : "input";
+    input.addEventListener(eventName, () => {
+      if (definition.type !== "boolean"
+        && definition.key !== "nitrogen_objective_mode"
+        && parseDecimalInput(input.value) === null) return;
+      renderSolverResults(null);
+      api.persistPreferences({ solver_config: buildSolverConfigPayload() });
+    });
+    if (definition.type !== "boolean" && definition.key !== "nitrogen_objective_mode") {
+      input.addEventListener("change", () => {
+        normalizeDecimalInputElement(input, parseDecimalInput(input.value));
+      });
+    }
+  });
+}
+
+function mount({ configDefinitions = [], config = {} } = {}) {
+  solverConfigDefinitions = normalizeSolverConfigDefinitions(configDefinitions);
+  applySolverConfig(config);
+  bindConfigEvents();
+  if (mounted) return;
+  mounted = true;
+  restoreSolverAutoApplyPreference();
+  renderSolverTargetsTable();
+  updateSolverTargetScaleDisplay();
+  updateSolverResultActions();
+  bindScaleButtons(
+    solverTargetScaleDownButton,
+    solverTargetScaleUpButton,
+    () => solverTargetScaleFactor,
+    applySolverTargetScaleFactor,
+  );
+  solverAllowedSearchInput?.addEventListener("input", (event) => {
+    solverAllowedFilter = event.target.value || "";
+    if (searchTimer) clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(renderSolverAllowedOptions, 150);
+  });
+  solverAllowedFromRecipeButton?.addEventListener("click", () => syncSolverAllowedWithSelection("merge"));
+  solverAllowedAllButton?.addEventListener("click", () => {
+    updateSolverAllowedFertilizers(fertilizerOptions.map(({ name }) => name), "replace");
+  });
+  solverAllowedHideInactiveInput?.addEventListener("change", (event) => {
+    solverAllowedHideInactive = event.target.checked;
+    renderSolverAllowedOptions();
+  });
+  solverAllowedClearButton?.addEventListener("click", () => updateSolverAllowedFertilizers([], "replace"));
+  solverAutoApplyInput?.addEventListener("change", persistSolverAutoApplyPreference);
+  solverConfigResetDefaultsButton?.addEventListener("click", () => {
+    applySolverConfig();
+    renderSolverResults(null);
+    api.persistPreferences({ solver_config: {} });
+    notifications.setSolverApplyStatus(t("solver.configResetDone"));
+  });
+  solverUreaToggle.addEventListener("change", () => renderSolverResults(null));
+  solveButton.addEventListener("click", async () => {
+    if (!solverAllowedFertilizers.length) {
+      reportError(null, t("solver.noAllowed"));
+      return;
+    }
+    const version = solveRequests.reserve();
+    try {
+      const data = await solveRecipe();
+      if (!solveRequests.isCurrent(version)) return;
+      renderSolverResults(data);
+      if (solverAutoApplyEnabled()) onApplyResult({ switchToCalculator: false });
+    } catch (error) {
+      if (solveRequests.isCurrent(version)) reportError(error, t("errors.solveFailed"));
+    }
+  });
+  copySolverResultsButton?.addEventListener("click", copySolverResultsToClipboard);
+  applySolverToCalculatorInlineButton?.addEventListener("click", () => onApplyResult({ switchToCalculator: true }));
+}
+
+function activate() {
+  renderSolverAllowedOptions();
+  renderSolverFixedTable();
+}
+
+function deactivate() {
+  solverAllowedFertilizersSelect.replaceChildren();
+  solverFixedTable.replaceChildren();
+}
+
+function refreshLocalized() {
+  renderSolverAllowedOptions();
+  renderSolverFixedTable();
+  renderSolverTargetsTable();
+  renderSolverResults(lastSolveResult);
+}
+
+return {
+  activate,
+  applyConfig: applySolverConfig,
+  applyNutrientSolution,
+  buildConfigPayload: buildSolverConfigPayload,
+  deactivate,
+  get allowedFertilizers() { return [...solverAllowedFertilizers]; },
+  get lastResult() { return lastSolveResult; },
+  get targets() { return { ...solverTargetValues }; },
+  get ureaAsNh4() { return solverUreaToggle.checked; },
+  mount,
+  refreshDoseUnits() { renderSolverFixedTable(); if (lastSolveResult) renderSolverResults(lastSolveResult); },
+  refreshLocalized,
+  renderResults: renderSolverResults,
+  resetTargets: resetSolverTargets,
+  restoreAllowed: restoreSolverAllowedFromStorage,
+  scaleFixedAmounts,
+  setAllowedContext,
+  setAllowedFertilizers: updateSolverAllowedFertilizers,
+  setFertilizers,
+};
 }

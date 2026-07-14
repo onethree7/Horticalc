@@ -66,12 +66,20 @@ Standard suite:
 python scripts/test.py
 ```
 
+The entrypoint creates the Python environment as needed and installs the locked Playwright development dependency with `npm ci` when it is missing. Chrome or Chromium is required for the frontend browser smoke test; use `HORTICALC_BROWSER_PATH` for a non-standard browser location.
+
 Focused examples:
 
 ```bash
 python scripts/test.py tests/test_ec.py -q
 python scripts/test.py tests/test_solver_golden.py tests/test_solver_weighting.py -q
 python scripts/test.py tests/test_frontend_serving.py tests/test_frontend_recipe_wheel_shell.py -q
+```
+
+Run only the browser workflow smoke test:
+
+```bash
+python scripts/test.py tests/test_frontend_browser_smoke.py -q
 ```
 
 ## Release Build (PyInstaller)

@@ -2,7 +2,7 @@ from tests.frontend_assets import read_frontend_file
 
 
 def test_ion_summary_has_expandable_nitrogen_columns():
-    content = read_frontend_file("app.js")
+    content = read_frontend_file("app/constants.js") + read_frontend_file("app/water.js")
 
     assert 'ionHeaderLabelKey: "solver.nTotal"' in content
     assert "N_NO3" in content
@@ -11,7 +11,7 @@ def test_ion_summary_has_expandable_nitrogen_columns():
     assert "ionNToggle" in content
 
 def test_ion_balance_uses_sum_symbols_for_charge_totals():
-    content = read_frontend_file("app.js")
+    content = read_frontend_file("app/water.js")
 
     assert 'cations_meq_per_l: t("calculator.ionBalance.cations")' in content
     assert 'anions_meq_per_l: t("calculator.ionBalance.anions")' in content
@@ -20,8 +20,9 @@ def test_ion_balance_uses_sum_symbols_for_charge_totals():
 
 
 def test_fertilizer_editor_weight_header_explains_density_and_factor():
-    app_js = read_frontend_file("app.js")
+    editor = read_frontend_file("app/editor.js")
+    calculator = read_frontend_file("app/calculator.js")
 
-    assert 'fertilizerEditorHeader("Density / factor", "weight_factor", "editor.densityFactor")' in app_js
-    assert '{ labelKey: "common.amount", label: "Amount" }' in app_js
-    assert 'massHeaderButton.replaceChildren' not in app_js
+    assert 'fertilizerEditorHeader("Density / factor", "weight_factor", "editor.densityFactor")' in editor
+    assert '{ labelKey: "common.amount", label: t("common.amount") }' in calculator
+    assert 'massHeaderButton.replaceChildren' not in calculator

@@ -13,10 +13,10 @@ REQUEST_GATE = ROOT / "frontend" / "request_gate.js"
 def test_latest_request_gate_executes_expected_semantics() -> None:
     node = shutil.which("node")
     assert node is not None, "Node.js is required for executable frontend tests"
-    module_path = json.dumps(str(REQUEST_GATE))
+    module_path = json.dumps(REQUEST_GATE.as_uri())
     script = f"""
-const assert = require("node:assert/strict");
-const {{ createLatestRequestGate }} = require({module_path});
+import assert from "node:assert/strict";
+const {{ createLatestRequestGate }} = await import({module_path});
 
 const gate = createLatestRequestGate();
 const first = gate.reserve();
@@ -32,4 +32,4 @@ assert.equal(independent.isCurrent(token), true);
 assert.equal(gate.isCurrent(token), false);
 """
 
-    subprocess.run([node, "-e", script], cwd=ROOT, check=True)
+    subprocess.run([node, "--input-type=module", "-e", script], cwd=ROOT, check=True)

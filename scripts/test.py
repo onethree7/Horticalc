@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 
@@ -33,6 +34,14 @@ def main() -> int:
     if dependency_check.returncode != 0:
         print("[Horticalc] Installing development dependencies into .venv")
         run([str(VENV_PYTHON), "-m", "pip", "install", "-e", ".[dev]"])
+
+    if not (REPO_ROOT / "node_modules" / "playwright" / "package.json").exists():
+        npm = shutil.which("npm")
+        if not npm:
+            print("[Horticalc] Node.js/npm is required for frontend browser tests")
+            return 1
+        print("[Horticalc] Installing frontend test dependencies")
+        run([npm, "ci", "--ignore-scripts", "--no-audit", "--no-fund"])
 
     pytest_args = sys.argv[1:] or ["-q"]
     return subprocess.run(

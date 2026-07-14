@@ -9,18 +9,19 @@ def test_solver_copy_button_present() -> None:
     assert 'id="copySolverResultsStatus"' in content
 
 def test_solver_copy_logic_present() -> None:
-    content = read_frontend_file("app.js")
+    content = read_frontend_file("app/solver.js")
+    formatting = read_frontend_file("app/formatting.js")
 
     assert "buildSolverClipboardText" in content
     assert "buildClipboardRows" in content
     assert "copySolverResultsToClipboard" in content
     assert "copyTextWithFallback" in content
     assert 't("solver.clipboardBatchVolume"' in content
-    assert "litersToDisplayVolume(currentLiters)" in content
+    assert "litersToDisplayVolume(units.liters)" in content
     assert 't("solver.clipboardTargets")' in content
     assert 't("live.ec")' in content
     assert "\\t" not in content
-    assert '.join("  ")' in content
+    assert '.join("  ")' in formatting
 
 
 def test_solver_recipe_button_uses_short_responsive_label() -> None:

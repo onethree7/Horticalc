@@ -1,43 +1,27 @@
 from fastapi.testclient import TestClient
 
 from api.app import app
-from tests.frontend_assets import frontend_app_sources
-
-EXPECTED_APP_SOURCES = [
-    "app/dom.js",
-    "app/state.js",
-    "app/units.js",
-    "app/notifications.js",
-    "app/shell.js",
-    "app/api.js",
-    "app/calculator.js",
-    "app/water.js",
-    "app/solver.js",
-    "app/editor.js",
-    "app/i18n-controls.js",
-    "app/app.js",
-]
+from tests.frontend_assets import frontend_app_sources, frontend_module_entry
 
 
-def test_frontend_root_serves_index() -> None:
+def test_frontend_root_serves_single_module_entry() -> None:
     client = TestClient(app)
     response = client.get("/")
     assert response.status_code == 200
     assert "Horticalc GUI" in response.text
-    assert "request_gate.js" in response.text
+    assert response.text.count('type="module"') == 1
+    assert frontend_module_entry() == "app/main.js"
+    assert "app/state.js" not in response.text
+    assert "app/app.js" not in response.text
 
-    request_gate = client.get("/request_gate.js")
-    assert request_gate.status_code == 200
-    assert "createLatestRequestGate" in request_gate.text
 
-
-def test_frontend_serves_complete_modular_app_in_dependency_order() -> None:
+def test_frontend_serves_every_es_module() -> None:
     client = TestClient(app)
     sources = frontend_app_sources()
-
-    assert sources == EXPECTED_APP_SOURCES
-    assert client.get("/app.js").status_code == 404
-    for source in sources:
+    assert "app/main.js" in sources
+    assert "app/storage.js" in sources
+    assert "app/profiles.js" in sources
+    for source in [*sources, "request_gate.js", "i18n/runtime.js"]:
         response = client.get(f"/{source}")
         assert response.status_code == 200, source
         assert response.text.strip(), source

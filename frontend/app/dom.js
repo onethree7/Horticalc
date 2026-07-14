@@ -1,12 +1,11 @@
-const qs = (selector, root = document) => root.querySelector(selector);
-const qsa = (selector, root = document) => root.querySelectorAll(selector);
-const { createLatestRequestGate } = window.HorticalcRequestGate;
+export const qs = (selector, root = document) => root.querySelector(selector);
+export const qsa = (selector, root = document) => root.querySelectorAll(selector);
 
-function createSelect(options, onChange) {
+export function createSelect(options, onChange, emptyLabel) {
   const select = document.createElement("select");
   const emptyOption = document.createElement("option");
   emptyOption.value = "";
-  emptyOption.textContent = t("common.selectEmpty");
+  emptyOption.textContent = emptyLabel;
   select.appendChild(emptyOption);
 
   options.forEach((opt) => {
@@ -20,7 +19,7 @@ function createSelect(options, onChange) {
   return select;
 }
 
-function createTable({ id, className, colgroupClasses, headerCells }) {
+export function createTable({ id, className, colgroupClasses, headerCells }) {
   const table = document.createElement("table");
   table.id = id;
   table.className = className;
@@ -37,7 +36,7 @@ function createTable({ id, className, colgroupClasses, headerCells }) {
   const headerRow = document.createElement("tr");
   headerCells.forEach((cell) => {
     const th = document.createElement("th");
-    const label = cell.labelKey ? t(cell.labelKey) : cell.label;
+    const label = cell.label;
     if (cell.onClick) {
       const button = document.createElement("button");
       button.type = "button";
@@ -48,9 +47,7 @@ function createTable({ id, className, colgroupClasses, headerCells }) {
       th.setAttribute("aria-sort", cell.sortDirection || "none");
       th.appendChild(button);
     } else {
-      if (cell.labelKey) {
-        th.dataset.i18n = cell.labelKey;
-      }
+      if (cell.labelKey) th.dataset.i18n = cell.labelKey;
       th.textContent = label;
     }
     if (cell.colSpan) {
@@ -67,58 +64,9 @@ function createTable({ id, className, colgroupClasses, headerCells }) {
   return { table, tbody };
 }
 
-function initializeFertilizerTables() {
-  const selectTable = createTable({
-    id: "fertilizerSelectTable",
-    className: "grid grid--form grid--fertilizer",
-    colgroupClasses: ["col-index", "col-name", "col-liquid", "col-weight"],
-    headerCells: [
-      { label: "#" },
-      { labelKey: "calculator.fertilizerDropdown", label: "Fertilizer (dropdown)" },
-      { labelKey: "common.productType", label: "Type" },
-      { labelKey: "editor.densityFactor", label: "Density / factor" },
-    ],
-  });
-  fertilizerSelectTableWrap.appendChild(selectTable.table);
-  fertilizerSelectTable = selectTable.tbody;
-
-  const calculator = createTable({
-    id: "calculatorTable",
-    className: "grid grid--form grid--fertilizer",
-    colgroupClasses: ["col-index", "col-name", "col-form", "col-amount"],
-    headerCells: [
-      { label: "#" },
-      { labelKey: "editor.fertilizerName", label: "Fertilizer name", colSpan: 2 },
-      { labelKey: "common.amount", label: "Amount" },
-    ],
-  });
-  calculatorTableWrap.appendChild(calculator.table);
-  calculatorTable = calculator.tbody;
-}
-
-function renderTableRows(tableBody, rowCount, buildRow) {
+export function renderTableRows(tableBody, rowCount, buildRow) {
   tableBody.innerHTML = "";
   for (let i = 0; i < rowCount; i += 1) {
     tableBody.appendChild(buildRow(i));
-  }
-}
-
-function releaseInactiveHeavyViews() {
-  if (currentShellView !== "editor") {
-    fertilizerEditorTableWrap.replaceChildren();
-    fertilizerEditorTable = null;
-  }
-  if (currentShellView !== "solver") {
-    solverAllowedFertilizersSelect.replaceChildren();
-    solverFixedTable.replaceChildren();
-  }
-}
-
-function renderActiveHeavyView() {
-  if (currentShellView === "editor") {
-    renderFertilizerEditor();
-  } else if (currentShellView === "solver") {
-    renderSolverAllowedOptions();
-    renderSolverFixedTable();
   }
 }

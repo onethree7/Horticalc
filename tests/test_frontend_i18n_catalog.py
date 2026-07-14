@@ -10,8 +10,8 @@ LOCALES = ("de", "en", "nl", "es", "zh")
 
 def _catalog(locale: str) -> dict[str, str]:
     content = frontend_path(f"i18n/{locale}.js").read_text(encoding="utf-8")
-    match = re.search(rf"window\.HORTICALC_I18N\.{locale}\s*=\s*(\{{.*\}});", content, re.S)
-    assert match, f"catalog assignment missing for {locale}"
+    match = re.search(r"export default\s*(\{.*\});", content, re.S)
+    assert match, f"catalog export missing for {locale}"
     return json.loads(match.group(1))
 
 
@@ -25,7 +25,10 @@ def _catalog_keys() -> set[str]:
 
 
 def test_hardcoded_clipboard_and_summary_strings_are_localized():
-    app_js = read_frontend_file("app.js")
+    app_js = "\n".join(
+        read_frontend_file(path)
+        for path in ("app/calculator.js", "app/constants.js", "app/solver.js", "app/water.js")
+    )
 
     hardcoded = [
         '"NPK P-Norm"',

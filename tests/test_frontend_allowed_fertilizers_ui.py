@@ -24,7 +24,7 @@ def test_solver_allowed_sync_button_present():
     assert not re.search(r'<select[^>]+id="solverAllowedFertilizers"', content)
 
 def test_solver_allowed_sync_logic_present():
-    content = read_frontend_file("app.js")
+    content = read_frontend_file("app/solver.js")
 
     assert "syncSolverAllowedWithSelection" in content
     assert "solverAllowedFromRecipe" in content
@@ -33,7 +33,7 @@ def test_solver_allowed_sync_logic_present():
     assert "solverAllowedAllButton" in content
     assert "solverAllowedHideInactiveInput" in content
     assert "solverAllowedHideInactive" in content
-    assert "fertilizerOptions.map((fert) => fert.name)" in content
+    assert "fertilizerOptions.map(({ name }) => name)" in content
     assert "rerenderPicker: false" in content
     assert 'table.className = "grid grid--form solver-picker-table"' in content
     assert "document.createElement(\"tr\")" in content
@@ -41,19 +41,20 @@ def test_solver_allowed_sync_logic_present():
 
 def test_solver_auto_apply_control_present():
     html_content = read_frontend_file("index.html")
-    js_content = read_frontend_file("app.js")
+    solver = read_frontend_file("app/solver.js")
+    calculator = read_frontend_file("app/calculator.js")
 
     assert 'id="solverAutoApply" type="checkbox" checked' in html_content
     assert 'data-i18n="solver.autoApply"' in html_content
     assert 'id="solverApplyStatus"' in html_content
     assert 'id="applySolverToCalculatorInline"' in html_content
     assert html_content.index('id="solveBtn"') < html_content.index('id="solverAutoApply"')
-    assert "SOLVER_AUTO_APPLY_KEY" in js_content
-    assert "applySolverResultToCalculator" in js_content
-    assert 'setSolverApplyStatus(t("status.appliedCalculator"))' in js_content
+    assert "SOLVER_AUTO_APPLY_KEY" in solver
+    assert "applySolverResultToCalculator" in calculator
+    assert 'setSolverApplyStatus(t("status.appliedCalculator"))' in calculator
 
 def test_solver_override_panel_is_optional_and_auto_opens_when_active():
-    content = read_frontend_file("app.js")
+    content = read_frontend_file("app/solver.js")
 
     assert "solverOverridesDetails" in content
     assert "solverOverrideSummary" in content

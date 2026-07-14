@@ -1,5 +1,4 @@
-window.HORTICALC_I18N = window.HORTICALC_I18N || {};
-window.HORTICALC_I18N.en = {
+export default {
   "app.tagline": "Hydroponic Solution Calculator and powerful Nutrient Solver.",
   "aria.rail": "Horticalc control rail",
   "aria.system": "System status",

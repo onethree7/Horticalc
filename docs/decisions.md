@@ -56,7 +56,7 @@ Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`.
 
 - The backend serves the frontend from the same origin at `/`.
 - API routes are registered before the static frontend mount.
-- The frontend is a static Vanilla JS app.
+- The frontend is a static Vanilla JS app with one native ES-module entrypoint, controller-owned feature state, and no production bundler.
 - Batch volume is canonical liters in the core, API, CLI, and recipe files; the GUI can display L, US gal, Imp gal, or m³.
 - The fertilizer dose contract remains `grams`: grams for solids, mL for liquids, with `weight_factor` as liquid density.
 - `user/preferences.json` stores theme, default batch liters, volume and dose display units, UI-visible solver defaults, and the last directly loaded water profile.

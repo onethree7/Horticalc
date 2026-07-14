@@ -1,3 +1,30 @@
+import { NUTRIENT_FORMATTER, SOLVER_MAX_FORMATTER } from "./constants.js";
+import { createTable, qs, qsa } from "./dom.js";
+import { formatNumber, normalizeDecimalInputElement, parseDecimalInput } from "./formatting.js";
+
+export function createEditorController({ api, i18n, notifications, isActive, onCatalogChange }) {
+const fertilizerEditorTableWrap = qs("#fertilizerEditorTableWrap");
+const fertEditorSearchInput = qs("#fertEditorSearch");
+const fertEditorAddRowButton = qs("#fertEditorAddRow");
+const fertEditorDeleteRowButton = qs("#fertEditorDeleteRow");
+const fertEditorLoadButton = qs("#fertEditorLoad");
+const fertEditorSaveButton = qs("#fertEditorSave");
+const t = (key, params) => i18n.t(key, params);
+const nutrientFormatter = NUTRIENT_FORMATTER;
+const solverMaxFormatter = SOLVER_MAX_FORMATTER;
+let fertilizerEditorRows = [];
+let fertilizerEditorSelectedIndex = 0;
+let fertilizerEditorFilter = "";
+let fertilizerEditorSearchTimer;
+let fertilizerEditorTable;
+let fertilizerEditorNameWidthPx = 288;
+let fertilizerEditorCompKeys = [];
+let fertilizerEditorSort = { key: "name", direction: "asc" };
+let fertilizerEditorPreferredKeys = [];
+let mounted = false;
+
+const reportError = (...args) => notifications.reportError(...args);
+
 function buildFertilizerCompKeys(fertilizers) {
   const keySet = new Set();
   const keyLookup = new Map();
@@ -35,7 +62,7 @@ function setFertilizerEditorData(fertilizers) {
   }));
   fertilizerEditorSelectedIndex = 0;
   fertilizerEditorCompKeys = buildFertilizerCompKeys(fertilizerEditorRows);
-  if (currentShellView === "editor") {
+  if (isActive()) {
     renderFertilizerEditor();
   }
 }
@@ -204,7 +231,7 @@ function applyFertilizerEditorFilter() {
 }
 
 function renderFertilizerEditor() {
-  if (!fertilizerEditorTableWrap || currentShellView !== "editor") {
+  if (!fertilizerEditorTableWrap || !isActive()) {
     return;
   }
   fertilizerEditorTableWrap.innerHTML = "";
@@ -365,25 +392,9 @@ function renderFertilizerEditor() {
 }
 
 async function refreshFertilizerCatalog() {
-  const refreshedFertilizers = await fetchFertilizers();
-  const availableNames = new Set(refreshedFertilizers.map((fertilizer) => fertilizer.name));
-  fertilizerOptions = refreshedFertilizers;
-  setFertilizerEditorData(fertilizerOptions);
-
-  calculatorRows.forEach((row) => {
-    if (row.name && !availableNames.has(row.name)) {
-      Object.assign(row, createCalculatorRow());
-    }
-  });
-  if (!calculatorRows.length) {
-    calculatorRows.push(createCalculatorRow());
-  }
-
-  const availableSolverNames = solverAllowedFertilizers.filter((name) => availableNames.has(name));
-  updateSolverAllowedFertilizers(availableSolverNames, "replace");
-  renderSelectionTable();
-  renderCalculatorTable();
-  scheduleRecalculate();
+  const refreshedFertilizers = await api.fetchFertilizers(t("errors.loadFertilizers"));
+  setFertilizerEditorData(refreshedFertilizers);
+  onCatalogChange(refreshedFertilizers);
 }
 
 async function saveFertilizerEditor() {
@@ -422,7 +433,7 @@ async function saveFertilizerEditor() {
     });
   }
   try {
-    await putFertilizers(payload);
+    await api.putFertilizers(payload, t("errors.saveFailed"));
     await refreshFertilizerCatalog();
   } catch (error) {
     reportError(error, t("errors.saveFailed"));
@@ -465,4 +476,44 @@ function deleteFertilizerEditorRow() {
     fertilizerEditorSelectedIndex = Math.max(0, fertilizerEditorRows.length - 1);
   }
   renderFertilizerEditor();
+}
+
+function setData(fertilizers, preferredKeys = fertilizerEditorPreferredKeys) {
+  fertilizerEditorPreferredKeys = preferredKeys || [];
+  setFertilizerEditorData(fertilizers);
+}
+
+function mount() {
+  if (mounted) return;
+  mounted = true;
+  fertEditorSearchInput.addEventListener("input", (event) => {
+    fertilizerEditorFilter = event.target.value || "";
+    if (fertilizerEditorSearchTimer) clearTimeout(fertilizerEditorSearchTimer);
+    fertilizerEditorSearchTimer = window.setTimeout(() => {
+      fertilizerEditorSearchTimer = null;
+      applyFertilizerEditorFilter();
+    }, 150);
+  });
+  fertEditorAddRowButton.addEventListener("click", addFertilizerEditorRow);
+  fertEditorDeleteRowButton.addEventListener("click", deleteFertilizerEditorRow);
+  fertEditorLoadButton.addEventListener("click", reloadFertilizerEditor);
+  fertEditorSaveButton.addEventListener("click", saveFertilizerEditor);
+}
+
+function activate() {
+  renderFertilizerEditor();
+}
+
+function deactivate() {
+  fertilizerEditorTableWrap.replaceChildren();
+  fertilizerEditorTable = null;
+}
+
+return {
+  activate,
+  deactivate,
+  mount,
+  refreshLocalized: renderFertilizerEditor,
+  setData,
+};
 }

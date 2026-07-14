@@ -1,7 +1,69 @@
-calculatorRows = [createCalculatorRow()];
-function roundScaledValue(value) {
-  return Math.round(value * 1000) / 1000;
-}
+import {
+  ION_FORMATTER,
+  LAST_SOLUTION_CALCULATED_KEY,
+  NUTRIENT_FORMATTER,
+  SUMMARY_COLUMN_ORDER,
+} from "./constants.js";
+import { createSelect, createTable, qs, renderTableRows } from "./dom.js";
+import { buildAlignedRows, decimalInputValue, formatNumber, roundScaledValue } from "./formatting.js";
+import { bindScaleButtons, scaledValues } from "./scaling.js";
+import { createLatestRequestGate } from "../request_gate.js";
+import { storageSet } from "./storage.js";
+
+export function createCalculatorController({
+  api, i18n, notifications, units, water, getSolverResult, getSolverAllowed,
+  getSolverUrea, onCalculation, onShowCalculator,
+}) {
+const fertilizerSelectTableWrap = qs("#fertilizerSelectTableWrap");
+const calculatorTableWrap = qs("#calculatorTableWrap");
+const calculateButton = qs("#calculateBtn");
+const copyCalculatorResultsButton = qs("#copyCalculatorResults");
+const addRowButton = qs("#addFertilizerRow");
+const removeRowButton = qs("#removeFertilizerRow");
+const calculatorScaleDownButton = qs("#calculatorScaleDown");
+const calculatorScaleUpButton = qs("#calculatorScaleUp");
+const calculatorScaleValue = qs("#calculatorScaleValue");
+const t = (key, params) => i18n.t(key, params);
+const nutrientFormatter = NUTRIENT_FORMATTER;
+const ionFormatter = ION_FORMATTER;
+const summaryColumnOrder = SUMMARY_COLUMN_ORDER;
+const calculationRequests = createLatestRequestGate();
+let fertilizerOptions = [];
+let calculatorRows = [createCalculatorRow()];
+let calculatorScaleFactor = 1;
+let lastCalculation = null;
+let calculatorResultCurrent = false;
+let recalculateTimer;
+let fertilizerSelectTable;
+let calculatorTable;
+let mounted = false;
+
+const getVolumeUnitDefinition = (...args) => units.getVolumeUnitDefinition(...args);
+const litersToDisplayVolume = (...args) => units.litersToDisplayVolume(...args);
+const formatVolumeValue = (...args) => units.formatVolumeValue(...args);
+const formatDoseDisplay = (...args) => units.formatDoseDisplay(...args);
+const doseUnitDefinition = (...args) => units.doseUnitDefinition(...args);
+const formatDoseInput = (...args) => units.formatDoseInput(...args);
+const displayDoseToCanonical = (...args) => units.displayDoseToCanonical(...args);
+const appendDoseInput = (cell, input, fertilizer) => {
+  const wrapper = document.createElement("span");
+  wrapper.className = "dose-input";
+  const unit = document.createElement("span");
+  unit.className = "dose-input-unit";
+  unit.textContent = doseUnitDefinition(fertilizer).symbol;
+  wrapper.append(input, unit);
+  cell.appendChild(wrapper);
+};
+const buildClipboardRows = buildAlignedRows;
+const formatOxideValue = (...args) => water.formatOxideValue(...args);
+const reportError = (...args) => notifications.reportError(...args);
+const copyTextWithFallback = (...args) => notifications.copyText(...args);
+const setCopyCalculatorStatus = (...args) => notifications.setCopyCalculatorStatus(...args);
+const setSolverApplyStatus = (...args) => notifications.setSolverApplyStatus(...args);
+const setCalculatorResultCurrent = (current) => {
+  calculatorResultCurrent = Boolean(current && lastCalculation);
+  notifications.setCalculatorResultCurrent(calculatorResultCurrent);
+};
 
 function createCalculatorRow(name = "", grams = 0) {
   const normalizedGrams = Math.max(0, Number(grams) || 0);
@@ -10,10 +72,6 @@ function createCalculatorRow(name = "", grams = 0) {
     grams: normalizedGrams,
     baseGrams: roundScaledValue(normalizedGrams),
   };
-}
-
-function roundScaleFactor(value) {
-  return Math.round(value * 100) / 100;
 }
 
 function updateScaleDisplay(displayEl, factor) {
@@ -31,35 +89,14 @@ function applyScaleFactor({
   render,
   displayEl,
 }) {
-  const factor = Math.max(0, roundScaleFactor(nextFactor));
+  const scaled = scaledValues(definitions, nextFactor, getBaseValue);
+  const factor = scaled.factor;
   setFactor(factor);
-  definitions.forEach((definition) => {
-    const baseValue = getBaseValue(definition) || 0;
-    const scaledValue = roundScaledValue(baseValue * factor);
-    setScaledValue(definition, Math.max(0, scaledValue));
+  definitions.forEach((definition, index) => {
+    setScaledValue(definition, scaled.values[index]);
   });
   updateScaleDisplay(displayEl, factor);
   render();
-}
-
-function updateSolverTargetScaleDisplay() {
-  updateScaleDisplay(solverTargetScaleValue, solverTargetScaleFactor);
-}
-
-function applySolverTargetScaleFactor(nextFactor) {
-  applyScaleFactor({
-    nextFactor,
-    definitions: solverTargetDefinitions,
-    getBaseValue: (field) => solverTargetBaseValues[field.key],
-    setScaledValue: (field, value) => {
-      solverTargetValues[field.key] = value;
-    },
-    setFactor: (factor) => {
-      solverTargetScaleFactor = factor;
-    },
-    render: renderSolverTargetsTable,
-    displayEl: solverTargetScaleValue,
-  });
 }
 
 function updateCalculatorScaleDisplay() {
@@ -83,20 +120,8 @@ function applyCalculatorScaleFactor(nextFactor) {
   scheduleRecalculate();
 }
 
-function bindScaleButtons(downButton, upButton, currentFactor, applyFactor) {
-  if (downButton) {
-    downButton.addEventListener("click", () => {
-      applyFactor(currentFactor() - SCALE_STEP);
-    });
-  }
-  if (upButton) {
-    upButton.addEventListener("click", () => {
-      applyFactor(currentFactor() + SCALE_STEP);
-    });
-  }
-}
-
 function applySolverResultToCalculator({ switchToCalculator = false } = {}) {
+  const lastSolveResult = getSolverResult();
   if (!lastSolveResult) {
     reportError(null, t("solver.noResult"));
     return false;
@@ -106,7 +131,7 @@ function applySolverResultToCalculator({ switchToCalculator = false } = {}) {
     grams: Number(fert.grams || 0),
   }));
   const recipe = {
-    liters: currentLiters,
+    liters: units.liters,
     fertilizers,
   };
   applyRecipe(recipe);
@@ -114,7 +139,7 @@ function applySolverResultToCalculator({ switchToCalculator = false } = {}) {
   setSolverApplyStatus(t("status.appliedCalculator"));
 
   if (switchToCalculator) {
-    showShellView("fertilizers");
+    onShowCalculator();
   }
   return true;
 }
@@ -126,29 +151,6 @@ function formatClipboardIonLabel(key) {
   return key;
 }
 
-function buildClipboardRows(headers, rows, numericColumns = []) {
-  const allRows = headers ? [headers, ...rows] : rows;
-  const widths = allRows.reduce((currentWidths, row) => {
-    row.forEach((cell, index) => {
-      currentWidths[index] = Math.max(currentWidths[index] || 0, String(cell).length);
-    });
-    return currentWidths;
-  }, []);
-  const numericColumnSet = new Set(numericColumns);
-
-  return allRows.map((row) =>
-    row
-      .map((cell, index) => {
-        const value = String(cell);
-        return numericColumnSet.has(index)
-          ? value.padStart(widths[index])
-          : value.padEnd(widths[index]);
-      })
-      .join("  ")
-      .trimEnd()
-  );
-}
-
 function buildCalculatorClipboardText() {
   const fertilizers = buildSelectedFertilizerEntries();
   const lines = [t("calculator.clipboardTitle")];
@@ -156,9 +158,9 @@ function buildCalculatorClipboardText() {
     ...buildClipboardRows(null, [
       [
         t("solver.clipboardBatchVolume", { unit: getVolumeUnitDefinition().symbol }),
-        formatVolumeValue(litersToDisplayVolume(currentLiters)),
+        formatVolumeValue(litersToDisplayVolume(units.liters)),
       ],
-      [t("solver.clipboardOsmosis"), formatNumber(decimalInputValue(osmosisPercentInput.value))],
+      [t("solver.clipboardOsmosis"), formatNumber(water.osmosisPercent)],
     ], [1])
   );
   lines.push("");
@@ -291,7 +293,7 @@ function renderSelectionTable() {
       renderSelectionTable();
       renderCalculatorTable();
       scheduleRecalculate();
-    });
+    }, t("common.selectEmpty"));
     select.value = calculatorRow.name;
     selectCell.appendChild(select);
 
@@ -379,6 +381,25 @@ function scheduleRecalculate() {
   }, 250);
 }
 
+function buildPayload() {
+  return {
+    liters: units.liters,
+    fertilizers: buildSelectedFertilizerEntries(),
+    water_mg_l: water.buildWaterPayload(),
+    osmosis_percent: water.osmosisPercent,
+  };
+}
+
+async function calculateAndRender(payloadOverride = null, requestVersion = null) {
+  const activeVersion = requestVersion ?? calculationRequests.reserve();
+  if (!calculationRequests.isCurrent(activeVersion)) return null;
+  setCalculatorResultCurrent(false);
+  const data = await api.calculate(payloadOverride || buildPayload(), t("errors.calculateFailed"));
+  if (!calculationRequests.isCurrent(activeVersion)) return null;
+  renderCalculation(data);
+  return data;
+}
+
 
 function buildSelectedFertilizerEntries({ allowZeroGrams = false } = {}) {
   return calculatorRows
@@ -391,38 +412,14 @@ function buildSelectedFertilizerEntries({ allowZeroGrams = false } = {}) {
 
 function renderCalculation(data, { resultCurrent = true } = {}) {
   lastCalculation = data;
-  const oxides = data.oxides_mg_per_l || {};
-  const elements = data.elements_mg_per_l || {};
-  const npkMetrics = data.npk_metrics || {};
-  const waterElements = data.water_elements_mg_per_l || {};
-  const waterDisplay = waterElementsForDisplay(waterElements);
-  renderWaterSummaryTable(waterSummaryTable, waterDisplay);
-  renderOxideSummaryTable(oxideSummaryTable, oxides);
-  renderIonSummaryTable(ionSummaryTable, elements);
-
-  const ionMeqEntries = Object.entries(data.ions_meq_per_l || {});
-  renderIonCompactList(ionMeqList, ionMeqEntries);
-
-  const ionBalanceEntries = Object.entries(data.ion_balance || {});
-  renderIonBalanceCompact(ionBalanceList, ionBalanceEntries);
-
-  npkAllPctValue.textContent = npkMetrics.npk_all_pct || "-";
-  npkPNormValue.textContent = npkMetrics.npk_p_norm || "-";
-  npkNpkPctValue.textContent = npkMetrics.npk_npk_pct || "-";
-  renderIonRatios(npkMetrics);
-
-  const ec = data.ec || {};
-  renderEcPair(ec.ec_mS_per_cm || {}, ec18Value, ec25Value);
-
-  const waterEc = data.ec_water || {};
-  renderEcPair(waterEc.ec_mS_per_cm || {}, ecWater18Value, ecWater25Value);
-  updateLiveResultBar(data);
+  water.renderCalculation(data);
+  onCalculation(data);
   setCalculatorResultCurrent(resultCurrent);
 }
 
 function applyRecipe(recipe, { applyLiters = true } = {}) {
   if (applyLiters && recipe && recipe.liters !== undefined && recipe.liters !== null) {
-    setCurrentLiters(recipe.liters, { scaleBatch: false, recalculate: false, invalidateSolver: false });
+    units.setLiters(recipe.liters, { scaleBatch: false, recalculate: false, invalidateSolver: false });
   }
   const fertilizers = Array.isArray(recipe.fertilizers) ? recipe.fertilizers : [];
   calculatorRows.length = 0;
@@ -466,27 +463,138 @@ function removeFertilizerRow() {
 
 function buildRecipePayloadFromSelection(name) {
   const fertilizers = buildSelectedFertilizerEntries();
-  return buildRecipePayload(name, fertilizers, currentLiters, false);
+  return buildRecipePayload(name, fertilizers, false);
 }
 
 function buildRecipePayloadFromSolver(name) {
+  const lastSolveResult = getSolverResult();
   const fertilizers = Array.isArray(lastSolveResult?.fertilizers) ? lastSolveResult.fertilizers : [];
-  return buildRecipePayload(
+  return buildRecipePayload(name, fertilizers, getSolverUrea());
+}
+
+function buildRecipePayload(name, fertilizers, ureaAsNh4) {
+  const payload = {
     name,
+    liters: units.liters,
     fertilizers,
-    currentLiters,
-    solverUreaToggle.checked
-  );
+    fertilizers_allowed: getSolverAllowed(),
+    urea_as_nh4: ureaAsNh4,
+  };
+  if (water.selectedProfile) payload.water_profile = water.selectedProfile.replace(/\.yml$/, "");
+  if (Number.isFinite(water.osmosisPercent)) payload.osmosis_percent = water.osmosisPercent;
+  return payload;
 }
 
 function buildSolutionSnapshot() {
   const fertilizers = buildSelectedFertilizerEntries({ allowZeroGrams: true });
   return {
-    water_profile_value: waterProfileSelect.value || "",
-    osmosis_percent: decimalInputValue(osmosisPercentInput.value),
-    water_unit: waterUnit,
-    liters: currentLiters,
-    water_values: { ...waterValues },
+    ...water.getSnapshot(),
+    liters: units.liters,
     fertilizers,
   };
+}
+
+function initializeTables() {
+  const selectTable = createTable({
+    id: "fertilizerSelectTable",
+    className: "grid grid--form grid--fertilizer",
+    colgroupClasses: ["col-index", "col-name", "col-liquid", "col-weight"],
+    headerCells: [
+      { label: "#" },
+      { labelKey: "calculator.fertilizerDropdown", label: t("calculator.fertilizerDropdown") },
+      { labelKey: "common.productType", label: t("common.productType") },
+      { labelKey: "editor.densityFactor", label: t("editor.densityFactor") },
+    ],
+  });
+  fertilizerSelectTableWrap.replaceChildren(selectTable.table);
+  fertilizerSelectTable = selectTable.tbody;
+  const calculator = createTable({
+    id: "calculatorTable",
+    className: "grid grid--form grid--fertilizer",
+    colgroupClasses: ["col-index", "col-name", "col-form", "col-amount"],
+    headerCells: [
+      { label: "#" },
+      { labelKey: "editor.fertilizerName", label: t("editor.fertilizerName"), colSpan: 2 },
+      { labelKey: "common.amount", label: t("common.amount") },
+    ],
+  });
+  calculatorTableWrap.replaceChildren(calculator.table);
+  calculatorTable = calculator.tbody;
+}
+
+function scaleBatch(previousLiters, nextLiters) {
+  const factor = nextLiters / previousLiters;
+  calculatorRows.forEach((row) => {
+    const scaled = roundScaledValue((Number(row.grams) || 0) * factor);
+    row.grams = scaled;
+    row.baseGrams = calculatorScaleFactor > 0
+      ? roundScaledValue(scaled / calculatorScaleFactor)
+      : scaled;
+  });
+  renderCalculatorTable();
+}
+
+function setFertilizers(fertilizers) {
+  fertilizerOptions = fertilizers || [];
+  const available = new Set(fertilizerOptions.map(({ name }) => name));
+  calculatorRows.forEach((row, index) => {
+    if (row.name && !available.has(row.name)) calculatorRows[index] = createCalculatorRow();
+  });
+  if (!calculatorRows.length) calculatorRows.push(createCalculatorRow());
+  units.setFertilizers(fertilizerOptions);
+  if (fertilizerSelectTable) renderSelectionTable();
+  if (calculatorTable) renderCalculatorTable();
+}
+
+function mount() {
+  if (mounted) return;
+  mounted = true;
+  initializeTables();
+  addRowButton.addEventListener("click", addFertilizerRow);
+  removeRowButton.addEventListener("click", removeFertilizerRow);
+  calculateButton.addEventListener("click", async () => {
+    try {
+      await calculateAndRender();
+      storageSet(LAST_SOLUTION_CALCULATED_KEY, buildSolutionSnapshot());
+    } catch (error) {
+      reportError(error, t("errors.calculateFailed"));
+    }
+  });
+  copyCalculatorResultsButton?.addEventListener("click", copyCalculatorResultsToClipboard);
+  bindScaleButtons(
+    calculatorScaleDownButton,
+    calculatorScaleUpButton,
+    () => calculatorScaleFactor,
+    applyCalculatorScaleFactor,
+  );
+  renderSelectionTable();
+  renderCalculatorTable();
+}
+
+function refreshLocalized() {
+  initializeTables();
+  renderSelectionTable();
+  renderCalculatorTable();
+  if (lastCalculation) renderCalculation(lastCalculation, { resultCurrent: calculatorResultCurrent });
+  else water.renderEmptyCalculation();
+}
+
+return {
+  applyRecipe,
+  applySolverResult: applySolverResultToCalculator,
+  buildRecipePayloadFromSelection,
+  buildRecipePayloadFromSolver,
+  buildSolutionSnapshot,
+  calculateAndRender,
+  collectSelectedFertilizerNames,
+  get lastCalculation() { return lastCalculation; },
+  get resultCurrent() { return calculatorResultCurrent; },
+  mount,
+  refreshDoseUnits() { renderSelectionTable(); renderCalculatorTable(); },
+  refreshLocalized,
+  render: renderCalculation,
+  scaleBatch,
+  scheduleRecalculate,
+  setFertilizers,
+};
 }

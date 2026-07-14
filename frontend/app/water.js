@@ -1,3 +1,89 @@
+import {
+  ION_NITROGEN_EXPANDED_KEY,
+  ION_FORMATTER,
+  NUTRIENT_FORMATTER,
+  NUTRIENT_INTEGER_FORMATTER,
+  SUMMARY_COLUMN_ORDER,
+  SUMMARY_VIEW_KEY,
+} from "./constants.js";
+import { qs, qsa } from "./dom.js";
+import { decimalInputValue, formatNumber } from "./formatting.js";
+import { createLatestRequestGate } from "../request_gate.js";
+import { storageGet, storageSet } from "./storage.js";
+
+export function createWaterController({ api, i18n, notifications, onChange }) {
+  const waterTableBody = qs("#waterValuesTable tbody");
+  const waterProfileSelect = qs("#waterProfileSelect");
+  const waterProfileNameInput = qs("#waterProfileName");
+  const loadWaterProfileButton = qs("#loadWaterProfile");
+  const saveWaterProfileButton = qs("#saveWaterProfile");
+  const resetWaterProfileButton = qs("#resetWaterProfile");
+  const osmosisPercentInput = qs("#osmosisPercent");
+  const waterUnitToggle = qs("#waterUnitToggle");
+  const waterSummaryTable = qs("#waterSummaryTable");
+  const oxideSummaryTable = qs("#oxideSummaryTable");
+  const ionSummaryTable = qs("#ionSummaryTable");
+  const waterSummaryBadge = qs("#waterSummaryBadge");
+  const oxideSummaryBadge = qs("#oxideSummaryBadge");
+  const ionSummaryBadge = qs("#ionSummaryBadge");
+  const summaryViewToggle = qs("#summaryViewToggle");
+  const summaryPanels = qsa(".summary-panel[data-summary-panel]");
+  const ionMeqList = qs("#ionMeqList");
+  const ionBalanceList = qs("#ionBalanceList");
+  const npkAllPctValue = qs("#npkAllPct");
+  const npkPNormValue = qs("#npkPNorm");
+  const npkNpkPctValue = qs("#npkNpkPct");
+  const caMgRatioValue = qs("#caMgRatio");
+  const ionRatioList = qs("#ionRatioList");
+  const ec18Value = qs("#ec18Value");
+  const ec25Value = qs("#ec25Value");
+  const ecWater18Value = qs("#ecWater18Value");
+  const ecWater25Value = qs("#ecWater25Value");
+  const nutrientFormatter = NUTRIENT_FORMATTER;
+  const nutrientIntegerFormatter = NUTRIENT_INTEGER_FORMATTER;
+  const ionFormatter = ION_FORMATTER;
+  const summaryColumnOrder = SUMMARY_COLUMN_ORDER;
+  const summaryLabelWidth = "12rem";
+  const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
+  const nutrientTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "Si"]);
+  const oxideIntegerKeys = new Set(["N_total", "P2O5", "K2O", "CaO", "MgO", "SO4"]);
+  const oxideTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "SiO2"]);
+  const carbonateHelperKeys = new Set(["CO3", "CaCO3", "KH"]);
+  const waterHelperKeys = new Set(["S", ...carbonateHelperKeys]);
+  const waterFieldDefinitions = [
+    ["NH4", "waterField.NH4", "Ammonium as NH4"], ["NO3", "waterField.NO3", "Nitrate as NO3"],
+    ["PO4", "waterField.PO4", "Phosphate as PO4"], ["P", "waterField.P", "Phosphorus as P"],
+    ["K", "waterField.K", "Potassium as K"], ["Ca", "waterField.Ca", "Calcium as Ca"],
+    ["Mg", "waterField.Mg", "Magnesium as Mg"], ["Na", "waterField.Na", "Sodium as Na"],
+    ["SO4", "waterField.SO4", "Sulfate as SO4"], ["S", "waterField.S", "Sulfur as S"],
+    ["Fe", "waterField.Fe", "Iron as Fe"], ["Mn", "waterField.Mn", "Manganese as Mn"],
+    ["Cu", "waterField.Cu", "Copper as Cu"], ["Zn", "waterField.Zn", "Zinc as Zn"],
+    ["B", "waterField.B", "Boron as B"], ["Mo", "waterField.Mo", "Molybdenum as Mo"],
+    ["Cl", "waterField.Cl", "Chloride as Cl"], ["HCO3", "waterField.HCO3", "Carbonate alkalinity as HCO3"],
+    ["CO3", "waterField.CO3", "Carbonate as CO3"], ["CaCO3", "waterField.CaCO3", "Total carbonate hardness as CaCO3"],
+    ["KH", "waterField.KH", "Carbonate hardness as °KH"], ["SiO2", "waterField.SiO2", "Silicon as SiO2"],
+  ].map(([key, labelKey, label]) => ({ key, labelKey, label }));
+  const waterValues = Object.fromEntries(waterFieldDefinitions.map(({ key }) => [key, 0]));
+  const waterProfileRequests = createLatestRequestGate();
+  let molarMasses = {};
+  let waterProfiles = [];
+  let waterUnit = "mg_l";
+  let summaryView = storageGet(SUMMARY_VIEW_KEY, "ion");
+  let ionNitrogenExpanded = storageGet(ION_NITROGEN_EXPANDED_KEY, false);
+  let mounted = false;
+
+  const t = (key, params) => i18n.t(key, params);
+  const scheduleRecalculate = () => onChange();
+  const getMolarMass = (key) => Number.isFinite(molarMasses[key]) ? molarMasses[key] : null;
+  const convertWaterUnitValue = (key, value, convert) => {
+    if (!Number.isFinite(value) || key === "KH") return Number.isFinite(value) ? value : 0;
+    const mass = getMolarMass(key);
+    return mass ? convert(value, mass) : value;
+  };
+  const mgToMol = (key, value) => convertWaterUnitValue(key, value, (amount, mass) => amount / mass);
+  const molToMg = (key, value) => convertWaterUnitValue(key, value, (amount, mass) => amount * mass);
+  const unitLabelForKey = (key) => key === "KH" ? "°dKH" : waterUnit === "mol_l" ? "mmol/L" : "mg/L";
+
 function applyWaterHelpers(values) {
   const updatedKeys = new Set();
   if (!values || typeof values !== "object") {
@@ -445,7 +531,7 @@ function renderIonSummaryTable(table, elements) {
   if (toggleButton) {
     toggleButton.addEventListener("click", () => {
       ionNitrogenExpanded = !ionNitrogenExpanded;
-      lsSet(ION_NITROGEN_EXPANDED_KEY, ionNitrogenExpanded);
+      storageSet(ION_NITROGEN_EXPANDED_KEY, ionNitrogenExpanded);
       table.classList.toggle("is-n-expanded", ionNitrogenExpanded);
       table.classList.toggle("is-n-collapsed", !ionNitrogenExpanded);
       toggleButton.textContent = ionNitrogenExpanded ? "‹" : "›";
@@ -458,7 +544,7 @@ function setSummaryView(nextView) {
   const allowed = new Set(["water", "oxide", "ion"]);
   const view = allowed.has(nextView) ? nextView : "ion";
   summaryView = view;
-  lsSet(SUMMARY_VIEW_KEY, view);
+  storageSet(SUMMARY_VIEW_KEY, view);
 
   if (summaryViewToggle) {
     qsa("button[data-summary-view]", summaryViewToggle).forEach((button) => {
@@ -658,4 +744,162 @@ function renderWaterProfileOptions() {
     option.textContent = profile.name || profile.filename;
     waterProfileSelect.appendChild(option);
   });
+}
+
+  function setResources({ profiles = [], masses = {} } = {}) {
+    waterProfiles = profiles;
+    molarMasses = masses;
+    renderWaterProfileOptions();
+  }
+
+  function setProfiles(profiles) {
+    waterProfiles = profiles || [];
+    renderWaterProfileOptions();
+  }
+
+  function getPayload() {
+    return buildWaterPayloadForApi(waterValues);
+  }
+
+  function getSnapshot() {
+    return {
+      water_profile_value: waterProfileSelect.value || "",
+      osmosis_percent: decimalInputValue(osmosisPercentInput.value),
+      water_unit: waterUnit,
+      water_values: { ...waterValues },
+    };
+  }
+
+  function restoreSnapshot(snapshot = {}) {
+    waterUnit = snapshot.water_unit === "mol_l" ? "mol_l" : "mg_l";
+    waterUnitToggle.checked = waterUnit === "mol_l";
+    osmosisPercentInput.value = Number(snapshot.osmosis_percent) || 0;
+    waterProfileSelect.value = snapshot.water_profile_value || "";
+    waterFieldDefinitions.forEach(({ key }) => {
+      waterValues[key] = Number(snapshot.water_values?.[key]) || 0;
+    });
+    applyWaterHelpers(waterValues);
+    renderWaterTable();
+  }
+
+  function renderCalculation(data) {
+    const oxides = data.oxides_mg_per_l || {};
+    const elements = data.elements_mg_per_l || {};
+    const metrics = data.npk_metrics || {};
+    renderWaterSummaryTable(waterSummaryTable, waterElementsForDisplay(data.water_elements_mg_per_l || {}));
+    renderOxideSummaryTable(oxideSummaryTable, oxides);
+    renderIonSummaryTable(ionSummaryTable, elements);
+    renderIonCompactList(ionMeqList, Object.entries(data.ions_meq_per_l || {}));
+    renderIonBalanceCompact(ionBalanceList, Object.entries(data.ion_balance || {}));
+    npkAllPctValue.textContent = metrics.npk_all_pct || "-";
+    npkPNormValue.textContent = metrics.npk_p_norm || "-";
+    npkNpkPctValue.textContent = metrics.npk_npk_pct || "-";
+    renderIonRatios(metrics);
+    renderEcPair(data.ec?.ec_mS_per_cm || {}, ec18Value, ec25Value);
+    renderEcPair(data.ec_water?.ec_mS_per_cm || {}, ecWater18Value, ecWater25Value);
+  }
+
+  function renderEmptyCalculation() {
+    renderWaterSummaryTable(waterSummaryTable, {});
+    renderOxideSummaryTable(oxideSummaryTable, {});
+    renderIonSummaryTable(ionSummaryTable, {});
+  }
+
+  async function loadSelectedProfile() {
+    if (!waterProfileSelect.value) {
+      notifications.reportError(null, t("errors.waterProfileRequired"));
+      return;
+    }
+    const version = waterProfileRequests.reserve();
+    try {
+      const profile = await api.fetchWaterProfileData(waterProfileSelect.value, t("errors.loadWaterProfile"));
+      if (!waterProfileRequests.isCurrent(version)) return;
+      applyWaterProfile(profile);
+      api.persistPreferences({ last_water_profile: waterProfileSelect.value });
+    } catch (error) {
+      if (waterProfileRequests.isCurrent(version)) notifications.reportError(error, t("errors.loadWaterProfile"));
+    }
+  }
+
+  async function resetProfile() {
+    const version = waterProfileRequests.reserve();
+    try {
+      const profile = await api.fetchWaterProfileData("default", t("errors.loadWaterProfile"));
+      if (!waterProfileRequests.isCurrent(version)) return;
+      waterProfileSelect.value = "default.yml";
+      applyWaterProfile(profile);
+      api.persistPreferences({ last_water_profile: "default.yml" });
+    } catch (error) {
+      if (waterProfileRequests.isCurrent(version)) notifications.reportError(error, t("errors.loadWaterProfile"));
+    }
+  }
+
+  async function saveProfile() {
+    const name = waterProfileNameInput.value.trim();
+    if (!name) {
+      notifications.reportError(null, t("errors.profileNameRequired"));
+      return;
+    }
+    try {
+      await api.saveWaterProfileData({
+        name,
+        source: "Horticalc UI",
+        mg_per_l: getPayload(),
+        osmosis_percent: decimalInputValue(osmosisPercentInput.value),
+      }, t("errors.saveFailed"));
+      setProfiles(await api.fetchWaterProfiles(t("errors.loadWaterProfiles")));
+    } catch (error) {
+      notifications.reportError(error, t("errors.saveFailed"));
+    }
+  }
+
+  function mount() {
+    if (mounted) return;
+    mounted = true;
+    loadWaterProfileButton.addEventListener("click", loadSelectedProfile);
+    resetWaterProfileButton.addEventListener("click", resetProfile);
+    saveWaterProfileButton.addEventListener("click", saveProfile);
+    osmosisPercentInput.addEventListener("input", () => {
+      waterProfileRequests.invalidate();
+      scheduleRecalculate();
+    });
+    osmosisPercentInput.addEventListener("change", () => {
+      osmosisPercentInput.value = String(decimalInputValue(osmosisPercentInput.value));
+    });
+    waterUnitToggle.addEventListener("change", (event) => {
+      waterUnit = event.target.checked ? "mol_l" : "mg_l";
+      renderWaterTable();
+      scheduleRecalculate();
+    });
+    summaryViewToggle?.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-summary-view]");
+      if (button) setSummaryView(button.dataset.summaryView);
+    });
+    setSummaryView(summaryView);
+  }
+
+  function refreshLocalized() {
+    renderWaterProfileOptions();
+    renderWaterTable();
+  }
+
+  return {
+    applyProfile: applyWaterProfile,
+    buildWaterPayload: getPayload,
+    formatOxideValue,
+    get osmosisPercent() { return decimalInputValue(osmosisPercentInput.value); },
+    get selectedProfile() { return waterProfileSelect.value || ""; },
+    getSnapshot,
+    loadProfile: (filename) => api.fetchWaterProfileData(filename, t("errors.loadWaterProfile")),
+    mount,
+    refreshLocalized,
+    renderCalculation,
+    renderEmptyCalculation,
+    renderTable: renderWaterTable,
+    restoreSnapshot,
+    setProfiles,
+    setResources,
+    setOsmosisPercent(value) { osmosisPercentInput.value = Number(value) || 0; },
+    setSelectedProfile(filename) { waterProfileSelect.value = filename || ""; },
+  };
 }

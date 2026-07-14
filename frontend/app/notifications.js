@@ -1,85 +1,69 @@
-function setApiStatus(message, state = "ready") {
-  if (!apiStatus) {
-    return;
-  }
-  apiStatus.textContent = message;
-  apiStatus.dataset.state = state;
-}
+import { qs } from "./dom.js";
 
-function refreshApiStatusLabel() {
-  if (!apiStatus) {
-    return;
-  }
-  if (apiStatus.dataset.state === "loading") {
-    setApiStatus(t("status.loadingData"), "loading");
-  } else if (apiStatus.dataset.state === "error") {
-    setApiStatus(t("status.dataIncomplete"), "error");
-  } else {
-    setApiStatus(t("status.apiReady"), "ready");
-  }
-}
-function setCopySolverStatus(message) {
-  if (!copySolverResultsStatus) {
-    return;
-  }
-  copySolverResultsStatus.textContent = message;
-  if (copySolverStatusTimer) {
-    window.clearTimeout(copySolverStatusTimer);
-  }
-  copySolverStatusTimer = window.setTimeout(() => {
-    copySolverResultsStatus.textContent = "";
-    copySolverStatusTimer = null;
-  }, 2000);
-}
+export function createNotifications(i18n) {
+  const apiStatus = qs("#apiStatus");
+  const copySolverStatus = qs("#copySolverResultsStatus");
+  const copyCalculatorStatus = qs("#copyCalculatorResultsStatus");
+  const copyCalculatorButton = qs("#copyCalculatorResults");
+  const solverApplyStatus = qs("#solverApplyStatus");
+  let apiState = "ready";
+  let solverTimer;
+  let calculatorTimer;
+  let applyTimer;
 
-function setCopyCalculatorStatus(message) {
-  if (!copyCalculatorResultsStatus) {
-    return;
-  }
-  copyCalculatorResultsStatus.textContent = message;
-  if (copyCalculatorStatusTimer) {
-    window.clearTimeout(copyCalculatorStatusTimer);
-  }
-  if (!message) {
-    copyCalculatorStatusTimer = null;
-    return;
-  }
-  copyCalculatorStatusTimer = window.setTimeout(() => {
-    copyCalculatorResultsStatus.textContent = "";
-    copyCalculatorStatusTimer = null;
-  }, 2000);
-}
-
-function setCalculatorResultCurrent(isCurrent) {
-  calculatorResultCurrent = Boolean(isCurrent && lastCalculation);
-  if (copyCalculatorResultsButton) {
-    copyCalculatorResultsButton.disabled = !calculatorResultCurrent;
-  }
-  if (!calculatorResultCurrent) {
-    setCopyCalculatorStatus("");
-  }
-}
-
-function setSolverApplyStatus(message) {
-  if (!solverApplyStatus) {
-    return;
-  }
-  solverApplyStatus.textContent = message;
-  if (solverApplyStatusTimer) {
-    window.clearTimeout(solverApplyStatusTimer);
-  }
-  solverApplyStatusTimer = window.setTimeout(() => {
-    solverApplyStatus.textContent = "";
-    solverApplyStatusTimer = null;
-  }, 2400);
-}
-
-function copyTextWithFallback(text) {
-  if (navigator.clipboard?.writeText) {
-    return navigator.clipboard.writeText(text);
+  function setApiStatus(message, state = "ready") {
+    apiState = state;
+    if (!apiStatus) return;
+    apiStatus.textContent = message;
+    apiStatus.dataset.state = state;
   }
 
-  return new Promise((resolve, reject) => {
+  function refreshApiStatus() {
+    const key = apiState === "loading"
+      ? "status.loadingData"
+      : apiState === "error"
+        ? "status.dataIncomplete"
+        : "status.apiReady";
+    setApiStatus(i18n.t(key), apiState);
+  }
+
+  function timedStatus(element, message, timeout, timer, setTimer) {
+    if (!element) return;
+    element.textContent = message;
+    if (timer) window.clearTimeout(timer);
+    if (!message) {
+      setTimer(undefined);
+      return;
+    }
+    setTimer(window.setTimeout(() => {
+      element.textContent = "";
+      setTimer(undefined);
+    }, timeout));
+  }
+
+  function setCopySolverStatus(message) {
+    timedStatus(copySolverStatus, message, 2000, solverTimer, (value) => { solverTimer = value; });
+  }
+  function setCopyCalculatorStatus(message) {
+    timedStatus(
+      copyCalculatorStatus,
+      message,
+      2000,
+      calculatorTimer,
+      (value) => { calculatorTimer = value; },
+    );
+  }
+  function setSolverApplyStatus(message) {
+    timedStatus(solverApplyStatus, message, 2400, applyTimer, (value) => { applyTimer = value; });
+  }
+
+  function setCalculatorResultCurrent(isCurrent) {
+    if (copyCalculatorButton) copyCalculatorButton.disabled = !isCurrent;
+    if (!isCurrent) setCopyCalculatorStatus("");
+  }
+
+  async function copyText(text) {
+    if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
     const textArea = document.createElement("textarea");
     textArea.value = text;
     textArea.setAttribute("readonly", "");
@@ -88,31 +72,33 @@ function copyTextWithFallback(text) {
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
-
     try {
-      const successful = document.execCommand("copy");
-      document.body.removeChild(textArea);
-      if (!successful) {
-        reject(new Error(t("errors.copyFailed")));
-        return;
-      }
-      resolve();
-    } catch (error) {
-      document.body.removeChild(textArea);
-      reject(error);
+      if (!document.execCommand("copy")) throw new Error(i18n.t("errors.copyFailed"));
+    } finally {
+      textArea.remove();
     }
-  });
-}
-
-function reportError(error, fallbackMessage = t("errors.unknown")) {
-  const message = error?.message || fallbackMessage;
-  alert(message);
-}
-
-function finishStartupStatus(errors) {
-  if (errors.length) {
-    setApiStatus(t("status.dataIncomplete"), "error");
-  } else {
-    setApiStatus(t("status.apiReady"), "ready");
   }
+
+  function reportError(error, fallback = i18n.t("errors.unknown")) {
+    alert(error?.message || fallback);
+  }
+
+  function finishStartup(errors) {
+    setApiStatus(
+      i18n.t(errors.length ? "status.dataIncomplete" : "status.apiReady"),
+      errors.length ? "error" : "ready",
+    );
+  }
+
+  return {
+    copyText,
+    finishStartup,
+    refreshApiStatus,
+    reportError,
+    setApiStatus,
+    setCalculatorResultCurrent,
+    setCopyCalculatorStatus,
+    setCopySolverStatus,
+    setSolverApplyStatus,
+  };
 }

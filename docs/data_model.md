@@ -43,6 +43,10 @@ Optional solver metadata:
   liter. Empty means unlimited; `0` excludes the product from variable Solver
   dosing. Explicit recipe `fixed_grams` overrides this maximum.
 
+The shipped `data/fertilizers.csv` currently leaves this field empty for every
+product, so the shipped catalog defines no dose limits. A user override can
+still set the optional field explicitly.
+
 All other numeric columns are interpreted as composition fractions. A value of
 `0.14` means 14 percent by mass. `NR` or `Nr.` is accepted only for legacy CSV
 compatibility and ignored during loading; newly written catalogs omit it.

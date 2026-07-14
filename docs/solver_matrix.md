@@ -2,59 +2,123 @@
 
 Status: `operation-guide`.
 
-The solver matrix is a removable research harness in `scripts/solver_matrix.py`. It is not part of product runtime and is not called by the API, UI, core, or launcher.
+The schema-v2 solver matrix is a removable research harness in
+`scripts/solver_matrix.py`. Product runtime does not import or call it.
 
 ## Purpose
 
-Use it to compare solver quality across:
+The harness separates two questions that the old exponential subset search
+mixed together:
 
-- target profiles,
-- allowed fertilizer subsets,
-- nitrogen objective modes,
-- solver config toggles,
-- numeric refinement settings.
+1. **Solver settings:** every configuration is run against the same primary
+   fertilizer portfolio and the same target corpus.
+2. **Nutrient-portfolio mass barrage:** the canonical configuration is run
+   against named recipe portfolios and deterministic leave-one-out variants.
 
-The benchmark scores the same `objective_elements` returned by `solve_recipe_data()`. It does not independently decide that report-only targets such as `S`, `Na`, or `Cl` are optimization errors, and `SO4` is not an accepted target key.
+This makes setting deltas paired and interpretable. Adding another fertilizer
+does not multiply the setting matrix by every possible subset.
 
-## Files
+## Canonical Cases
 
-- `scripts/solver_matrix.py`: run matrix/deep benchmark.
-- `scripts/solver_matrix_cases.yml`: default water, fertilizers, nitrogen modes, and custom profiles.
-- `scripts/solver_matrix_analyze.py`: analyze a completed run.
-- `logs/solver_matrix/...`: generated output, ignored by git.
-- `tests/test_solver_matrix.py`: score, config, cap, and smoke tests.
-- `tests/test_solver_matrix_analyze.py`: analysis tests.
+`scripts/solver_matrix_cases.yml` is the data contract. It currently defines:
 
-## Current Defaults
+- Steiner Universal 1984;
+- Bugbee Utah Cannabis 2022;
+- Conn 2013 Arabidopsis (the requested CPMM/Conn case);
+- Cooper NFT 1979;
+- De La Rosa Lettuce T2;
+- Hermans 2010 Arabidopsis;
+- Hoagland and Arnon 1950 Solution 1;
+- Long Ashton (LANS) nitrate type;
+- the tracked augmented Saloner solver regression;
+- the tracked golden solver regression.
 
-The boolean solver config starts from the implementation defaults in `src/horticalc/solver_config.py`:
+The requested CPMM case resolves to the shipped `Conn_2013_Arabidopsis`
+profile. Its source and elemental targets are recorded in
+`data/nutrient_solutions/Conn_2013_Arabidopsis.yml`.
 
-- `nitrogen_objective_mode: n_total_only`
-- `relative_weighting: false`
-- `singleton_supplier_enabled: false`
-- `singleton_underfill_enabled: true`
-- `n_total_governor_enabled: false`
+The primary 19-product portfolio is the explicit union of the allowed lists in
+the on-disk 23-10-17 recipe, augmented Saloner recipe, and golden recipe. It
+includes `HuminTech AMINO POWER Plus Liquid` and
+`HuminTech Fulvital Plus Liquid`. The explicit snapshot keeps old benchmark
+output reproducible if a user recipe later changes.
 
-Historical note: the 2026-05-31 deep run recommended a different default for `relative_weighting`. Current code and tests default it to `false`. Do not change docs to the historical recommendation unless the code and tests change too.
+The cases file also tracks the two requested restricted portfolios: the
+seven-product Blossom/Fetrilon/PeKacid/Spezial set and the six-product
+313/Bittersalz/MKP set. Both use `Haifa MAG Magnesiumnitrat
+11-0-0+16MgO`; they do not use Yara Magnitra-L.
 
-## Commands
+Every canonical case fixes:
 
-For the exact solver matrix commands, see [commands.md](commands.md#solver-matrix-harness).
+- `nitrogen_objective_mode: n_total_only`;
+- `s_objective_enabled: true`.
 
-## Output
+`n_form_priority_weights` is not swept because it is inactive in
+`n_total_only` mode.
 
-Each run writes:
+## Setting Experiments
 
-- `results.csv`: spreadsheet-friendly row output.
-- `results.jsonl`: one JSON object per row.
-- `summary.json`: aggregate counts, best rows, rankings, and metadata.
+The YAML catalog owns all grids and confirmation variants. The runner expands
+them generically. Current controlled groups cover:
 
-The analyzer writes:
+- the complete Boolean factorial for relative weighting, singleton overshoot,
+  singleton underfill, and the N-total governor;
+- overshoot penalty and IRLS iteration interactions;
+- relative-weighting scale epsilon;
+- singleton overshoot share and maximum-regression tolerance, including
+  `singleton_max_regress_pp: 10`;
+- singleton underfill share and iteration count, including share `0`;
+- N-total governor weight;
+- explicit combined confirmation candidates.
 
-- `analysis_summary.json`
-- `analysis_report.md`
+Inactive numeric controls are not multiplied into redundant rows. For example,
+singleton thresholds are varied only in configurations where that singleton
+pass is enabled.
+
+## Presets
+
+- `quick`: canonical baseline only.
+- `matrix`: the complete controlled setting catalog on the primary portfolio.
+- `deep`: `matrix` plus named portfolios and primary-portfolio leave-one-out
+  barrage cases.
+
+Use `--primary-portfolio ID` to run the complete setting catalog against a
+different named fertilizer portfolio without copying or editing the cases
+file. The selected id is persisted in both the run manifest and summary.
+
+`--max-runs` is a safety cap. Runs are configuration-first so a cap completes a
+configuration across profiles before advancing, avoiding first-profile bias.
+Use `0` to disable the cap.
+
+## Output Contract
+
+Each run directory contains:
+
+- `run_manifest.json`: input checksum, resolved targets, portfolios, setting
+  catalog, unresolved cases, and planned row count;
+- `results.csv`: spreadsheet-friendly rows;
+- `results.jsonl`: lossless streaming rows;
+- `summary.json`: counts, best rows, and a preliminary setting ranking.
+
+Every result row has stable `run_id`, `profile_id`, `portfolio_id`,
+`experiment_id`, and `config_id` fields. JSON-valued columns retain the exact
+solver configuration, allowed/used fertilizers, objective elements, achieved
+concentrations, and errors.
+
+`scripts/solver_matrix_analyze.py` writes:
+
+- `analysis_summary.json`: paired setting effects, per-profile winners, named
+  portfolio comparisons, and leave-one-out impacts;
+- `analysis_report.md`: the same evidence in a readable report.
+
+Analyzer rankings use paired percentage improvement from each profile's
+canonical baseline. Raw average deltas are also retained.
 
 ## Scoring
+
+The benchmark scores only `objective_elements` returned by
+`solve_recipe_data()`. Elemental S is a macro score when the S objective is
+enabled. Report-only values remain in `ignored_targets`.
 
 For non-zero targets:
 
@@ -62,28 +126,28 @@ For non-zero targets:
 abs((achieved - target) / target * 100)
 ```
 
-For zero targets included by `objective_elements`, the matrix uses absolute tolerances by group because percent error is undefined.
-
-Main score:
+For zero objective targets, an element-group absolute tolerance is used because
+percent error is undefined.
 
 ```text
-3.0 * macro_score
-+ 3.0 * n_form_score
-+ 1.5 * micro_score
-+ 0.5 * other_score
+composite = 3.0 * macro_rms
+          + 3.0 * nitrogen_form_rms
+          + 1.5 * micro_rms
+          + 0.5 * other_rms
 ```
 
-Lower is better. Ignored/report-only targets are written to ignored fields but do not affect `composite_score`.
+Lower is better.
 
-## Keep It Removable
+## Files And Removal
 
-Product code must not depend on the matrix. To remove it:
+- `scripts/solver_matrix.py`: runner.
+- `scripts/solver_matrix_cases.yml`: benchmark data and experiment grids.
+- `scripts/solver_matrix_analyze.py`: paired analyzer and report writer.
+- `tests/test_solver_matrix.py`: runner/data-contract tests.
+- `tests/test_solver_matrix_analyze.py`: analysis-contract tests.
+- `logs/solver_matrix/...`: generated, ignored results.
 
-- Delete `scripts/solver_matrix.py`.
-- Delete `scripts/solver_matrix_cases.yml`.
-- Delete `scripts/solver_matrix_analyze.py` if no longer needed.
-- Delete matrix tests.
-- Remove docs links.
-- Delete generated `logs/solver_matrix/...` output if desired.
+Deleting those scripts, cases, tests, generated output, and this docs link
+removes the research harness without changing product runtime.
 
-For verification, see [commands.md](commands.md#run-tests).
+For exact commands, see [commands.md](commands.md#solver-matrix-harness).

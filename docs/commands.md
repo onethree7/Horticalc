@@ -130,10 +130,17 @@ gh attestation verify horticalc-vX.Y.Z-linux.tar.gz --repo onethree7/Horticalc
 ## Solver Matrix Harness
 
 ```bash
-python scripts/solver_matrix.py --preset quick
-python scripts/solver_matrix.py --preset matrix --max-runs 100000 --out-dir logs/solver_matrix/matrix_001
-python scripts/solver_matrix_analyze.py logs/solver_matrix/matrix_001
+python scripts/solver_matrix.py --preset quick --out-dir logs/solver_matrix/smoke
+python scripts/solver_matrix.py --preset matrix --out-dir logs/solver_matrix/settings_001
+python scripts/solver_matrix.py --preset matrix --primary-portfolio restricted_313_bittersalz_mkp --out-dir logs/solver_matrix/settings_restricted_313
+python scripts/solver_matrix.py --preset deep --max-runs 0 --out-dir logs/solver_matrix/deep_001
+python scripts/solver_matrix_analyze.py logs/solver_matrix/deep_001 --top 40
 ```
+
+`quick` runs the canonical baseline, `matrix` runs the controlled setting
+catalog, and `deep` adds named/leave-one-out nutrient-portfolio barrage rows.
+Generated CSV, JSONL, manifest, summary, analysis JSON, and Markdown files stay
+under the selected ignored output directory.
 
 ## Docs Anti-Drift
 

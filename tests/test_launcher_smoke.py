@@ -14,8 +14,8 @@ from horticalc.launcher import (
     active_launcher_sessions,
     claim_lockfile,
     cleanup_stale_profile_dirs,
-    create_profile_dir,
     create_launcher_session,
+    create_profile_dir,
     fail_fast,
     lockfile_path,
     read_lockfile,
@@ -27,6 +27,7 @@ from horticalc.launcher import (
     write_lockfile,
 )
 from horticalc.paths import _first_app_root_with_assets, app_root, repo_root
+
 
 def test_app_root_matches_repo_root_in_dev() -> None:
     assert app_root() == repo_root()
@@ -245,6 +246,7 @@ def test_system_browser_fallback_waits_for_server_shutdown() -> None:
     wait_for_fallback_shutdown(server_thread, logger, compatibility_flag_set=False)
 
     assert joined == [True]
+
 
 def test_fail_fast_exits(monkeypatch) -> None:
     if sys.platform.startswith("win"):

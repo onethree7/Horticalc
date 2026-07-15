@@ -1,0 +1,616 @@
+/* Horticalc framed app shell */
+:root {
+  --app-color-scheme: dark;
+  --app-bg: #10120f;
+  --app-panel: #171a15;
+  --app-panel-soft: #1d211a;
+  --app-border: #343b2f;
+  --app-text: #edf1e9;
+  --app-muted: #aeb7a6;
+  --app-green: #9bd36a;
+  --app-teal: #4cc7b0;
+  --app-amber: #d8b45d;
+  --app-red: #d66f5e;
+  --app-solver: #b67cff;
+  --app-solver-glow: #41e7ff;
+  --app-body-bg: linear-gradient(180deg, rgb(25 29 23 / 96%), rgb(12 14 12 / 100%) 34rem), var(--app-bg);
+  --app-shell-bg:
+    radial-gradient(circle at 0% 0%, rgb(155 211 106 / 8%), transparent 30%),
+    linear-gradient(145deg, rgb(18 25 20 / 98%), rgb(8 11 10 / 98%));
+  --app-shell-border: rgb(174 183 166 / 16%);
+  --app-shell-shadow: 0 24px 58px rgb(0 0 0 / 34%), inset 0 1px 0 rgb(255 255 255 / 3.5%);
+  --app-rail-bg: linear-gradient(180deg, rgb(22 28 20 / 98%), rgb(12 15 13 / 98%));
+  --app-rail-shadow: 0 12px 30px rgb(0 0 0 / 24%), inset 0 1px 0 rgb(255 255 255 / 3.5%);
+  --app-scrollbar-thumb: #4e5d43;
+  --app-scrollbar-track: #11140f;
+  --app-card-bg:
+    radial-gradient(circle at 88% 12%, rgb(155 211 106 / 10%), transparent 36%),
+    rgb(12 18 16 / 72%);
+  --app-config-bg:
+    radial-gradient(circle at 90% 8%, rgb(65 231 255 / 10%), transparent 34%),
+    rgb(12 18 16 / 72%);
+  --app-workflow-bg:
+    radial-gradient(circle at 88% 12%, rgb(76 199 176 / 10%), transparent 36%),
+    rgb(12 18 16 / 72%);
+  --app-brand-bg:
+    radial-gradient(circle at 20% 20%, rgb(155 211 106 / 16%), transparent 46%),
+    rgb(12 18 16 / 76%);
+  --app-workspace-block-bg: linear-gradient(145deg, rgb(27 36 34 / 92%), rgb(16 20 18 / 98%)), rgb(23 26 21 / 96%);
+  --app-subpanel-bg: rgb(11 16 15 / 28%);
+  --app-table-wrap-bg: linear-gradient(145deg, rgb(20 31 33 / 58%), rgb(13 17 14 / 80%));
+  --app-table-head-bg: rgb(38 49 37 / 92%);
+  --app-table-head-text: #eef8e8;
+  --app-table-card-bg:
+    radial-gradient(circle at 88% 22%, rgb(76 199 176 / 10%), transparent 34%),
+    rgb(16 23 22 / 88%);
+  --app-table-card-border: rgb(174 183 166 / 16%);
+  --app-table-badge-bg: rgb(155 211 106 / 8%);
+  --app-table-badge-border: rgb(174 183 166 / 15%);
+  --app-table-badge-text: var(--app-muted);
+  --app-table-row-odd: rgb(20 27 20 / 72%);
+  --app-table-row-even: rgb(14 20 16 / 72%);
+  --app-fert-editor-row-odd-bg: #141b14;
+  --app-fert-editor-row-even-bg: #0e1410;
+  --app-table-row-hover: rgb(41 61 31 / 64%);
+  --app-input-bg: #10130f;
+  --app-input-border: #3a4334;
+  --app-helper-bg: #0b111a;
+  --app-helper-text: rgb(255 255 255 / 58%);
+  --app-button-outline-border: #3d4737;
+  --app-button-outline-text: #dfe8d7;
+  --app-button-outline-hover: rgb(155 211 106 / 10%);
+  --app-focus: rgb(155 211 106 / 72%);
+  --app-heading-text: #f2f5ee;
+  --app-heading-icon-bg:
+    radial-gradient(circle at 50% 42%, rgb(65 231 255 / 26%), transparent 56%),
+    linear-gradient(145deg, rgb(76 199 176 / 16%), rgb(155 211 106 / 8%));
+  --app-workflow-step-bg: linear-gradient(145deg, rgb(23 34 27 / 90%), rgb(12 18 16 / 92%));
+  --app-workflow-step-hover: rgb(36 51 30 / 82%);
+  --app-workflow-step-border: rgb(174 183 166 / 16%);
+  --app-workflow-step-active-border: rgb(155 211 106 / 72%);
+  --app-workflow-active-bg: linear-gradient(145deg, rgb(61 91 42 / 92%), rgb(25 49 39 / 94%));
+  --app-workflow-active-text: #f4ffe8;
+  --app-solver-step-bg: linear-gradient(145deg, rgb(51 30 75 / 72%), rgb(14 35 39 / 72%));
+  --app-solver-step-active-bg: linear-gradient(145deg, rgb(92 45 145 / 90%), rgb(20 73 86 / 84%));
+  --app-live-bg:
+    radial-gradient(circle at 90% 0%, rgb(76 199 176 / 12%), transparent 34%),
+    rgb(12 18 17 / 78%);
+  --app-live-tile-bg: linear-gradient(145deg, rgb(27 38 36 / 72%), rgb(12 16 14 / 86%));
+  --app-live-primary: #9df068;
+  --app-live-secondary: #41e7ff;
+  --app-live-ratio: #d9a3ff;
+  --app-live-warning: #ffd166;
+  --app-segmented-bg: rgb(16 19 15 / 78%);
+  --app-segmented-border: rgb(174 183 166 / 18%);
+  --app-segmented-text: var(--app-muted);
+  --app-segmented-active-bg: rgb(76 199 176 / 20%);
+  --app-segmented-active-border: rgb(76 199 176 / 50%);
+  --app-segmented-active-text: var(--app-heading-text);
+  --app-compact-label: var(--app-muted);
+  --app-balance-tile-bg: var(--app-table-row-even);
+  --app-balance-label: var(--app-muted);
+  --app-fert-editor-head-bg: #202c30;
+  --app-fert-editor-input-bg: #0a100f;
+  --app-sticky-offset: 1rem;
+  --content-max-width: 1480px;
+}
+
+.app-body[data-theme="horticalc-light"] {
+  --app-color-scheme: light;
+  --app-bg: #dfe5dc;
+  --app-panel: #edf1e9;
+  --app-panel-soft: #e3e9df;
+  --app-border: #9eaa9a;
+  --app-text: #20271f;
+  --app-muted: #5f695b;
+  --app-green: #537d42;
+  --app-teal: #3d7e79;
+  --app-amber: #89672e;
+  --app-red: #9c4d45;
+  --app-solver: #68608c;
+  --app-solver-glow: #407d8b;
+  --app-body-bg: linear-gradient(180deg, #e9eee5, #d8e0d5 34rem), var(--app-bg);
+  --app-shell-bg:
+    radial-gradient(circle at 0% 0%, rgb(83 125 66 / 8%), transparent 30%),
+    linear-gradient(145deg, rgb(239 243 235 / 98%), rgb(213 222 210 / 98%));
+  --app-shell-border: rgb(67 78 62 / 24%);
+  --app-shell-shadow: 0 18px 44px rgb(54 73 49 / 16%), inset 0 1px 0 rgb(255 255 255 / 58%);
+  --app-rail-bg: linear-gradient(180deg, rgb(232 238 228 / 98%), rgb(211 222 208 / 98%));
+  --app-rail-shadow: 0 10px 26px rgb(70 88 65 / 14%), inset 0 1px 0 rgb(255 255 255 / 55%);
+  --app-scrollbar-thumb: #83917e;
+  --app-scrollbar-track: #d0d9cc;
+  --app-card-bg:
+    radial-gradient(circle at 88% 12%, rgb(83 125 66 / 8%), transparent 36%),
+    rgb(229 235 225 / 82%);
+  --app-config-bg:
+    radial-gradient(circle at 90% 8%, rgb(61 126 121 / 9%), transparent 34%),
+    rgb(226 233 223 / 86%);
+  --app-workflow-bg:
+    radial-gradient(circle at 88% 12%, rgb(61 126 121 / 9%), transparent 36%),
+    rgb(226 233 223 / 86%);
+  --app-brand-bg:
+    radial-gradient(circle at 20% 20%, rgb(83 125 66 / 13%), transparent 46%),
+    rgb(226 233 223 / 86%);
+  --app-workspace-block-bg: linear-gradient(145deg, rgb(232 237 228 / 98%), rgb(216 225 212 / 98%));
+  --app-subpanel-bg: rgb(207 218 204 / 58%);
+  --app-table-wrap-bg: linear-gradient(145deg, rgb(224 230 220 / 94%), rgb(204 215 201 / 90%));
+  --app-table-head-bg: #bac8b6;
+  --app-table-head-text: #222a21;
+  --app-table-card-bg:
+    radial-gradient(circle at 88% 22%, rgb(61 126 121 / 8%), transparent 34%),
+    rgb(219 228 216 / 90%);
+  --app-table-card-border: rgb(74 87 70 / 20%);
+  --app-table-badge-bg: rgb(83 125 66 / 8%);
+  --app-table-badge-border: rgb(74 87 70 / 22%);
+  --app-table-badge-text: #4f5c4d;
+  --app-table-row-odd: rgb(229 235 225 / 90%);
+  --app-table-row-even: rgb(213 223 210 / 90%);
+  --app-fert-editor-row-odd-bg: #e5ebe1;
+  --app-fert-editor-row-even-bg: #d5dfd2;
+  --app-table-row-hover: rgb(194 211 188 / 95%);
+  --app-input-bg: #e8eee5;
+  --app-input-border: #8c9a87;
+  --app-helper-bg: #c8d1c5;
+  --app-helper-text: #4b5648;
+  --app-button-outline-border: #87957f;
+  --app-button-outline-text: #293426;
+  --app-button-outline-hover: rgb(83 125 66 / 12%);
+  --app-focus: rgb(61 126 121 / 72%);
+  --app-heading-text: #20271f;
+  --app-heading-icon-bg:
+    radial-gradient(circle at 50% 42%, rgb(61 126 121 / 16%), transparent 56%),
+    linear-gradient(145deg, rgb(61 126 121 / 12%), rgb(83 125 66 / 8%));
+  --app-workflow-step-bg: linear-gradient(145deg, rgb(222 231 219 / 92%), rgb(202 214 199 / 92%));
+  --app-workflow-step-hover: rgb(198 214 193 / 92%);
+  --app-workflow-step-border: rgb(74 87 70 / 22%);
+  --app-workflow-step-active-border: rgb(70 105 56 / 50%);
+  --app-workflow-active-bg: linear-gradient(145deg, rgb(115 146 97 / 72%), rgb(83 133 122 / 68%));
+  --app-workflow-active-text: #1f291d;
+  --app-solver-step-bg: linear-gradient(145deg, rgb(218 216 230 / 90%), rgb(203 223 221 / 90%));
+  --app-solver-step-active-bg: linear-gradient(145deg, rgb(120 112 157 / 82%), rgb(75 132 139 / 76%));
+  --app-live-bg:
+    radial-gradient(circle at 90% 0%, rgb(61 126 121 / 10%), transparent 34%),
+    rgb(218 228 215 / 86%);
+  --app-live-tile-bg: linear-gradient(145deg, rgb(224 231 221 / 92%), rgb(204 216 201 / 90%));
+  --app-live-primary: #416f31;
+  --app-live-secondary: #347a83;
+  --app-live-ratio: #625c8f;
+  --app-live-warning: #755a24;
+  --app-segmented-bg: rgb(204 214 200 / 86%);
+  --app-segmented-border: rgb(74 87 70 / 22%);
+  --app-segmented-text: #596454;
+  --app-segmented-active-bg: rgb(83 125 66 / 18%);
+  --app-segmented-active-border: rgb(83 125 66 / 35%);
+  --app-segmented-active-text: #20271f;
+  --app-compact-label: #586356;
+  --app-balance-tile-bg: rgb(213 223 210 / 92%);
+  --app-balance-label: #5d6859;
+  --app-fert-editor-head-bg: #b7c6b7;
+  --app-fert-editor-input-bg: #e8eee5;
+}
+
+.app-body[data-theme="high-contrast"] {
+  --app-bg: #000;
+  --app-panel: #080808;
+  --app-panel-soft: #111;
+  --app-border: #fff;
+  --app-text: #fff;
+  --app-muted: #d9d9d9;
+  --app-green: #90ff00;
+  --app-teal: #00f7ff;
+  --app-amber: #ffe100;
+  --app-red: #ff5c5c;
+  --app-solver: #d080ff;
+  --app-solver-glow: #00f7ff;
+  --app-body-bg: #000;
+  --app-shell-bg: #050505;
+  --app-shell-border: #fff;
+  --app-shell-shadow: none;
+  --app-rail-bg: #080808;
+  --app-rail-shadow: none;
+  --app-scrollbar-thumb: #fff;
+  --app-scrollbar-track: #000;
+  --app-card-bg: #090909;
+  --app-config-bg: #090909;
+  --app-workflow-bg: #090909;
+  --app-brand-bg: #090909;
+  --app-workspace-block-bg: #080808;
+  --app-subpanel-bg: #050505;
+  --app-table-wrap-bg: #050505;
+  --app-table-card-bg: #080808;
+  --app-table-card-border: #fff;
+  --app-table-badge-bg: #111;
+  --app-table-badge-border: #fff;
+  --app-table-badge-text: #fff;
+  --app-table-head-bg: #1f1f1f;
+  --app-table-head-text: #fff;
+  --app-table-row-odd: #000;
+  --app-table-row-even: #101010;
+  --app-fert-editor-row-odd-bg: #000;
+  --app-fert-editor-row-even-bg: #101010;
+  --app-table-row-hover: #2a2a2a;
+  --app-input-bg: #000;
+  --app-input-border: #fff;
+  --app-helper-bg: #111;
+  --app-helper-text: #d9d9d9;
+  --app-button-outline-border: #fff;
+  --app-button-outline-text: #fff;
+  --app-button-outline-hover: #1f1f1f;
+  --app-focus: #ffe100;
+  --app-heading-text: #fff;
+  --app-heading-icon-bg: #111;
+  --app-workflow-step-bg: #0a0a0a;
+  --app-workflow-step-hover: #1f1f1f;
+  --app-workflow-step-border: #e6e6e6;
+  --app-workflow-step-active-border: #ffe100;
+  --app-workflow-active-bg: #1c1c1c;
+  --app-workflow-active-text: #fff;
+  --app-solver-step-bg: #0a0a0a;
+  --app-solver-step-active-bg: #1c1c1c;
+  --app-live-bg: #090909;
+  --app-live-tile-bg: #050505;
+  --app-live-primary: #90ff00;
+  --app-live-secondary: #00f7ff;
+  --app-live-ratio: #d080ff;
+  --app-live-warning: #ffe100;
+  --app-segmented-bg: #000;
+  --app-segmented-border: #fff;
+  --app-segmented-text: #fff;
+  --app-segmented-active-bg: #1f1f1f;
+  --app-segmented-active-border: #ffe100;
+  --app-segmented-active-text: #ffe100;
+  --app-compact-label: #d9d9d9;
+  --app-balance-tile-bg: #080808;
+  --app-balance-label: #d9d9d9;
+  --app-fert-editor-head-bg: #1f1f1f;
+  --app-fert-editor-input-bg: #000;
+}
+
+.app-body[data-theme="soil"] {
+  --app-bg: #191714;
+  --app-panel: #231f1a;
+  --app-panel-soft: #30291d;
+  --app-border: #6b5734;
+  --app-text: #fff2d7;
+  --app-muted: #d0b98a;
+  --app-green: #adc76f;
+  --app-teal: #5fc0ac;
+  --app-amber: #f0a020;
+  --app-red: #df715f;
+  --app-solver: #d49cff;
+  --app-solver-glow: #64d4cd;
+  --app-body-bg: linear-gradient(180deg, #2a2118, #12100e 34rem), var(--app-bg);
+  --app-shell-bg:
+    radial-gradient(circle at 0% 0%, rgb(240 160 32 / 11%), transparent 30%),
+    linear-gradient(145deg, rgb(45 36 25 / 98%), rgb(18 16 14 / 98%));
+  --app-shell-border: rgb(240 160 32 / 28%);
+  --app-rail-bg: linear-gradient(180deg, rgb(45 36 25 / 98%), rgb(22 19 16 / 98%));
+  --app-scrollbar-thumb: #8c6a32;
+  --app-scrollbar-track: #17130f;
+  --app-card-bg:
+    radial-gradient(circle at 88% 12%, rgb(240 160 32 / 10%), transparent 36%),
+    rgb(34 27 19 / 78%);
+  --app-config-bg:
+    radial-gradient(circle at 90% 8%, rgb(95 192 172 / 10%), transparent 34%),
+    rgb(34 27 19 / 78%);
+  --app-workflow-bg:
+    radial-gradient(circle at 88% 12%, rgb(173 199 111 / 10%), transparent 36%),
+    rgb(34 27 19 / 78%);
+  --app-brand-bg:
+    radial-gradient(circle at 20% 20%, rgb(240 160 32 / 14%), transparent 46%),
+    rgb(34 27 19 / 78%);
+  --app-workspace-block-bg: linear-gradient(145deg, rgb(47 37 25 / 94%), rgb(24 20 16 / 98%));
+  --app-subpanel-bg: rgb(29 23 17 / 50%);
+  --app-table-wrap-bg: linear-gradient(145deg, rgb(44 35 25 / 82%), rgb(24 20 16 / 88%));
+  --app-table-card-bg:
+    radial-gradient(circle at 88% 22%, rgb(240 160 32 / 9%), transparent 34%),
+    rgb(39 31 22 / 88%);
+  --app-table-card-border: rgb(240 160 32 / 22%);
+  --app-table-badge-bg: rgb(240 160 32 / 10%);
+  --app-table-badge-border: rgb(240 160 32 / 24%);
+  --app-table-badge-text: #d0b98a;
+  --app-table-head-bg: #3d321f;
+  --app-table-head-text: #fff2d7;
+  --app-table-row-odd: rgb(35 28 20 / 82%);
+  --app-table-row-even: rgb(27 22 17 / 82%);
+  --app-fert-editor-row-odd-bg: #231c14;
+  --app-fert-editor-row-even-bg: #1b1611;
+  --app-table-row-hover: rgb(70 54 29 / 80%);
+  --app-input-bg: #17130f;
+  --app-input-border: #745a2f;
+  --app-helper-bg: #211a12;
+  --app-helper-text: #bfa978;
+  --app-button-outline-border: #8c6a32;
+  --app-button-outline-text: #ffe6b3;
+  --app-button-outline-hover: rgb(240 160 32 / 14%);
+  --app-focus: rgb(240 160 32 / 76%);
+  --app-heading-text: #fff8e8;
+  --app-workflow-step-bg: linear-gradient(145deg, rgb(49 39 27 / 90%), rgb(25 20 16 / 92%));
+  --app-workflow-step-hover: rgb(61 45 25 / 88%);
+  --app-workflow-step-border: rgb(240 160 32 / 20%);
+  --app-workflow-step-active-border: rgb(240 160 32 / 52%);
+  --app-workflow-active-bg: linear-gradient(145deg, rgb(128 84 23 / 94%), rgb(40 96 88 / 90%));
+  --app-workflow-active-text: #fff8e8;
+  --app-solver-step-bg: linear-gradient(145deg, rgb(63 42 70 / 72%), rgb(23 54 49 / 72%));
+  --app-solver-step-active-bg: linear-gradient(145deg, rgb(143 73 171 / 90%), rgb(36 106 99 / 84%));
+  --app-live-bg:
+    radial-gradient(circle at 90% 0%, rgb(240 160 32 / 13%), transparent 34%),
+    rgb(34 27 19 / 78%);
+  --app-live-tile-bg: linear-gradient(145deg, rgb(49 38 26 / 78%), rgb(24 20 16 / 90%));
+  --app-live-primary: #baf078;
+  --app-live-secondary: #64d4cd;
+  --app-live-ratio: #d49cff;
+  --app-live-warning: #ffd166;
+  --app-segmented-bg: rgb(35 28 20 / 86%);
+  --app-segmented-border: rgb(240 160 32 / 20%);
+  --app-segmented-text: #d0b98a;
+  --app-segmented-active-bg: rgb(240 160 32 / 16%);
+  --app-segmented-active-border: rgb(240 160 32 / 32%);
+  --app-segmented-active-text: #fff8e8;
+  --app-compact-label: #d0b98a;
+  --app-balance-tile-bg: rgb(35 28 20 / 82%);
+  --app-balance-label: #d0b98a;
+  --app-fert-editor-head-bg: #43331f;
+  --app-fert-editor-input-bg: #17130f;
+}
+
+.app-body[data-theme="gch-classic"] {
+  --app-bg: #333;
+  --app-panel: #272727;
+  --app-panel-soft: #303030;
+  --app-border: #4d4d4d;
+  --app-text: #c3e0bd;
+  --app-muted: #bca26a;
+  --app-green: #63b265;
+  --app-teal: #bdd3bf;
+  --app-amber: #d57500;
+  --app-red: #c84448;
+  --app-solver: #9b8aa8;
+  --app-solver-glow: #bdd3bf;
+  --app-body-bg: linear-gradient(180deg, #16210e 0, #16210e 5rem, #333 5rem), var(--app-bg);
+  --app-shell-bg:
+    linear-gradient(180deg, rgb(36 42 22 / 48%), transparent 8rem),
+    #333;
+  --app-shell-border: #4d4d4d;
+  --app-shell-shadow: 0 18px 42px rgb(0 0 0 / 34%);
+  --app-rail-bg: linear-gradient(180deg, #303030, #272727);
+  --app-rail-shadow: inset -1px 0 0 #4d4d4d;
+  --app-scrollbar-thumb: #4d4d4d;
+  --app-scrollbar-track: #272727;
+  --app-card-bg:
+    linear-gradient(180deg, #303030, #2b2b2b);
+  --app-config-bg:
+    linear-gradient(180deg, #303030, #272727);
+  --app-workflow-bg:
+    linear-gradient(180deg, #303030, #272727);
+  --app-brand-bg:
+    linear-gradient(180deg, rgb(36 42 22 / 90%), #272727);
+  --app-workspace-block-bg: linear-gradient(180deg, #303030, #272727);
+  --app-subpanel-bg: rgb(39 39 39 / 86%);
+  --app-table-wrap-bg: linear-gradient(180deg, #303030, #272727);
+  --app-table-card-bg:
+    linear-gradient(180deg, #303030, #272727);
+  --app-table-card-border: #4d4d4d;
+  --app-table-badge-bg: #303030;
+  --app-table-badge-border: #464646;
+  --app-table-badge-text: #bca26a;
+  --app-table-head-bg: linear-gradient(0deg, #363636, #2f2f2f);
+  --app-table-head-text: #c3e0bd;
+  --app-table-row-odd: #272727;
+  --app-table-row-even: #303030;
+  --app-fert-editor-row-odd-bg: #272727;
+  --app-fert-editor-row-even-bg: #303030;
+  --app-table-row-hover: #353e21;
+  --app-input-bg: #2d2d2d;
+  --app-input-border: #4d4d4d;
+  --app-helper-bg: #323232;
+  --app-helper-text: #bca26a;
+  --app-button-outline-border: #4d4d4d;
+  --app-button-outline-text: #c3e0bd;
+  --app-button-outline-hover: rgb(195 224 189 / 10%);
+  --app-focus: rgb(213 117 0 / 82%);
+  --app-heading-text: #c3e0bd;
+  --app-heading-icon-bg:
+    radial-gradient(circle at 50% 42%, rgb(195 224 189 / 18%), transparent 56%),
+    linear-gradient(145deg, rgb(36 42 22 / 76%), rgb(48 48 48 / 90%));
+  --app-workflow-step-bg: linear-gradient(180deg, #303030, #272727);
+  --app-workflow-step-hover: #363636;
+  --app-workflow-step-border: #464646;
+  --app-workflow-step-active-border: #d57500;
+  --app-workflow-active-bg: linear-gradient(180deg, #363636, #303030);
+  --app-workflow-active-text: #c3e0bd;
+  --app-solver-step-bg: linear-gradient(145deg, rgb(54 54 54 / 92%), rgb(39 39 39 / 92%));
+  --app-solver-step-active-bg: linear-gradient(145deg, rgb(80 72 91 / 86%), rgb(54 54 54 / 92%));
+  --app-live-bg:
+    linear-gradient(180deg, rgb(36 42 22 / 72%), rgb(39 39 39 / 92%));
+  --app-live-tile-bg: linear-gradient(180deg, #303030, #272727);
+  --app-live-primary: #63b265;
+  --app-live-secondary: #c3e0bd;
+  --app-live-ratio: #bca26a;
+  --app-live-warning: #d57500;
+  --app-segmented-bg: #272727;
+  --app-segmented-border: #4d4d4d;
+  --app-segmented-text: #bca26a;
+  --app-segmented-active-bg: #242a16;
+  --app-segmented-active-border: rgb(213 117 0 / 82%);
+  --app-segmented-active-text: #c3e0bd;
+  --app-compact-label: #bdd3bf;
+  --app-balance-tile-bg: #303030;
+  --app-balance-label: #bca26a;
+  --app-fert-editor-head-bg: #363636;
+  --app-fert-editor-input-bg: #2d2d2d;
+}
+
+.app-body[data-theme="vt-green"] {
+  --app-bg: #07100a;
+  --app-panel: #0d1a10;
+  --app-panel-soft: #122316;
+  --app-border: #2a6538;
+  --app-text: #e5ffdf;
+  --app-muted: #94c28d;
+  --app-green: #73ff5a;
+  --app-teal: #38d78c;
+  --app-amber: #d8d36c;
+  --app-red: #ff756b;
+  --app-solver: #a6ff8b;
+  --app-solver-glow: #57ffb0;
+  --app-body-bg: linear-gradient(180deg, #0c1b10, #030704 34rem), var(--app-bg);
+  --app-shell-bg:
+    radial-gradient(circle at 0% 0%, rgb(115 255 90 / 10%), transparent 30%),
+    linear-gradient(145deg, rgb(11 25 13 / 98%), rgb(3 7 4 / 98%));
+  --app-rail-bg: linear-gradient(180deg, rgb(13 28 15 / 98%), rgb(4 9 5 / 98%));
+  --app-scrollbar-thumb: #2f8a42;
+  --app-scrollbar-track: #061008;
+  --app-card-bg:
+    radial-gradient(circle at 88% 12%, rgb(115 255 90 / 10%), transparent 36%),
+    rgb(7 18 9 / 78%);
+  --app-config-bg:
+    radial-gradient(circle at 90% 8%, rgb(87 255 176 / 10%), transparent 34%),
+    rgb(7 18 9 / 78%);
+  --app-workflow-bg:
+    radial-gradient(circle at 88% 12%, rgb(56 215 140 / 10%), transparent 36%),
+    rgb(7 18 9 / 78%);
+  --app-brand-bg:
+    radial-gradient(circle at 20% 20%, rgb(115 255 90 / 14%), transparent 46%),
+    rgb(7 18 9 / 78%);
+  --app-workspace-block-bg: linear-gradient(145deg, rgb(10 27 13 / 94%), rgb(4 10 5 / 98%));
+  --app-subpanel-bg: rgb(5 13 6 / 52%);
+  --app-table-wrap-bg: linear-gradient(145deg, rgb(9 25 12 / 82%), rgb(4 10 5 / 88%));
+  --app-table-card-bg:
+    radial-gradient(circle at 88% 22%, rgb(115 255 90 / 8%), transparent 34%),
+    rgb(8 20 10 / 88%);
+  --app-table-card-border: rgb(115 255 90 / 18%);
+  --app-table-badge-bg: rgb(115 255 90 / 8%);
+  --app-table-badge-border: rgb(115 255 90 / 20%);
+  --app-table-badge-text: #94c28d;
+  --app-table-head-bg: #142f1a;
+  --app-table-head-text: #e5ffdf;
+  --app-table-row-odd: rgb(8 20 9 / 82%);
+  --app-table-row-even: rgb(5 13 6 / 82%);
+  --app-fert-editor-row-odd-bg: #081409;
+  --app-fert-editor-row-even-bg: #050d06;
+  --app-table-row-hover: rgb(26 59 27 / 82%);
+  --app-input-bg: #030704;
+  --app-input-border: #2a6538;
+  --app-helper-bg: #08140a;
+  --app-helper-text: #94c28d;
+  --app-button-outline-border: #2f8a42;
+  --app-button-outline-text: #d8ffd0;
+  --app-button-outline-hover: rgb(115 255 90 / 12%);
+  --app-focus: rgb(115 255 90 / 75%);
+  --app-heading-text: #f1ffed;
+  --app-workflow-step-bg: linear-gradient(145deg, rgb(13 34 16 / 90%), rgb(4 12 6 / 92%));
+  --app-workflow-step-hover: rgb(19 45 19 / 88%);
+  --app-workflow-step-border: rgb(115 255 90 / 18%);
+  --app-workflow-step-active-border: rgb(115 255 90 / 45%);
+  --app-workflow-active-bg: linear-gradient(145deg, rgb(42 108 35 / 94%), rgb(16 82 49 / 90%));
+  --app-workflow-active-text: #f1ffed;
+  --app-solver-step-bg: linear-gradient(145deg, rgb(25 57 27 / 72%), rgb(8 43 25 / 72%));
+  --app-solver-step-active-bg: linear-gradient(145deg, rgb(57 139 43 / 90%), rgb(21 112 67 / 84%));
+  --app-live-bg:
+    radial-gradient(circle at 90% 0%, rgb(115 255 90 / 12%), transparent 34%),
+    rgb(7 18 9 / 78%);
+  --app-live-tile-bg: linear-gradient(145deg, rgb(10 30 14 / 78%), rgb(4 10 5 / 90%));
+  --app-live-primary: #73ff5a;
+  --app-live-secondary: #57ffb0;
+  --app-live-ratio: #b0ff9b;
+  --app-live-warning: #d8d36c;
+  --app-segmented-bg: rgb(7 18 9 / 86%);
+  --app-segmented-border: rgb(115 255 90 / 18%);
+  --app-segmented-text: #94c28d;
+  --app-segmented-active-bg: rgb(115 255 90 / 14%);
+  --app-segmented-active-border: rgb(115 255 90 / 28%);
+  --app-segmented-active-text: #f1ffed;
+  --app-compact-label: #94c28d;
+  --app-balance-tile-bg: rgb(8 20 9 / 82%);
+  --app-balance-label: #94c28d;
+  --app-fert-editor-head-bg: #17351d;
+  --app-fert-editor-input-bg: #030704;
+}
+
+.app-body[data-theme="blue-matrix"] {
+  --app-bg: #0b1018;
+  --app-panel: #121a27;
+  --app-panel-soft: #172232;
+  --app-border: #33445f;
+  --app-text: #edf4ff;
+  --app-muted: #a9b7ca;
+  --app-green: #80c8ff;
+  --app-teal: #4bd3de;
+  --app-amber: #d9b96f;
+  --app-red: #e47b78;
+  --app-solver: #a9a7ff;
+  --app-solver-glow: #4bd3de;
+  --app-body-bg: linear-gradient(180deg, #121b29, #060a10 34rem), var(--app-bg);
+  --app-shell-bg:
+    radial-gradient(circle at 0% 0%, rgb(128 200 255 / 10%), transparent 30%),
+    linear-gradient(145deg, rgb(17 27 41 / 98%), rgb(6 10 16 / 98%));
+  --app-rail-bg: linear-gradient(180deg, rgb(19 30 45 / 98%), rgb(8 13 20 / 98%));
+  --app-scrollbar-thumb: #415c80;
+  --app-scrollbar-track: #09111c;
+  --app-card-bg:
+    radial-gradient(circle at 88% 12%, rgb(128 200 255 / 10%), transparent 36%),
+    rgb(12 20 31 / 78%);
+  --app-config-bg:
+    radial-gradient(circle at 90% 8%, rgb(75 211 222 / 10%), transparent 34%),
+    rgb(12 20 31 / 78%);
+  --app-workflow-bg:
+    radial-gradient(circle at 88% 12%, rgb(128 200 255 / 10%), transparent 36%),
+    rgb(12 20 31 / 78%);
+  --app-brand-bg:
+    radial-gradient(circle at 20% 20%, rgb(128 200 255 / 14%), transparent 46%),
+    rgb(12 20 31 / 78%);
+  --app-workspace-block-bg: linear-gradient(145deg, rgb(18 30 45 / 94%), rgb(8 13 20 / 98%));
+  --app-subpanel-bg: rgb(8 15 24 / 52%);
+  --app-table-wrap-bg: linear-gradient(145deg, rgb(15 27 42 / 82%), rgb(8 13 20 / 88%));
+  --app-table-card-bg:
+    radial-gradient(circle at 88% 22%, rgb(75 211 222 / 8%), transparent 34%),
+    rgb(13 23 36 / 88%);
+  --app-table-card-border: rgb(128 200 255 / 18%);
+  --app-table-badge-bg: rgb(128 200 255 / 8%);
+  --app-table-badge-border: rgb(128 200 255 / 20%);
+  --app-table-badge-text: #a9b7ca;
+  --app-table-head-bg: #1d3048;
+  --app-table-head-text: #edf4ff;
+  --app-table-row-odd: rgb(13 23 36 / 82%);
+  --app-table-row-even: rgb(8 16 26 / 82%);
+  --app-fert-editor-row-odd-bg: #0d1724;
+  --app-fert-editor-row-even-bg: #08101a;
+  --app-table-row-hover: rgb(28 49 75 / 82%);
+  --app-input-bg: #07101a;
+  --app-input-border: #33445f;
+  --app-helper-bg: #0d1927;
+  --app-helper-text: #a9b7ca;
+  --app-button-outline-border: #496384;
+  --app-button-outline-text: #e3efff;
+  --app-button-outline-hover: rgb(128 200 255 / 12%);
+  --app-focus: rgb(75 211 222 / 76%);
+  --app-heading-text: #f5f9ff;
+  --app-workflow-step-bg: linear-gradient(145deg, rgb(18 32 49 / 90%), rgb(8 16 26 / 92%));
+  --app-workflow-step-hover: rgb(24 42 64 / 88%);
+  --app-workflow-step-border: rgb(128 200 255 / 18%);
+  --app-workflow-step-active-border: rgb(75 211 222 / 48%);
+  --app-workflow-active-bg: linear-gradient(145deg, rgb(42 92 139 / 94%), rgb(21 90 101 / 90%));
+  --app-workflow-active-text: #f5f9ff;
+  --app-solver-step-bg: linear-gradient(145deg, rgb(42 39 81 / 72%), rgb(9 43 55 / 72%));
+  --app-solver-step-active-bg: linear-gradient(145deg, rgb(83 77 170 / 90%), rgb(24 98 112 / 84%));
+  --app-live-bg:
+    radial-gradient(circle at 90% 0%, rgb(75 211 222 / 12%), transparent 34%),
+    rgb(12 20 31 / 78%);
+  --app-live-tile-bg: linear-gradient(145deg, rgb(17 31 48 / 78%), rgb(8 13 20 / 90%));
+  --app-live-primary: #80c8ff;
+  --app-live-secondary: #4bd3de;
+  --app-live-ratio: #a9a7ff;
+  --app-live-warning: #d9b96f;
+  --app-segmented-bg: rgb(12 20 31 / 86%);
+  --app-segmented-border: rgb(128 200 255 / 18%);
+  --app-segmented-text: #a9b7ca;
+  --app-segmented-active-bg: rgb(75 211 222 / 14%);
+  --app-segmented-active-border: rgb(75 211 222 / 30%);
+  --app-segmented-active-text: #f5f9ff;
+  --app-compact-label: #a9b7ca;
+  --app-balance-tile-bg: rgb(13 23 36 / 82%);
+  --app-balance-label: #a9b7ca;
+  --app-fert-editor-head-bg: #20354f;
+  --app-fert-editor-input-bg: #07101a;
+}

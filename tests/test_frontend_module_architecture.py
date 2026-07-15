@@ -4,7 +4,6 @@ import re
 
 from tests.frontend_assets import frontend_app_sources, read_frontend_file
 
-
 FEATURES = {"calculator", "editor", "profiles", "settings", "shell", "solver", "water"}
 
 

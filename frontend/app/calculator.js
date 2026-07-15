@@ -4,9 +4,9 @@ import {
   NUTRIENT_FORMATTER,
   SUMMARY_COLUMN_ORDER,
 } from "./constants.js";
-import { createSelect, createTable, qs, renderTableRows } from "./dom.js";
-import { buildAlignedRows, decimalInputValue, formatNumber, roundScaledValue } from "./formatting.js";
-import { bindScaleButtons, scaledValues } from "./scaling.js";
+import { appendDoseInput, createSelect, createTable, qs, renderTableRows } from "./dom.js";
+import { buildAlignedRows, formatNumber, roundScaledValue } from "./formatting.js";
+import { applyScaledValues, bindScaleButtons } from "./scaling.js";
 import { createLatestRequestGate } from "../request_gate.js";
 import { storageSet } from "./storage.js";
 
@@ -38,28 +38,6 @@ let fertilizerSelectTable;
 let calculatorTable;
 let mounted = false;
 
-const getVolumeUnitDefinition = (...args) => units.getVolumeUnitDefinition(...args);
-const litersToDisplayVolume = (...args) => units.litersToDisplayVolume(...args);
-const formatVolumeValue = (...args) => units.formatVolumeValue(...args);
-const formatDoseDisplay = (...args) => units.formatDoseDisplay(...args);
-const doseUnitDefinition = (...args) => units.doseUnitDefinition(...args);
-const formatDoseInput = (...args) => units.formatDoseInput(...args);
-const displayDoseToCanonical = (...args) => units.displayDoseToCanonical(...args);
-const appendDoseInput = (cell, input, fertilizer) => {
-  const wrapper = document.createElement("span");
-  wrapper.className = "dose-input";
-  const unit = document.createElement("span");
-  unit.className = "dose-input-unit";
-  unit.textContent = doseUnitDefinition(fertilizer).symbol;
-  wrapper.append(input, unit);
-  cell.appendChild(wrapper);
-};
-const buildClipboardRows = buildAlignedRows;
-const formatOxideValue = (...args) => water.formatOxideValue(...args);
-const reportError = (...args) => notifications.reportError(...args);
-const copyTextWithFallback = (...args) => notifications.copyText(...args);
-const setCopyCalculatorStatus = (...args) => notifications.setCopyCalculatorStatus(...args);
-const setSolverApplyStatus = (...args) => notifications.setSolverApplyStatus(...args);
 const setCalculatorResultCurrent = (current) => {
   calculatorResultCurrent = Boolean(current && lastCalculation);
   notifications.setCalculatorResultCurrent(calculatorResultCurrent);
@@ -74,56 +52,30 @@ function createCalculatorRow(name = "", grams = 0) {
   };
 }
 
-function updateScaleDisplay(displayEl, factor) {
-  if (displayEl) {
-    displayEl.textContent = `${factor.toFixed(2)}x`;
+function updateCalculatorScaleDisplay() {
+  if (calculatorScaleValue) {
+    calculatorScaleValue.textContent = `${calculatorScaleFactor.toFixed(2)}x`;
   }
 }
 
-function applyScaleFactor({
-  nextFactor,
-  definitions,
-  getBaseValue,
-  setScaledValue,
-  setFactor,
-  render,
-  displayEl,
-}) {
-  const scaled = scaledValues(definitions, nextFactor, getBaseValue);
-  const factor = scaled.factor;
-  setFactor(factor);
-  definitions.forEach((definition, index) => {
-    setScaledValue(definition, scaled.values[index]);
-  });
-  updateScaleDisplay(displayEl, factor);
-  render();
-}
-
-function updateCalculatorScaleDisplay() {
-  updateScaleDisplay(calculatorScaleValue, calculatorScaleFactor);
-}
-
 function applyCalculatorScaleFactor(nextFactor) {
-  applyScaleFactor({
+  calculatorScaleFactor = applyScaledValues(
+    calculatorRows,
     nextFactor,
-    definitions: calculatorRows,
-    getBaseValue: (row) => row.baseGrams,
-    setScaledValue: (row, value) => {
+    (row) => row.baseGrams,
+    (row, value) => {
       row.grams = value;
     },
-    setFactor: (factor) => {
-      calculatorScaleFactor = factor;
-    },
-    render: renderCalculatorTable,
-    displayEl: calculatorScaleValue,
-  });
+  );
+  updateCalculatorScaleDisplay();
+  renderCalculatorTable();
   scheduleRecalculate();
 }
 
 function applySolverResultToCalculator({ switchToCalculator = false } = {}) {
   const lastSolveResult = getSolverResult();
   if (!lastSolveResult) {
-    reportError(null, t("solver.noResult"));
+    notifications.reportError(null, t("solver.noResult"));
     return false;
   }
   const fertilizers = (lastSolveResult.fertilizers || []).map((fert) => ({
@@ -136,7 +88,7 @@ function applySolverResultToCalculator({ switchToCalculator = false } = {}) {
   };
   applyRecipe(recipe);
   scheduleRecalculate();
-  setSolverApplyStatus(t("status.appliedCalculator"));
+  notifications.setSolverApplyStatus(t("status.appliedCalculator"));
 
   if (switchToCalculator) {
     onShowCalculator();
@@ -144,33 +96,26 @@ function applySolverResultToCalculator({ switchToCalculator = false } = {}) {
   return true;
 }
 
-function formatClipboardIonLabel(key) {
-  if (key === "N_total") {
-    return "N";
-  }
-  return key;
-}
-
 function buildCalculatorClipboardText() {
   const fertilizers = buildSelectedFertilizerEntries();
   const lines = [t("calculator.clipboardTitle")];
   lines.push(
-    ...buildClipboardRows(null, [
+    ...buildAlignedRows(null, [
       [
-        t("solver.clipboardBatchVolume", { unit: getVolumeUnitDefinition().symbol }),
-        formatVolumeValue(litersToDisplayVolume(units.liters)),
+        t("solver.clipboardBatchVolume", { unit: units.getVolumeUnitDefinition().symbol }),
+        units.formatVolumeValue(units.litersToDisplayVolume(units.liters)),
       ],
       [t("solver.clipboardOsmosis"), formatNumber(water.osmosisPercent)],
     ], [1])
   );
   lines.push("");
   lines.push(
-    ...buildClipboardRows(
+    ...buildAlignedRows(
       [t("common.fertilizer"), t("common.amount"), t("common.unit")],
       fertilizers.map((fertilizer) => [
         fertilizer.name,
-        formatDoseDisplay(fertilizer.grams, fertilizer.name),
-        doseUnitDefinition(fertilizer.name).symbol,
+        units.formatDoseDisplay(fertilizer.grams, fertilizer.name),
+        units.doseUnitDefinition(fertilizer.name).symbol,
       ]),
       [1]
     )
@@ -180,7 +125,7 @@ function buildCalculatorClipboardText() {
   lines.push("");
   lines.push(t("solver.clipboardNpk"));
   lines.push(
-    ...buildClipboardRows(null, [
+    ...buildAlignedRows(null, [
       [t("live.npkTotal"), npkMetrics.npk_all_pct || "-"],
       [t("live.npkPNorm"), npkMetrics.npk_p_norm || "-"],
       [t("live.npkRatio"), npkMetrics.npk_npk_pct || "-"],
@@ -192,7 +137,7 @@ function buildCalculatorClipboardText() {
   lines.push("");
   lines.push(t("live.ec"));
   lines.push(
-    ...buildClipboardRows(null, [
+    ...buildAlignedRows(null, [
       [`${t("live.solution")} 25°C`, formatNumber(Number(solutionEc["25.0"]))],
       [`${t("live.solution")} 18°C`, formatNumber(Number(solutionEc["18.0"]))],
       [`${t("live.water")} 25°C`, formatNumber(Number(waterEc["25.0"]))],
@@ -204,7 +149,7 @@ function buildCalculatorClipboardText() {
   lines.push("");
   lines.push(t("solver.clipboardIons"));
   lines.push(
-    ...buildClipboardRows(
+    ...buildAlignedRows(
       null,
       summaryColumnOrder.map((column) => [
         t(column.ionHeaderLabelKey || column.ionHeaderLabel),
@@ -218,11 +163,11 @@ function buildCalculatorClipboardText() {
   lines.push("");
   lines.push(`${t("calculator.oxideForms")} (mg/L)`);
   lines.push(
-    ...buildClipboardRows(
+    ...buildAlignedRows(
       null,
       summaryColumnOrder.map((column) => [
         t(column.oxideHeaderLabelKey || column.oxideHeaderLabel),
-        formatOxideValue(column.oxide, Number(oxideValues[column.oxide])),
+        water.formatOxideValue(column.oxide, Number(oxideValues[column.oxide])),
       ]),
       [1]
     )
@@ -232,7 +177,7 @@ function buildCalculatorClipboardText() {
   lines.push("");
   lines.push(`${t("calculator.ions")} (meq/L)`);
   lines.push(
-    ...buildClipboardRows(
+    ...buildAlignedRows(
       null,
       Object.entries(ionValues)
         .filter(([, value]) => Number.isFinite(Number(value)))
@@ -249,7 +194,7 @@ function buildCalculatorClipboardText() {
   lines.push("");
   lines.push(t("calculator.ionBalance"));
   lines.push(
-    ...buildClipboardRows(
+    ...buildAlignedRows(
       [t("common.parameter"), t("common.value"), t("common.unit")],
       [
         [t("calculator.ionBalance.cations"), formatNumber(Number(balance.cations_meq_per_l), ionFormatter), "meq/L"],
@@ -266,16 +211,16 @@ function buildCalculatorClipboardText() {
 
 async function copyCalculatorResultsToClipboard() {
   if (!lastCalculation || !calculatorResultCurrent) {
-    reportError(null, t("calculator.noResult"));
+    notifications.reportError(null, t("calculator.noResult"));
     return;
   }
 
   try {
-    await copyTextWithFallback(buildCalculatorClipboardText());
-    setCopyCalculatorStatus(t("status.copied"));
+    await notifications.copyText(buildCalculatorClipboardText());
+    notifications.setCopyCalculatorStatus(t("status.copied"));
   } catch (error) {
-    reportError(error, t("errors.copyFailed"));
-    setCopyCalculatorStatus(t("status.copyFailed"));
+    notifications.reportError(error, t("errors.copyFailed"));
+    notifications.setCopyCalculatorStatus(t("status.copyFailed"));
   }
 }
 
@@ -345,9 +290,9 @@ function renderCalculatorTable() {
     input.inputMode = "decimal";
     input.min = "0";
     input.step = "any";
-    input.value = formatDoseInput(calculatorRow.grams, calculatorRow.name);
+    input.value = units.formatDoseInput(calculatorRow.grams, calculatorRow.name);
     input.addEventListener("input", (event) => {
-      const canonicalValue = displayDoseToCanonical(event.target.value, calculatorRow.name);
+      const canonicalValue = units.displayDoseToCanonical(event.target.value, calculatorRow.name);
       if (canonicalValue === null || canonicalValue < 0) {
         return;
       }
@@ -357,9 +302,9 @@ function renderCalculatorTable() {
       scheduleRecalculate();
     });
     input.addEventListener("change", () => {
-      input.value = formatDoseInput(calculatorRow.grams, calculatorRow.name);
+      input.value = units.formatDoseInput(calculatorRow.grams, calculatorRow.name);
     });
-    appendDoseInput(amountCell, input, calculatorRow.name);
+    appendDoseInput(amountCell, input, units.doseUnitDefinition(calculatorRow.name).symbol);
 
     row.append(indexCell, nameCell, amountCell);
     return row;
@@ -376,7 +321,7 @@ function scheduleRecalculate() {
     try {
       await calculateAndRender(null, requestVersion);
     } catch (error) {
-      reportError(error, t("errors.calculateFailed"));
+      notifications.reportError(error, t("errors.calculateFailed"));
     }
   }, 250);
 }
@@ -557,7 +502,7 @@ function mount() {
       await calculateAndRender();
       storageSet(LAST_SOLUTION_CALCULATED_KEY, buildSolutionSnapshot());
     } catch (error) {
-      reportError(error, t("errors.calculateFailed"));
+      notifications.reportError(error, t("errors.calculateFailed"));
     }
   });
   copyCalculatorResultsButton?.addEventListener("click", copyCalculatorResultsToClipboard);

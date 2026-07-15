@@ -59,14 +59,17 @@ For the exact commands, see [commands.md](commands.md#release-build-pyinstaller)
 
 The build scripts run PyInstaller with `scripts/packaging/horticalc.spec`, then copy `frontend/`, `data/`, and `recipes/` into the onedir app root and add the portable `README.txt` and GPLv3 `LICENSE`. The portable README states that Horticalc is independent from named manufacturers and data sources, and that bundled product data are point-in-time snapshots without warranty.
 
-On Windows, `scripts/packaging/build_windows.ps1` also generates a version resource with `scripts/packaging/write_windows_version_info.py`. CI passes the Git tag or short commit through `HORTICALC_VERSION`; local builds can set the same variable.
+On Windows, `scripts/packaging/build_windows.ps1` also generates a version
+resource with `scripts/packaging/write_windows_version_info.py`. CI passes the
+canonical package version through `HORTICALC_VERSION`; local builds derive it
+from `horticalc.__version__` unless the environment variable is explicit.
 
 ## CI Release Workflow
 
 `.github/workflows/release.yml` runs on:
 
 - manual workflow dispatch
-- pushed tags matching `v*`
+- the exact release tag `v0.6.0`
 
 Matrix:
 
@@ -74,7 +77,9 @@ Matrix:
 - `windows-latest`
 - Python `3.11.9`
 
-The workflow installs, builds, smoke-tests the packaged binary, computes SHA-256 checksums, creates GitHub Artifact Attestations, and attaches release assets for `v*` tags.
+`scripts/check_release_version.py` rejects a tag that does not exactly match
+`v` plus `horticalc.__version__`. Manual workflow builds retain short-commit
+artifact names. Tagged builds use `v0.6.0`.
 
 ## Release Verification
 

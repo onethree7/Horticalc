@@ -55,7 +55,7 @@ def test_score_solution_scores_zero_objective_target() -> None:
 def test_canonical_config_catalog_covers_requested_settings() -> None:
     configs = solver_matrix.solver_config_cases(_cases(), "matrix")
 
-    assert len(configs) == 151
+    assert len(configs) == 135
     assert configs[0].experiment_id == "baseline"
     assert all(config.values["nitrogen_objective_mode"] == "n_total_only" for config in configs)
     assert all(config.values["s_objective_enabled"] is True for config in configs)
@@ -65,7 +65,9 @@ def test_canonical_config_catalog_covers_requested_settings() -> None:
     assert any(config.values["singleton_supplier_enabled"] is False for config in configs)
     assert any(config.values["singleton_underfill_enabled"] is True for config in configs)
     assert any(config.values["singleton_underfill_enabled"] is False for config in configs)
-    assert {config.values["irls_max_outer_iter"] for config in configs} >= {0, 1, 2, 4, 8, 12}
+    assert {config.values["irls_max_outer_iter"] for config in configs} >= {1, 2, 4, 8, 12}
+    assert all(config.values["irls_max_outer_iter"] >= 1 for config in configs)
+    assert all(config.values["singleton_underfill_max_iter"] >= 1 for config in configs)
     assert {config.values["scale_eps_mg_per_l"] for config in configs} >= {0.1, 0.5, 1.0, 2.0, 5.0}
     assert {config.values["overshoot_penalty"] for config in configs} >= {0.0, 0.25, 1.0, 1.5, 3.0, 10.0}
     assert sum(config.experiment_id == "confirmation_best" for config in configs) == 7

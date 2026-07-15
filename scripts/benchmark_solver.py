@@ -8,12 +8,7 @@ from horticalc.data_io import load_fertilizers, load_molar_masses, load_nutrient
 from horticalc.paths import repo_root
 from horticalc.solver import solve_recipe_data
 
-DEFAULT_SOLUTION = (
-    repo_root()
-    / "data"
-    / "nutrient_solutions"
-    / "Hoagland_Arnon_1950_Solution1_Nitrate.yml"
-)
+DEFAULT_SOLUTION = repo_root() / "data" / "nutrient_solutions" / "Hoagland_Arnon_1950_Solution1_Nitrate.yml"
 DEFAULT_LITERS = 10.0
 DEFAULT_ITERATIONS = 3
 DEFAULT_BASELINE_SECONDS = 2.0

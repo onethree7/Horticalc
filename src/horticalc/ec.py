@@ -5,6 +5,8 @@ import re
 from dataclasses import dataclass
 from typing import Dict, Iterable
 
+from .validation import finite_float, non_negative_float, positive_float
+
 
 @dataclass(frozen=True)
 class McCleskeyParams:
@@ -54,10 +56,7 @@ def parse_ion_key(label: str) -> tuple[str, int]:
     if charge == 1:
         canonical = f"{formula}{sign}"
     else:
-        if sign == "+":
-            canonical = f"{formula}{charge}{sign}"
-        else:
-            canonical = f"{formula}^{charge}{sign}"
+        canonical = f"{formula}{charge}{sign}" if sign == "+" else f"{formula}^{charge}{sign}"
 
     return canonical, signed_charge
 
@@ -98,28 +97,46 @@ def compute_ec(
     include_atc_to_25: bool = True,
     atc_alpha_per_c: float = 0.019,
 ) -> dict:
+    density_kg_per_l = positive_float(density_kg_per_l, "density_kg_per_l")
+    normalized_temps = tuple(finite_float(temp_c, "temperature") for temp_c in temps_c)
+    fallback_temp_beta_per_c = finite_float(fallback_temp_beta_per_c, "fallback_temp_beta_per_c")
+    atc_alpha_per_c = finite_float(atc_alpha_per_c, "atc_alpha_per_c")
+
     molalities: Dict[str, float] = {}
     charges: Dict[str, int] = {}
     warnings: list[str] = []
-    coverage = {
-        "mccleskey_ions_used": [],
-        "fallback_ions_used": [],
-        "ignored_ions": [],
-    }
+    mccleskey_ions: set[str] = set()
+    fallback_ions: set[str] = set()
+    ignored_ions: set[str] = set()
 
     for raw_ion, mmol_per_l in ions_mmol_per_l.items():
+        mmol_per_l = non_negative_float(mmol_per_l, f"ions_mmol_per_l.{raw_ion}")
         if mmol_per_l == 0:
             continue
         try:
             canonical, charge = parse_ion_key(raw_ion)
         except ValueError:
-            coverage["ignored_ions"].append(raw_ion)
+            ignored_ions.add(raw_ion)
             warnings.append(f"Ion '{raw_ion}' could not be parsed and was ignored.")
             continue
         mol_per_l = mmol_per_l / 1000.0
         molality = mol_per_l / density_kg_per_l
-        molalities[canonical] = molality
+        molalities[canonical] = molalities.get(canonical, 0.0) + molality
         charges[canonical] = charge
+
+    for ion in molalities:
+        if ion in MCCLESKEY_PARAMS:
+            mccleskey_ions.add(ion)
+            expected_charge = MCCLESKEY_PARAMS[ion].z
+            if charges[ion] != expected_charge:
+                warnings.append(
+                    f"Ion '{ion}' has charge {charges[ion]}, expected {expected_charge}; using tabulated charge."
+                )
+        elif ion in FALLBACK_LAMBDA_25:
+            fallback_ions.add(ion)
+        else:
+            ignored_ions.add(ion)
+            warnings.append(f"Ion '{ion}' has no McCleskey or fallback parameters and was ignored.")
 
     ionic_strength = _ionic_strength(molalities, charges) if molalities else 0.0
 
@@ -128,22 +145,17 @@ def compute_ec(
     ec_mS_per_cm: Dict[str, float] = {}
     ec_uS_per_cm: Dict[str, float] = {}
 
-    for temp_c in temps_c:
+    for temp_c in normalized_temps:
         temp_key = _temp_key(temp_c)
         total = 0.0
         contributions: Dict[str, float] = {}
 
         for ion, molality in molalities.items():
-            if ion in MCCLESKEY_PARAMS:
+            if ion in mccleskey_ions:
                 params = MCCLESKEY_PARAMS[ion]
-                if charges[ion] != params.z:
-                    warnings.append(
-                        f"Ion '{ion}' has charge {charges[ion]}, expected {params.z}; using tabulated charge."
-                    )
                 k_val = _mccleskey_k(params, temp_c, ionic_strength)
                 contrib = k_val * molality
-                coverage["mccleskey_ions_used"].append(ion)
-            elif ion in FALLBACK_LAMBDA_25:
+            elif ion in fallback_ions:
                 lambda_25 = FALLBACK_LAMBDA_25[ion]
                 if fallback_temp_beta_per_c == 0.0:
                     lambda_t = lambda_25
@@ -151,15 +163,10 @@ def compute_ec(
                     lambda_t = lambda_25 * (1 + fallback_temp_beta_per_c * (temp_c - 25.0))
                 mol_per_l = molality * density_kg_per_l
                 contrib = lambda_t * mol_per_l
-                coverage["fallback_ions_used"].append(ion)
             else:
-                coverage["ignored_ions"].append(ion)
-                warnings.append(
-                    f"Ion '{ion}' has no McCleskey or fallback parameters and was ignored."
-                )
                 continue
             if contrib < 0:
-                warnings.append(f"Negative EC contribution for '{ion}' ({contrib:.6g} mS/cm).")
+                warnings.append(f"Negative EC contribution for '{ion}' at {temp_key}°C ({contrib:.6g} mS/cm).")
             contributions[ion] = contrib
             total += contrib
 
@@ -171,7 +178,7 @@ def compute_ec(
         if include_transport_numbers:
             if total == 0.0:
                 warnings.append(f"Total EC at {temp_key}°C is 0; transport numbers = 0.")
-                transport_numbers[temp_key] = {ion: 0.0 for ion in contributions}
+                transport_numbers[temp_key] = dict.fromkeys(contributions, 0.0)
             else:
                 transport_numbers[temp_key] = {ion: value / total for ion, value in contributions.items()}
 
@@ -188,14 +195,16 @@ def compute_ec(
                 atc["ec25_from_18_mS_per_cm"] = ec25
                 atc["ec25_from_18_uS_per_cm"] = ec25 * 1000.0
 
-    coverage["mccleskey_ions_used"] = sorted(set(coverage["mccleskey_ions_used"]))
-    coverage["fallback_ions_used"] = sorted(set(coverage["fallback_ions_used"]))
-    coverage["ignored_ions"] = sorted(set(coverage["ignored_ions"]))
+    coverage = {
+        "mccleskey_ions_used": sorted(mccleskey_ions),
+        "fallback_ions_used": sorted(fallback_ions),
+        "ignored_ions": sorted(ignored_ions),
+    }
 
     return {
         "method": "McCleskey2012(Eq7-9,Table1) + VanysekCRC93(fallback)",
         "inputs": {
-            "temps_c": list(temps_c),
+            "temps_c": list(normalized_temps),
             "density_kg_per_l": density_kg_per_l,
             "fallback_temp_beta_per_c": fallback_temp_beta_per_c,
             "atc_alpha_per_c": atc_alpha_per_c,

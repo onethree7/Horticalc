@@ -1,8 +1,8 @@
-
 import pytest
 
 from horticalc.core import oxide_to_element_mg_l
 from horticalc.data_io import load_molar_masses
+
 
 @pytest.mark.parametrize(
     "oxide_key, element_key, multiplier",
@@ -25,6 +25,7 @@ def test_oxide_to_element_matches_molar_masses(oxide_key: str, element_key: str,
 
     assert result_element == element_key
     assert result_mg_l == pytest.approx(expected, rel=0, abs=1e-12)
+
 
 @pytest.mark.parametrize(
     "oxide_key, element_key",

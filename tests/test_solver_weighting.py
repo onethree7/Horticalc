@@ -17,6 +17,7 @@ from horticalc.solver import (
     solve_recipe_data,
 )
 
+
 def test_fertilizer_contrib_respects_weight_factor() -> None:
     fert = Fertilizer(name="K2O Test", liquid=False, weight_factor=2.0, comp={"K2O": 0.5})
     mm = {"K": 39.0983, "K2O": 94.196}
@@ -25,6 +26,7 @@ def test_fertilizer_contrib_respects_weight_factor() -> None:
     expected = 0.5 * 1000.0 * 2.0 * (2 * mm["K"] / mm["K2O"])
 
     assert np.isclose(contrib["K"], expected)
+
 
 def test_relative_weighting_reduces_small_target_error() -> None:
     A = np.array([[1.0, 1.0], [10.0, 0.0]])
@@ -46,6 +48,7 @@ def test_relative_weighting_reduces_small_target_error() -> None:
     r_weighted = A @ x_weighted - b
 
     assert abs(r_weighted[0]) < abs(r_unweighted[0])
+
 
 def test_singleton_supplier_pass_reduces_overshoot() -> None:
     A = np.array([[10.0, 1.0]])
@@ -70,6 +73,7 @@ def test_singleton_supplier_pass_reduces_overshoot() -> None:
     )
 
     assert updated[0] == 10.0
+
 
 def test_singleton_supplier_pass_rolls_back_on_regression() -> None:
     A = np.array([[10.0, 0.0], [0.0, 1.0]])
@@ -96,6 +100,7 @@ def test_singleton_supplier_pass_rolls_back_on_regression() -> None:
 
     assert np.allclose(updated, x_full)
 
+
 def test_singleton_supplier_pass_checks_each_objective_regression() -> None:
     A = np.array([[10.0, 0.0], [10.0, 0.0]])
     x_full = np.array([15.0, 0.0])
@@ -121,6 +126,7 @@ def test_singleton_supplier_pass_checks_each_objective_regression() -> None:
 
     assert np.allclose(updated, x_full)
 
+
 def test_score_percent_errors_returns_max_percent_error() -> None:
     objective_keys = ["K", "Fe"]
     targets_raw = {"K": 100.0, "Fe": 0.1}
@@ -130,13 +136,11 @@ def test_score_percent_errors_returns_max_percent_error() -> None:
 
     assert score == (100.0,)
 
+
 def test_default_n_total_portfolio_avoids_saloner_macro_collapse() -> None:
     root = Path(__file__).resolve().parents[1]
     profile = load_nutrient_solution_data(
-        root
-        / "data"
-        / "nutrient_solutions"
-        / "Saloner_Bernstein_Cannabis_NPK_Target_Optimization.yml"
+        root / "data" / "nutrient_solutions" / "Saloner_Bernstein_Cannabis_NPK_Target_Optimization.yml"
     )
 
     recipe = {

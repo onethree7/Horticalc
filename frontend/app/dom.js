@@ -1,6 +1,16 @@
 export const qs = (selector, root = document) => root.querySelector(selector);
 export const qsa = (selector, root = document) => root.querySelectorAll(selector);
 
+export function appendDoseInput(cell, input, unitSymbol) {
+  const wrapper = document.createElement("span");
+  wrapper.className = "dose-input";
+  const unit = document.createElement("span");
+  unit.className = "dose-input-unit";
+  unit.textContent = unitSymbol;
+  wrapper.append(input, unit);
+  cell.appendChild(wrapper);
+}
+
 export function createSelect(options, onChange, emptyLabel) {
   const select = document.createElement("select");
   const emptyOption = document.createElement("option");

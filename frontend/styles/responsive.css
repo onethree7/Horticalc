@@ -1,0 +1,122 @@
+@media (width <= 980px) {
+  :root {
+    --app-sticky-offset: 1rem;
+  }
+
+  .app-body {
+    min-height: 100vh;
+    overflow: hidden auto;
+  }
+
+  html {
+    overflow: hidden auto;
+  }
+
+  .app-shell {
+    grid-template-columns: 1fr;
+    width: 100%;
+    height: auto;
+    min-height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    overflow: hidden;
+  }
+
+  .app-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .rail-brand,
+  .rail-workflow,
+  .live-bar {
+    grid-column: 1 / -1;
+  }
+
+  .live-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .live-meta {
+    grid-column: 1 / -1;
+  }
+
+  .live-ion-ratios {
+    grid-column: 1 / -1;
+  }
+
+  .live-ion-ratios .ion-ratio-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .workspace {
+    height: min(72vh, 48rem);
+    min-height: 34rem;
+  }
+
+  .solver-comparison-grid,
+  .solver-lower-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .solver-picker-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .solver-auto-apply {
+    justify-content: flex-start;
+  }
+}
+
+@media (width <= 640px) {
+  :root {
+    --app-sticky-offset: 1rem;
+  }
+
+  .app-rail {
+    grid-template-columns: 1fr;
+    padding: var(--space-3);
+  }
+
+  .live-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .live-ion-ratios .ion-ratio-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .calculator-block-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .calculator-block-heading .heading-actions {
+    width: 100%;
+  }
+
+}
+
+@media (width <= 560px) {
+  .rail-brand {
+    grid-template-columns: 2.45rem minmax(0, 1fr);
+  }
+
+  .rail-logo {
+    width: 2.35rem;
+    height: 2.35rem;
+  }
+
+  .rail-brand h1 {
+    font-size: 1.32rem;
+  }
+
+  .rail-brand span:not(.rail-logo) {
+    font-size: 0.78rem;
+  }
+
+  .solver-picker-actions {
+    grid-template-columns: 1fr;
+  }
+
+}

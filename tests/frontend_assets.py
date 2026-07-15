@@ -11,10 +11,7 @@ def frontend_path(name: str) -> Path:
 
 
 def frontend_app_sources() -> list[str]:
-    return sorted(
-        path.relative_to(FRONTEND_DIR).as_posix()
-        for path in (FRONTEND_DIR / "app").glob("*.js")
-    )
+    return sorted(path.relative_to(FRONTEND_DIR).as_posix() for path in (FRONTEND_DIR / "app").glob("*.js"))
 
 
 def frontend_module_entry() -> str:

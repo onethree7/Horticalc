@@ -23,7 +23,6 @@ let fertilizerEditorSort = { key: "name", direction: "asc" };
 let fertilizerEditorPreferredKeys = [];
 let mounted = false;
 
-const reportError = (...args) => notifications.reportError(...args);
 
 function buildFertilizerCompKeys(fertilizers) {
   const keySet = new Set();
@@ -404,12 +403,12 @@ async function saveFertilizerEditor() {
     const row = fertilizerEditorRows[index];
     const name = row.name.trim();
     if (!name) {
-      reportError(null, t("editor.nameRequired"));
+      notifications.reportError(null, t("editor.nameRequired"));
       focusEditorInput(index, "name");
       return;
     }
     if (seen.has(name)) {
-      reportError(null, t("editor.uniqueNames"));
+      notifications.reportError(null, t("editor.uniqueNames"));
       focusEditorInput(index, "name");
       return;
     }
@@ -436,7 +435,7 @@ async function saveFertilizerEditor() {
     await api.putFertilizers(payload, t("errors.saveFailed"));
     await refreshFertilizerCatalog();
   } catch (error) {
-    reportError(error, t("errors.saveFailed"));
+    notifications.reportError(error, t("errors.saveFailed"));
   }
 }
 
@@ -444,7 +443,7 @@ async function reloadFertilizerEditor() {
   try {
     await refreshFertilizerCatalog();
   } catch (error) {
-    reportError(error, t("errors.loadFertilizers"));
+      notifications.reportError(error, t("errors.loadFertilizers"));
   }
 }
 

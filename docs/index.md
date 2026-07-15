@@ -39,7 +39,3 @@ One-page map of the documentation. If a doc is added or removed, update this pag
 
 - [Release build](release_build.md)
 - [Solver matrix](solver_matrix.md)
-
-## History
-
-- [Historical reports](historical/index.md)

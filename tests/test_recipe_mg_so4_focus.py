@@ -5,9 +5,10 @@ import pytest
 from horticalc.core import COMP_COLS, compute_solution
 from horticalc.data_io import load_fertilizers, load_molar_masses, load_recipe, load_water_profile_data
 
+
 def _expected_fertilizer_forms(recipe: dict, ferts: dict) -> dict:
     liters = float(recipe.get("liters") or 10.0)
-    forms = {key: 0.0 for key in COMP_COLS}
+    forms = dict.fromkeys(COMP_COLS, 0.0)
     for entry in recipe.get("fertilizers", []):
         name = str(entry.get("name") or "").strip()
         grams = float(entry.get("grams") or 0.0)
@@ -20,6 +21,7 @@ def _expected_fertilizer_forms(recipe: dict, ferts: dict) -> dict:
                 continue
             forms[key] += eff_g * float(frac) * 1000.0 / liters
     return forms
+
 
 def test_mg_so4_focus_recipe_elements_and_balance() -> None:
     repo_root = Path(__file__).resolve().parents[1]

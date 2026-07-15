@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 import api.app as api_app
 
+
 class TestSolveTargetKeys(unittest.TestCase):
     def setUp(self) -> None:
         self.client = TestClient(api_app.app)
@@ -68,6 +69,7 @@ class TestSolveTargetKeys(unittest.TestCase):
                 )
                 self.assertEqual(response.status_code, 400)
                 self.assertEqual(response.json()["detail"], detail)
+
 
 if __name__ == "__main__":
     unittest.main()

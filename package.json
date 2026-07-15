@@ -3,9 +3,17 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "lint": "npm run lint:js && npm run lint:css",
+    "lint:js": "eslint frontend scripts/*.cjs tests/frontend --max-warnings=0",
+    "lint:css": "stylelint \"frontend/styles/*.css\" --max-warnings=0",
+    "test": "npm run test:unit && npm run test:browser",
+    "test:unit": "node --test tests/frontend/*.test.mjs",
     "test:browser": "node scripts/frontend_smoke.cjs"
   },
   "devDependencies": {
-    "playwright": "^1.61.1"
+    "eslint": "10.7.0",
+    "playwright": "1.61.1",
+    "stylelint": "17.14.0",
+    "stylelint-config-standard": "40.0.0"
   }
 }

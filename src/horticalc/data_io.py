@@ -8,14 +8,18 @@ import math
 import os
 import re
 import tempfile
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 
 import yaml
 
 from . import paths
-
+from .validation import finite_float as _finite_float
+from .validation import non_negative_float as _non_negative_float
+from .validation import percentage_float as _percentage_float
+from .validation import positive_float as _positive_float
 
 logger = logging.getLogger(__name__)
 
@@ -127,10 +131,8 @@ def _atomic_write_text(path: Path, content: str, *, newline: str | None = None) 
         os.replace(temp_path, path)
     finally:
         if temp_path is not None:
-            try:
+            with suppress(OSError):
                 temp_path.unlink(missing_ok=True)
-            except OSError:
-                pass
 
 
 def _save_yaml(path: Path, payload: dict) -> None:
@@ -170,30 +172,14 @@ def save_user_preferences(payload: dict[str, Any]) -> None:
     )
 
 
-def _finite_float(value: Any, location: str) -> float:
-    try:
-        numeric_value = float(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f"{location} must be numeric") from exc
-    if not math.isfinite(numeric_value):
-        raise ValueError(f"{location} must be finite")
-    return numeric_value
-
-
-def _positive_float(value: Any, location: str) -> float:
-    numeric_value = _finite_float(value, location)
-    if numeric_value <= 0:
-        raise ValueError(f"{location} must be greater than zero")
-    return numeric_value
-
-
-def _float_mapping(data: dict, location: str) -> Dict[str, float]:
+def _float_mapping(
+    data: dict,
+    location: str,
+    validate_value: Callable[[Any, str], float] = _finite_float,
+) -> Dict[str, float]:
     if not isinstance(data, dict):
         raise ValueError(f"{location} must be a mapping")
-    return {
-        str(key): _finite_float(value, f"{location}.{key}")
-        for key, value in data.items()
-    }
+    return {str(key): validate_value(value, f"{location}.{key}") for key, value in data.items()}
 
 
 def _load_fertilizer_csv(
@@ -220,11 +206,7 @@ def _load_fertilizer_csv(
             if name_key in seen_names:
                 raise ValueError(f"{csv_path}: duplicate fertilizer name: {name}")
             seen_names.add(name_key)
-            liquid = (
-                _legacy_fertilizer_is_liquid(row)
-                if allow_legacy_schema
-                else _fertilizer_is_liquid(row)
-            )
+            liquid = _legacy_fertilizer_is_liquid(row) if allow_legacy_schema else _fertilizer_is_liquid(row)
             weight = _positive_float(
                 row.get("Gewicht") or 1.0,
                 f"{csv_path}: Gewicht for {name}",
@@ -237,9 +219,7 @@ def _load_fertilizer_csv(
                     f"{csv_path}: {FERTILIZER_SOLVER_MAX_FIELD} for {name}",
                 )
                 if solver_max < 0.0:
-                    raise ValueError(
-                        f"{csv_path}: {FERTILIZER_SOLVER_MAX_FIELD} for {name} must be >= 0"
-                    )
+                    raise ValueError(f"{csv_path}: {FERTILIZER_SOLVER_MAX_FIELD} for {name} must be >= 0")
 
             comp: Dict[str, float] = {}
             for k, v in row.items():
@@ -437,7 +417,7 @@ def _write_fertilizer_csv(
     for fert in sorted_ferts:
         _validate_fertilizer(fert)
         weight = float(fert.weight_factor)
-        row = {key: "" for key in header}
+        row = dict.fromkeys(header, "")
         row[name_field] = fert.name
         row["Liquid"] = "1" if fert.liquid else "0"
         row["Gewicht"] = format(weight, ".10g")
@@ -473,11 +453,7 @@ def _fertilizer_overlay_changes(
         for key, fert in incoming_by_key.items()
         if key not in shipped_by_key or not _fertilizers_equal(fert, shipped_by_key[key])
     }
-    disabled = [
-        shipped_fert.name
-        for key, shipped_fert in shipped_by_key.items()
-        if key not in incoming_by_key
-    ]
+    disabled = [shipped_fert.name for key, shipped_fert in shipped_by_key.items() if key not in incoming_by_key]
     return overrides, disabled
 
 
@@ -497,11 +473,7 @@ def save_fertilizers(
         overrides, disabled = _fertilizer_overlay_changes(shipped, fertilizers)
 
         overrides_path = paths.user_fertilizer_overrides_path(layout.root)
-        previous_overrides = (
-            overrides_path.read_text(encoding="utf-8")
-            if overrides_path.exists()
-            else None
-        )
+        previous_overrides = overrides_path.read_text(encoding="utf-8") if overrides_path.exists() else None
         if overrides:
             header = _read_csv_header(shipped_path)
             existing_header = _read_csv_header(overrides_path)
@@ -534,7 +506,7 @@ def load_molar_masses(path: Path | None = None) -> Dict[str, float]:
     if path is None:
         path = paths.app_root() / "data" / "molar_masses.yml"
     data = _load_yaml(path)
-    return _float_mapping(data, f"{path}: molar masses")
+    return _float_mapping(data, f"{path}: molar masses", _positive_float)
 
 
 def load_water_profile_data(path: Path) -> dict:
@@ -543,13 +515,14 @@ def load_water_profile_data(path: Path) -> dict:
     mp = _float_mapping(
         {} if raw_mg_per_l is None else raw_mg_per_l,
         f"{path}: mg_per_l",
+        _non_negative_float,
     )
     raw_osmosis_percent = data.get("osmosis_percent")
     return {
         "name": data.get("name") or path.stem,
         "source": data.get("source") or "",
         "mg_per_l": mp,
-        "osmosis_percent": _finite_float(
+        "osmosis_percent": _percentage_float(
             0 if raw_osmosis_percent is None else raw_osmosis_percent,
             f"{path}: osmosis_percent",
         ),
@@ -566,8 +539,8 @@ def save_water_profile(
     payload = {
         "name": name,
         "source": source,
-        "mg_per_l": _float_mapping(mg_per_l, f"{path}: mg_per_l"),
-        "osmosis_percent": _finite_float(osmosis_percent, f"{path}: osmosis_percent"),
+        "mg_per_l": _float_mapping(mg_per_l, f"{path}: mg_per_l", _non_negative_float),
+        "osmosis_percent": _percentage_float(osmosis_percent, f"{path}: osmosis_percent"),
     }
     _save_yaml(path, payload)
 
@@ -582,6 +555,7 @@ def load_nutrient_solution_data(path: Path) -> dict:
     targets = _float_mapping(
         {} if raw_targets is None else raw_targets,
         f"{path}: targets_mg_per_l",
+        _non_negative_float,
     )
     return {
         "name": data.get("name") or path.stem,
@@ -602,6 +576,7 @@ def save_nutrient_solution(
         "targets_mg_per_l": _float_mapping(
             targets_mg_per_l,
             f"{path}: targets_mg_per_l",
+            _non_negative_float,
         ),
     }
     _save_yaml(path, payload)

@@ -25,7 +25,9 @@ Runtime user overrides:
 
 Water profiles, nutrient solutions, and recipes are read from shipped defaults with `user/` files layered on top by filename. Runtime edits are written only to `user/`; shipped files remain unchanged. Startup removes byte-identical copies and known untouched legacy nutrient-solution copies so existing installations migrate to the overlay model.
 
-API list routes omit malformed or unreadable user YAML files and log a warning. Numeric mappings must contain finite numbers; API save routes reject `NaN` and infinity. Persistence writes for YAML, preferences JSON, fertilizer CSV, and disabled names use a temporary file followed by an atomic replacement. Invalid preferences are logged and fall back to empty preferences; invalid resource YAML is skipped from resource lists.
+API list routes omit malformed or unreadable user YAML files and log a warning.
+Water and target mappings must contain finite, non-negative numbers; API save
+routes reject negatives, `NaN`, and infinity.
 
 ## Fertilizers CSV
 
@@ -105,7 +107,7 @@ mg_per_l:
 
 Osmosis behavior:
 
-- `osmosis_percent` is clamped to `0..100`.
+- `osmosis_percent` must be within `0..100`; out-of-range and non-finite values are rejected.
 - Mixed water values are multiplied by `1 - osmosis_percent / 100`.
 - RO water is modelled as `0 mg/L` for every input.
 
@@ -131,6 +133,9 @@ The calculator uses `fertilizers`. The solver uses `targets`,
 `fertilizers_allowed`, `fixed_grams`, and `solver_config`.
 `fertilizers_allowed` stores exact fertilizer names and must not repeat the
 same name within one recipe.
+`liters` defaults to `10` only when omitted or null; an explicit zero, negative,
+or non-finite value is invalid. Fertilizer `grams` values are finite and
+non-negative.
 
 ## Nutrient Solution Target Profiles
 

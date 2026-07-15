@@ -4,10 +4,12 @@ import pytest
 
 from horticalc.solver import solve_recipe
 
+
 def _percent_error(actual: float, target: float) -> float:
     if target == 0.0:
         return abs(actual)
     return abs(actual - target) / abs(target) * 100.0
+
 
 def test_solver_golden_solution_close() -> None:
     recipe_path = Path(__file__).resolve().parents[1] / "recipes" / "solve_golden.yml"
@@ -41,11 +43,7 @@ def test_solver_golden_solution_close() -> None:
 
 
 def test_augmented_saloner_bernstein_solution_is_stable() -> None:
-    recipe_path = (
-        Path(__file__).resolve().parents[1]
-        / "recipes"
-        / "solve_augmented_saloner_bernstein.yml"
-    )
+    recipe_path = Path(__file__).resolve().parents[1] / "recipes" / "solve_augmented_saloner_bernstein.yml"
 
     result = solve_recipe(recipe_path)
 
@@ -65,10 +63,7 @@ def test_augmented_saloner_bernstein_solution_is_stable() -> None:
         "Zn",
     ]
 
-    fertilizer_doses = {
-        entry["name"]: entry["grams"]
-        for entry in result.fertilizers
-    }
+    fertilizer_doses = {entry["name"]: entry["grams"] for entry in result.fertilizers}
     assert fertilizer_doses == pytest.approx(
         {
             "Yara Tera CALCINIT": 3.5400667611842356,
@@ -84,10 +79,7 @@ def test_augmented_saloner_bernstein_solution_is_stable() -> None:
         abs=1e-6,
     )
 
-    achieved = {
-        key: result.achieved_elements_mg_l[key]
-        for key in result.targets_mg_l
-    }
+    achieved = {key: result.achieved_elements_mg_l[key] for key in result.targets_mg_l}
     assert achieved == pytest.approx(
         {
             "B": 0.2169999768914585,

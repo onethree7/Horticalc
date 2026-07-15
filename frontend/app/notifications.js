@@ -80,7 +80,7 @@ export function createNotifications(i18n) {
   }
 
   function reportError(error, fallback = i18n.t("errors.unknown")) {
-    alert(error?.message || fallback);
+    window.alert(error?.message || fallback);
   }
 
   function finishStartup(errors) {

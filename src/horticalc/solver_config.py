@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import argparse
-from copy import deepcopy
 import json
 import math
 from collections.abc import Mapping
+from copy import deepcopy
 from typing import Any
 
 from .chemistry import N_FORM_KEYS
-
 
 NITROGEN_OBJECTIVE_MODES = ("as_targets", "n_total_only", "n_forms_only")
 MAX_IRLS_MAX_OUTER_ITER = 12
@@ -16,25 +15,47 @@ MAX_SINGLETON_UNDERFILL_MAX_ITER = 8
 
 SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"key": "relative_weighting", "type": "boolean", "default": False},
-    {"key": "overshoot_penalty", "type": "number", "default": 1.0},
+    {"key": "overshoot_penalty", "type": "number", "default": 1.0, "minimum": 0.0},
     {
         "key": "irls_max_outer_iter",
         "type": "integer",
         "default": 4,
-        "minimum": 0,
+        "minimum": 1,
         "maximum": MAX_IRLS_MAX_OUTER_ITER,
     },
-    {"key": "scale_eps_mg_per_l", "type": "number", "default": 1.0},
+    {
+        "key": "scale_eps_mg_per_l",
+        "type": "number",
+        "default": 1.0,
+        "exclusive_minimum": 0.0,
+    },
     {"key": "singleton_supplier_enabled", "type": "boolean", "default": False},
-    {"key": "singleton_share_threshold", "type": "number", "default": 0.85},
-    {"key": "singleton_max_regress_pp", "type": "number", "default": 0.25},
+    {
+        "key": "singleton_share_threshold",
+        "type": "number",
+        "default": 0.85,
+        "minimum": 0.0,
+        "maximum": 1.0,
+    },
+    {
+        "key": "singleton_max_regress_pp",
+        "type": "number",
+        "default": 0.25,
+        "minimum": 0.0,
+    },
     {"key": "singleton_underfill_enabled", "type": "boolean", "default": True},
-    {"key": "singleton_underfill_share_threshold", "type": "number", "default": 0.85},
+    {
+        "key": "singleton_underfill_share_threshold",
+        "type": "number",
+        "default": 0.85,
+        "minimum": 0.0,
+        "maximum": 1.0,
+    },
     {
         "key": "singleton_underfill_max_iter",
         "type": "integer",
         "default": 2,
-        "minimum": 0,
+        "minimum": 1,
         "maximum": MAX_SINGLETON_UNDERFILL_MAX_ITER,
     },
     {
@@ -45,29 +66,24 @@ SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {"key": "s_objective_enabled", "type": "boolean", "default": False},
     {"key": "n_total_governor_enabled", "type": "boolean", "default": False},
-    {"key": "n_total_governor_weight", "type": "number", "default": 1.0},
+    {
+        "key": "n_total_governor_weight",
+        "type": "number",
+        "default": 1.0,
+        "minimum": 0.0,
+    },
     {"key": "n_form_priority_weights", "type": "mapping", "default": {}, "ui": False},
 )
 
 SOLVER_CONFIG_TYPES = {definition["key"]: definition["type"] for definition in SOLVER_CONFIG_DEFINITIONS}
 SOLVER_CONFIG_DEFAULTS = {definition["key"]: definition.get("default") for definition in SOLVER_CONFIG_DEFINITIONS}
-SOLVER_CONFIG_MAXIMUMS = {
-    definition["key"]: definition["maximum"]
-    for definition in SOLVER_CONFIG_DEFINITIONS
-    if "maximum" in definition
-}
+SOLVER_CONFIG_BY_KEY = {definition["key"]: definition for definition in SOLVER_CONFIG_DEFINITIONS}
 BOOLEAN_SOLVER_KEYS = tuple(
     definition["key"] for definition in SOLVER_CONFIG_DEFINITIONS if definition["type"] == "boolean"
 )
-BOOLEAN_SOLVER_DEFAULTS = {
-    key: bool(SOLVER_CONFIG_DEFAULTS[key]) for key in BOOLEAN_SOLVER_KEYS
-}
-MATRIX_BOOLEAN_SOLVER_KEYS = tuple(
-    key for key in BOOLEAN_SOLVER_KEYS if key != "s_objective_enabled"
-)
-MATRIX_BOOLEAN_SOLVER_DEFAULTS = {
-    key: BOOLEAN_SOLVER_DEFAULTS[key] for key in MATRIX_BOOLEAN_SOLVER_KEYS
-}
+BOOLEAN_SOLVER_DEFAULTS = {key: bool(SOLVER_CONFIG_DEFAULTS[key]) for key in BOOLEAN_SOLVER_KEYS}
+MATRIX_BOOLEAN_SOLVER_KEYS = tuple(key for key in BOOLEAN_SOLVER_KEYS if key != "s_objective_enabled")
+MATRIX_BOOLEAN_SOLVER_DEFAULTS = {key: BOOLEAN_SOLVER_DEFAULTS[key] for key in MATRIX_BOOLEAN_SOLVER_KEYS}
 
 
 def _flag_name(key: str) -> str:
@@ -170,10 +186,8 @@ def validate_solver_config(
     for key, value in values.items():
         if not isinstance(key, str) or key not in SOLVER_CONFIG_TYPES:
             raise ValueError(f"Unknown solver config key: {key}")
-        if not allow_advanced and any(
-            definition["key"] == key and not definition.get("ui", True)
-            for definition in SOLVER_CONFIG_DEFINITIONS
-        ):
+        definition = SOLVER_CONFIG_BY_KEY[key]
+        if not allow_advanced and not definition.get("ui", True):
             raise ValueError(f"Advanced solver config key is not accepted here: {key}")
 
         value_type = SOLVER_CONFIG_TYPES[key]
@@ -183,15 +197,8 @@ def validate_solver_config(
         elif value_type == "integer":
             if not isinstance(value, int) or isinstance(value, bool):
                 raise ValueError(f"Invalid solver config value: {key}")
-            maximum = SOLVER_CONFIG_MAXIMUMS.get(key)
-            if maximum is not None and value > maximum:
-                raise ValueError(f"Invalid solver config value: {key} must be <= {maximum}")
         elif value_type == "number":
-            if (
-                not isinstance(value, (int, float))
-                or isinstance(value, bool)
-                or not math.isfinite(value)
-            ):
+            if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value):
                 raise ValueError(f"Invalid solver config value: {key}")
         elif value_type == "string":
             if not isinstance(value, str):
@@ -214,6 +221,17 @@ def validate_solver_config(
                     raise ValueError(f"Invalid n_form_priority_weights value: {form_key}")
                 weights[form_key] = weight
             value = weights
+
+        if value_type in {"integer", "number"}:
+            minimum = definition.get("minimum")
+            maximum = definition.get("maximum")
+            exclusive_minimum = definition.get("exclusive_minimum")
+            if minimum is not None and value < minimum:
+                raise ValueError(f"Invalid solver config value: {key} must be >= {minimum}")
+            if maximum is not None and value > maximum:
+                raise ValueError(f"Invalid solver config value: {key} must be <= {maximum}")
+            if exclusive_minimum is not None and value <= exclusive_minimum:
+                raise ValueError(f"Invalid solver config value: {key} must be > {exclusive_minimum}")
         validated[key] = value
     return validated
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING, Mapping
 
 from .chemistry import OXIDE_TOTAL_KEYS
@@ -126,12 +126,10 @@ def format_npks(result: CalcResult | Mapping[str, object]) -> dict[str, str | di
         ("CO3:Si", form_mg_l("CO3"), element_mg_l("Si")),
     ]
     npk_ratios = {
-        label: ratio_string(label, numerator, denominator)
-        for label, numerator, denominator in oxide_ratio_pairs
+        label: ratio_string(label, numerator, denominator) for label, numerator, denominator in oxide_ratio_pairs
     }
     npk_ratios_ion = {
-        label: ratio_string(label, numerator, denominator)
-        for label, numerator, denominator in ion_ratio_pairs
+        label: ratio_string(label, numerator, denominator) for label, numerator, denominator in ion_ratio_pairs
     }
 
     return {

@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import shutil
 import socket
 import subprocess
 import time
+from pathlib import Path
 from urllib.request import urlopen
 
 import pytest
-
 
 ROOT = Path(__file__).resolve().parents[1]
 SMOKE_SCRIPT = ROOT / "scripts" / "frontend_smoke.cjs"

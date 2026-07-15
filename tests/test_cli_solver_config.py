@@ -15,6 +15,7 @@ from horticalc.solver_config import (
     validate_solver_config,
 )
 
+
 def test_solver_config_definitions_use_data_backed_defaults() -> None:
     defaults = {definition["key"]: definition["default"] for definition in SOLVER_CONFIG_DEFINITIONS}
 
@@ -26,21 +27,32 @@ def test_solver_config_definitions_use_data_backed_defaults() -> None:
     assert defaults["irls_max_outer_iter"] <= MAX_IRLS_MAX_OUTER_ITER
     assert defaults["singleton_underfill_max_iter"] <= MAX_SINGLETON_UNDERFILL_MAX_ITER
     nitrogen_definition = next(
-        definition
-        for definition in SOLVER_CONFIG_DEFINITIONS
-        if definition["key"] == "nitrogen_objective_mode"
+        definition for definition in SOLVER_CONFIG_DEFINITIONS if definition["key"] == "nitrogen_objective_mode"
     )
     assert nitrogen_definition["choices"] == ["as_targets", "n_total_only", "n_forms_only"]
-    assert next(
-        definition for definition in SOLVER_CONFIG_DEFINITIONS if definition["key"] == "irls_max_outer_iter"
-    )["maximum"] == MAX_IRLS_MAX_OUTER_ITER
-    assert next(
-        definition
-        for definition in SOLVER_CONFIG_DEFINITIONS
-        if definition["key"] == "singleton_underfill_max_iter"
-    )["maximum"] == MAX_SINGLETON_UNDERFILL_MAX_ITER
+    assert (
+        next(definition for definition in SOLVER_CONFIG_DEFINITIONS if definition["key"] == "irls_max_outer_iter")[
+            "maximum"
+        ]
+        == MAX_IRLS_MAX_OUTER_ITER
+    )
+    assert (
+        next(
+            definition
+            for definition in SOLVER_CONFIG_DEFINITIONS
+            if definition["key"] == "singleton_underfill_max_iter"
+        )["maximum"]
+        == MAX_SINGLETON_UNDERFILL_MAX_ITER
+    )
     assert "macro_priority_enabled" not in defaults
     assert "stage_optimization_enabled" not in defaults
+    definitions = {definition["key"]: definition for definition in SOLVER_CONFIG_DEFINITIONS}
+    assert definitions["overshoot_penalty"]["minimum"] == 0
+    assert definitions["irls_max_outer_iter"]["minimum"] == 1
+    assert definitions["scale_eps_mg_per_l"]["exclusive_minimum"] == 0
+    assert definitions["singleton_share_threshold"]["maximum"] == 1
+    assert definitions["singleton_underfill_max_iter"]["minimum"] == 1
+
 
 def test_solve_cli_passes_solver_config_overrides(monkeypatch, capsys, tmp_path) -> None:
     recipe_path = tmp_path / "recipe.yml"
@@ -69,7 +81,7 @@ def test_solve_cli_passes_solver_config_overrides(monkeypatch, capsys, tmp_path)
             "--nitrogen-objective-mode",
             "n_forms_only",
             "--solver-config",
-            "n_form_priority_weights={\"N_NO3\": 3.0}",
+            'n_form_priority_weights={"N_NO3": 3.0}',
         ]
     )
 
@@ -84,6 +96,7 @@ def test_solve_cli_passes_solver_config_overrides(monkeypatch, capsys, tmp_path)
         "nitrogen_objective_mode": "n_forms_only",
         "n_form_priority_weights": {"N_NO3": 3.0},
     }
+
 
 def test_solve_cli_keeps_solver_config_optional(monkeypatch, capsys, tmp_path) -> None:
     recipe_path = tmp_path / "recipe.yml"
@@ -101,6 +114,7 @@ def test_solve_cli_keeps_solver_config_optional(monkeypatch, capsys, tmp_path) -
 
     assert json.loads(capsys.readouterr().out) == {"ok": True}
     assert captured["solver_config_overrides"] == {}
+
 
 def test_solve_cli_rejects_non_object_solver_config_json(capsys, tmp_path) -> None:
     recipe_path = tmp_path / "recipe.yml"

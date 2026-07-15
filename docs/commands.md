@@ -34,6 +34,12 @@ python -m uvicorn api.app:app --host 127.0.0.1 --port 8000
 
 The CLI entry point is `python -m horticalc` from `src/horticalc/__main__.py`.
 
+Print the canonical version:
+
+```bash
+python -m horticalc --version
+```
+
 Calculate a recipe:
 
 ```bash
@@ -66,14 +72,16 @@ Standard suite:
 python scripts/test.py
 ```
 
-The entrypoint creates the Python environment as needed and installs the locked Playwright development dependency with `npm ci` when it is missing. Chrome or Chromium is required for the frontend browser smoke test; use `HORTICALC_BROWSER_PATH` for a non-standard browser location.
+The entrypoint creates the Python environment as needed, installs pinned Python
+and Node development tooling when missing, then runs Ruff formatting/linting,
+ESLint, Stylelint, Node unit tests, Playwright behavior tests, and pytest.
 
 Focused examples:
 
 ```bash
 python scripts/test.py tests/test_ec.py -q
 python scripts/test.py tests/test_solver_golden.py tests/test_solver_weighting.py -q
-python scripts/test.py tests/test_frontend_serving.py tests/test_frontend_recipe_wheel_shell.py -q
+python scripts/test.py tests/test_frontend_serving.py tests/test_frontend_module_architecture.py -q
 ```
 
 Run only the browser workflow smoke test:

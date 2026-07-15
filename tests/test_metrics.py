@@ -1,6 +1,5 @@
-
-
 from horticalc.metrics import format_npks
+
 
 def test_npk_metrics_include_element_mg_l_ion_ratios() -> None:
     metrics = format_npks(

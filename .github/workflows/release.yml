@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v*"
+      - "v0.6.0"
 
 permissions:
   contents: write
@@ -52,18 +52,20 @@ jobs:
         id: vars
         shell: bash
         run: |
-          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" == v* ]]; then
+          package_version="$(python scripts/check_release_version.py)"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             version="${GITHUB_REF_NAME}"
           else
             version="$(git rev-parse --short HEAD)"
           fi
+          echo "package_version=${package_version}" >> "$GITHUB_OUTPUT"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "artifact_base=horticalc-${version}-${{ matrix.platform }}" >> "$GITHUB_OUTPUT"
 
       - name: Build package (Linux)
         if: matrix.platform == 'linux'
         env:
-          HORTICALC_VERSION: ${{ steps.vars.outputs.version }}
+          HORTICALC_VERSION: ${{ steps.vars.outputs.package_version }}
         run: |
           chmod +x scripts/packaging/build_linux.sh
           ./scripts/packaging/build_linux.sh
@@ -72,7 +74,7 @@ jobs:
         if: matrix.platform == 'windows'
         shell: pwsh
         env:
-          HORTICALC_VERSION: ${{ steps.vars.outputs.version }}
+          HORTICALC_VERSION: ${{ steps.vars.outputs.package_version }}
         run: |
           ./scripts/packaging/build_windows.ps1
 
@@ -234,7 +236,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload release assets
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.ref == 'refs/tags/v0.6.0'
         uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
         with:
           files: |

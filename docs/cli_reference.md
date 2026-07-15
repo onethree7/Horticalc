@@ -20,6 +20,7 @@ python -m horticalc solve recipes/<file>.yml
 
 ## Global Options
 
+- `--version`: print the canonical Horticalc version and exit.
 - `--load-recipe <file>`: load a recipe file explicitly (overrides the positional argument).
 - `--load-water <file>`: load a water profile file.
 - `--out <file>`: write the JSON result to a file.
@@ -34,7 +35,7 @@ For copy/paste examples, see [commands.md](commands.md).
 ## Exit Codes
 
 - `0`: success.
-- `1`: validation error, missing file, or solver failure.
+- `2`: command-line, recipe-domain, or solver-configuration error.
 
 Error output is printed to `stderr` and the JSON output is not written.
 

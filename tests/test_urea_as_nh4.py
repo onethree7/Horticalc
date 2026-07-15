@@ -4,6 +4,7 @@ from horticalc.core import compute_solution
 from horticalc.data_io import load_fertilizers, load_molar_masses, load_recipe, load_water_profile_data
 from horticalc.paths import repo_root
 
+
 class TestUreaAsNh4(unittest.TestCase):
     def test_urea_as_nh4_rebalances_nitrogen_forms(self) -> None:
         ferts = load_fertilizers()
@@ -30,6 +31,7 @@ class TestUreaAsNh4(unittest.TestCase):
         self.assertGreater(elements_true["N_NH4"], elements_false["N_NH4"])
         self.assertGreater(elements_false["N_UREA"], elements_true["N_UREA"])
         self.assertLessEqual(elements_true["N_UREA"], 1e-6)
+
 
 if __name__ == "__main__":
     unittest.main()

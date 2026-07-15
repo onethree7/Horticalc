@@ -23,6 +23,7 @@ from .data_io import (
 )
 from .paths import resolve_water_profile_path
 from .sluijsmann import compute_sluijsmann
+from .validation import non_negative_float, percentage_float, positive_float
 
 
 def _mm(mm: Dict[str, float], key: str) -> float:
@@ -88,7 +89,7 @@ def _urea_molecule_to_element(mg_l_urea: float, mm: Dict[str, float]) -> float:
 
 
 def _normalize_mg_l(values: Dict[str, float]) -> Dict[str, float]:
-    return {str(k): float(v) for k, v in values.items()}
+    return {str(key): non_negative_float(value, f"water_mg_l.{key}") for key, value in values.items()}
 
 
 def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) -> Dict[str, float]:
@@ -135,9 +136,7 @@ def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) 
         add(key, raw.get(key, 0.0))
 
     helper_hco3 = (
-        hco3_from_co3(raw.get("CO3", 0.0))
-        + hco3_from_caco3(raw.get("CaCO3", 0.0))
-        + hco3_from_kh(raw.get("KH", 0.0))
+        hco3_from_co3(raw.get("CO3", 0.0)) + hco3_from_caco3(raw.get("CaCO3", 0.0)) + hco3_from_kh(raw.get("KH", 0.0))
     )
     if helper_hco3 > 0.0:
         normalized["HCO3"] = helper_hco3
@@ -159,7 +158,8 @@ def normalize_water_profile(mm: Dict[str, float], water_mg_l: Dict[str, float]) 
 
 
 def apply_osmosis_mix(water_mg_l: Dict[str, float], osmosis_percent: float) -> Dict[str, float]:
-    factor = 1.0 - max(0.0, min(osmosis_percent, 100.0)) / 100.0
+    percent = percentage_float(osmosis_percent, "osmosis_percent")
+    factor = 1.0 - percent / 100.0
     if factor == 1.0:
         return dict(water_mg_l)
     return {k: float(v) * factor for k, v in water_mg_l.items()}
@@ -184,9 +184,7 @@ def _compute_nitrogen(
     fert_no3_mg_l_as_no3 = _n_element_to_molecule(n_fert_from_no3, mm, "NO3") if n_fert_from_no3 else 0.0
     urea_mg_l = _urea_element_to_molecule(n_fert_from_urea, mm) if n_fert_from_urea else 0.0
     urea_as_nh4_mg_l = (
-        _n_element_to_molecule(n_fert_from_urea, mm, "NH4")
-        if (urea_as_nh4 and n_fert_from_urea)
-        else 0.0
+        _n_element_to_molecule(n_fert_from_urea, mm, "NH4") if (urea_as_nh4 and n_fert_from_urea) else 0.0
     )
     if urea_as_nh4:
         urea_mg_l = 0.0
@@ -213,7 +211,7 @@ def _compute_oxides_and_elements(
     water_forms: Dict[str, float],
     elements: Dict[str, float],
 ) -> Dict[str, float]:
-    oxides = {key: 0.0 for key in OXIDE_FORM_COLS}
+    oxides = dict.fromkeys(OXIDE_FORM_COLS, 0.0)
     oxides["N_total"] = elements.get("N_total", 0.0)
 
     for form in OXIDE_FORM_COLS:
@@ -359,8 +357,8 @@ class CalcResult:
     osmosis_percent: float
 
     def to_dict(self) -> dict:
-        from .metrics import format_npks
         from .ec import compute_ec
+        from .metrics import format_npks
 
         return {
             "liters": self.liters,
@@ -401,14 +399,17 @@ def compute_solution(
     water_mg_l = apply_osmosis_mix(water_mg_l or {}, osmosis_percent)
     water_forms = normalize_water_profile(mm, water_mg_l)
 
-    liters = float(recipe.get("liters") or 10.0)
+    liters_value = recipe.get("liters", 10.0)
+    if liters_value is None:
+        liters_value = 10.0
+    liters = positive_float(liters_value, "liters")
     urea_as_nh4 = bool(recipe.get("urea_as_nh4", False))
 
     # 1) Contributions from fertilizers -> mg/L in their declared forms
-    forms_mg_l: Dict[str, float] = {k: 0.0 for k in COMP_COLS}
+    forms_mg_l: Dict[str, float] = dict.fromkeys(COMP_COLS, 0.0)
     for entry in recipe.get("fertilizers", []):
         name = str(entry.get("name") or "").strip()
-        grams = float(entry.get("grams") or 0.0)
+        grams = non_negative_float(entry.get("grams") or 0.0, f"grams for {name or '<unnamed>'}")
         if grams == 0.0:
             continue
         if name not in fertilizers:
@@ -425,10 +426,7 @@ def compute_solution(
     # Water NH4/NO3 are interpreted as molecules (NH4, NO3), NOT "N as ...".
     water_forms_mg_l = {k: water_forms.get(k, 0.0) for k in COMP_COLS}
     fertilizer_forms_mg_l = dict(forms_mg_l)
-    total_forms_mg_l = {
-        k: fertilizer_forms_mg_l.get(k, 0.0) + water_forms_mg_l.get(k, 0.0)
-        for k in COMP_COLS
-    }
+    total_forms_mg_l = {k: fertilizer_forms_mg_l.get(k, 0.0) + water_forms_mg_l.get(k, 0.0) for k in COMP_COLS}
 
     # 3) Compute element totals (mg/L), oxides, and ions
     elements, oxides, ions_mmol, ions_meq, ion_balance = _compute_solution_state(

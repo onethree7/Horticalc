@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from typing import Mapping
 
-SO3_FROM_SO4 = 80.063 / 96.06
-SO3_FROM_S = 80.063 / 32.065
-
 
 def _to_float(value: object | None) -> float:
     if value is None:
@@ -33,15 +30,19 @@ def _get(mapping: Mapping[str, float], key: str) -> float:
     return _to_float(mapping.get(key))
 
 
-def _resolve_so3(oxides_mg_l: Mapping[str, float], elements_mg_l: Mapping[str, float]) -> float:
+def _resolve_so3(
+    oxides_mg_l: Mapping[str, float],
+    elements_mg_l: Mapping[str, float],
+    molar_masses: Mapping[str, float],
+) -> float:
     if "SO3" in oxides_mg_l:
         return _get(oxides_mg_l, "SO3")
     so4 = _get(oxides_mg_l, "SO4")
     if so4:
-        return so4 * SO3_FROM_SO4
+        return so4 * molar_masses["SO3"] / molar_masses["SO4"]
     s_val = _get(elements_mg_l, "S")
     if s_val:
-        return s_val * SO3_FROM_S
+        return s_val * molar_masses["SO3"] / molar_masses["S"]
     return 0.0
 
 
@@ -50,6 +51,7 @@ def compute_sluijsmann(
     liters: float,
     oxides_mg_l: Mapping[str, float],
     elements_mg_l: Mapping[str, float],
+    molar_masses: Mapping[str, float],
     config: object | None = None,
 ) -> dict:
     cfg = config if isinstance(config, Mapping) else {}
@@ -63,7 +65,7 @@ def compute_sluijsmann(
     na2o = _get(oxides_mg_l, "Na2O")
     p2o5 = _get(oxides_mg_l, "P2O5")
     cl = _get(oxides_mg_l, "Cl") or _get(elements_mg_l, "Cl")
-    so3 = _resolve_so3(oxides_mg_l, elements_mg_l)
+    so3 = _resolve_so3(oxides_mg_l, elements_mg_l, molar_masses)
     n_total = _get(elements_mg_l, "N_total")
 
     terms = {

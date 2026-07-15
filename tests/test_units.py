@@ -5,9 +5,9 @@ import math
 import pytest
 
 from horticalc.units import (
+    CANONICAL_VOLUME_UNIT,
     LIQUID_VOLUME_UNIT_KEYS,
     MASS_UNIT_KEYS,
-    CANONICAL_VOLUME_UNIT,
     VOLUME_UNIT_KEYS,
     convert_volume,
     grams_to_mass,

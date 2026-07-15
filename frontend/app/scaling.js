@@ -15,6 +15,12 @@ export function scaledValues(definitions, nextFactor, getBaseValue) {
   };
 }
 
+export function applyScaledValues(definitions, nextFactor, getBaseValue, setValue) {
+  const scaled = scaledValues(definitions, nextFactor, getBaseValue);
+  definitions.forEach((definition, index) => setValue(definition, scaled.values[index]));
+  return scaled.factor;
+}
+
 export function bindScaleButtons(downButton, upButton, currentFactor, applyFactor, step = 0.05) {
   downButton?.addEventListener("click", () => applyFactor(currentFactor() - step));
   upButton?.addEventListener("click", () => applyFactor(currentFactor() + step));

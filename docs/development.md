@@ -10,7 +10,8 @@ See [commands.md](commands.md#install-and-run-from-source) for the exact venv an
 
 - Calculation and unit tests: `tests/test_ec.py`, `tests/test_core.py`, `tests/test_units.py`.
 - Solver tests: `tests/test_solver_*.py`.
-- Frontend and UI tests: `tests/test_frontend_*.py`.
+- Frontend unit tests: `tests/frontend/*.test.mjs` using Node's built-in test runner.
+- Frontend browser behavior: `tests/test_frontend_browser_smoke.py` and `scripts/frontend_smoke.cjs`.
 - API tests: `tests/test_api_*.py`.
 - Packaging and launcher tests: `tests/test_portable_data_policy.py`, `tests/test_launcher_*.py`.
 - Solver matrix and analyzer tests: `tests/test_solver_matrix.py`,
@@ -30,7 +31,12 @@ When you change an API route, output key, solver default, file path, launcher be
 
 ## Frontend Test Requirement
 
-The production frontend uses native ES modules and has no bundler or runtime npm dependency. Frontend verification uses Node.js, the Playwright development dependency in `package.json`, and an installed Chrome/Chromium browser. `python scripts/test.py` runs `npm ci` automatically when `node_modules/playwright` is missing, then includes the browser workflow smoke test in pytest.
+The production frontend uses native ES modules and has no bundler or runtime
+npm dependency. Development tooling is pinned to Ruff `0.15.21`, ESLint
+`10.7.0`, Stylelint `17.14.0`, and `stylelint-config-standard` `40.0.0`.
+`python scripts/test.py` installs missing development tools and runs Python
+format/lint checks, frontend lint, Node unit tests, Playwright behavior tests,
+and pytest. Every lint command fails on warnings.
 
 Set `HORTICALC_BROWSER_PATH` when Chrome/Chromium is installed outside the standard Windows or Linux locations. Set `HORTICALC_TEST_URL` only when running `node scripts/frontend_smoke.cjs` against an already-running development server.
 

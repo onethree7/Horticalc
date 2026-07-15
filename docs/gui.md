@@ -15,6 +15,9 @@ The frontend is a static Vanilla JS app in `frontend/`. It is served by FastAPI 
 - `frontend/app/calculator.js`: calculator controller, owned rows/results, scaling, and clipboard.
 - `frontend/app/water.js`: water controller, owned water/profile state, and summaries.
 - `frontend/app/solver.js`: solver controller, owned targets/selections/results, and clipboard.
+- `frontend/app/solver_config.js`: solver schema normalization and bounded control values.
+- `frontend/app/solver_payload.js`: solve/clipboard payload formatting and result-key ordering.
+- `frontend/app/solver_rendering.js`: stateless solver result-table rendering.
 - `frontend/app/editor.js`: editor controller, owned rows, sorting, and save/load.
 - `frontend/app/profiles.js`: recipe and nutrient-target profile controls.
 - `frontend/app/settings.js`: batch, unit, theme, and language controls.
@@ -23,7 +26,7 @@ The frontend is a static Vanilla JS app in `frontend/`. It is served by FastAPI 
 - `frontend/app/formatting.js`, `frontend/app/scaling.js`, `frontend/app/storage.js`: pure shared helpers.
 - `frontend/request_gate.js`: latest-request ownership state.
 - `frontend/i18n/`: frontend-only translation catalogs and runtime.
-- `frontend/styles.css`: app frame layout, tables, responsive rules, and themes.
+- `frontend/styles/`: ordered base, theme-token, shell, feature-component, and responsive stylesheets.
 
 `frontend/index.html` loads only `frontend/app/main.js` as a native ES module. Feature modules export controller factories, own their mutable state and event bindings, and do not import other feature controllers. `main.js` injects services and coordinates the small number of cross-feature operations. This keeps the dependency graph acyclic without a production build step or application globals.
 
@@ -89,4 +92,8 @@ Tests rely on:
 
 Before changing IDs or panel names, search tests and the `frontend/app/` modules.
 
-`tests/test_frontend_module_architecture.py` protects the module dependency rules. `tests/test_frontend_browser_smoke.py` runs the main calculator, water, editor, and solver workflows in Chrome through `scripts/frontend_smoke.cjs` and treats browser errors or application dialogs as failures.
+`tests/test_frontend_module_architecture.py` protects the module dependency
+rules. Node tests cover formatting, scaling, storage, request gating, solver
+config normalization, and payload formatting. The Playwright smoke test runs
+calculator, water/profile, editor, solver, theme, unit, keyboard, responsive,
+and stale-response behavior in Chrome.

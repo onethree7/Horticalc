@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import argparse
 import csv
-from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
-from difflib import get_close_matches
 import hashlib
 import itertools
 import json
 import math
-from pathlib import Path
 import sys
 import time
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
+from difflib import get_close_matches
+from pathlib import Path
 from typing import Any, Iterable
 
 import yaml
@@ -31,7 +31,6 @@ from horticalc.data_io import (  # noqa: E402
 from horticalc.paths import logs_dir, resolve_water_profile_path, shipped_nutrient_solutions_dir  # noqa: E402
 from horticalc.solver import solve_recipe_data  # noqa: E402
 from horticalc.solver_config import resolve_solver_config  # noqa: E402
-
 
 DEFAULT_CASES_PATH = Path(__file__).with_name("solver_matrix_cases.yml")
 DEFAULT_OUT_DIR = logs_dir(ROOT) / "solver_matrix" / "dev"
@@ -198,9 +197,7 @@ def score_solution(
         + 0.5 * scores["other_score"]
     )
     scored_items = [
-        (details["score"], key)
-        for key, details in element_scores.items()
-        if details["category"] != "ignored"
+        (details["score"], key) for key, details in element_scores.items() if details["category"] != "ignored"
     ]
     max_score, max_key = max(scored_items, default=(0.0, ""))
     return {
@@ -228,10 +225,7 @@ def resolve_allowed_fertilizers(
             continue
         stripped = name.strip()
         if stripped in available_names:
-            errors.append(
-                f"{name!r} is not an exact fertilizer name. Use {stripped!r} "
-                "without surrounding whitespace."
-            )
+            errors.append(f"{name!r} is not an exact fertilizer name. Use {stripped!r} without surrounding whitespace.")
             continue
         matches = get_close_matches(stripped, sorted(available_names), n=3, cutoff=0.55)
         suffix = f" Did you mean: {', '.join(repr(match) for match in matches)}?" if matches else ""
@@ -392,7 +386,7 @@ def solver_config_cases(cases: dict[str, Any], preset: str) -> list[SolverConfig
                 raise ValueError(f"{experiment_id}.grid.{key} must be a non-empty list")
             options.append(values)
         for values in itertools.product(*options):
-            changes = dict(zip(keys, values))
+            changes = dict(zip(keys, values, strict=True))
             config_id = _config_label(changes, keys)
             configs.append(_config_case(baseline, experiment_id, config_id, changes))
     return configs
@@ -438,11 +432,7 @@ class MatrixAggregate:
         for stats in self.config_scores.values():
             count = int(stats["runs"])
             ranking.append(
-                {
-                    key: value
-                    for key, value in stats.items()
-                    if key not in {"score_sum", "elapsed_sum"}
-                }
+                {key: value for key, value in stats.items() if key not in {"score_sum", "elapsed_sum"}}
                 | {
                     "avg_composite_score": stats["score_sum"] / max(1, count),
                     "avg_elapsed_seconds": stats["elapsed_sum"] / max(1, count),
@@ -522,24 +512,25 @@ def solve_case(
             result.objective_elements,
         )
         ignored_targets = {
-            key: details
-            for key, details in score["elements"].items()
-            if details["category"] == "ignored"
+            key: details for key, details in score["elements"].items() if details["category"] == "ignored"
         }
         row.update(
             {
                 "status": "ok",
                 "elapsed_seconds": time.perf_counter() - start,
-                **{key: score[key] for key in (
-                    "composite_score",
-                    "macro_score",
-                    "n_form_score",
-                    "micro_score",
-                    "other_score",
-                    "ignored_score",
-                    "max_error_key",
-                    "max_error_score",
-                )},
+                **{
+                    key: score[key]
+                    for key in (
+                        "composite_score",
+                        "macro_score",
+                        "n_form_score",
+                        "micro_score",
+                        "other_score",
+                        "ignored_score",
+                        "max_error_key",
+                        "max_error_score",
+                    )
+                },
                 "total_grams": sum(float(item["grams"]) for item in result.fertilizers),
                 "used_fertilizer_count": len(result.fertilizers),
                 "used_fertilizers": _json(result.fertilizers),
@@ -692,9 +683,10 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
         aggregate.update(row)
         return True
 
-    with results_csv.open("w", encoding="utf-8", newline="") as csv_handle, results_jsonl.open(
-        "w", encoding="utf-8"
-    ) as jsonl_handle:
+    with (
+        results_csv.open("w", encoding="utf-8", newline="") as csv_handle,
+        results_jsonl.open("w", encoding="utf-8") as jsonl_handle,
+    ):
         writer = csv.DictWriter(csv_handle, fieldnames=CSV_FIELDS)
         writer.writeheader()
         # Config-first ordering keeps capped runs balanced across profiles.

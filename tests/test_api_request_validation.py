@@ -1,7 +1,7 @@
 from dataclasses import replace
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 
 import api.app as api_app
 
@@ -76,9 +76,7 @@ def test_solve_rejects_duplicate_fertilizers_allowed() -> None:
     )
 
     assert response.status_code == 400
-    assert response.json()["detail"] == (
-        "fertilizers_allowed must not contain duplicates: ['Yara Tera CALCINIT']"
-    )
+    assert response.json()["detail"] == ("fertilizers_allowed must not contain duplicates: ['Yara Tera CALCINIT']")
 
 
 def test_requests_reject_non_finite_runtime_numbers() -> None:
@@ -96,6 +94,25 @@ def test_requests_reject_non_finite_runtime_numbers() -> None:
     for route, payload in requests:
         response = client.post(route, content=payload, headers={"content-type": "application/json"})
         assert response.status_code == 422, (route, response.text)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"liters": 0},
+        {"fertilizers": [{"name": "Yara Tera CALCINIT", "grams": -1}]},
+        {"osmosis_percent": -1},
+        {"osmosis_percent": 101},
+    ],
+)
+def test_calculate_model_bounds_return_422(payload: dict) -> None:
+    assert TestClient(api_app.app).post("/calculate", json=payload).status_code == 422
+
+
+def test_calculate_mapping_domain_violation_returns_400() -> None:
+    response = TestClient(api_app.app).post("/calculate", json={"water_mg_l": {"Ca": -1}})
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid value for Ca"
 
 
 def test_solve_rejects_non_finite_nested_water_osmosis() -> None:

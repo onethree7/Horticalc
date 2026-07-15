@@ -37,7 +37,6 @@ Use **Plan -> Edit -> Verify** for every change.
 - [docs/decisions.md](docs/decisions.md): accepted decisions and current defaults.
 - [docs/terminology_style_guide.md](docs/terminology_style_guide.md): canonical terms and units.
 - [docs/solver_matrix.md](docs/solver_matrix.md): removable solver research harness.
-- [docs/historical/index.md](docs/historical/index.md): historical reports.
 
 ## Documentation Law
 

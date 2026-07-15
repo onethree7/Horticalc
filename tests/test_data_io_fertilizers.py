@@ -7,6 +7,7 @@ import horticalc.data_io as data_io
 from horticalc import paths
 from horticalc.data_io import Fertilizer, load_fertilizers, save_fertilizers
 
+
 def test_load_fertilizers_ignores_number_field(tmp_path: Path) -> None:
     csv_path = tmp_path / "fertilizers.csv"
     with csv_path.open("w", encoding="utf-8", newline="") as f:
@@ -20,6 +21,7 @@ def test_load_fertilizers_ignores_number_field(tmp_path: Path) -> None:
     assert fert.liquid is False
     assert fert.comp == {"NH4": 0.12}
 
+
 def test_load_fertilizers_accepts_ascii_name_header(tmp_path: Path) -> None:
     csv_path = tmp_path / "fertilizers.csv"
     with csv_path.open("w", encoding="utf-8", newline="") as f:
@@ -31,6 +33,7 @@ def test_load_fertilizers_accepts_ascii_name_header(tmp_path: Path) -> None:
 
     assert fertilizers["Ascii Header"].liquid is True
     assert fertilizers["Ascii Header"].comp == {"NO3": 0.11}
+
 
 def test_save_fertilizers_removes_legacy_number_column(tmp_path: Path) -> None:
     csv_path = tmp_path / "fertilizers.csv"

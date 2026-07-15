@@ -10,6 +10,7 @@ except ModuleNotFoundError:  # Python 3.10
 
 ROOT = Path(__file__).resolve().parents[1]
 
+
 def _dependency_names(dependencies: list[str]) -> set[str]:
     names = set()
     for dependency in dependencies:
@@ -17,6 +18,7 @@ def _dependency_names(dependencies: list[str]) -> set[str]:
         if match:
             names.add(match.group(1).casefold())
     return names
+
 
 def test_pyproject_declares_runtime_dependencies_used_by_entrypoints() -> None:
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
@@ -43,6 +45,7 @@ def test_pyproject_packages_app_assets_for_wheel_installs() -> None:
     assert "frontend/app.js" not in data_files["frontend"]
     assert data_files["frontend/app"] == ["frontend/app/*.js"]
     assert "frontend/i18n/*.js" in data_files["frontend/i18n"]
+    assert data_files["frontend/styles"] == ["frontend/styles/*.css"]
     assert "data/*.csv" in data_files["data"]
     assert "data/water_profiles/*.yml" in data_files["data/water_profiles"]
     assert "data/nutrient_solutions/*.yml" in data_files["data/nutrient_solutions"]
@@ -51,15 +54,9 @@ def test_pyproject_packages_app_assets_for_wheel_installs() -> None:
 
 def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     readme = (ROOT / "scripts" / "packaging" / "README.txt").read_text(encoding="utf-8")
-    windows_build = (ROOT / "scripts" / "packaging" / "build_windows.ps1").read_text(
-        encoding="utf-8"
-    )
-    linux_build = (ROOT / "scripts" / "packaging" / "build_linux.sh").read_text(
-        encoding="utf-8"
-    )
-    release_workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(
-        encoding="utf-8"
-    )
+    windows_build = (ROOT / "scripts" / "packaging" / "build_windows.ps1").read_text(encoding="utf-8")
+    linux_build = (ROOT / "scripts" / "packaging" / "build_linux.sh").read_text(encoding="utf-8")
+    release_workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
 
     assert "Back up user/" in readme
     assert "logs/launcher.log" in readme
@@ -68,13 +65,13 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert "Horticalc is an independent project" in readme
     assert "point-in-time snapshots" in readme
     assert "Those official documents always take precedence" in readme
-    assert 'scripts/packaging/README.txt' in windows_build
-    assert 'scripts/packaging/README.txt' in linux_build
+    assert "scripts/packaging/README.txt" in windows_build
+    assert "scripts/packaging/README.txt" in linux_build
     assert 'Join-Path $repoRoot "LICENSE"' in windows_build
     assert 'cp "$repo_root/LICENSE" "$app_root/LICENSE"' in linux_build
     assert 'app_root / "LICENSE"' in release_workflow
     assert 'legacy_fertilizers = user_dir / "fertilizers.csv"' in release_workflow
-    assert 'Legacy Liquid,Flüssig,1.25,0.2' in release_workflow
+    assert "Legacy Liquid,Flüssig,1.25,0.2" in release_workflow
     assert 'legacy_fertilizers.with_suffix(".csv.legacy-backup")' in release_workflow
     assert "csv.DictReader(handle)" in release_workflow
     assert "Clean smoke-test runtime state" in release_workflow

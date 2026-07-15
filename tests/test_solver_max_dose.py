@@ -33,7 +33,10 @@ def test_bounded_nnls_keeps_original_path_without_limits() -> None:
 
 def _solve(maximum: float | None, *, liters: float = 10.0, fixed: float | None = None):
     fertilizer = Fertilizer(
-        "N source", False, 1.0, {"NO3": 0.1},
+        "N source",
+        False,
+        1.0,
+        {"NO3": 0.1},
         solver_max_dose_per_l=maximum,
     )
     recipe = {

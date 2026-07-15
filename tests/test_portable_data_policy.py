@@ -7,8 +7,9 @@ from pathlib import Path
 import pytest
 
 import horticalc.data_io as data_io
-from horticalc.data_io import Fertilizer, load_fertilizers, save_fertilizers
 from horticalc import paths
+from horticalc.data_io import Fertilizer, load_fertilizers, save_fertilizers
+
 
 def _write_fertilizers_csv(path: Path, rows: list[tuple[str, float]] | None = None) -> None:
     rows = rows or [("Test", 0.1)]
@@ -149,6 +150,7 @@ def test_overlay_save_restores_overrides_when_disabled_write_fails(
 
     assert overrides_path.read_text(encoding="utf-8") == previous_overrides
     assert not paths.user_disabled_fertilizers_path(tmp_path).exists()
+
 
 def test_legacy_user_fertilizers_migrates_custom_rows_and_accepts_shipped_updates(
     monkeypatch: pytest.MonkeyPatch,

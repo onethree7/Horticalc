@@ -3,7 +3,6 @@ from __future__ import annotations
 import math
 from dataclasses import asdict, dataclass
 
-
 CANONICAL_VOLUME_UNIT = "liter"
 CANONICAL_SOLID_DOSE_UNIT = "gram"
 CANONICAL_LIQUID_DOSE_UNIT = "milliliter"

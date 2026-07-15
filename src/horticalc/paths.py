@@ -6,11 +6,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
 
-
-PORTABLE_WRITE_ERROR = (
-    "Extract to a writable folder (e.g. Desktop/Downloads). "
-    "Do not run from Program Files."
-)
+PORTABLE_WRITE_ERROR = "Extract to a writable folder (e.g. Desktop/Downloads). Do not run from Program Files."
 
 LEGACY_NUTRIENT_SOLUTION_HASHES = {
     "Abram_Steiner_Hydrokultur_Naehrloesung.yml": (
@@ -19,21 +15,15 @@ LEGACY_NUTRIENT_SOLUTION_HASHES = {
         "0c9939a1419bafbf6d7495e9cbfbe41aaea84b2bfcb6e80699cc809ef4ca5ec4",
         "619e92818228f0de3679972099ebf4fa0f19b10b828654b2b9df5e45fa977850",
     ),
-    "Hoagland_Arnon_1950_Solution1_Nitrate.yml": (
-        "d2a5bba01c37ba38db312984c0f41a8fc2df6f2a037dd9832ab3368c8f43cd13"
-    ),
+    "Hoagland_Arnon_1950_Solution1_Nitrate.yml": ("d2a5bba01c37ba38db312984c0f41a8fc2df6f2a037dd9832ab3368c8f43cd13"),
     "Hoagland_Arnon_1950_Solution2_AmmoniumPhosphate.yml": (
         "23a522abce757aaf49ceaba7c296f7a89d4cc4d60a96cd122e0e53c3833f30ec"
     ),
-    "Knop_1861_Standard.yml": (
-        "c0038590e969c980e4643df573aa1c6d8850dd2126c3ee23a8b68172065d0514"
-    ),
+    "Knop_1861_Standard.yml": ("c0038590e969c980e4643df573aa1c6d8850dd2126c3ee23a8b68172065d0514"),
     "Long_Ashton_Nutrient_Solution_LANS_NitrateType.yml": (
         "dfde4cde71a985278cbd0385858f34f68c1c90738304b1bbc0bd4bb783184788"
     ),
-    "Murashige_Skoog_MS_1962_FullStrength.yml": (
-        "561d676294fe88dc7934724d9dffeb92c58fba866f6c5656133f7540e546f890"
-    ),
+    "Murashige_Skoog_MS_1962_FullStrength.yml": ("561d676294fe88dc7934724d9dffeb92c58fba866f6c5656133f7540e546f890"),
     "Yoshida_Rice_Solution_1976_CommonVariant.yml": (
         "84cd8dd3d0e086c1208074c0f98aab60f348623e38fc0c9b42fff13ee8e8561a"
     ),
@@ -216,9 +206,7 @@ def _prune_redundant_yaml_overrides(
         known_legacy_hashes: tuple[str, ...] = ()
         if legacy_hashes and destination.name in legacy_hashes:
             legacy_value = legacy_hashes[destination.name]
-            known_legacy_hashes = (
-                (legacy_value,) if isinstance(legacy_value, str) else legacy_value
-            )
+            known_legacy_hashes = (legacy_value,) if isinstance(legacy_value, str) else legacy_value
         is_current_default = destination_hash == _normalized_file_hash(source)
         is_legacy_default = destination_hash in known_legacy_hashes
         if is_current_default or is_legacy_default:

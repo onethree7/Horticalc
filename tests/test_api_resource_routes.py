@@ -1,5 +1,5 @@
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 
 import api.app as api_app
 from horticalc import paths
@@ -34,9 +34,7 @@ def test_portable_layout_resource_routes() -> None:
         "recipe": client.get("/recipes/golden"),
     }
 
-    assert {name: response.status_code for name, response in responses.items()} == {
-        name: 200 for name in responses
-    }
+    assert {name: response.status_code for name, response in responses.items()} == dict.fromkeys(responses, 200)
 
 
 def test_resource_routes_layer_user_yaml_over_shipped_defaults(monkeypatch, tmp_path) -> None:
@@ -84,9 +82,7 @@ def test_resource_routes_layer_user_yaml_over_shipped_defaults(monkeypatch, tmp_
     monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
     client = TestClient(api_app.app)
 
-    assert client.get("/water-profiles").json() == [
-        {"name": "User tap", "filename": "tap.yml"}
-    ]
+    assert client.get("/water-profiles").json() == [{"name": "User tap", "filename": "tap.yml"}]
     assert {entry["filename"] for entry in client.get("/nutrient-solutions").json()} == {
         "custom.yml",
         "target.yml",

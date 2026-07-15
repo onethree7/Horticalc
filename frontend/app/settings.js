@@ -1,6 +1,5 @@
 import { DEFAULT_LITERS, DEFAULT_THEME, THEME_OPTIONS, THEME_STORAGE_KEY } from "./constants.js";
 import { qs } from "./dom.js";
-import { parseDecimalInput } from "./formatting.js";
 import { storageGet, storageSet } from "./storage.js";
 
 export function createSettingsController({ units, i18n, persistPreferences, onLocaleChange }) {

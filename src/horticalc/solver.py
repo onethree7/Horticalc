@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Dict, List
+from typing import Any, Callable, Dict, List
 
 import numpy as np
 
@@ -33,7 +33,7 @@ from .solver_config import (
     SOLVER_CONFIG_DEFAULTS,
     resolve_solver_config,
 )
-
+from .validation import non_negative_float, percentage_float, positive_float, unique_strings
 
 ALWAYS_IGNORED_TARGETS = {"NA", "CL"}
 S_TARGETS = {"S"}
@@ -141,9 +141,7 @@ def _normalize_targets(targets: Dict[str, float]) -> Dict[str, float]:
         key_text = str(key)
         if key_text not in ALLOWED_TARGET_KEYS:
             raise ValueError(f"Invalid target key: {key_text}")
-        target_value = float(value)
-        if not np.isfinite(target_value):
-            raise ValueError(f"Invalid target value for {key_text}: {value!r}")
+        target_value = non_negative_float(value, f"target {key_text}")
         cleaned[key_text] = target_value
     return cleaned
 
@@ -337,9 +335,7 @@ def _solve_weights(
         for idx, key in enumerate(objective_keys):
             if key == "N_total":
                 scale = max(scales[idx], 1e-12)
-                overshoot_only_weights[idx] = (base_priority[idx] / scale) * max(
-                    0.0, float(n_total_governor_weight)
-                )
+                overshoot_only_weights[idx] = (base_priority[idx] / scale) * max(0.0, float(n_total_governor_weight))
     return _nnls_weighted_irls(
         A_var,
         b,
@@ -362,6 +358,10 @@ def _score_percent_errors(
     return (max(_objective_percent_errors(objective_keys, targets_raw, achieved_elements), default=0.0),)
 
 
+def _signed_percent_error(target: float, achieved: float) -> float:
+    return 0.0 if target == 0.0 else (achieved - target) / target * 100.0
+
+
 def _objective_percent_errors(
     objective_keys: List[str],
     targets_raw: Dict[str, float],
@@ -370,11 +370,8 @@ def _objective_percent_errors(
     errors: list[float] = []
     for key in objective_keys:
         target = float(targets_raw.get(key, 0.0))
-        if target == 0:
-            errors.append(0.0)
-            continue
         achieved_val = float(achieved_elements.get(key, 0.0))
-        errors.append(abs((achieved_val - target) / target * 100.0))
+        errors.append(abs(_signed_percent_error(target, achieved_val)))
     return tuple(errors)
 
 
@@ -400,10 +397,7 @@ def _solver_config_value_matches_default(key: str, value: object) -> bool:
 def _uses_default_solver_portfolio(solver_config: Dict[str, object]) -> bool:
     if not solver_config:
         return True
-    for key, value in solver_config.items():
-        if not _solver_config_value_matches_default(str(key), value):
-            return False
-    return True
+    return all(_solver_config_value_matches_default(str(key), value) for key, value in solver_config.items())
 
 
 def _percent_errors(
@@ -417,7 +411,7 @@ def _percent_errors(
         if target_value == 0.0:
             continue
         achieved_value = float(achieved_elements.get(key, 0.0))
-        errors.append((achieved_value - target_value) / target_value * 100.0)
+        errors.append(_signed_percent_error(target_value, achieved_value))
     return errors
 
 
@@ -536,7 +530,9 @@ def _singleton_supplier_pass(
         improves = (mode == "overshoot" and achieved_new.get(key, 0.0) <= achieved_elements.get(key, 0.0)) or (
             mode == "underfill" and achieved_new.get(key, 0.0) >= achieved_elements.get(key, 0.0)
         )
-        regression_ok = all(new_val <= old_val + max_regress_pp for new_val, old_val in zip(new_score, old_score))
+        regression_ok = all(
+            new_val <= old_val + max_regress_pp for new_val, old_val in zip(new_score, old_score, strict=True)
+        )
         if improves and regression_ok:
             adjusted = proposed
             achieved_elements = achieved_new
@@ -580,94 +576,237 @@ def _resolve_water_profile(
     return load_water_profile_data(resolve_water_profile_name(str(water_profile_value)))
 
 
-def solve_recipe_data(
+@dataclass
+class _PreparedProblem:
+    recipe: dict
+    fertilizers: Dict[str, Fertilizer]
+    molar_masses: Dict[str, float]
+    liters: float
+    water_mg_l: Dict[str, float]
+    osmosis_percent: float
+    targets: Dict[str, float]
+    objective_keys: List[str]
+    allowed: List[Fertilizer]
+    fixed_weights: np.ndarray
+    variable_mask: np.ndarray
+    upper_bounds: np.ndarray
+    matrix: np.ndarray
+    remaining_targets: np.ndarray
+    solver_config: dict[str, Any]
+
+
+_Variant = tuple[bool, bool, bool]
+_VariantResult = tuple[list[dict[str, float | str]], dict[str, float]]
+
+
+class _VariantRunner:
+    def __init__(self, problem: _PreparedProblem) -> None:
+        self.problem = problem
+        self._solved_variants: dict[_Variant, _VariantResult] = {}
+
+    def _build_solution_for_weights(self, weights: np.ndarray) -> _VariantResult:
+        problem = self.problem
+        fertilizers_out, recipe_payload = _build_solution_payload(
+            weights=weights,
+            allowed=problem.allowed,
+            liters=problem.liters,
+            recipe=problem.recipe,
+        )
+        achieved_solution = compute_solution(
+            recipe_payload,
+            problem.fertilizers,
+            problem.molar_masses,
+            problem.water_mg_l,
+            osmosis_percent=problem.osmosis_percent,
+        )
+        return fertilizers_out, achieved_solution.elements_mg_l
+
+    def _achieved_for_weights(self, weights: np.ndarray) -> Dict[str, float]:
+        return self._build_solution_for_weights(weights)[1]
+
+    def _apply_singleton_pass(
+        self,
+        weights: np.ndarray,
+        achieved_elements: Dict[str, float],
+        *,
+        mode: str,
+        share_threshold: float,
+        use_potential_share: bool,
+    ) -> tuple[np.ndarray, Dict[str, float], bool]:
+        problem = self.problem
+        skip_keys = {"N_total"} if problem.solver_config["n_total_governor_enabled"] else None
+        updated_weights, updated_elements = _singleton_supplier_pass(
+            A=problem.matrix,
+            x_full=weights,
+            variable_mask_full=problem.variable_mask,
+            objective_keys=problem.objective_keys,
+            targets_raw=problem.targets,
+            achieved_elements=achieved_elements,
+            share_threshold=share_threshold,
+            max_regress_pp=problem.solver_config["singleton_max_regress_pp"],
+            skip_keys=skip_keys,
+            recompute_achieved_fn=self._achieved_for_weights,
+            mode=mode,
+            use_potential_share=use_potential_share,
+            upper_bounds_full=problem.upper_bounds,
+        )
+        changed = bool(np.any(np.abs(updated_weights - weights) > 1e-12))
+        return updated_weights, updated_elements, changed
+
+    def _solve_once(self, variant: _Variant) -> _VariantResult:
+        cached = self._solved_variants.get(variant)
+        if cached is not None:
+            return cached
+
+        use_relative_weighting, supplier_enabled, underfill_enabled = variant
+        problem = self.problem
+        config = problem.solver_config
+        solved_weights = _solve_weights(
+            problem.matrix,
+            problem.remaining_targets,
+            problem.fixed_weights,
+            problem.variable_mask,
+            relative_weighting=use_relative_weighting,
+            objective_keys=problem.objective_keys,
+            targets_raw=problem.targets,
+            n_form_priority_weights=config["n_form_priority_weights"],
+            n_total_governor_enabled=config["n_total_governor_enabled"],
+            n_total_governor_weight=config["n_total_governor_weight"],
+            overshoot_penalty=config["overshoot_penalty"],
+            irls_max_outer_iter=config["irls_max_outer_iter"],
+            scale_eps_mg_per_l=config["scale_eps_mg_per_l"],
+            upper_bounds=problem.upper_bounds,
+        )
+        weights = problem.fixed_weights.copy()
+        weights[problem.variable_mask] += solved_weights
+        achieved_elements = self._achieved_for_weights(weights)
+
+        if supplier_enabled:
+            weights, achieved_elements, _ = self._apply_singleton_pass(
+                weights,
+                achieved_elements,
+                mode="overshoot",
+                share_threshold=config["singleton_share_threshold"],
+                use_potential_share=False,
+            )
+
+        if underfill_enabled:
+            for _ in range(config["singleton_underfill_max_iter"]):
+                weights, achieved_elements, changed = self._apply_singleton_pass(
+                    weights,
+                    achieved_elements,
+                    mode="underfill",
+                    share_threshold=config["singleton_underfill_share_threshold"],
+                    use_potential_share=True,
+                )
+                if not changed:
+                    break
+
+        fertilizers_out, _ = _build_solution_payload(
+            weights=weights,
+            allowed=problem.allowed,
+            liters=problem.liters,
+            recipe=problem.recipe,
+        )
+        result = fertilizers_out, achieved_elements
+        self._solved_variants[variant] = result
+        return result
+
+    def solve(self, variant: _Variant) -> _VariantResult:
+        result = self._solve_once(variant)
+        use_relative_weighting, supplier_enabled, underfill_enabled = variant
+        config = self.problem.solver_config
+        if use_relative_weighting and not (config["n_total_governor_enabled"] or config["n_form_priority_weights"]):
+            unweighted = self._solve_once((False, supplier_enabled, underfill_enabled))
+            weighted_score = _score_percent_errors(
+                self.problem.objective_keys,
+                self.problem.targets,
+                result[1],
+            )
+            unweighted_score = _score_percent_errors(
+                self.problem.objective_keys,
+                self.problem.targets,
+                unweighted[1],
+            )
+            if unweighted_score < weighted_score:
+                return unweighted
+        return result
+
+
+def _prepare_solve_problem(
     recipe: dict,
     *,
-    ferts: Dict[str, Fertilizer] | None = None,
-    mm: Dict[str, float] | None = None,
-    water_profile_data: dict | None = None,
-    water_profile_path: Path | None = None,
-) -> SolveResult:
-    fertilizers = ferts or load_fertilizers()
-    molar_masses = mm or load_molar_masses()
+    ferts: Dict[str, Fertilizer] | None,
+    mm: Dict[str, float] | None,
+    water_profile_data: dict | None,
+    water_profile_path: Path | None,
+) -> _PreparedProblem:
+    fertilizers = load_fertilizers() if ferts is None else ferts
+    molar_masses = load_molar_masses() if mm is None else mm
 
     liters_value = recipe.get("liters", 10.0)
-    if liters_value is None:
-        liters_value = 10.0
-    liters = float(liters_value)
-    if not np.isfinite(liters) or liters <= 0.0:
-        raise ValueError("liters must be > 0")
+    liters = positive_float(10.0 if liters_value is None else liters_value, "liters")
     water_profile = _resolve_water_profile(recipe, water_profile_data, water_profile_path)
-    osmosis_percent = float(recipe.get("osmosis_percent", water_profile.get("osmosis_percent", 0.0)))
-    # compute_solution() applies osmosis_mix; do not pre-mix here.
+    osmosis_value = recipe.get("osmosis_percent")
+    if osmosis_value is None:
+        osmosis_value = water_profile.get("osmosis_percent", 0.0)
+    osmosis_percent = percentage_float(osmosis_value, "osmosis_percent")
     water_mg_l = water_profile.get("mg_per_l") or {}
-    target_raw = _normalize_targets(
-        recipe.get("targets")
-        or recipe.get("targets_mg_per_l")
-        or {}
-    )
+
+    targets = _normalize_targets(recipe.get("targets") or recipe.get("targets_mg_per_l") or {})
     solver_config = resolve_solver_config(recipe.get("solver_config"))
-    relative_weighting = solver_config["relative_weighting"]
-    overshoot_penalty = solver_config["overshoot_penalty"]
-    irls_max_outer_iter = solver_config["irls_max_outer_iter"]
-    scale_eps_mg_per_l = solver_config["scale_eps_mg_per_l"]
-    singleton_supplier_enabled = solver_config["singleton_supplier_enabled"]
-    singleton_share_threshold = solver_config["singleton_share_threshold"]
-    singleton_max_regress_pp = solver_config["singleton_max_regress_pp"]
-    singleton_underfill_enabled = solver_config["singleton_underfill_enabled"]
-    singleton_underfill_share_threshold = solver_config["singleton_underfill_share_threshold"]
-    singleton_underfill_max_iter = solver_config["singleton_underfill_max_iter"]
-    nitrogen_objective_mode = solver_config["nitrogen_objective_mode"]
-    s_objective_enabled = solver_config["s_objective_enabled"]
-    n_total_governor_enabled = solver_config["n_total_governor_enabled"]
-    n_total_governor_weight = solver_config["n_total_governor_weight"]
-    n_form_priority_weights = solver_config["n_form_priority_weights"]
     objective_keys = _objective_keys(
-        target_raw,
-        nitrogen_objective_mode=nitrogen_objective_mode,
-        s_objective_enabled=s_objective_enabled,
+        targets,
+        nitrogen_objective_mode=solver_config["nitrogen_objective_mode"],
+        s_objective_enabled=solver_config["s_objective_enabled"],
     )
     if not objective_keys:
         raise ValueError("No solvable targets defined (Na/Cl are ignored; S requires s_objective_enabled).")
 
-    allowed_names = [str(name) for name in recipe.get("fertilizers_allowed", [])]
+    allowed_names = unique_strings(
+        recipe.get("fertilizers_allowed", []),
+        "fertilizers_allowed",
+    )
     if not allowed_names:
         raise ValueError("fertilizers_allowed must list at least one fertilizer")
-    seen_allowed_names: set[str] = set()
-    duplicate_allowed_names: list[str] = []
-    for name in allowed_names:
-        if name in seen_allowed_names and name not in duplicate_allowed_names:
-            duplicate_allowed_names.append(name)
-        seen_allowed_names.add(name)
-    if duplicate_allowed_names:
-        raise ValueError(f"fertilizers_allowed must not contain duplicates: {duplicate_allowed_names}")
-
-    allowed = []
+    allowed: list[Fertilizer] = []
     for name in allowed_names:
         if name not in fertilizers:
             raise KeyError(f"Unknown fertilizer in fertilizers_allowed: '{name}'")
         allowed.append(fertilizers[name])
 
     fixed_grams: dict[str, float] = {}
-    for key, value in (recipe.get("fixed_grams") or {}).items():
-        name = str(key)
-        grams = float(value)
-        if not np.isfinite(grams):
-            raise ValueError(f"fixed_grams must be finite: {name}")
-        if grams < 0:
-            raise ValueError(f"fixed_grams must be >= 0: {name}")
-        fixed_grams[name] = grams
+    for raw_name, value in (recipe.get("fixed_grams") or {}).items():
+        name = str(raw_name)
+        try:
+            fixed_grams[name] = non_negative_float(value, "fixed_grams")
+        except ValueError as exc:
+            raise ValueError(f"{exc}: {name}") from exc
     unknown_fixed = sorted(set(fixed_grams) - {fert.name for fert in allowed})
     if unknown_fixed:
         raise ValueError(f"fixed_grams not in fertilizers_allowed: {unknown_fixed}")
-    fixed_weights = np.array([fixed_grams.get(fert.name, 0.0) for fert in allowed], dtype=float)
-    variable_mask = np.array([fert.name not in fixed_grams for fert in allowed], dtype=bool)
-    solver_upper_bounds = np.array([
-        np.inf
-        if fert.name in fixed_grams or fert.solver_max_dose_per_l is None
-        else fert.solver_max_dose_per_l * liters
-        for fert in allowed
-    ], dtype=float)
+
+    fixed_weights = np.array(
+        [fixed_grams.get(fert.name, 0.0) for fert in allowed],
+        dtype=float,
+    )
+    variable_mask = np.array(
+        [fert.name not in fixed_grams for fert in allowed],
+        dtype=bool,
+    )
+    upper_bounds = np.array(
+        [
+            np.inf
+            if fert.name in fixed_grams or fert.solver_max_dose_per_l is None
+            else non_negative_float(
+                fert.solver_max_dose_per_l,
+                f"solver_max_dose_per_l for {fert.name}",
+            )
+            * liters
+            for fert in allowed
+        ],
+        dtype=float,
+    )
 
     water_only_recipe = {
         "liters": liters,
@@ -681,214 +820,108 @@ def solve_recipe_data(
         water_mg_l,
         osmosis_percent=osmosis_percent,
     )
-    water_elements = water_only.elements_mg_l
+    remaining_targets = np.array(
+        [targets.get(key, 0.0) - water_only.elements_mg_l.get(key, 0.0) for key in objective_keys],
+        dtype=float,
+    )
+    matrix = _build_matrix(allowed, molar_masses, objective_keys, liters)
 
-    b = np.array([target_raw.get(key, 0.0) - water_elements.get(key, 0.0) for key in objective_keys], dtype=float)
-    A = _build_matrix(allowed, molar_masses, objective_keys, liters)
+    return _PreparedProblem(
+        recipe=recipe,
+        fertilizers=fertilizers,
+        molar_masses=molar_masses,
+        liters=liters,
+        water_mg_l=water_mg_l,
+        osmosis_percent=osmosis_percent,
+        targets=targets,
+        objective_keys=objective_keys,
+        allowed=allowed,
+        fixed_weights=fixed_weights,
+        variable_mask=variable_mask,
+        upper_bounds=upper_bounds,
+        matrix=matrix,
+        remaining_targets=remaining_targets,
+        solver_config=solver_config,
+    )
 
-    def build_solution_for_weights(
-        weights: np.ndarray,
-    ) -> tuple[list[dict[str, float | str]], dict[str, float]]:
-        ferts_out, recipe_payload = _build_solution_payload(
-            weights=weights,
-            allowed=allowed,
-            liters=liters,
-            recipe=recipe,
-        )
-        achieved_solution = compute_solution(
-            recipe_payload,
-            fertilizers,
-            molar_masses,
-            water_mg_l,
-            osmosis_percent=osmosis_percent,
-        )
-        return ferts_out, achieved_solution.elements_mg_l
 
-    solved_variants: dict[
-        tuple[bool, bool, bool],
-        tuple[list[dict[str, float | str]], dict[str, float]],
-    ] = {}
-
-    def solve_once(
-        *,
-        use_relative_weighting: bool,
-        singleton_supplier_enabled_local: bool,
-        singleton_underfill_enabled_local: bool,
-    ) -> tuple[list[dict[str, float | str]], dict[str, float]]:
-        variant_key = (
-            use_relative_weighting,
-            singleton_supplier_enabled_local,
-            singleton_underfill_enabled_local,
-        )
-        if variant_key in solved_variants:
-            return solved_variants[variant_key]
-
-        solved_weights = _solve_weights(
-            A,
-            b,
-            fixed_weights,
-            variable_mask,
-            relative_weighting=use_relative_weighting,
-            objective_keys=objective_keys,
-            targets_raw=target_raw,
-            n_form_priority_weights=n_form_priority_weights,
-            n_total_governor_enabled=n_total_governor_enabled,
-            n_total_governor_weight=n_total_governor_weight,
-            overshoot_penalty=overshoot_penalty,
-            irls_max_outer_iter=irls_max_outer_iter,
-            scale_eps_mg_per_l=scale_eps_mg_per_l,
-            upper_bounds=solver_upper_bounds,
-        )
-        x_full_local = fixed_weights.copy()
-        x_full_local[variable_mask] += solved_weights
-        latest_fertilizers, achieved_elements_local = build_solution_for_weights(x_full_local)
-
-        singleton_skip_keys = {"N_total"} if n_total_governor_enabled else None
-
-        def recompute_achieved_fn(new_x_full: np.ndarray) -> Dict[str, float]:
-            return build_solution_for_weights(new_x_full)[1]
-
-        def apply_singleton_pass(
-            *,
-            mode: str,
-            share_threshold: float,
-            use_potential_share: bool,
-        ) -> bool:
-            nonlocal x_full_local, latest_fertilizers, achieved_elements_local
-            x_full_updated, achieved_elements_updated = _singleton_supplier_pass(
-                A=A,
-                x_full=x_full_local,
-                variable_mask_full=variable_mask,
-                objective_keys=objective_keys,
-                targets_raw=target_raw,
-                achieved_elements=achieved_elements_local,
-                share_threshold=share_threshold,
-                max_regress_pp=singleton_max_regress_pp,
-                skip_keys=singleton_skip_keys,
-                recompute_achieved_fn=recompute_achieved_fn,
-                mode=mode,
-                use_potential_share=use_potential_share,
-                upper_bounds_full=solver_upper_bounds,
-            )
-            if not np.any(np.abs(x_full_updated - x_full_local) > 1e-12):
-                return False
-            x_full_local = x_full_updated
-            latest_fertilizers, _ = _build_solution_payload(
-                weights=x_full_local,
-                allowed=allowed,
-                liters=liters,
-                recipe=recipe,
-            )
-            achieved_elements_local = achieved_elements_updated
-            return True
-
-        if singleton_supplier_enabled_local:
-            apply_singleton_pass(
-                mode="overshoot",
-                share_threshold=singleton_share_threshold,
-                use_potential_share=False,
-            )
-
-        if singleton_underfill_enabled_local:
-            for _ in range(max(1, singleton_underfill_max_iter)):
-                if not apply_singleton_pass(
-                    mode="underfill",
-                    share_threshold=singleton_underfill_share_threshold,
-                    use_potential_share=True,
-                ):
-                    break
-
-        result = latest_fertilizers, achieved_elements_local
-        solved_variants[variant_key] = result
-        return result
-
-    def solve_variant(
-        *,
-        use_relative_weighting: bool,
-        singleton_supplier_enabled_local: bool,
-        singleton_underfill_enabled_local: bool,
-    ) -> tuple[list[dict[str, float | str]], dict[str, float]]:
-        fertilizers_local, achieved_local = solve_once(
-            use_relative_weighting=use_relative_weighting,
-            singleton_supplier_enabled_local=singleton_supplier_enabled_local,
-            singleton_underfill_enabled_local=singleton_underfill_enabled_local,
-        )
-        if use_relative_weighting and not (n_total_governor_enabled or n_form_priority_weights):
-            ferts_unweighted, achieved_unweighted = solve_once(
-                use_relative_weighting=False,
-                singleton_supplier_enabled_local=singleton_supplier_enabled_local,
-                singleton_underfill_enabled_local=singleton_underfill_enabled_local,
-            )
-            weighted_score = _score_percent_errors(
-                objective_keys,
-                target_raw,
-                achieved_local,
-            )
-            unweighted_score = _score_percent_errors(
-                objective_keys,
-                target_raw,
-                achieved_unweighted,
-            )
-            if unweighted_score < weighted_score:
-                return ferts_unweighted, achieved_unweighted
-        return fertilizers_local, achieved_local
-
+def _select_solver_variant(problem: _PreparedProblem, runner: _VariantRunner) -> _VariantResult:
+    config = problem.solver_config
     current_variant = (
-        relative_weighting,
-        singleton_supplier_enabled,
-        singleton_underfill_enabled,
+        config["relative_weighting"],
+        config["singleton_supplier_enabled"],
+        config["singleton_underfill_enabled"],
     )
-    fertilizers_out, achieved_elements = solve_variant(
-        use_relative_weighting=relative_weighting,
-        singleton_supplier_enabled_local=singleton_supplier_enabled,
-        singleton_underfill_enabled_local=singleton_underfill_enabled,
-    )
-    if nitrogen_objective_mode == "n_total_only" and _uses_default_solver_portfolio(solver_config):
-        default_variants = [
-            (relative_weighting, singleton_supplier_enabled, singleton_underfill_enabled),
-            (True, False, singleton_underfill_enabled),
-            (False, singleton_supplier_enabled, singleton_underfill_enabled),
-            (False, False, singleton_underfill_enabled),
-        ]
-        best_variant = (fertilizers_out, achieved_elements)
-        best_score = _default_portfolio_score(objective_keys, target_raw, achieved_elements)
-        seen_variants = {current_variant}
-        for candidate in default_variants:
-            if candidate in seen_variants:
-                continue
-            seen_variants.add(candidate)
-            candidate_result = solve_variant(
-                use_relative_weighting=candidate[0],
-                singleton_supplier_enabled_local=candidate[1],
-                singleton_underfill_enabled_local=candidate[2],
-            )
-            candidate_score = _default_portfolio_score(
-                objective_keys,
-                target_raw,
-                candidate_result[1],
-            )
-            if candidate_score < best_score:
-                best_variant = candidate_result
-                best_score = candidate_score
-        fertilizers_out, achieved_elements = best_variant
+    best_result = runner.solve(current_variant)
+    if config["nitrogen_objective_mode"] != "n_total_only" or not _uses_default_solver_portfolio(config):
+        return best_result
 
-    errors_mg_l = {}
-    errors_percent = {}
-    for key in objective_keys:
-        target = target_raw.get(key, 0.0)
-        achieved_val = achieved_elements.get(key, 0.0)
-        errors_mg_l[key] = achieved_val - target
-        errors_percent[key] = 0.0 if target == 0 else (achieved_val - target) / target * 100.0
+    variants = (
+        current_variant,
+        (True, False, current_variant[2]),
+        (False, current_variant[1], current_variant[2]),
+        (False, False, current_variant[2]),
+    )
+    best_score = _default_portfolio_score(
+        problem.objective_keys,
+        problem.targets,
+        best_result[1],
+    )
+    for candidate in dict.fromkeys(variants):
+        if candidate == current_variant:
+            continue
+        candidate_result = runner.solve(candidate)
+        candidate_score = _default_portfolio_score(
+            problem.objective_keys,
+            problem.targets,
+            candidate_result[1],
+        )
+        if candidate_score < best_score:
+            best_result = candidate_result
+            best_score = candidate_score
+    return best_result
+
+
+def _build_solve_result(
+    problem: _PreparedProblem,
+    variant_result: _VariantResult,
+) -> SolveResult:
+    fertilizers_out, achieved_elements = variant_result
+    errors_mg_l: dict[str, float] = {}
+    errors_percent: dict[str, float] = {}
+    for key in problem.objective_keys:
+        target = problem.targets.get(key, 0.0)
+        achieved = achieved_elements.get(key, 0.0)
+        errors_mg_l[key] = achieved - target
+        errors_percent[key] = _signed_percent_error(target, achieved)
 
     return SolveResult(
-        liters=liters,
+        liters=problem.liters,
         fertilizers=fertilizers_out,
-        objective_elements=objective_keys,
-        targets_mg_l=target_raw,
+        objective_elements=problem.objective_keys,
+        targets_mg_l=problem.targets,
         achieved_elements_mg_l=achieved_elements,
         errors_mg_l=errors_mg_l,
         errors_percent=errors_percent,
     )
+
+
+def solve_recipe_data(
+    recipe: dict,
+    *,
+    ferts: Dict[str, Fertilizer] | None = None,
+    mm: Dict[str, float] | None = None,
+    water_profile_data: dict | None = None,
+    water_profile_path: Path | None = None,
+) -> SolveResult:
+    problem = _prepare_solve_problem(
+        recipe,
+        ferts=ferts,
+        mm=mm,
+        water_profile_data=water_profile_data,
+        water_profile_path=water_profile_path,
+    )
+    return _build_solve_result(problem, _select_solver_variant(problem, _VariantRunner(problem)))
 
 
 def solve_recipe(

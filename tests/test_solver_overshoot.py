@@ -1,7 +1,6 @@
-
-
 from horticalc.data_io import Fertilizer, load_molar_masses
 from horticalc.solver import solve_recipe_data
+
 
 def test_water_profile_overshoot_remains_visible_in_errors() -> None:
     molar_masses = load_molar_masses()

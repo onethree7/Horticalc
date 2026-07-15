@@ -23,7 +23,7 @@ Horticalc has five runtime layers:
 | Data paths | `src/horticalc/paths.py` | AppRoot, shipped defaults, user overrides, logs, lockfile. |
 | Persistence IO | `src/horticalc/data_io.py` | Loads and saves CSV, YAML, and JSON. |
 | API | `api/app.py` | JSON routes, YAML save support, and static frontend. |
-| UI | `frontend/index.html`, `frontend/app/main.js`, controller modules, `frontend/styles.css` | Native ES-module composition, feature-owned state, and workflows. |
+| UI | `frontend/index.html`, `frontend/app/main.js`, controller modules, `frontend/styles/` | Native ES-module composition, feature-owned state, and workflows. |
 | Launcher | `src/horticalc/launcher.py` | Starts API, waits for health, opens browser, manages lock and sessions. |
 | Packaging | `scripts/packaging/*`, `.github/workflows/release.yml` | PyInstaller onedir builds and smoke tests. |
 

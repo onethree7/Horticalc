@@ -1,4 +1,3 @@
-
 from fastapi.testclient import TestClient
 
 import api.app as api_app
@@ -21,6 +20,7 @@ def test_recipes_filters_solver_and_default() -> None:
     assert not any(name.startswith("solve_") for name in filenames)
     assert "golden.yml" in filenames
 
+
 def test_recipe_payload_persists_fertilizers_allowed() -> None:
     client = TestClient(api_app.app)
     payload = {
@@ -38,6 +38,7 @@ def test_recipe_payload_persists_fertilizers_allowed() -> None:
     assert get_response.status_code == 200
     recipe = get_response.json()
     assert recipe.get("fertilizers_allowed") == ["Calcinit", "Hakaphos Rot"]
+
 
 def test_recipe_payload_persists_solver_config() -> None:
     client = TestClient(api_app.app)
@@ -61,6 +62,7 @@ def test_recipe_payload_persists_solver_config() -> None:
     assert get_response.status_code == 200
     recipe = get_response.json()
     assert recipe.get("solver_config") == payload["solver_config"]
+
 
 def test_solver_config_schema_matches_backend_definitions() -> None:
     client = TestClient(api_app.app)

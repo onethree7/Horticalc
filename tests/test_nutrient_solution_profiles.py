@@ -5,7 +5,6 @@ from pathlib import Path
 
 from horticalc.data_io import load_nutrient_solution_data
 
-
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE_DIR = ROOT / "data" / "nutrient_solutions"
 BERNSTEIN_SHA256 = "234b8e9edd19a589e7a1f56f44b355fa32c0f6b4b39f6e610fd966d5efb4c737"
@@ -60,9 +59,7 @@ def test_loader_returns_only_runtime_profile_fields() -> None:
 
 
 def test_steiner_matches_reported_element_table_including_micronutrients() -> None:
-    data = load_nutrient_solution_data(
-        PROFILE_DIR / "Abram_Steiner_Hydrokultur_Naehrloesung.yml"
-    )
+    data = load_nutrient_solution_data(PROFILE_DIR / "Abram_Steiner_Hydrokultur_Naehrloesung.yml")
 
     assert "10.2478/fhort-2024-0017" in data["source"]
     assert data["targets_mg_per_l"] == {

@@ -5,6 +5,7 @@ from horticalc.core import compute_solution
 from horticalc.data_io import load_fertilizers, load_molar_masses
 from horticalc.solver import solve_recipe_data
 
+
 class TestSolverOsmosisConsistency(unittest.TestCase):
     def test_solver_osmosis_consistency(self) -> None:
         ferts = load_fertilizers()
@@ -86,6 +87,7 @@ class TestSolverOsmosisConsistency(unittest.TestCase):
             first_json = json.dumps(payload[0], sort_keys=True)
             second_json = json.dumps(payload[1], sort_keys=True)
             self.assertEqual(first_json, second_json, f"{label} serialization mismatch")
+
 
 if __name__ == "__main__":
     unittest.main()

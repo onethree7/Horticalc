@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+from . import __version__
 from .core import run_recipe, solve_recipe
 from .paths import resolve_recipe_path, resolve_water_profile_path
 from .solver_config import add_solver_config_arguments, solver_config_overrides_from_args
@@ -61,6 +62,7 @@ def main(argv: list[str] | None = None) -> None:
             prog="horticalc solve",
             description="Horticalc Solver – Solver Recipe to Nutrient Solution",
         )
+        parser.add_argument("--version", action="version", version=__version__)
         _add_common_arguments(parser, "Path to a Solver Recipe (YAML), e.g. recipes/solve_golden.yml")
         add_solver_config_arguments(parser)
         args = parser.parse_args(args_list[1:])
@@ -69,20 +71,27 @@ def main(argv: list[str] | None = None) -> None:
             solver_config_overrides = solver_config_overrides_from_args(args)
         except (json.JSONDecodeError, ValueError) as exc:
             parser.error(str(exc))
-        result = solve_recipe(
-            recipe_path,
-            water_profile_path=water_profile_path,
-            solver_config_overrides=solver_config_overrides,
-        )
+        try:
+            result = solve_recipe(
+                recipe_path,
+                water_profile_path=water_profile_path,
+                solver_config_overrides=solver_config_overrides,
+            )
+        except (KeyError, ValueError) as exc:
+            parser.error(str(exc))
     else:
         parser = argparse.ArgumentParser(
             prog="horticalc",
             description="Horticalc Nutrient Solution – Recipe to Solution Output",
         )
+        parser.add_argument("--version", action="version", version=__version__)
         _add_common_arguments(parser, "Path to a Recipe (YAML), e.g. recipes/golden.yml")
         args = parser.parse_args(args_list)
         recipe_path, water_profile_path = _resolve_cli_paths(args, parser)
-        result = run_recipe(recipe_path, water_profile_path=water_profile_path)
+        try:
+            result = run_recipe(recipe_path, water_profile_path=water_profile_path)
+        except (KeyError, ValueError) as exc:
+            parser.error(str(exc))
 
     _write_result(result, args)
 

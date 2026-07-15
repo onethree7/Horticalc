@@ -1,12 +1,13 @@
-from dataclasses import replace
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 import yaml
 from fastapi.testclient import TestClient
 
 import api.app as api_app
+
 
 class TestCalculateWaterKeys(unittest.TestCase):
     def setUp(self) -> None:
@@ -86,6 +87,7 @@ class TestCalculateWaterKeys(unittest.TestCase):
             api_app.PORTABLE_LAYOUT = original_layout
 
         self.assertEqual(response.status_code, 200)
+
 
 if __name__ == "__main__":
     unittest.main()

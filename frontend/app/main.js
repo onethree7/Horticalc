@@ -215,7 +215,7 @@ async function loadInitialWater(preferences, errors) {
     const profile = await water.loadProfile(preferred);
     water.setSelectedProfile(preferred.endsWith(".yml") ? preferred : `${preferred}.yml`);
     water.applyProfile(profile);
-  } catch (error) {
+  } catch {
     try {
       const profile = await water.loadProfile("default");
       water.setSelectedProfile("default.yml");

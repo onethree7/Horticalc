@@ -8,11 +8,8 @@ Set-Location $repoRoot
 $env:HORTICALC_PROJECT_ROOT = $repoRoot
 
 $releaseVersion = $env:HORTICALC_VERSION
-if ([string]::IsNullOrWhiteSpace($releaseVersion) -and $env:GITHUB_REF_TYPE -eq "tag") {
-    $releaseVersion = $env:GITHUB_REF_NAME
-}
 if ([string]::IsNullOrWhiteSpace($releaseVersion)) {
-    $releaseVersion = "0.0.0"
+    $releaseVersion = (& python -c "from horticalc import __version__; print(__version__)").Trim()
 }
 
 python scripts/packaging/write_windows_version_info.py --version $releaseVersion --output $versionInfoPath

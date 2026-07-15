@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import socket
+import subprocess
 import sys
 import tempfile
 import threading
@@ -15,14 +16,13 @@ import time
 import urllib.error
 import urllib.request
 import webbrowser
+from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
-import subprocess
 import uvicorn
 
 from horticalc.paths import PORTABLE_WRITE_ERROR, app_root, ensure_portable_layout, logs_dir
-
 
 PORT_RANGE = range(8000, 8101)
 HEALTH_ENDPOINT = "/health"
@@ -178,10 +178,8 @@ def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
         os.replace(temp_path, path)
     finally:
         if temp_path is not None:
-            try:
+            with suppress(OSError):
                 temp_path.unlink(missing_ok=True)
-            except OSError:
-                pass
 
 
 def _lock_payload(port: int, pid: int | None = None) -> dict[str, Any]:
@@ -264,9 +262,7 @@ def wait_for_existing_server(
             remove_lockfile(lock_path, expected_pid=owner_pid)
             return None
         if time.monotonic() >= health_deadline:
-            raise RuntimeError(
-                f"Existing Horticalc process {owner_pid} did not become healthy."
-            )
+            raise RuntimeError(f"Existing Horticalc process {owner_pid} did not become healthy.")
         time.sleep(0.1)
     return None
 
@@ -284,8 +280,7 @@ def wait_for_health(
             return False, "Server stopped unexpectedly. See the log file for details."
         time.sleep(0.5)
     return False, (
-        f"Server failed to become healthy within {timeout_seconds:.0f} seconds. "
-        "See the log file for details."
+        f"Server failed to become healthy within {timeout_seconds:.0f} seconds. See the log file for details."
     )
 
 
@@ -452,9 +447,7 @@ def active_launcher_sessions(root: Path) -> list[Path]:
             expected_identity = None
         current_identity = _process_identity(pid) if isinstance(pid, int) else None
         identity_matches = (
-            expected_identity is None
-            or current_identity is None
-            or expected_identity == current_identity
+            expected_identity is None or current_identity is None or expected_identity == current_identity
         )
         if isinstance(pid, int) and _pid_is_running(pid) and identity_matches:
             active.append(path)
@@ -480,9 +473,7 @@ def cleanup_stale_profile_dirs(root: Path, now: float | None = None) -> None:
             continue
         current_identity = _process_identity(owner_pid)
         owner_matches = _pid_is_running(owner_pid) and (
-            expected_identity is None
-            or current_identity is None
-            or expected_identity == current_identity
+            expected_identity is None or current_identity is None or expected_identity == current_identity
         )
         if old_enough and not owner_matches:
             cleanup_profile_dir(profile_dir)

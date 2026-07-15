@@ -3,6 +3,7 @@ from pathlib import Path
 from horticalc.data_io import Fertilizer, load_molar_masses
 from horticalc.solver import solve_recipe, solve_recipe_data
 
+
 def test_n_total_governor_prioritizes_n_total_target() -> None:
     recipe_path = Path(__file__).resolve().parents[1] / "recipes" / "solve_n_total_governor.yml"
     result = solve_recipe(recipe_path)
@@ -13,6 +14,7 @@ def test_n_total_governor_prioritizes_n_total_target() -> None:
     n_total_target = targets["N_total"]
     assert achieved["N_total"] <= n_total_target * 1.1
     assert achieved["N_total"] >= achieved["N_NO3"]
+
 
 def test_objective_includes_n_total_with_forms() -> None:
     molar_masses = load_molar_masses()
@@ -35,6 +37,7 @@ def test_objective_includes_n_total_with_forms() -> None:
     assert "N_total" in result.objective_elements
     assert "N_NO3" in result.objective_elements
 
+
 def test_default_nitrogen_objective_mode_is_n_total_only() -> None:
     molar_masses = load_molar_masses()
     ferts = {
@@ -53,6 +56,7 @@ def test_default_nitrogen_objective_mode_is_n_total_only() -> None:
     assert "N_NO3" not in result.objective_elements
     assert "N_NH4" not in result.objective_elements
     assert "N_UREA" not in result.objective_elements
+
 
 def test_nitrogen_objective_mode_n_total_only_excludes_forms() -> None:
     molar_masses = load_molar_masses()
@@ -73,6 +77,7 @@ def test_nitrogen_objective_mode_n_total_only_excludes_forms() -> None:
     assert "N_NH4" not in result.objective_elements
     assert "N_UREA" not in result.objective_elements
 
+
 def test_nitrogen_objective_mode_n_forms_only_excludes_total_and_keeps_zero_forms() -> None:
     molar_masses = load_molar_masses()
     ferts = {
@@ -91,6 +96,7 @@ def test_nitrogen_objective_mode_n_forms_only_excludes_total_and_keeps_zero_form
     assert "N_NO3" in result.objective_elements
     assert "N_NH4" in result.objective_elements
     assert "N_UREA" in result.objective_elements
+
 
 def test_nitrogen_objective_mode_rejects_unknown_value() -> None:
     molar_masses = load_molar_masses()
@@ -111,6 +117,7 @@ def test_nitrogen_objective_mode_rejects_unknown_value() -> None:
     else:
         raise AssertionError("Expected invalid nitrogen_objective_mode to fail")
 
+
 def test_s_target_is_ignored_by_default() -> None:
     molar_masses = load_molar_masses()
     ferts = {
@@ -129,6 +136,7 @@ def test_s_target_is_ignored_by_default() -> None:
     assert "S" not in result.objective_elements
     assert "K" in result.objective_elements
 
+
 def test_s_target_can_be_enabled_as_solver_objective() -> None:
     molar_masses = load_molar_masses()
     ferts = {
@@ -146,6 +154,7 @@ def test_s_target_can_be_enabled_as_solver_objective() -> None:
     assert "S" in result.objective_elements
     assert result.fertilizers[0]["name"] == "SO4-only"
     assert result.fertilizers[0]["grams"] > 0
+
 
 def test_so4_is_not_an_allowed_solver_target() -> None:
     molar_masses = load_molar_masses()

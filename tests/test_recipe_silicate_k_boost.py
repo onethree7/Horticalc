@@ -5,6 +5,7 @@ import pytest
 from horticalc.core import run_recipe
 from horticalc.data_io import load_molar_masses
 
+
 def test_recipe_silicate_k_boost_si_k_totals() -> None:
     recipe_path = Path(__file__).resolve().parents[1] / "recipes" / "silicate_k_boost.yml"
     result = run_recipe(recipe_path)

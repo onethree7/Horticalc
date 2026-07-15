@@ -17,8 +17,9 @@ Solver recipes and `/solve` requests provide:
 - `solver_config`: optional advanced settings.
 
 `solve_recipe_data()` validates these inputs before solving: `liters` must be
-greater than zero, target keys must be in `ALLOWED_TARGET_KEYS`, target values
-must be finite numbers, and `fixed_grams` must be finite, non-negative amounts
+finite and greater than zero, osmosis must be within `0..100`, target keys must
+be in `ALLOWED_TARGET_KEYS`, target values must be finite and non-negative, and
+`fixed_grams` must be finite, non-negative amounts
 for fertilizers also listed in `fertilizers_allowed`. The
 `fertilizers_allowed` list must not contain duplicates.
 
@@ -48,22 +49,22 @@ Current default: `n_total_only`.
 
 The canonical defaults are in `src/horticalc/solver_config.py`:
 
-| Key | Default |
-| --- | --- |
-| `relative_weighting` | `false` |
-| `overshoot_penalty` | `1.0` |
-| `irls_max_outer_iter` | `4` |
-| `scale_eps_mg_per_l` | `1.0` |
+| Key | Default | Bounds |
+| --- | --- | --- |
+| `relative_weighting` | `false` | Boolean |
+| `overshoot_penalty` | `1.0` | `>= 0` |
+| `irls_max_outer_iter` | `4` | `1..12` |
+| `scale_eps_mg_per_l` | `1.0` | `> 0` |
 | `singleton_supplier_enabled` | `false` |
-| `singleton_share_threshold` | `0.85` |
-| `singleton_max_regress_pp` | `0.25` |
+| `singleton_share_threshold` | `0.85` | `0..1` |
+| `singleton_max_regress_pp` | `0.25` | `>= 0` |
 | `singleton_underfill_enabled` | `true` |
-| `singleton_underfill_share_threshold` | `0.85` |
-| `singleton_underfill_max_iter` | `2` |
+| `singleton_underfill_share_threshold` | `0.85` | `0..1` |
+| `singleton_underfill_max_iter` | `2` | `1..8` |
 | `nitrogen_objective_mode` | `n_total_only` |
 | `s_objective_enabled` | `false` |
 | `n_total_governor_enabled` | `false` |
-| `n_total_governor_weight` | `1.0` |
+| `n_total_governor_weight` | `1.0` | `>= 0` |
 | `n_form_priority_weights` | `{}` |
 
 Solver configuration has one validation contract in
@@ -74,8 +75,8 @@ the three documented modes. The CLI's `KEY=VALUE` form is the only boundary
 that converts text values. `n_form_priority_weights` remains an advanced
 mapping for `N_NH4`, `N_NO3`, and `N_UREA` with finite, non-negative weights.
 It is accepted in recipes and direct solve inputs, but not in UI preferences.
-The current integer ceilings are `irls_max_outer_iter <= 12` and
-`singleton_underfill_max_iter <= 8`.
+Iteration count `1` performs the initial pass. Refinements are disabled through
+their separate `*_enabled` flags, not by setting an iteration count to zero.
 
 Note: the 2026-05-31 historical solver-matrix report recommended
 `relative_weighting=true`, but the current implementation and tests default it

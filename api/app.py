@@ -6,14 +6,14 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+import yaml
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, FiniteFloat, ValidationError
 
-import yaml
-
+from horticalc import __version__
 from horticalc.chemistry import ALLOWED_TARGET_KEYS, ALLOWED_WATER_KEYS, COMP_COLS
 from horticalc.core import (
     augment_water_profile_with_elements,
@@ -58,7 +58,7 @@ from horticalc.units import (
     mass_units_schema,
     volume_units_schema,
 )
-
+from horticalc.validation import non_negative_float, percentage_float, unique_strings
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="Horticalc API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Horticalc API", version=__version__, lifespan=lifespan)
 
 
 @app.exception_handler(RequestValidationError)
@@ -118,7 +118,7 @@ class RecipeRequest(BaseModel):
     urea_as_nh4: bool = False
     water_profile_name: Optional[str] = None
     water_mg_l: Optional[Dict[str, float]] = None
-    osmosis_percent: FiniteFloat | None = 0
+    osmosis_percent: FiniteFloat | None = Field(default=0, ge=0, le=100)
 
 
 class CalculationResponse(BaseModel):
@@ -175,7 +175,7 @@ class WaterProfilePayload(BaseModel):
     name: str
     source: Optional[str] = ""
     mg_per_l: Dict[str, float] = Field(default_factory=dict)
-    osmosis_percent: FiniteFloat | None = 0
+    osmosis_percent: FiniteFloat | None = Field(default=0, ge=0, le=100)
 
 
 class NutrientSolutionPayload(BaseModel):
@@ -191,7 +191,7 @@ class RecipePayload(BaseModel):
     fertilizers_allowed: List[str] = Field(default_factory=list)
     urea_as_nh4: bool = False
     water_profile: Optional[str] = None
-    osmosis_percent: FiniteFloat | None = 0
+    osmosis_percent: FiniteFloat | None = Field(default=0, ge=0, le=100)
     solver_config: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -285,11 +285,9 @@ def _validated_float_mapping(
         if key not in allowed_keys:
             raise HTTPException(status_code=400, detail=f"{invalid_key_prefix}: {key}")
         try:
-            numeric_value = float(value)
-        except (TypeError, ValueError) as exc:
+            numeric_value = non_negative_float(value, key)
+        except ValueError as exc:
             raise HTTPException(status_code=400, detail=f"Invalid value for {key}") from exc
-        if not math.isfinite(numeric_value):
-            raise HTTPException(status_code=400, detail=f"Invalid value for {key}")
         result[key] = numeric_value
     return result
 
@@ -300,12 +298,9 @@ def _validated_water_mg_l(values: Dict[str, Any]) -> Dict[str, float]:
 
 def _validated_osmosis_percent(value: Any) -> float:
     try:
-        numeric_value = float(value or 0)
-    except (TypeError, ValueError) as exc:
+        return percentage_float(0 if value is None else value, "osmosis_percent")
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail="Invalid osmosis_percent value") from exc
-    if not math.isfinite(numeric_value):
-        raise HTTPException(status_code=400, detail="Invalid osmosis_percent value")
-    return numeric_value
 
 
 def _validated_solver_config(
@@ -320,19 +315,10 @@ def _validated_solver_config(
 
 
 def _validated_unique_names(values: List[str], *, field_name: str) -> List[str]:
-    normalized = [str(value) for value in values]
-    seen: set[str] = set()
-    duplicates: list[str] = []
-    for name in normalized:
-        if name in seen and name not in duplicates:
-            duplicates.append(name)
-        seen.add(name)
-    if duplicates:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{field_name} must not contain duplicates: {duplicates}",
-        )
-    return normalized
+    try:
+        return unique_strings(values, field_name)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def _portable_layout() -> PortableLayout:
@@ -546,9 +532,6 @@ async def save_profile(request: Request) -> dict:
     mg_per_l = _validated_water_mg_l(profile.mg_per_l)
 
     osmosis_percent = _validated_osmosis_percent(profile.osmosis_percent)
-    if not 0 <= osmosis_percent <= 100:
-        raise HTTPException(status_code=400, detail="osmosis_percent must be between 0 and 100")
-
     water_profiles_dir = _portable_layout().water_profiles
     profile_path = _saved_yaml_path(water_profiles_dir, name, "Profile name results in empty filename")
     save_water_profile(
@@ -722,9 +705,7 @@ def solve(payload: SolveRequest) -> SolveResponse:
                 detail="water_profile.mg_per_l must be an object",
             )
         water_profile_data["mg_per_l"] = _validated_water_mg_l(mg_per_l)
-        water_profile_data["osmosis_percent"] = _validated_osmosis_percent(
-            water_profile_data.get("osmosis_percent")
-        )
+        water_profile_data["osmosis_percent"] = _validated_osmosis_percent(water_profile_data.get("osmosis_percent"))
 
     fertilizers_allowed = _validated_unique_names(
         payload.fertilizers_allowed,

@@ -32,6 +32,11 @@ Fallback ion:
 - `H2PO4-`
 
 Unknown ion labels are reported in `coverage.ignored_ions` and warnings.
+Ion labels are parsed and classified once per call. Aliases that normalize to
+the same canonical ion (for example `Ca+2` and `Ca2+`) are accumulated rather
+than overwritten. Unsupported-ion warnings are emitted once even when several
+temperatures are requested. Density must be finite and greater than zero; ion
+concentrations must be finite and non-negative.
 
 ## Output
 

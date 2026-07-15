@@ -4,7 +4,14 @@ Status: `current-state`.
 
 The FastAPI app lives in `api/app.py`. It serves JSON API routes and the static frontend from the same origin. Save endpoints also accept YAML request bodies for compatibility, but JSON is the documented contract.
 
-Malformed bodies return HTTP 400, model-shape errors return HTTP 422, and unknown mapping keys or non-finite mapping values return HTTP 400. Non-finite model fields such as liters, fertilizer grams, fixed grams, and osmosis percentage return HTTP 422. Resource list routes skip unreadable or malformed YAML and log a warning so one damaged file does not hide all valid profiles. Resource names are resolved only inside the configured shipped and user directories; absolute paths and directory traversal are rejected by `src/horticalc/paths.py`.
+Malformed bodies return HTTP 400, model-shape or bounded-field errors return
+HTTP 422, and unknown, negative, or non-finite domain mapping values return
+HTTP 400. Model fields enforce positive liters, non-negative fertilizer grams,
+and osmosis percentage within `0..100`.
+Resource list routes skip unreadable or malformed YAML and log a warning so one
+damaged file does not hide valid profiles. Resource names resolve only inside
+the configured shipped and user directories; absolute paths and traversal are
+rejected by `src/horticalc/paths.py`.
 
 ## Health And Schema
 
@@ -116,9 +123,8 @@ Request:
 ```
 
 `fertilizers_allowed` must list each fertilizer name at most once. Solver
-config integer overrides use the shared backend contract in
-`src/horticalc/solver_config.py`, including the current ceilings
-`irls_max_outer_iter <= 12` and `singleton_underfill_max_iter <= 8`.
+config overrides use the bounded definitions returned by
+`GET /schema/solver-config`; see [solver.md](solver.md#solver-config-defaults-and-validation).
 
 Response follows `SolveResult.to_dict()` in `src/horticalc/solver.py` and is
 documented in [data_model.md](data_model.md).

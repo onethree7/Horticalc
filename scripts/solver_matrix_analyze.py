@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import argparse
-from collections import Counter, defaultdict
 import csv
-from dataclasses import dataclass, field
 import json
 import math
-from pathlib import Path
 import statistics
 import sys
 import time
+from collections import Counter, defaultdict
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 
@@ -182,19 +182,13 @@ def analyze_run(run_dir: Path, *, top_limit: int = 30) -> dict[str, Any]:
     missing_baselines = sorted(expected_profiles - set(baseline_rows))
     if missing_baselines:
         raise ValueError(f"Missing canonical baseline rows for: {', '.join(missing_baselines)}")
-    baseline_scores = {
-        profile_id: float(row["composite_score"])
-        for profile_id, row in baseline_rows.items()
-    }
+    baseline_scores = {profile_id: float(row["composite_score"]) for profile_id, row in baseline_rows.items()}
 
     manifest_configs = {
-        (str(item["experiment_id"]), str(item["config_id"])): item
-        for item in manifest.get("solver_configs") or []
+        (str(item["experiment_id"]), str(item["config_id"])): item for item in manifest.get("solver_configs") or []
     }
     config_stats: dict[tuple[str, str], ComparisonStats] = defaultdict(ComparisonStats)
-    parameter_stats: dict[str, dict[str, dict[str, dict[str, Any]]]] = defaultdict(
-        lambda: defaultdict(dict)
-    )
+    parameter_stats: dict[str, dict[str, dict[str, dict[str, Any]]]] = defaultdict(lambda: defaultdict(dict))
     best_by_profile: dict[str, dict[str, Any]] = {}
     best_setting_by_profile: dict[str, dict[str, Any]] = {}
 
@@ -242,10 +236,7 @@ def analyze_run(run_dir: Path, *, top_limit: int = 30) -> dict[str, Any]:
     for experiment_id, parameters in sorted(parameter_stats.items()):
         setting_effects[experiment_id] = {}
         for parameter, buckets in sorted(parameters.items()):
-            rows = [
-                {"value": bucket["value"], **bucket["stats"].to_dict()}
-                for bucket in buckets.values()
-            ]
+            rows = [{"value": bucket["value"], **bucket["stats"].to_dict()} for bucket in buckets.values()]
             rows.sort(
                 key=lambda item: (
                     -item["avg_improvement_percent"],
@@ -275,21 +266,12 @@ def analyze_run(run_dir: Path, *, top_limit: int = 30) -> dict[str, Any]:
         if omitted:
             omission_stats[omitted].add(score, baseline_scores[profile_id], elapsed)
 
-    portfolio_comparison = [
-        {"portfolio_id": key, **mass_meta[key], **stats}
-        for key, stats in _ranked(mass_stats)
-    ]
-    omission_impact = [
-        {"fertilizer": key, **stats}
-        for key, stats in _ranked(omission_stats)
-    ]
+    portfolio_comparison = [{"portfolio_id": key, **mass_meta[key], **stats} for key, stats in _ranked(mass_stats)]
+    omission_impact = [{"fertilizer": key, **stats} for key, stats in _ranked(omission_stats)]
     # For omission results, positive delta means the removed product was useful.
     omission_impact.sort(key=lambda item: (-item["avg_delta"], item["fertilizer"]))
 
-    baseline_by_profile = {
-        profile_id: _compact_row(row)
-        for profile_id, row in sorted(baseline_rows.items())
-    }
+    baseline_by_profile = {profile_id: _compact_row(row) for profile_id, row in sorted(baseline_rows.items())}
     global_ranked.sort(
         key=lambda item: (
             -item["avg_improvement_percent"],
@@ -329,7 +311,7 @@ def analyze_run(run_dir: Path, *, top_limit: int = 30) -> dict[str, Any]:
 
 
 def _fmt(value: float, digits: int = 3) -> str:
-    if abs(value) < 0.5 * (10 ** -digits):
+    if abs(value) < 0.5 * (10**-digits):
         return f"{0.0:.{digits}f}"
     return f"{value:.{digits}f}"
 

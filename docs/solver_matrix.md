@@ -90,7 +90,146 @@ file. The selected id is persisted in both the run manifest and summary.
 configuration across profiles before advancing, avoiding first-profile bias.
 Use `0` to disable the cap.
 
-## Output Contract
+## Exhaustive Interaction Runner
+
+Status: `current-state`.
+
+`scripts/solver_matrix_exhaustive.py` runs the full interaction search. It
+derives every parameter domain from the controlled YAML catalog, then removes
+combinations whose differing values cannot affect the active solver path. For
+example, IRLS controls are fixed while relative weighting is disabled and a
+singleton pass's thresholds are fixed while that pass is disabled.
+
+The current catalog resolves to exactly 354,523 effective configurations and
+3,545,230 solves across the ten canonical profiles. The retained combinations
+include the requested unweighted configuration with S enabled, N-total-only,
+both singleton passes enabled, overshoot share `0.85`, underfill share `0`,
+underfill iterations `2`, and maximum regression `10`. A blind product which
+retained inactive values would produce about 36.9 million solves.
+
+An in-memory concurrency probe was run on 2026-07-16 on Windows with an AMD
+Ryzen 9 3900X (12 cores, 24 logical processors) and 128 GB RAM. BLAS thread
+counts were fixed to one per worker. The probe used the shipped read-only data,
+discarded result payloads, and measured the following throughput:
+
+| Execution | Solves/second |
+|---|---:|
+| Serial | 309 |
+| 6 processes | 1,978 |
+| 12 processes | 3,079 |
+| 24 processes, 4,096 tasks | 3,644 |
+| 24 processes, 10,000 tasks | 4,189 |
+| 36 processes | 3,442 |
+| 48 processes | 3,159 |
+| 60 processes | 2,916 |
+| 1,024 threads | 222 |
+
+These measurements support a large queued task batch, not thousands of active
+workers. On the measured host, `--workers 24 --queue-depth 10000` is the KISS
+starting point. At the measured compute-only rate, 3.5 million solves take
+about 14 minutes and the blind 36.9-million-row product takes about 2.45 hours.
+Result aggregation and persistence add overhead, so these projections are not
+end-to-end guarantees. `--workers 0` uses the logical CPU count; an explicit
+worker count is preferred for a reproducible production run.
+
+The parent process loads and validates all fertilizer, profile, water, and
+molar-mass data once. Persistent workers receive that immutable payload, so
+they do not race through `ensure_portable_layout()`. BLAS thread counts are
+fixed to one per worker.
+
+One writer stores normalized records in SQLite. Configurations, profiles,
+portfolios, and exact achieved-element vectors are stored once; achieved
+vectors are deduplicated by SHA-256 and referenced by integer ids from compact
+run rows. Full solver JSON is rerun deterministically and zlib-compressed only
+for the selected Pareto/utopia finalists and the legacy-composite comparison.
+Input and source hashes form a run signature. Reusing the same output directory
+resumes missing configurations; differing inputs are rejected instead of being
+mixed into an existing database.
+
+`--max-configs` supports smoke tests, `--skip-analysis` separates generation
+from analysis, and `--analyze-only` reprocesses a completed matching database.
+
+## Completed Exhaustive Benchmark: 2026-07-16
+
+Status: `research-result`.
+
+The complete interaction matrix was run against all ten canonical profiles on
+the measured Ryzen 9 3900X host. The generated evidence remains under
+`logs/solver_matrix/exhaustive_001/` and has input signature
+`7412582f02bb8124b32db1605086420d389dbf05b4cf0707e9faa2699a43d8f6`.
+
+| Measurement | Result |
+|---|---:|
+| Effective configurations | 354,523 |
+| Solver runs | 3,545,230 |
+| Successful / failed | 3,545,230 / 0 |
+| Processes / queue depth | 24 / 10,000 |
+| Compute and persistence time | 1,612.44 seconds |
+| Exact unique achieved vectors | 19,170 |
+| Deduplicated result repetition | 99.459% |
+| SQLite size | 1,346,404,352 bytes |
+| Pareto solutions | 13,935 |
+| Compressed detailed finalists | 280 |
+
+The all-objective data-normalized utopia selection was not macro-safe enough
+for a general default: it produced `N_total -23.04%` and `K -22.79%` for
+Bugbee and `N_total -15.41%` for augmented Saloner. A read-only re-evaluation
+therefore ranked every complete configuration by equal percentage RMS over
+only the macro objectives `N_total`, `P`, `K`, `Ca`, `Mg`, and `S`. Micros did
+not participate in this ranking.
+
+| Selection | Macro RMS | Rank of 354,523 |
+|---|---:|---:|
+| Macro configuration `69630` | **11.7418%** | **1** |
+| All-objective normalized utopia | 12.7758% | 172,374 |
+| Legacy composite winner | 14.6392% | 330,977 |
+| Mode-like local-knee consensus | 15.4682% | 344,815 |
+
+Configuration `69630`, hash
+`7d01f2730b85fb46e4d059b77fa98a5b29778e2153a28cdcb96a834b45b7b263`,
+is:
+
+```yaml
+relative_weighting: true
+overshoot_penalty: 0.0
+irls_max_outer_iter: 4
+scale_eps_mg_per_l: 5.0
+singleton_supplier_enabled: true
+singleton_share_threshold: 0.95
+singleton_max_regress_pp: 0.25
+singleton_underfill_enabled: false
+singleton_underfill_share_threshold: 0.85  # inactive while disabled
+singleton_underfill_max_iter: 2            # inactive while disabled
+nitrogen_objective_mode: n_total_only
+s_objective_enabled: true
+n_total_governor_enabled: true
+n_total_governor_weight: 5.0
+n_form_priority_weights: {}
+```
+
+Its largest macro percentage deviations by profile were:
+
+| Profile | Largest macro deviation |
+|---|---:|
+| Steiner | `S -3.69%` |
+| Bugbee | `K -11.94%` (`N_total -7.82%`) |
+| Conn | `P +0.41%` |
+| Cooper NFT | `P +3.55%` |
+| De La Rosa Lettuce T2 | `P +0.06%` |
+| Hermans | `K -0.04%` |
+| Hoagland and Arnon Solution 1 | `N_total -0.15%` |
+| Long Ashton LANS | `K +0.57%` |
+| Augmented Saloner | `N_total -0.14%` |
+| Golden regression | `S -87.89%` |
+
+The Golden S target remains a material portfolio trade-off: another setting
+can reduce its isolated S deficit, but not while retaining the best aggregate
+macro result across the complete corpus. Configuration `69630` is a research
+candidate, not a hardcoded runtime default, proof of biological severity, or a
+hard limit. The raw achieved vectors remain available for future scoring
+policies without rerunning the solver.
+
+## Controlled-Runner Output Contract
 
 Each run directory contains:
 
@@ -114,7 +253,24 @@ concentrations, and errors.
 Analyzer rankings use paired percentage improvement from each profile's
 canonical baseline. Raw average deltas are also retained.
 
-## Scoring
+## Exhaustive-Runner Output Contract
+
+The exhaustive output directory contains:
+
+- `exhaustive.sqlite3`: normalized, resumable raw search data, configuration
+  hashes, exact achieved vectors, Pareto membership, and compressed finalists;
+- `exhaustive_summary.json`: run counts, signature, execution settings, timing,
+  and resume status;
+- `pareto_analysis.json`: per-profile candidate/Pareto counts, the selected
+  data-normalized utopia points, signed element errors, the one configuration
+  that performs best across the complete corpus, and legacy winners.
+
+The SQLite `meta.manifest` value records resolved targets, allowed fertilizers,
+water, molar masses, parameter domains, source hashes, element order, and the
+planned row count. This is the self-contained evidence needed to reprocess a
+run without parsing repeated result text.
+
+## Controlled Legacy Scoring
 
 The benchmark scores only `objective_elements` returned by
 `solve_recipe_data()`. Elemental S is a macro score when the S objective is
@@ -138,12 +294,45 @@ composite = 3.0 * macro_rms
 
 Lower is better.
 
+The exhaustive winner selection does not use this composite score. The score
+is retained only to compare the new selection with historical results.
+
+## Exhaustive Pareto Selection
+
+For every objective element, the exhaustive analyzer calculates the absolute
+error in mg/L. A solution is removed only when another solution is no worse on
+every objective and strictly better on at least one. No macro/micro grouping,
+percentage error, element weight, severity constant, or under/over preference
+participates in this dominance test. Rescaling a single element's units by a
+positive constant therefore cannot change Pareto membership.
+
+Because a Pareto set can contain many valid trade-offs, the analyzer also emits
+one deterministic default: it min/max normalizes each element's errors over
+the Pareto set and selects the lowest RMS distance to the per-element ideal.
+This gives every observed objective dimension one normalized coordinate but is
+not presented as biological truth. The complete Pareto set remains stored, so
+a later user policy can select a different point without rerunning the solver.
+Underfill and overshoot remain symmetric in this evaluation; any directional
+preference must be an explicit later policy, not a hidden solver benchmark
+constant.
+
+For the single configuration intended to work best across the whole benchmark
+corpus, each `(profile, element)` error is normalized independently over all
+complete configurations and the lowest overall RMS distance is selected. This
+prevents profiles or elements with naturally larger mg/L magnitudes from
+winning merely because of their units. `pareto_analysis.json` reports that
+global configuration, its per-profile normalized RMS, and every signed error.
+
 ## Files And Removal
 
 - `scripts/solver_matrix.py`: runner.
+- `scripts/solver_matrix_exhaustive.py`: parallel exhaustive runner and Pareto
+  analyzer.
 - `scripts/solver_matrix_cases.yml`: benchmark data and experiment grids.
 - `scripts/solver_matrix_analyze.py`: paired analyzer and report writer.
 - `tests/test_solver_matrix.py`: runner/data-contract tests.
+- `tests/test_solver_matrix_exhaustive.py`: exhaustive enumeration, Pareto,
+  compact-storage, and resume tests.
 - `tests/test_solver_matrix_analyze.py`: analysis-contract tests.
 - `logs/solver_matrix/...`: generated, ignored results.
 

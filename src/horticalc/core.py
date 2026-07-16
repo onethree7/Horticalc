@@ -456,6 +456,7 @@ def compute_solution(
         liters=liters,
         oxides_mg_l=oxides,
         elements_mg_l=elements,
+        molar_masses=mm,
         config=recipe.get("sluijsmann"),
     )
 

@@ -302,8 +302,13 @@ fertilizer sets which were not part of the primary setting search. With the
 canonical defaults it executes:
 
 ```text
-200 configurations x 25 portfolios x 10 profiles = 50,000 solves
+200 shortlisted configurations x 25 portfolios x 10 profiles = 50,000 solves
 ```
+
+The two historical references `69630` and `207711` are always appended when
+they are not already shortlisted. The current default therefore executes at
+most 50,500 solves and retains a direct comparison even when either reference
+ranks poorly on the primary portfolio.
 
 The 25 portfolios are the six named cases plus the 19 deterministic
 leave-one-fertilizer-out variants of the primary portfolio. Tasks are one
@@ -327,6 +332,20 @@ worst profile/portfolio case, and mean case cost. It additionally records:
 - deterministic bootstrap median rank, 90th-percentile rank, top-ten share,
   and win share;
 - the winner's score margin to the runner-up.
+
+Exact score ties use shared competition ranks (`1, 1, 3`) instead of an
+arbitrary configuration-id order. The report also groups configurations whose
+learned costs are identical across all 250 profile/portfolio cases, so solver
+settings which are observationally equivalent are not presented as distinct
+winners.
+
+The first lexicographic row is reported as the `leader`, not automatically as
+a validated winner. Validation is deliberately strict and preference-free: a
+winner must be unique, retain shared rank 1 in every leave-one-profile and
+leave-one-portfolio analysis, and have bootstrap 90th-percentile rank 1. If
+any condition fails, the JSON and CLI state that no winner has been validated
+and retain the complete stability evidence instead of silently relaxing the
+criterion.
 
 This does not manufacture biological ground truth. It tests whether the
 preference learned from labelled trade-offs generalizes and whether a setting

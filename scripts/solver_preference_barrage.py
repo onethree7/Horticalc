@@ -87,6 +87,12 @@ def _load_shortlist(path: Path, top: int) -> tuple[str, tuple[ShortlistConfig, .
     rows = list(ranking.get("ranking") or [])[:top]
     if not rows:
         raise ValueError("Preference ranking contains no configurations")
+    selected_ids = {int(row["config_id"]) for row in rows}
+    for reference in (ranking.get("references") or {}).values():
+        reference_id = int(reference["config_id"])
+        if reference_id not in selected_ids:
+            rows.append(reference)
+            selected_ids.add(reference_id)
     configs = tuple(
         ShortlistConfig(
             config_id=int(row["config_id"]),
@@ -487,16 +493,45 @@ def run_barrage(
     return summary
 
 
-def _rank_order(
+def _rank_metrics(
     config_ids: np.ndarray,
     element_costs: np.ndarray,
     total_costs: np.ndarray,
     mask: np.ndarray,
-) -> np.ndarray:
+) -> tuple[np.ndarray, tuple[np.ndarray, np.ndarray, np.ndarray]]:
     worst_element = element_costs[:, mask].max(axis=1)
     worst_case = total_costs[:, mask].max(axis=1)
     mean_case = total_costs[:, mask].mean(axis=1)
-    return np.lexsort((config_ids, mean_case, worst_case, worst_element))
+    order = np.lexsort((config_ids, mean_case, worst_case, worst_element))
+    return order, (worst_element, worst_case, mean_case)
+
+
+def _score_key(metrics: tuple[np.ndarray, ...], index: int) -> tuple[float, ...]:
+    return tuple(round(float(metric[index]), 12) for metric in metrics)
+
+
+def _competition_ranks(order: np.ndarray, metrics: tuple[np.ndarray, ...]) -> np.ndarray:
+    ranks = np.empty(len(order), dtype=np.int32)
+    previous: tuple[float, ...] | None = None
+    shared_rank = 0
+    for position, index in enumerate(order, start=1):
+        key = _score_key(metrics, int(index))
+        if key != previous:
+            shared_rank = position
+            previous = key
+        ranks[int(index)] = shared_rank
+    return ranks
+
+
+def _rank_map(
+    config_ids: np.ndarray,
+    element_costs: np.ndarray,
+    total_costs: np.ndarray,
+    mask: np.ndarray,
+) -> dict[str, int]:
+    order, metrics = _rank_metrics(config_ids, element_costs, total_costs, mask)
+    ranks = _competition_ranks(order, metrics)
+    return {str(int(config_id)): int(ranks[index]) for index, config_id in enumerate(config_ids)}
 
 
 def analyze_barrage(
@@ -587,35 +622,37 @@ def analyze_barrage(
     if not np.isfinite(total_costs).all():
         raise ValueError("Barrage database has missing or failed cases")
     full_mask = np.ones(len(cases), dtype=bool)
-    order = _rank_order(config_ids, element_costs, total_costs, full_mask)
+    order, full_metrics = _rank_metrics(config_ids, element_costs, total_costs, full_mask)
+    full_ranks = _competition_ranks(order, full_metrics)
     profile_holdouts = {}
     for profile in context.profiles:
         mask = np.array([case[0] != profile.profile_id for case in cases])
         if np.any(mask):
-            holdout_order = _rank_order(config_ids, element_costs, total_costs, mask)
-            profile_holdouts[profile.profile_id] = {
-                str(int(config_ids[index])): rank for rank, index in enumerate(holdout_order, start=1)
-            }
+            profile_holdouts[profile.profile_id] = _rank_map(config_ids, element_costs, total_costs, mask)
     portfolio_holdouts = {}
     for portfolio in context.portfolios:
         mask = np.array([case[1] != portfolio.portfolio_id for case in cases])
-        holdout_order = _rank_order(config_ids, element_costs, total_costs, mask)
-        portfolio_holdouts[portfolio.portfolio_id] = {
-            str(int(config_ids[index])): rank for rank, index in enumerate(holdout_order, start=1)
-        }
+        portfolio_holdouts[portfolio.portfolio_id] = _rank_map(config_ids, element_costs, total_costs, mask)
     rng = np.random.default_rng(seed)
     bootstrap_ranks = np.empty((bootstrap_samples, len(config_ids)), dtype=np.int32)
     for sample_index in range(bootstrap_samples):
         sampled = rng.integers(0, len(cases), size=len(cases))
-        sample_order = _rank_order(
+        sample_order, sample_metrics = _rank_metrics(
             config_ids,
             element_costs[:, sampled],
             total_costs[:, sampled],
             np.ones(len(sampled), dtype=bool),
         )
-        bootstrap_ranks[sample_index, sample_order] = np.arange(1, len(config_ids) + 1)
+        bootstrap_ranks[sample_index] = _competition_ranks(sample_order, sample_metrics)
+    behavior_groups: dict[str, list[int]] = {}
+    behavior_hashes = []
+    for index, config_id in enumerate(config_ids):
+        digest = hashlib.sha256(element_costs[index].tobytes() + total_costs[index].tobytes()).hexdigest()
+        behavior_hashes.append(digest)
+        behavior_groups.setdefault(digest, []).append(int(config_id))
     rows = []
-    for rank, index in enumerate(order, start=1):
+    for index in order:
+        index = int(index)
         config_id = int(config_ids[index])
         worst_column = int(np.argmax(element_costs[index]))
         worst_case_column = int(np.argmax(total_costs[index]))
@@ -628,7 +665,7 @@ def analyze_barrage(
         sampled_ranks = bootstrap_ranks[:, index]
         rows.append(
             {
-                "rank": rank,
+                "rank": int(full_ranks[index]),
                 "config_id": config_id,
                 "config_hash": config.config_hash,
                 "solver_config": config.values,
@@ -644,6 +681,8 @@ def analyze_barrage(
                     "portfolio_id": cases[worst_case_column][1],
                 },
                 "mean_case_cost": float(total_costs[index].mean()),
+                "behavior_hash": behavior_hashes[index],
+                "equivalent_behavior_count": len(behavior_groups[behavior_hashes[index]]),
                 "worst_profile": {
                     "profile_id": worst_profile_id,
                     "mean_cost": profile_means[worst_profile_id],
@@ -663,13 +702,62 @@ def analyze_barrage(
             }
         )
     winner_margin = None
-    if len(order) > 1:
-        first, second = int(order[0]), int(order[1])
+    first = int(order[0])
+    winner_key = _score_key(full_metrics, first)
+    winner_indices = [int(index) for index in order if _score_key(full_metrics, int(index)) == winner_key]
+    second = next(
+        (int(index) for index in order if _score_key(full_metrics, int(index)) != winner_key),
+        None,
+    )
+    if second is not None:
         winner_margin = {
             "worst_element_cost": float(element_costs[second].max() - element_costs[first].max()),
             "worst_case_cost": float(total_costs[second].max() - total_costs[first].max()),
             "mean_case_cost": float(total_costs[second].mean() - total_costs[first].mean()),
         }
+    for row in rows:
+        worst_profile_holdout = max(row["leave_one_profile_out_ranks"].values(), default=row["rank"])
+        worst_portfolio_holdout = max(row["leave_one_portfolio_out_ranks"].values(), default=row["rank"])
+        row["stability"] = {
+            "worst_leave_one_profile_rank": worst_profile_holdout,
+            "worst_leave_one_portfolio_rank": worst_portfolio_holdout,
+            "worst_holdout_rank": max(worst_profile_holdout, worst_portfolio_holdout),
+        }
+    stability_order = sorted(
+        rows,
+        key=lambda row: (
+            row["stability"]["worst_holdout_rank"],
+            row["bootstrap"]["rank_p90"],
+            row["rank"],
+            row["config_id"],
+        ),
+    )
+    previous_stability_key: tuple[float, ...] | None = None
+    shared_stability_rank = 0
+    for position, row in enumerate(stability_order, start=1):
+        stability_key = (
+            float(row["stability"]["worst_holdout_rank"]),
+            round(float(row["bootstrap"]["rank_p90"]), 12),
+            float(row["rank"]),
+        )
+        if stability_key != previous_stability_key:
+            shared_stability_rank = position
+            previous_stability_key = stability_key
+        row["stability"]["rank"] = shared_stability_rank
+    leader = rows[0]
+    leader_validation = {
+        "config_id": leader["config_id"],
+        "unique_full_ranking_leader": len(winner_indices) == 1,
+        "worst_leave_one_profile_rank": leader["stability"]["worst_leave_one_profile_rank"],
+        "worst_leave_one_portfolio_rank": leader["stability"]["worst_leave_one_portfolio_rank"],
+        "bootstrap_rank_p90": leader["bootstrap"]["rank_p90"],
+    }
+    leader_validation["validated_winner"] = bool(
+        leader_validation["unique_full_ranking_leader"]
+        and leader_validation["worst_leave_one_profile_rank"] == 1
+        and leader_validation["worst_leave_one_portfolio_rank"] == 1
+        and leader_validation["bootstrap_rank_p90"] == 1.0
+    )
     return {
         "schema_version": SCHEMA_VERSION,
         "barrage_signature": context.signature,
@@ -678,7 +766,13 @@ def analyze_barrage(
         "case_count": len(cases),
         "config_count": len(config_ids),
         "bootstrap_samples": bootstrap_samples,
+        "winner_config_ids": [int(config_ids[index]) for index in winner_indices],
         "winner_margin_to_second": winner_margin,
+        "leader_validation": leader_validation,
+        "stability_ranking_config_ids": [row["config_id"] for row in stability_order],
+        "equivalent_behavior_groups": {
+            digest: config_group for digest, config_group in behavior_groups.items() if len(config_group) > 1
+        },
         "ranking": rows,
     }
 
@@ -741,10 +835,18 @@ def main(argv: list[str] | None = None) -> int:
                 json.dumps(analysis, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
                 encoding="utf-8",
             )
+            validation = analysis["leader_validation"]
             print(
-                f"Barrage winner: config {analysis['ranking'][0]['config_id']} "
+                f"Barrage lexicographic leader: config {validation['config_id']} "
                 f"({analysis['case_count']} profile-portfolio cases)"
             )
+            if not validation["validated_winner"]:
+                print(
+                    "No validated winner: "
+                    f"worst profile holdout rank={validation['worst_leave_one_profile_rank']}, "
+                    f"worst portfolio holdout rank={validation['worst_leave_one_portfolio_rank']}, "
+                    f"bootstrap p90 rank={validation['bootstrap_rank_p90']:.1f}"
+                )
     finally:
         connection.close()
     return 0

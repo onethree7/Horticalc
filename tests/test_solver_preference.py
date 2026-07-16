@@ -288,3 +288,16 @@ def test_portfolio_barrage_is_compact_resumable_and_reports_holdouts(
     resumed = json.loads((out_dir / "barrage_summary.json").read_text(encoding="utf-8"))
     assert resumed["resumed"] is True
     assert resumed["executed_tasks_this_invocation"] == 0
+
+
+def test_barrage_competition_ranks_do_not_split_exact_ties() -> None:
+    config_ids = np.array([3, 1, 2])
+    element_costs = np.array([[1.0, 2.0], [1.0, 2.0], [1.0, 3.0]])
+    total_costs = np.array([[2.0, 3.0], [2.0, 3.0], [2.0, 4.0]])
+    mask = np.array([True, True])
+
+    order, metrics = barrage._rank_metrics(config_ids, element_costs, total_costs, mask)
+    ranks = barrage._competition_ranks(order, metrics)
+
+    assert order.tolist() == [1, 0, 2]
+    assert ranks.tolist() == [1, 1, 3]

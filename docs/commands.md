@@ -170,10 +170,11 @@ The preference commands turn Pareto conflicts into persistent A/B labels,
 fit a monotone model, and rank configurations without allowing good elements
 to compensate for the single worst learned element penalty. After an initial
 model exists, `pairs --model ... --append` selects uncertain conflicts for
-active learning. The barrage command evaluates the top 200 settings over the
-25 configured fertilizer portfolios and ten profiles (50,000 solves), then
-reports profile/portfolio holdouts and bootstrap rank stability. All generated
-files remain under ignored `logs/solver_matrix/` paths by default.
+active learning. The barrage command evaluates the top 200 settings plus the
+two historical references over the 25 configured fertilizer portfolios and
+ten profiles (at most 50,500 solves), then reports profile/portfolio holdouts
+and bootstrap rank stability. All generated files remain under ignored
+`logs/solver_matrix/` paths by default.
 
 ## Docs Anti-Drift
 

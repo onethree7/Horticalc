@@ -887,12 +887,21 @@ def rank_configurations(
     reference_ranks = {
         str(config_id): rank_by_config[config_id] for config_id in REFERENCE_CONFIG_IDS if config_id in rank_by_config
     }
+    references = {
+        str(config_id): {
+            "rank": rank_by_config[config_id],
+            **database.config(config_id),
+        }
+        for config_id in REFERENCE_CONFIG_IDS
+        if config_id in rank_by_config
+    }
     return {
         "schema_version": SCHEMA_VERSION,
         "matrix_signature": database.signature,
         "selection": ("lexicographic worst learned element penalty, then worst profile cost, then mean profile cost"),
         "complete_configurations": len(ordered),
         "reference_ranks": reference_ranks,
+        "references": references,
         "ranking": ranking,
     }
 

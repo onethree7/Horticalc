@@ -638,6 +638,54 @@ def _classification_metrics(differences: np.ndarray, choices: np.ndarray, weight
     return {"accuracy": accuracy, "log_loss": log_loss}
 
 
+def _grouped_design(
+    differences: np.ndarray,
+    names: tuple[str, ...],
+) -> tuple[np.ndarray, list[tuple[str, tuple[int, ...]]]]:
+    """Collapse mg/L, relative, and reachability features per element/direction.
+
+    The arithmetic mean is monotone in every input.  It keeps all three physical
+    views while leaving only one learnable severity per element and direction.
+    Groups without any contrast in the labelled pairs are omitted rather than
+    receiving an arbitrary coefficient from the optimiser initialisation.
+    """
+    groups: list[tuple[str, tuple[int, ...]]] = []
+    for offset in range(0, len(names), 6):
+        element = names[offset].split(":", 1)[0]
+        for direction, indices in (
+            ("under", (offset, offset + 2, offset + 4)),
+            ("over", (offset + 1, offset + 3, offset + 5)),
+        ):
+            if np.any(np.abs(differences[:, indices]) > 1e-12):
+                groups.append((f"{element}:{direction}", indices))
+    if not groups:
+        raise ValueError("Labelled pairs contain no varying preference features")
+    design = np.column_stack([differences[:, indices].mean(axis=1) for _, indices in groups])
+    return design, groups
+
+
+def _expanded_group_weights(
+    feature_count: int,
+    groups: list[tuple[str, tuple[int, ...]]],
+    group_weights: np.ndarray,
+) -> np.ndarray:
+    expanded = np.zeros(feature_count, dtype=float)
+    for (_, indices), weight in zip(groups, group_weights, strict=True):
+        expanded[list(indices)] = float(weight) / len(indices)
+    return expanded
+
+
+def _design_diagnostics(design: np.ndarray) -> dict[str, float | int]:
+    rank = int(np.linalg.matrix_rank(design))
+    condition = float(np.linalg.cond(design)) if design.size else math.inf
+    return {
+        "rows": int(design.shape[0]),
+        "columns": int(design.shape[1]),
+        "rank": rank,
+        "condition_number": condition,
+    }
+
+
 def train_model(
     pairs: list[dict[str, Any]],
     labels: dict[str, dict[str, Any]],
@@ -647,6 +695,7 @@ def train_model(
     l2: float,
     iterations: int,
     learning_rate: float,
+    feature_structure: str = "independent",
 ) -> dict[str, Any]:
     if not pairs:
         raise ValueError("No preference pairs are available")
@@ -658,13 +707,23 @@ def train_model(
     scales = _feature_scales(raw)
     transformed = _transform_features(raw, scales)
     differences = transformed[1::2] - transformed[0::2]
-    weights = fit_monotone_bradley_terry(
-        differences,
+    if feature_structure == "grouped":
+        fit_differences, groups = _grouped_design(differences, names)
+    elif feature_structure == "independent":
+        fit_differences = differences
+        groups = []
+    else:
+        raise ValueError(f"Unknown feature structure: {feature_structure}")
+    fit_weights = fit_monotone_bradley_terry(
+        fit_differences,
         choices,
         l1=l1,
         l2=l2,
         iterations=iterations,
         learning_rate=learning_rate,
+    )
+    weights = (
+        _expanded_group_weights(len(names), groups, fit_weights) if feature_structure == "grouped" else fit_weights
     )
     holdouts = []
     profile_array = np.array(profiles)
@@ -677,8 +736,12 @@ def train_model(
         fold_scales = _feature_scales(raw[train_solution_mask])
         fold_transformed = _transform_features(raw, fold_scales)
         fold_differences = fold_transformed[1::2] - fold_transformed[0::2]
+        if feature_structure == "grouped":
+            fold_fit_differences = np.column_stack([fold_differences[:, indices].mean(axis=1) for _, indices in groups])
+        else:
+            fold_fit_differences = fold_differences
         fold_weights = fit_monotone_bradley_terry(
-            fold_differences[train_mask],
+            fold_fit_differences[train_mask],
             choices[train_mask],
             l1=l1,
             l2=l2,
@@ -689,13 +752,21 @@ def train_model(
             {
                 "profile_id": profile_id,
                 "labels": int(np.count_nonzero(test_mask)),
-                **_classification_metrics(fold_differences[test_mask], choices[test_mask], fold_weights),
+                **_classification_metrics(fold_fit_differences[test_mask], choices[test_mask], fold_weights),
             }
         )
     nonzero = [
         {"feature": name, "weight": float(weight)} for name, weight in zip(names, weights, strict=True) if weight > 1e-9
     ]
     nonzero.sort(key=lambda value: (-value["weight"], value["feature"]))
+    learned_severities = []
+    if feature_structure == "grouped":
+        learned_severities = [
+            {"element_direction": name, "weight": float(weight)}
+            for (name, _), weight in zip(groups, fit_weights, strict=True)
+            if weight > 1e-9
+        ]
+        learned_severities.sort(key=lambda value: (-value["weight"], value["element_direction"]))
     profile_contexts: dict[str, dict[str, Any]] = {}
     for pair in pairs:
         spans = pair["a"].get("reachable_error_span_mg_per_l") or {}
@@ -706,13 +777,19 @@ def train_model(
         "schema_version": SCHEMA_VERSION,
         "matrix_signature": pairs[0]["matrix_signature"],
         "model": "projected non-negative Bradley-Terry logistic regression",
+        "feature_structure": feature_structure,
         "features": list(names),
         "scales": [float(value) for value in scales],
         "weights": [float(value) for value in weights],
         "regularization": {"l1": l1, "l2": l2},
-        "training": {"labels": len(choices), **_classification_metrics(differences, choices, weights)},
+        "training": {
+            "labels": len(choices),
+            **_classification_metrics(fit_differences, choices, fit_weights),
+        },
+        "design_diagnostics": _design_diagnostics(fit_differences),
         "leave_one_profile_out": holdouts,
         "nonzero_weights": nonzero,
+        "learned_severities": learned_severities,
         "profile_contexts": profile_contexts,
     }
 
@@ -938,6 +1015,12 @@ def build_parser() -> argparse.ArgumentParser:
     train.add_argument("--l2", type=float, default=0.02)
     train.add_argument("--iterations", type=int, default=4_000)
     train.add_argument("--learning-rate", type=float, default=0.15)
+    train.add_argument(
+        "--feature-structure",
+        choices=("grouped", "independent"),
+        default="grouped",
+        help="grouped learns one severity per element/direction; independent is the legacy research model",
+    )
 
     rank = subparsers.add_parser("rank", help="Rank complete configurations worst-element first")
     _add_common_database_argument(rank)
@@ -984,6 +1067,7 @@ def main(argv: list[str] | None = None) -> int:
                 l2=args.l2,
                 iterations=args.iterations,
                 learning_rate=args.learning_rate,
+                feature_structure=args.feature_structure,
             )
             args.out.parent.mkdir(parents=True, exist_ok=True)
             args.out.write_text(

@@ -270,6 +270,14 @@ retain the physical difference between, for example, `N -30 mg/L` and
 out validation refits both feature scales and coefficients using only the
 training profiles.
 
+The default `grouped` feature structure learns one severity per element and
+direction. Its monotone input is the mean of the independently scaled/logged
+mg/L, relative-target, and reachable-span views. This retains all three views
+while preventing nearly collinear columns for one error from exchanging
+arbitrary coefficients. The legacy `independent` structure remains available
+as a research comparator. Model JSON records matrix rank, condition number,
+learned grouped severities, training metrics, and profile holdouts.
+
 The final ordering is deliberately non-compensating and lexicographic:
 
 1. lowest worst learned element penalty across all profiles;
@@ -334,10 +342,10 @@ worst profile/portfolio case, and mean case cost. It additionally records:
 - the winner's score margin to the runner-up.
 
 Exact score ties use shared competition ranks (`1, 1, 3`) instead of an
-arbitrary configuration-id order. The report also groups configurations whose
-learned costs are identical across all 250 profile/portfolio cases, so solver
-settings which are observationally equivalent are not presented as distinct
-winners.
+arbitrary configuration-id order. Holdout and bootstrap ranks count distinct
+solver behaviors rather than redundant settings. Behaviors are deduplicated
+by their full sequence of achieved solution vectors across all 250 cases;
+equivalent configuration ids remain visible but cannot inflate ranks.
 
 The first lexicographic row is reported as the `leader`, not automatically as
 a validated winner. Validation is deliberately strict and preference-free: a
@@ -350,6 +358,91 @@ criterion.
 This does not manufacture biological ground truth. It tests whether the
 preference learned from labelled trade-offs generalizes and whether a setting
 collapses when the fertilizer portfolio changes.
+
+## Exhaustive Stress Screening
+
+Status: `current-state research-infrastructure`.
+
+The primary top-200 shortlist can miss settings which generalize to restricted
+fertilizer portfolios. `scripts/solver_preference_screen.py` therefore runs
+every one of the 354,523 exhaustive configurations on three stress portfolios
+which exposed distinct failures in the first barrage:
+
+- `solve_golden`;
+- `restricted_blossom_fetrilon_pekacid_spezial`;
+- `restricted_313_bittersalz_mkp`.
+
+Across all ten profiles this is 10,635,690 screening solves. The runner uses
+the same 24-process/10,000-queue execution model and normalized, resumable,
+SHA-256-deduplicated SQLite storage. It reads configurations from the original
+exhaustive database instead of serializing the complete configuration catalog
+into a giant intermediate JSON file.
+
+`screening_ranking.json` is a union rather than a single-score cutoff. By
+default it retains candidates from:
+
+- the best 10,000 non-compensating lexicographic results;
+- the best 5,000 worst-case results;
+- the best 5,000 mean-case results;
+- the best 2,000 results for each screening portfolio;
+- the best 1,000 results for each profile;
+- the best 2,000 results after leaving out each profile;
+- the best 2,000 results after leaving out each screening portfolio;
+- historical references `69630` and `207711`.
+
+Overlaps are stored once and every retained configuration records all reasons
+for its inclusion. The union is then passed to the complete 25-portfolio
+barrage. This is a successive-halving search: it covers the full solver-setting
+space on the known stress axes, while reserving the complete portfolio matrix
+for a broad evidence-backed finalist set. The final barrage still applies the
+same strict holdout and bootstrap winner validation.
+
+`--include-ranking` makes successive screens a strict shortlist union.
+`--analysis-model` can rescore stored solutions with another compatible model,
+and `--analysis-out` preserves both reports. The barrage supports the same
+model-only rescoring. `--extend-shortlist` permits a stored barrage to grow
+only when every old configuration and all semantic solver inputs still match;
+it then computes only the new configurations.
+
+## Broad Preference Research Result (2026-07-17)
+
+Status: `research-result; no validated winner`.
+
+The completed broad search used two full-configuration screens and one
+successively extended barrage:
+
+- 354,523 configurations x 10 profiles x the three primary stress portfolios
+  = 10,635,690 solves;
+- the same configuration/profile space on `loo_02`, `loo_18`, and
+  `augmented_saloner` = another 10,635,690 solves;
+- the union of both screens and both preference structures retained 55,065
+  configurations;
+- 55,065 x 10 profiles x 25 portfolios = 13,766,250 complete barrage rows,
+  representing 9,785 exact solver behaviors.
+
+No runtime solver default was changed. Generated SQLite/JSON evidence stays
+under ignored `logs/solver_matrix/` paths.
+
+The independent model's full-matrix leader is config `152177`; it is not
+validated (worst profile holdout behavior rank 4,943, worst portfolio holdout
+rank 465, bootstrap p90 rank 586). The grouped model's leader is config `22403`;
+it is also not validated (7,467, 2,014, and 2,681.4 respectively). Choosing
+either leader as the product default would overstate the evidence.
+
+A minimax comparison of stability ranks across both model structures identifies
+configs `34191` and `34219` as tied cross-model robustness leaders. Their
+stability ranks are 1 under the independent model and 5 under the grouped
+model, but their worst holdout behavior ranks still reach 1,857 and 2,247.
+They are research finalists, not proven biological defaults. Both use total-N
+only, S enabled, relative weighting enabled, IRLS 2, scale epsilon 5 mg/L,
+overshoot penalty 1, singleton supplier enabled, singleton underfill disabled,
+singleton max regress 0 percentage points, and underfill share 0.85; they differ
+only in singleton supplier share (0 for `34191`, 0.65 for `34219`).
+
+Configuration multiplicity therefore no longer distorts ranks, restricted
+portfolios are covered broadly, and model dependence is explicit. The 120
+labels still do not identify a unique biological trade-off policy strongly
+enough for one universal configuration to survive every holdout.
 
 ## Controlled-Runner Output Contract
 
@@ -456,6 +549,8 @@ global configuration, its per-profile normalized RMS, and every signed error.
   and non-compensating shortlist ranking.
 - `scripts/solver_preference_barrage.py`: deduplicated shortlist barrage and
   holdout/bootstrap stability analysis.
+- `scripts/solver_preference_screen.py`: exhaustive stress-portfolio screen and
+  multi-view shortlist construction.
 - `tests/test_solver_matrix.py`: runner/data-contract tests.
 - `tests/test_solver_matrix_exhaustive.py`: exhaustive enumeration, Pareto,
   compact-storage, and resume tests.

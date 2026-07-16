@@ -8,8 +8,10 @@ from types import SimpleNamespace
 import numpy as np
 
 import scripts.solver_matrix as solver_matrix
+import scripts.solver_matrix_exhaustive as exhaustive
 import scripts.solver_preference as preference
 import scripts.solver_preference_barrage as barrage
+import scripts.solver_preference_screen as screen
 
 
 def _solution(
@@ -131,6 +133,48 @@ def test_monotone_model_learns_preference_without_negative_penalties() -> None:
 
     assert model["training"]["accuracy"] == 1.0
     assert all(weight >= 0.0 for weight in model["weights"])
+    assert preference.solution_cost(pairs[0]["a"], model) < preference.solution_cost(pairs[0]["b"], model)
+
+
+def test_grouped_model_shares_one_severity_across_physical_views() -> None:
+    pairs = []
+    labels = {}
+    for index in range(8):
+        preferred = _solution(n_error=-1.0, cu_error=0.2, solution_hash=f"ga-{index}")
+        rejected = _solution(n_error=-20.0 - index, cu_error=0.0, solution_hash=f"gb-{index}")
+        pair = {
+            "pair_id": f"group-{index}",
+            "matrix_signature": "matrix",
+            "profile_id": "profile",
+            "a": preferred,
+            "b": rejected,
+        }
+        pairs.append(pair)
+        labels[pair["pair_id"]] = {
+            "pair_id": pair["pair_id"],
+            "matrix_signature": "matrix",
+            "choice": "A",
+        }
+
+    model = preference.train_model(
+        pairs,
+        labels,
+        ("N_total", "Cu"),
+        l1=0.0,
+        l2=0.02,
+        iterations=2_000,
+        learning_rate=0.15,
+        feature_structure="grouped",
+    )
+
+    assert model["feature_structure"] == "grouped"
+    assert model["design_diagnostics"]["columns"] < len(model["features"])
+    assert model["design_diagnostics"]["rank"] <= model["design_diagnostics"]["columns"]
+    severity = next(row for row in model["learned_severities"] if row["element_direction"] == "N_total:under")
+    indices = [
+        model["features"].index(f"N_total:{suffix}") for suffix in ("under_mg", "under_relative", "under_reachable")
+    ]
+    assert all(np.isclose(model["weights"][index], severity["weight"] / 3.0) for index in indices)
     assert preference.solution_cost(pairs[0]["a"], model) < preference.solution_cost(pairs[0]["b"], model)
 
 
@@ -301,3 +345,150 @@ def test_barrage_competition_ranks_do_not_split_exact_ties() -> None:
 
     assert order.tolist() == [1, 0, 2]
     assert ranks.tolist() == [1, 1, 3]
+
+
+def test_barrage_collapsed_ranks_count_behaviors_not_duplicate_configs() -> None:
+    config_ids = np.array([10, 11, 20])
+    element_costs = np.array([[1.0], [1.0], [2.0]])
+    total_costs = np.array([[1.0], [1.0], [2.0]])
+    representatives = np.array([0, 2])
+    behavior_index = np.array([0, 0, 1])
+
+    ranks, _ = barrage._collapsed_ranks(
+        config_ids,
+        element_costs,
+        total_costs,
+        np.array([True]),
+        representatives,
+        behavior_index,
+    )
+
+    assert ranks.tolist() == [1, 1, 2]
+
+
+def test_analysis_compatibility_ignores_model_and_source_hashes(tmp_path: Path) -> None:
+    connection = sqlite3.connect(tmp_path / "analysis.sqlite3")
+    stored = {
+        "schema_version": 1,
+        "source_matrix_signature": "matrix",
+        "shortlist_config_count": 1,
+        "shortlist_sha256": "shortlist",
+        "profiles": [{"profile_id": "p"}],
+        "portfolios": [{"portfolio_id": "f"}],
+        "fertilizers": {},
+        "molar_masses": {},
+        "water_profile_name": "water",
+        "water_profile_data": {},
+        "osmosis_percent": 100.0,
+        "liters": 10.0,
+        "element_order": ["N_total"],
+        "planned_solves": 1,
+        "preference_model_sha256": "old-model",
+        "source_sha256": "old-source",
+    }
+    connection.execute("CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+    connection.execute("INSERT INTO meta VALUES ('manifest', ?)", (json.dumps(stored),))
+    changed = {**stored, "preference_model_sha256": "new-model", "source_sha256": "new-source"}
+    context = barrage.BarrageContext(
+        profiles=(),
+        portfolios=(),
+        configs=(),
+        fertilizers={},
+        molar_masses={},
+        water_profile_name="water",
+        water_profile_data={},
+        osmosis_percent=100.0,
+        liters=10.0,
+        element_order=("N_total",),
+        signature="new-signature",
+        manifest=changed,
+    )
+
+    assert barrage._stored_analysis_inputs_match(connection, context)
+    context.manifest["liters"] = 20.0
+    assert not barrage._stored_analysis_inputs_match(connection, context)
+    connection.close()
+
+
+def test_all_config_screen_is_compact_resumable_and_selects_union(
+    tmp_path: Path,
+) -> None:
+    profile_id = "Hoagland_Arnon_1950_Solution1_Nitrate"
+    source_dir = tmp_path / "source"
+    assert (
+        exhaustive.main(
+            [
+                "--max-configs",
+                "4",
+                "--profiles",
+                profile_id,
+                "--workers",
+                "1",
+                "--skip-analysis",
+                "--out-dir",
+                str(source_dir),
+            ]
+        )
+        == 0
+    )
+    source_database = source_dir / "exhaustive.sqlite3"
+    with sqlite3.connect(source_database) as connection:
+        signature = connection.execute("SELECT value FROM meta WHERE key = 'signature'").fetchone()[0]
+    names = preference.feature_names(("N_total",))
+    model_path = tmp_path / "model.json"
+    model_path.write_text(
+        json.dumps(
+            {
+                "matrix_signature": signature,
+                "features": list(names),
+                "scales": [1.0] * len(names),
+                "weights": [1.0 if name == "N_total:under_mg" else 0.0 for name in names],
+                "profile_contexts": {profile_id: {"reachable_error_span_mg_per_l": {"N_total": 100.0}}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    out_dir = tmp_path / "screen"
+    arguments = [
+        "--source-database",
+        str(source_database),
+        "--model",
+        str(model_path),
+        "--profiles",
+        profile_id,
+        "--portfolio-ids",
+        "solve_golden,restricted_313_bittersalz_mkp",
+        "--workers",
+        "1",
+        "--queue-depth",
+        "2",
+        "--lex-top",
+        "2",
+        "--worst-case-top",
+        "2",
+        "--mean-top",
+        "2",
+        "--per-portfolio-top",
+        "1",
+        "--per-profile-top",
+        "1",
+        "--per-portfolio-holdout-top",
+        "1",
+        "--per-profile-holdout-top",
+        "1",
+        "--out-dir",
+        str(out_dir),
+    ]
+
+    assert screen.main(arguments) == 0
+    summary = json.loads((out_dir / "screening_summary.json").read_text(encoding="utf-8"))
+    ranking = json.loads((out_dir / "screening_ranking.json").read_text(encoding="utf-8"))
+    assert summary["planned_solves"] == 8
+    assert summary["status"] == "complete"
+    assert 1 <= ranking["selected_configurations"] <= 4
+    assert all(row["selection_reasons"] for row in ranking["ranking"])
+
+    assert screen.main(arguments) == 0
+    resumed = json.loads((out_dir / "screening_summary.json").read_text(encoding="utf-8"))
+    assert resumed["resumed"] is True
+    assert resumed["executed_tasks_this_invocation"] == 0

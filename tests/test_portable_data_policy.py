@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 from pathlib import Path
 
@@ -9,6 +10,14 @@ import pytest
 import horticalc.data_io as data_io
 from horticalc import paths
 from horticalc.data_io import Fertilizer, load_fertilizers, save_fertilizers
+
+
+def test_writable_directory_probe_is_parallel_safe(tmp_path: Path) -> None:
+    target = tmp_path / "shared"
+    with ThreadPoolExecutor(max_workers=16) as executor:
+        list(executor.map(paths._ensure_writable_dir, [target] * 64))
+
+    assert list(target.glob(".write_test_*")) == []
 
 
 def _write_fertilizers_csv(path: Path, rows: list[tuple[str, float]] | None = None) -> None:

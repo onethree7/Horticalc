@@ -147,11 +147,14 @@ python scripts/solver_matrix_exhaustive.py --workers 24 --queue-depth 10000 --ou
 python scripts/solver_matrix_exhaustive.py --analyze-only --workers 24 --out-dir logs/solver_matrix/exhaustive_001
 python scripts/solver_preference.py pairs --count 120
 python scripts/solver_preference.py label
-python scripts/solver_preference.py train
+python scripts/solver_preference.py train --feature-structure grouped
 python scripts/solver_preference.py pairs --model logs/solver_matrix/exhaustive_001/preference_model.json --append --count 40
 python scripts/solver_preference.py label
-python scripts/solver_preference.py train
+python scripts/solver_preference.py train --feature-structure grouped
 python scripts/solver_preference.py rank --top 200
+python scripts/solver_preference_screen.py --workers 24 --queue-depth 10000 --out-dir logs/solver_matrix/preference_screen_001
+python scripts/solver_preference_barrage.py --ranking logs/solver_matrix/preference_screen_001/screening_ranking.json --top 50000 --workers 24 --queue-depth 10000 --out-dir logs/solver_matrix/preference_barrage_wide_001
+python scripts/solver_preference_barrage.py --ranking logs/solver_matrix/preference_screen_001/screening_ranking.json --top 50000 --out-dir logs/solver_matrix/preference_barrage_wide_001 --analyze-only --analysis-model logs/solver_matrix/exhaustive_001/preference_model_grouped.json --analysis-out logs/solver_matrix/preference_barrage_wide_001/barrage_ranking_grouped.json
 python scripts/solver_preference_barrage.py --top 200 --workers 24 --queue-depth 10000
 ```
 
@@ -170,11 +173,17 @@ The preference commands turn Pareto conflicts into persistent A/B labels,
 fit a monotone model, and rank configurations without allowing good elements
 to compensate for the single worst learned element penalty. After an initial
 model exists, `pairs --model ... --append` selects uncertain conflicts for
-active learning. The barrage command evaluates the top 200 settings plus the
-two historical references over the 25 configured fertilizer portfolios and
-ten profiles (at most 50,500 solves), then reports profile/portfolio holdouts
-and bootstrap rank stability. All generated files remain under ignored
-`logs/solver_matrix/` paths by default.
+active learning. The screen command evaluates every exhaustive configuration
+on three discriminating stress portfolios and creates a union shortlist from
+several non-equivalent ranking and holdout views. `--include-ranking` forms a
+lossless union with an earlier shortlist. Passing that shortlist to the barrage
+tests every selected setting on all 25 portfolios; `--extend-shortlist` reuses
+compatible stored solves when the shortlist only grows. `--analysis-model`
+rescoring never reruns the solver. The smaller direct barrage command evaluates
+the primary top 200 plus the two historical references (at most 50,500 solves).
+Both report behavior-deduplicated profile/portfolio holdouts and bootstrap rank
+stability. All generated files remain under ignored `logs/solver_matrix/`
+paths by default.
 
 ## Docs Anti-Drift
 

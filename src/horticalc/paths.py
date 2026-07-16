@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
@@ -215,9 +216,12 @@ def _prune_redundant_yaml_overrides(
 
 def _ensure_writable_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
-    test_file = path / ".write_test"
-    test_file.write_text("ok", encoding="utf-8")
-    test_file.unlink(missing_ok=True)
+    descriptor, name = tempfile.mkstemp(prefix=".write_test_", dir=path)
+    try:
+        os.write(descriptor, b"ok")
+    finally:
+        os.close(descriptor)
+        Path(name).unlink(missing_ok=True)
 
 
 @dataclass(frozen=True)

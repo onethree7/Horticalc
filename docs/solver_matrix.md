@@ -229,6 +229,107 @@ candidate, not a hardcoded runtime default, proof of biological severity, or a
 hard limit. The raw achieved vectors remain available for future scoring
 policies without rerunning the solver.
 
+## Learned Preference Selection
+
+Status: `current-state research-infrastructure`.
+
+`scripts/solver_preference.py` performs the later policy selection without
+changing the product solver or hardcoding a biological severity table. It
+reads the completed exhaustive SQLite database in read-only mode and provides
+four operations:
+
+1. `pairs` samples nondominated solutions which improve different elements and
+   emits deterministic A/B conflicts. The initial batch is balanced across all
+   ten profiles. Once a model exists, `--model ... --append` prioritizes pairs
+   nearest the model's 50/50 decision boundary and excludes pairs already
+   emitted or labelled.
+2. `label` records only `A`, `B`, or `SKIP` together with the pair id, profile,
+   and matrix signature. Labels never alter solver settings.
+3. `train` fits a projected non-negative Bradley-Terry logistic model with L1
+   shrinkage and L2 regularization. Non-negative coefficients guarantee that
+   increasing any error cannot improve a solution. Underfill and overshoot are
+   independent features for every element.
+4. `rank` re-scores all 354,523 complete settings from deduplicated achieved
+   vectors, so no solver rerun is required.
+
+Each element direction supplies three physical views of the same error:
+
+- absolute error in mg/L;
+- error relative to that profile's non-zero target;
+- error relative to the improvement span observed on that profile's Pareto
+  set.
+
+The robust 90th-percentile feature scales are fitted from the labelled
+solutions and the features use `log1p`, giving diminishing marginal influence
+without a fixed upper/lower limit. Target-relative features distinguish a
+large percentage on a trace element, while mg/L and reachable-span features
+retain the physical difference between, for example, `N -30 mg/L` and
+`Cu +0.15 mg/L`. Unused effects can shrink exactly to zero. Leave-one-profile-
+out validation refits both feature scales and coefficients using only the
+training profiles.
+
+The final ordering is deliberately non-compensating and lexicographic:
+
+1. lowest worst learned element penalty across all profiles;
+2. lowest worst total profile cost;
+3. lowest mean total profile cost;
+4. configuration id as a deterministic tie break.
+
+Consequently, ten perfect micros cannot numerically cancel a catastrophic N
+error. Pareto filtering still determines which trade-offs are worth asking
+about; the user labels supply the preference information which Pareto
+dominance cannot infer. Until A/B labels exist, this workflow intentionally
+does not claim an objective biological winner.
+
+Default generated artifacts beside the exhaustive database are:
+
+- `preference_pairs.jsonl`: complete, replayable conflicts including targets,
+  achieved values, signed errors, solver configs, and reachability context;
+- `preference_labels.jsonl`: replaceable-by-id decisions;
+- `preference_model.json`: fitted scales, non-negative coefficients, training
+  metrics, and profile holdouts;
+- `preference_ranking.json`: the non-compensating top-200 shortlist, including
+  the worst element and profile for each setting.
+
+## Preference Portfolio Barrage
+
+Status: `current-state research-infrastructure`.
+
+`scripts/solver_preference_barrage.py` validates the learned top shortlist on
+fertilizer sets which were not part of the primary setting search. With the
+canonical defaults it executes:
+
+```text
+200 configurations x 25 portfolios x 10 profiles = 50,000 solves
+```
+
+The 25 portfolios are the six named cases plus the 19 deterministic
+leave-one-fertilizer-out variants of the primary portfolio. Tasks are one
+configuration/portfolio pair containing all ten profiles. The measured-host
+defaults remain 24 worker processes and a queue depth of 10,000; the queue is
+not a worker count.
+
+The barrage uses the same normalized SQLite design as the exhaustive run:
+configuration, profile, portfolio, and exact achieved vectors are stored once;
+run rows reference deduplicated solution ids. Its input signature includes the
+learned model, shortlist, profile and fertilizer contracts, water, molar
+masses, and solver inputs. Matching runs resume; mismatched evidence is
+rejected.
+
+`barrage_ranking.json` orders candidates by worst learned element penalty,
+worst profile/portfolio case, and mean case cost. It additionally records:
+
+- leave-one-profile-out ranks;
+- leave-one-portfolio-out ranks;
+- the separately identified worst profile and worst case;
+- deterministic bootstrap median rank, 90th-percentile rank, top-ten share,
+  and win share;
+- the winner's score margin to the runner-up.
+
+This does not manufacture biological ground truth. It tests whether the
+preference learned from labelled trade-offs generalizes and whether a setting
+collapses when the fertilizer portfolio changes.
+
 ## Controlled-Runner Output Contract
 
 Each run directory contains:
@@ -330,10 +431,16 @@ global configuration, its per-profile normalized RMS, and every signed error.
   analyzer.
 - `scripts/solver_matrix_cases.yml`: benchmark data and experiment grids.
 - `scripts/solver_matrix_analyze.py`: paired analyzer and report writer.
+- `scripts/solver_preference.py`: conflict generation, labels, monotone model,
+  and non-compensating shortlist ranking.
+- `scripts/solver_preference_barrage.py`: deduplicated shortlist barrage and
+  holdout/bootstrap stability analysis.
 - `tests/test_solver_matrix.py`: runner/data-contract tests.
 - `tests/test_solver_matrix_exhaustive.py`: exhaustive enumeration, Pareto,
   compact-storage, and resume tests.
 - `tests/test_solver_matrix_analyze.py`: analysis-contract tests.
+- `tests/test_solver_preference.py`: feature direction, monotonicity,
+  non-compensation, compact barrage, resume, and holdout tests.
 - `logs/solver_matrix/...`: generated, ignored results.
 
 Deleting those scripts, cases, tests, generated output, and this docs link

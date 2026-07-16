@@ -15,7 +15,8 @@ See [commands.md](commands.md#install-and-run-from-source) for the exact venv an
 - API tests: `tests/test_api_*.py`.
 - Packaging and launcher tests: `tests/test_portable_data_policy.py`, `tests/test_launcher_*.py`.
 - Solver matrix and analyzer tests: `tests/test_solver_matrix.py`,
-  `tests/test_solver_matrix_analyze.py`.
+  `tests/test_solver_matrix_analyze.py`, `tests/test_solver_matrix_exhaustive.py`,
+  and `tests/test_solver_preference.py`.
 
 Run the standard suite and focused examples: see [commands.md](commands.md#run-tests).
 

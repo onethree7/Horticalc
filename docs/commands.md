@@ -145,6 +145,14 @@ python scripts/solver_matrix.py --preset deep --max-runs 0 --out-dir logs/solver
 python scripts/solver_matrix_analyze.py logs/solver_matrix/deep_001 --top 40
 python scripts/solver_matrix_exhaustive.py --workers 24 --queue-depth 10000 --out-dir logs/solver_matrix/exhaustive_001
 python scripts/solver_matrix_exhaustive.py --analyze-only --workers 24 --out-dir logs/solver_matrix/exhaustive_001
+python scripts/solver_preference.py pairs --count 120
+python scripts/solver_preference.py label
+python scripts/solver_preference.py train
+python scripts/solver_preference.py pairs --model logs/solver_matrix/exhaustive_001/preference_model.json --append --count 40
+python scripts/solver_preference.py label
+python scripts/solver_preference.py train
+python scripts/solver_preference.py rank --top 200
+python scripts/solver_preference_barrage.py --top 200 --workers 24 --queue-depth 10000
 ```
 
 `quick` runs the canonical baseline, `matrix` runs the controlled setting
@@ -157,6 +165,15 @@ and writes a resumable, deduplicated SQLite database plus JSON summary and
 Pareto analysis. Repeating the same command resumes the database. Use
 `--max-configs N` for a smoke test and `--skip-analysis` when generation and
 Pareto analysis should run separately.
+
+The preference commands turn Pareto conflicts into persistent A/B labels,
+fit a monotone model, and rank configurations without allowing good elements
+to compensate for the single worst learned element penalty. After an initial
+model exists, `pairs --model ... --append` selects uncertain conflicts for
+active learning. The barrage command evaluates the top 200 settings over the
+25 configured fertilizer portfolios and ten profiles (50,000 solves), then
+reports profile/portfolio holdouts and bootstrap rank stability. All generated
+files remain under ignored `logs/solver_matrix/` paths by default.
 
 ## Docs Anti-Drift
 

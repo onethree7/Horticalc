@@ -392,6 +392,187 @@ def solver_config_cases(cases: dict[str, Any], preset: str) -> list[SolverConfig
     return configs
 
 
+def exhaustive_parameter_values(cases: dict[str, Any]) -> dict[str, tuple[Any, ...]]:
+    """Collect stable parameter domains from the controlled matrix catalog."""
+
+    baseline = resolve_solver_config(cases.get("solver_baseline") or {})
+    values: dict[str, list[Any]] = {key: [value] for key, value in baseline.items()}
+
+    def add(key: str, value: Any) -> None:
+        if key not in values:
+            raise ValueError(f"Unknown exhaustive solver parameter: {key}")
+        serialized = _json(value)
+        if all(_json(existing) != serialized for existing in values[key]):
+            values[key].append(value)
+
+    for experiment in cases.get("solver_experiments") or []:
+        if not isinstance(experiment, dict):
+            continue
+        for entry in [*(experiment.get("controls") or []), *(experiment.get("variants") or [])]:
+            if not isinstance(entry, dict):
+                continue
+            for key, value in entry.items():
+                add(str(key), value)
+        for key, options in (experiment.get("grid") or {}).items():
+            for value in options or []:
+                add(str(key), value)
+
+    return {key: tuple(domain) for key, domain in values.items()}
+
+
+def _exhaustive_weighting_options(
+    baseline: dict[str, Any],
+    domains: dict[str, tuple[Any, ...]],
+) -> Iterable[dict[str, Any]]:
+    yield {
+        "relative_weighting": False,
+        "overshoot_penalty": baseline["overshoot_penalty"],
+        "irls_max_outer_iter": baseline["irls_max_outer_iter"],
+        "scale_eps_mg_per_l": baseline["scale_eps_mg_per_l"],
+    }
+    for penalty, iterations, epsilon in itertools.product(
+        domains["overshoot_penalty"],
+        domains["irls_max_outer_iter"],
+        domains["scale_eps_mg_per_l"],
+    ):
+        yield {
+            "relative_weighting": True,
+            "overshoot_penalty": penalty,
+            "irls_max_outer_iter": iterations,
+            "scale_eps_mg_per_l": epsilon,
+        }
+
+
+def _exhaustive_singleton_options(
+    baseline: dict[str, Any],
+    domains: dict[str, tuple[Any, ...]],
+) -> Iterable[dict[str, Any]]:
+    for supplier_enabled, underfill_enabled in itertools.product((False, True), repeat=2):
+        supplier_shares = (
+            domains["singleton_share_threshold"] if supplier_enabled else (baseline["singleton_share_threshold"],)
+        )
+        underfill_shares = (
+            domains["singleton_underfill_share_threshold"]
+            if underfill_enabled
+            else (baseline["singleton_underfill_share_threshold"],)
+        )
+        underfill_iterations = (
+            domains["singleton_underfill_max_iter"]
+            if underfill_enabled
+            else (baseline["singleton_underfill_max_iter"],)
+        )
+        regressions = (
+            domains["singleton_max_regress_pp"]
+            if supplier_enabled or underfill_enabled
+            else (baseline["singleton_max_regress_pp"],)
+        )
+        for supplier_share, underfill_share, iterations, regression in itertools.product(
+            supplier_shares,
+            underfill_shares,
+            underfill_iterations,
+            regressions,
+        ):
+            yield {
+                "singleton_supplier_enabled": supplier_enabled,
+                "singleton_share_threshold": supplier_share,
+                "singleton_max_regress_pp": regression,
+                "singleton_underfill_enabled": underfill_enabled,
+                "singleton_underfill_share_threshold": underfill_share,
+                "singleton_underfill_max_iter": iterations,
+            }
+
+
+def _exhaustive_governor_options(
+    *,
+    relative_weighting: bool,
+    singleton_active: bool,
+    baseline: dict[str, Any],
+    domains: dict[str, tuple[Any, ...]],
+) -> Iterable[dict[str, Any]]:
+    yield {
+        "n_total_governor_enabled": False,
+        "n_total_governor_weight": baseline["n_total_governor_weight"],
+    }
+    if relative_weighting:
+        for weight in domains["n_total_governor_weight"]:
+            yield {"n_total_governor_enabled": True, "n_total_governor_weight": weight}
+    elif singleton_active:
+        # With unweighted NNLS the weight is inactive, but the flag still keeps
+        # singleton passes from modifying N_total.
+        yield {
+            "n_total_governor_enabled": True,
+            "n_total_governor_weight": baseline["n_total_governor_weight"],
+        }
+
+
+def _exhaustive_config_case(
+    baseline: dict[str, Any],
+    changes: dict[str, Any],
+) -> SolverConfigCase:
+    values = resolve_solver_config({**baseline, **changes})
+    if values["nitrogen_objective_mode"] != "n_total_only":
+        raise ValueError("The exhaustive matrix requires nitrogen_objective_mode=n_total_only")
+    if values["s_objective_enabled"] is not True:
+        raise ValueError("The exhaustive matrix requires s_objective_enabled=true")
+    digest = hashlib.sha256(_json(values).encode("utf-8")).hexdigest()
+    varied_keys = tuple(key for key, value in values.items() if _json(value) != _json(baseline[key]))
+    return SolverConfigCase(
+        experiment_id="exhaustive",
+        config_id=digest,
+        name=f"exhaustive:{digest[:16]}",
+        values=values,
+        varied_keys=varied_keys,
+    )
+
+
+def iter_exhaustive_solver_configs(cases: dict[str, Any]) -> Iterable[SolverConfigCase]:
+    """Yield the conditionally reduced full setting interaction matrix."""
+
+    baseline = resolve_solver_config(cases.get("solver_baseline") or {})
+    domains = exhaustive_parameter_values(cases)
+    baseline_case = _exhaustive_config_case(baseline, {})
+    yield baseline_case
+
+    for weighting in _exhaustive_weighting_options(baseline, domains):
+        for singleton in _exhaustive_singleton_options(baseline, domains):
+            singleton_active = bool(singleton["singleton_supplier_enabled"] or singleton["singleton_underfill_enabled"])
+            for governor in _exhaustive_governor_options(
+                relative_weighting=bool(weighting["relative_weighting"]),
+                singleton_active=singleton_active,
+                baseline=baseline,
+                domains=domains,
+            ):
+                config = _exhaustive_config_case(baseline, {**weighting, **singleton, **governor})
+                if config.config_id != baseline_case.config_id:
+                    yield config
+
+
+def exhaustive_solver_config_count(cases: dict[str, Any]) -> int:
+    domains = exhaustive_parameter_values(cases)
+    supplier_only = len(domains["singleton_share_threshold"]) * len(domains["singleton_max_regress_pp"])
+    underfill_only = (
+        len(domains["singleton_underfill_share_threshold"])
+        * len(domains["singleton_underfill_max_iter"])
+        * len(domains["singleton_max_regress_pp"])
+    )
+    both_singletons = (
+        supplier_only
+        * len(domains["singleton_underfill_share_threshold"])
+        * len(domains["singleton_underfill_max_iter"])
+    )
+    singleton_active = supplier_only + underfill_only + both_singletons
+    singleton_total = 1 + singleton_active
+    relative_weighted = (
+        len(domains["overshoot_penalty"])
+        * len(domains["irls_max_outer_iter"])
+        * len(domains["scale_eps_mg_per_l"])
+        * singleton_total
+        * (1 + len(domains["n_total_governor_weight"]))
+    )
+    unweighted = 1 + 2 * singleton_active
+    return relative_weighted + unweighted
+
+
 class MatrixAggregate:
     def __init__(self) -> None:
         self.total_runs = 0

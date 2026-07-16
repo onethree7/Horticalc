@@ -29,6 +29,35 @@ DEFAULT_LABEL_PATH = DEFAULT_RUN_DIR / "preference_labels.jsonl"
 DEFAULT_MODEL_PATH = DEFAULT_RUN_DIR / "preference_model.json"
 DEFAULT_RANKING_PATH = DEFAULT_RUN_DIR / "preference_ranking.json"
 REFERENCE_CONFIG_IDS = (69_630, 207_711)
+DISPLAY_ELEMENT_ORDER = (
+    "N_total",
+    "N_NH4",
+    "N_NO3",
+    "N_UREA",
+    "P",
+    "K",
+    "Ca",
+    "Mg",
+    "S",
+    "Fe",
+    "Mn",
+    "Cu",
+    "Zn",
+    "B",
+    "Mo",
+    "Si",
+    "Cl",
+    "Na",
+    "CO3",
+    "HCO3",
+)
+DISPLAY_ELEMENT_NAMES = {
+    "N_total": "N gesamt",
+    "N_NH4": "Ammonium-N",
+    "N_NO3": "Nitrat-N",
+    "N_UREA": "Harnstoff-N",
+    "B": "Bor",
+}
 
 
 def _json(value: Any) -> str:
@@ -406,10 +435,82 @@ def save_label(path: Path, pair: dict[str, Any], choice: str) -> None:
     _write_jsonl(path, (labels[key] for key in sorted(labels)))
 
 
-def _format_solution(solution: dict[str, Any]) -> str:
-    errors = solution["signed_errors_mg_per_l"]
-    values = " ".join(f"{key}={float(value):+.4g}" for key, value in errors.items())
-    return f"config={solution['config_id']} solution={solution['solution_id']} | {values}"
+def _display_decimals(target: float) -> int:
+    magnitude = abs(target)
+    if magnitude >= 1.0:
+        return 3
+    if magnitude >= 0.1:
+        return 4
+    return 5
+
+
+def _format_decimal(value: float, decimals: int, *, signed: bool = False) -> str:
+    threshold = 0.5 * 10 ** (-decimals)
+    normalized = 0.0 if abs(value) < threshold else value
+    sign = "+" if signed else ""
+    return f"{normalized:{sign}.{decimals}f}"
+
+
+def _format_percent(error: float, target: float) -> str:
+    if target == 0.0:
+        return "-"
+    percentage = error / target * 100.0
+    if abs(percentage) < 0.005:
+        percentage = 0.0
+    return f"{percentage:+.2f} %"
+
+
+def _ordered_pair_elements(pair: dict[str, Any]) -> tuple[str, ...]:
+    available = set(pair["a"]["signed_errors_mg_per_l"]) | set(pair["b"]["signed_errors_mg_per_l"])
+    ordered = [element for element in DISPLAY_ELEMENT_ORDER if element in available]
+    ordered.extend(sorted(available - set(ordered)))
+    return tuple(ordered)
+
+
+def _format_pair_table(pair: dict[str, Any]) -> str:
+    solution_a = pair["a"]
+    solution_b = pair["b"]
+    targets_a = solution_a["targets_mg_per_l"]
+    targets_b = solution_b["targets_mg_per_l"]
+    if targets_a != targets_b:
+        raise ValueError(f"Pair {pair['pair_id']} contains different A/B targets")
+    lines = [
+        "Alle Konzentrationen und Differenzen sind in mg/L.",
+        "Positive Differenz = Ueberschuss; negative Differenz = Unterfuellung.",
+        "Prozent ist nur Zusatzinformation; bei Spurenelementen besonders auf mg/L achten.",
+        "",
+        (
+            f"{'Element':<13} {'Ziel':>10} | "
+            f"{'A erreicht':>11} {'A Differenz':>12} {'A Prozent':>10} | "
+            f"{'B erreicht':>11} {'B Differenz':>12} {'B Prozent':>10}"
+        ),
+        "-" * 99,
+    ]
+    for element in _ordered_pair_elements(pair):
+        target = float(targets_a.get(element, 0.0))
+        achieved_a = float(solution_a["achieved_mg_per_l"].get(element, 0.0))
+        achieved_b = float(solution_b["achieved_mg_per_l"].get(element, 0.0))
+        error_a = float(solution_a["signed_errors_mg_per_l"].get(element, achieved_a - target))
+        error_b = float(solution_b["signed_errors_mg_per_l"].get(element, achieved_b - target))
+        decimals = _display_decimals(target)
+        label = DISPLAY_ELEMENT_NAMES.get(element, element)
+        lines.append(
+            f"{label:<13} {_format_decimal(target, decimals):>10} | "
+            f"{_format_decimal(achieved_a, decimals):>11} "
+            f"{_format_decimal(error_a, decimals, signed=True):>12} "
+            f"{_format_percent(error_a, target):>10} | "
+            f"{_format_decimal(achieved_b, decimals):>11} "
+            f"{_format_decimal(error_b, decimals, signed=True):>12} "
+            f"{_format_percent(error_b, target):>10}"
+        )
+    lines.extend(
+        (
+            "",
+            f"A: Konfiguration {solution_a['config_id']}, Loesung {solution_a['solution_id']}",
+            f"B: Konfiguration {solution_b['config_id']}, Loesung {solution_b['solution_id']}",
+        )
+    )
+    return "\n".join(lines)
 
 
 def label_pairs(pair_path: Path, label_path: Path, *, limit: int | None) -> int:
@@ -419,11 +520,10 @@ def label_pairs(pair_path: Path, label_path: Path, *, limit: int | None) -> int:
     for pair in pairs:
         if pair["pair_id"] in labels:
             continue
-        print(f"\nProfile: {pair['profile_id']}  Pair: {pair['pair_id'][:12]}")
-        print(f"A: {_format_solution(pair['a'])}")
-        print(f"B: {_format_solution(pair['b'])}")
+        print(f"\nProfil: {pair['profile_id']}  Paar: {pair['pair_id'][:12]}")
+        print(_format_pair_table(pair))
         while True:
-            choice = input("Prefer [A/B], [S]kip, or [Q]uit: ").strip().upper()
+            choice = input("Welche Loesung ist besser? [A/B], [S] ueberspringen, [Q] beenden: ").strip().upper()
             if choice == "Q":
                 return completed
             if choice in {"A", "B", "S", "SKIP"}:

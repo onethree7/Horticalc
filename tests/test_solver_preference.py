@@ -70,6 +70,27 @@ def test_pair_orientation_is_canonical() -> None:
     assert np.isclose(predicted["predicted_preference_probability_a"], 0.2)
 
 
+def test_pair_table_uses_nutrient_order_mg_per_l_and_plain_decimals() -> None:
+    solution_a = _solution(n_error=-2.2, cu_error=0.09068, solution_hash="a")
+    solution_b = _solution(n_error=-0.2702, cu_error=0.2342, solution_hash="b")
+    for solution, bor_error in ((solution_a, -0.09267), (solution_b, 0.4241)):
+        solution["targets_mg_per_l"]["B"] = 0.44
+        solution["achieved_mg_per_l"]["B"] = 0.44 + bor_error
+        solution["signed_errors_mg_per_l"]["B"] = bor_error
+    pair = {"pair_id": "pair", "a": solution_a, "b": solution_b}
+
+    table = preference._format_pair_table(pair)
+
+    assert "Alle Konzentrationen und Differenzen sind in mg/L." in table
+    assert table.index("N gesamt") < table.index("Cu") < table.index("Bor")
+    assert "A erreicht" in table
+    assert "A Differenz" in table
+    assert "-2.200" in table
+    assert "+0.09068" in table
+    assert "-2.20 %" in table
+    assert "e-" not in table.lower()
+
+
 def test_monotone_model_learns_preference_without_negative_penalties() -> None:
     pairs = []
     labels = {}

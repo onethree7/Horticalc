@@ -244,7 +244,9 @@ four operations:
    nearest the model's 50/50 decision boundary and excludes pairs already
    emitted or labelled.
 2. `label` records only `A`, `B`, or `SKIP` together with the pair id, profile,
-   and matrix signature. Labels never alter solver settings.
+   and matrix signature. It displays nutrients in the calculator's canonical
+   order with target, achieved concentration, signed mg/L difference, and
+   percentage for A and B in one table. Labels never alter solver settings.
 3. `train` fits a projected non-negative Bradley-Terry logistic model with L1
    shrinkage and L2 regularization. Non-negative coefficients guarantee that
    increasing any error cannot improve a solution. Underfill and overshoot are

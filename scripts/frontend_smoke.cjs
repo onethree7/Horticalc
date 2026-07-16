@@ -56,7 +56,7 @@ async function assertNoPageOverflow(page, label) {
     await page.goto(baseUrl, { waitUntil: "networkidle" });
     await page.waitForTimeout(250);
     if (errors.length) throw new Error(`Browser errors:\n${errors.join("\n")}`);
-    await page.locator("#apiStatus:not([data-state='loading'])").waitFor();
+    await page.locator("#apiStatus[data-state]:not([data-state='loading'])").waitFor();
     if (dialogs.length) throw new Error(`Application dialogs:\n${dialogs.join("\n")}`);
     const apiState = await page.locator("#apiStatus").getAttribute("data-state");
     if (apiState !== "ready") {

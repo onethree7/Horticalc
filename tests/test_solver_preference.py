@@ -319,14 +319,17 @@ def test_portfolio_barrage_is_compact_resumable_and_reports_holdouts(
     assert barrage.main(arguments) == 0
     summary = json.loads((out_dir / "barrage_summary.json").read_text(encoding="utf-8"))
     analysis = json.loads((out_dir / "barrage_ranking.json").read_text(encoding="utf-8"))
-    assert summary["planned_solves"] == 25
-    assert summary["total_runs"] == 25
+    assert summary["planned_solves"] == 35
+    assert summary["total_runs"] == 35
     assert summary["status"] == "complete"
-    assert analysis["case_count"] == 25
-    assert len(analysis["ranking"][0]["leave_one_portfolio_out_ranks"]) == 25
+    assert analysis["case_count"] == 33
+    assert analysis["total_case_count"] == 35
+    assert analysis["diagnostic_case_count"] == 2
+    assert analysis["ranking"][0]["diagnostic"]["case_count"] == 2
+    assert len(analysis["ranking"][0]["leave_one_portfolio_out_ranks"]) == 33
     with sqlite3.connect(out_dir / "preference_barrage.sqlite3") as connection:
-        assert connection.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 25
-        assert connection.execute("SELECT COUNT(*) FROM solutions").fetchone()[0] <= 25
+        assert connection.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 35
+        assert connection.execute("SELECT COUNT(*) FROM solutions").fetchone()[0] <= 35
 
     assert barrage.main(arguments) == 0
     resumed = json.loads((out_dir / "barrage_summary.json").read_text(encoding="utf-8"))
@@ -364,6 +367,24 @@ def test_barrage_collapsed_ranks_count_behaviors_not_duplicate_configs() -> None
     )
 
     assert ranks.tolist() == [1, 1, 2]
+
+
+def test_barrage_diagnostic_portfolio_cannot_change_selection_rank() -> None:
+    portfolios = (
+        solver_matrix.FertilizerPortfolio("real", "", ("A",), evaluation_role="selection"),
+        solver_matrix.FertilizerPortfolio("humin", "", ("H",), evaluation_role="diagnostic"),
+    )
+    selection_mask, diagnostic_mask = barrage._case_role_masks([("profile", "real"), ("profile", "humin")], portfolios)
+    element_costs = np.array([[1.0, 100.0], [2.0, 0.0]])
+    total_costs = element_costs.copy()
+
+    selection_order, _ = barrage._rank_metrics(np.array([1, 2]), element_costs, total_costs, selection_mask)
+    contaminated_order, _ = barrage._rank_metrics(
+        np.array([1, 2]), element_costs, total_costs, selection_mask | diagnostic_mask
+    )
+
+    assert selection_order.tolist() == [0, 1]
+    assert contaminated_order.tolist() == [1, 0]
 
 
 def test_analysis_compatibility_ignores_model_and_source_hashes(tmp_path: Path) -> None:

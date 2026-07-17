@@ -145,6 +145,7 @@ python scripts/solver_matrix.py --preset deep --max-runs 0 --out-dir logs/solver
 python scripts/solver_matrix_analyze.py logs/solver_matrix/deep_001 --top 40
 python scripts/solver_matrix_exhaustive.py --workers 24 --queue-depth 10000 --out-dir logs/solver_matrix/exhaustive_001
 python scripts/solver_matrix_exhaustive.py --analyze-only --workers 24 --out-dir logs/solver_matrix/exhaustive_001
+python scripts/solver_model_matrix.py --out-dir logs/solver_matrix/goal_model_001
 python scripts/solver_preference.py pairs --count 120
 python scripts/solver_preference.py label
 python scripts/solver_preference.py train --feature-structure grouped
@@ -163,6 +164,14 @@ catalog, and `deep` adds named/leave-one-out nutrient-portfolio barrage rows.
 Generated CSV, JSONL, manifest, summary, analysis JSON, and Markdown files stay
 under the selected ignored output directory.
 
+The goal-model command compares the two legacy controls with deterministic
+mg/L and mmol/L minimax LP policies across all selection and diagnostic
+portfolios plus the seven matched recipe roundtrips. It writes a compact gzip
+JSONL evidence stream and a JSON quality-gate/ranking summary. Exit code `0`
+means every numerical, Pareto, roundtrip, and worst-case improvement gate
+passed; exit code `2` means the evidence must not be committed as an accepted
+research result.
+
 The exhaustive command runs all conditionally effective setting interactions
 and writes a resumable, deduplicated SQLite database plus JSON summary and
 Pareto analysis. Repeating the same command resumes the database. Use
@@ -177,10 +186,12 @@ active learning. The screen command evaluates every exhaustive configuration
 on three discriminating stress portfolios and creates a union shortlist from
 several non-equivalent ranking and holdout views. `--include-ranking` forms a
 lossless union with an earlier shortlist. Passing that shortlist to the barrage
-tests every selected setting on all 25 portfolios; `--extend-shortlist` reuses
-compatible stored solves when the shortlist only grows. `--analysis-model`
+tests every selected setting on all 35 configured portfolios (33 selection and
+two diagnostic); `--extend-shortlist` reuses compatible stored solves when the
+shortlist only grows. Diagnostic Humin portfolios are reported but excluded
+from ranking, holdouts, deduplication, and bootstrap sampling. `--analysis-model`
 rescoring never reruns the solver. The smaller direct barrage command evaluates
-the primary top 200 plus the two historical references (at most 50,500 solves).
+the primary top 200 plus the two historical references (at most 70,700 solves).
 Both report behavior-deduplicated profile/portfolio holdouts and bootstrap rank
 stability. All generated files remain under ignored `logs/solver_matrix/`
 paths by default.

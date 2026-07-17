@@ -42,6 +42,15 @@ def test_solver_golden_solution_close() -> None:
     assert rms_percent_error <= 8.0
 
 
+def test_solver_golden_uses_recipe_derived_s_target_when_enabled() -> None:
+    recipe_path = Path(__file__).resolve().parents[1] / "recipes" / "solve_golden.yml"
+
+    result = solve_recipe(recipe_path, solver_config_overrides={"s_objective_enabled": True})
+
+    assert "S" in result.objective_elements
+    assert result.targets_mg_l["S"] == pytest.approx(85.79586471044226)
+
+
 def test_augmented_saloner_bernstein_solution_is_stable() -> None:
     recipe_path = Path(__file__).resolve().parents[1] / "recipes" / "solve_augmented_saloner_bernstein.yml"
 

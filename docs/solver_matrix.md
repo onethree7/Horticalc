@@ -37,11 +37,41 @@ The requested CPMM case resolves to the shipped `Conn_2013_Arabidopsis`
 profile. Its source and elemental targets are recorded in
 `data/nutrient_solutions/Conn_2013_Arabidopsis.yml`.
 
-The primary 19-product portfolio is the explicit union of the allowed lists in
-the on-disk 23-10-17 recipe, augmented Saloner recipe, and golden recipe. It
-includes `HuminTech AMINO POWER Plus Liquid` and
-`HuminTech Fulvital Plus Liquid`. The explicit snapshot keeps old benchmark
-output reproducible if a user recipe later changes.
+The primary portfolio is the explicit 22-product union of the real recipe
+pools. It contains no HuminTech product. The matrix marks every portfolio as
+either `selection` or `diagnostic`: only `selection` cases may determine a
+winner. `HuminTech AMINO POWER Plus Liquid` and `HuminTech Fulvital Plus
+Liquid` occur only in the two diagnostic honeypots
+`augmented_saloner_humin_honeypot` and `solve_golden_humin_honeypot`. Those
+cases are still solved and reported, but are excluded from lexicographic
+ranking, behavioral deduplication, holdouts, and bootstrap sampling.
+
+The named selection portfolios additionally include the six supplied
+handcrafted product sets. Products whose supplied reference amount was zero
+are absent. Positive source amounts are retained as machine-readable
+`reference_amounts` provenance in the run manifest, but never constrain or
+seed the solver:
+
+| Portfolio id | Nonzero products |
+|---|---:|
+| `solve_golden` | 4 |
+| `blossom_calcinit_epso_313` | 4 |
+| `kristalon_epso_313` | 3 |
+| `epso_313_s3` | 3 |
+| `plagron_ca_edta_basis3_epso_313` | 5 |
+| `plagron_ghe_tripart` | 4 |
+
+The Golden target remains a real handcrafted regression profile. Its former
+synthetic `S: 999` target has been replaced at the owning fixture
+`recipes/solve_golden.yml` by the recipe-derived `85.79586471044226 mg/L S`.
+That value reproduces the original 10 L Golden recipe with its historical
+66.6666666667% osmosis-water mix, so S remains a real objective instead of
+disappearing.
+The normal and Humin honeypot executions use the same corrected target and
+differ only in allowed products. Augmented Saloner is treated the same way.
+Bugbee remains a scientific nutrient-solution target; no dedicated Bugbee
+fertilizer pool is invented because the cited profile specifies elemental
+targets, not a product recipe.
 
 The cases file also tracks the two requested restricted portfolios: the
 seven-product Blossom/Fetrilon/PeKacid/Spezial set and the six-product
@@ -55,6 +85,95 @@ Every canonical case fixes:
 
 `n_form_priority_weights` is not swept because it is inactive in
 `n_total_only` mode.
+
+### Portfolio and calibration scope
+
+Additional portfolios are useful when they remove a genuinely different
+source of an element or couple elements differently; arbitrary product subsets
+mostly duplicate existing cases and overweight one catalog. The present set
+therefore keeps the supplied real pools, the two earlier restricted pools, and
+leave-one-out variants of the Humin-free union.
+
+An artificial nutrient profile should not enter biological winner selection:
+it has no ground truth and would silently encode the author’s preferences. A
+useful synthetic check is instead a separate round-trip calibration generated
+from a known non-Humin fertilizer mixture. Its pass condition is near-zero
+residual on the generated vector, not recovery of the same doses (multiple
+recipes can be chemically equivalent). That calibration belongs in a distinct
+diagnostic phase before it is added; it must never be averaged into scientific
+or handcrafted-profile rankings.
+
+## Experimental Deterministic Goal Model
+
+Status: `research implementation; not a runtime default`.
+
+`scripts/solver_goal_model.py` implements a staged linear goal solver. It uses
+non-negative fertilizer doses without maximum-dose bounds. For every objective
+element it introduces independent underfill and overshoot residuals, then:
+
+1. minimizes the largest residual;
+2. freezes that optimum and minimizes total residual;
+3. returns the resulting LP vertex.
+
+The principal error unit is elemental `mmol/L`, calculated from the signed
+`mg/L` error and the element's molar mass. Consequently a tens-of-mg nitrogen
+error cannot be cancelled by a spectacular percentage error on a fraction of
+a milligram of copper. A raw `mg/L` formulation remains as a control. Global
+underfill multipliers `2`, `4`, and `10` test the general preference that too
+much is preferable to too little without assigning element-specific weights.
+
+The rejected strict “underfill first” formulation is intentionally absent from
+the canonical model matrix. With no dose limits it can drive underfill to zero
+by producing extreme overshoots; the observed worst N error approached
+`850 mg/L`. Likewise, fertilizer-count MILP selection is not used because it
+would require a Big-M dose ceiling. A final mass-minimization tie-break was
+also rejected: movement along a degenerate optimum caused small discrepancies
+between the LP coefficient model and the complete chemistry recomputation.
+Accuracy therefore remains the final accepted stage.
+
+`scripts/solver_model_matrix.py` compares seven policies:
+
+- legacy canonical;
+- historical config `34191`;
+- symmetric mmol/L minimax;
+- mmol/L minimax with global underfill factors `2`, `4`, and `10`;
+- symmetric mg/L minimax.
+
+The matrix contains 10 profiles x 35 portfolios plus seven matched recipe
+roundtrips, or 357 cases per policy and 2,499 result rows. The 33 selection
+portfolios determine ranking; the two Humin portfolios contribute 20 reported
+diagnostic cases but cannot influence it. Evidence is stored as compressed
+`model_matrix_rows.jsonl.gz`; `model_matrix_summary.json` contains the quality
+gate and non-compensating lexicographic ranking.
+
+### Goal-model result (2026-07-17)
+
+Status: `research result; quality gate passed`.
+
+The complete run finished 2,499/2,499 rows without failure. All five new LP
+policies produced zero materially Pareto-dominated selection results and all
+seven recipe roundtrips reproduced their generated target vectors. The best
+roundtrip error of the winning policy was below `5e-15 mmol/L`.
+
+| Rank | Policy | Worst error mmol/L | Worst N error mg/L | Dominated cases |
+|---:|---|---:|---:|---:|
+| 1 | `goal_mmol_symmetric` | 2.209 | 30.943 | 0 |
+| 2 | `goal_mmol_under_x2` | 4.122 | 57.739 | 0 |
+| 3 | `goal_mg_symmetric` | 4.779 | 66.932 | 0 |
+| 4 | `goal_mmol_under_x4` | 7.270 | 101.827 | 0 |
+| 5 | `legacy_34191` | 7.405 | 103.721 | 0 |
+| 6 | `goal_mmol_under_x10` | 13.417 | 187.926 | 0 |
+| 7 | `legacy_canonical` | 4.271 | 59.818 | 7 |
+
+The winner reduced the worst molar error by 48.3% and the worst N error by
+48.3% relative to the canonical legacy control. Its 95th-percentile case-worst
+error fell from `1.619` to `1.009 mmol/L`; the mean fell from `0.318` to
+`0.183 mmol/L`. On matched augmented Saloner it produced `N_total -0.107`,
+`Fe -0.427`, and `Cu +0.190 mg/L`. The factor-4 alternative shifts that
+general trade-off toward underfill avoidance (`N_total -0.038`, `Fe -0.151`,
+`Cu +0.293 mg/L`) but loses global worst-case robustness. This is evidence for
+exposing one global direction preference, not for silently hardcoding factor
+4 or changing the product default.
 
 ## Setting Experiments
 
@@ -79,8 +198,9 @@ pass is enabled.
 
 - `quick`: canonical baseline only.
 - `matrix`: the complete controlled setting catalog on the primary portfolio.
-- `deep`: `matrix` plus named portfolios and primary-portfolio leave-one-out
-  barrage cases.
+- `deep`: `matrix` plus named selection and diagnostic portfolios and
+  primary-portfolio leave-one-out barrage cases. Diagnostic cases are reported
+  separately and cannot change the winner.
 
 Use `--primary-portfolio ID` to run the complete setting catalog against a
 different named fertilizer portfolio without copying or editing the cases
@@ -391,11 +511,11 @@ default it retains candidates from:
 - historical references `69630` and `207711`.
 
 Overlaps are stored once and every retained configuration records all reasons
-for its inclusion. The union is then passed to the complete 25-portfolio
-barrage. This is a successive-halving search: it covers the full solver-setting
-space on the known stress axes, while reserving the complete portfolio matrix
-for a broad evidence-backed finalist set. The final barrage still applies the
-same strict holdout and bootstrap winner validation.
+for its inclusion. The union is then passed to the complete configured
+portfolio barrage. This is a successive-halving search: it covers the full
+solver-setting space on the known stress axes, while reserving the complete
+portfolio matrix for a broad evidence-backed finalist set. The final barrage
+still applies the same strict holdout and bootstrap winner validation.
 
 `--include-ranking` makes successive screens a strict shortlist union.
 `--analysis-model` can rescore stored solutions with another compatible model,
@@ -455,14 +575,17 @@ Each run directory contains:
 - `summary.json`: counts, best rows, and a preliminary setting ranking.
 
 Every result row has stable `run_id`, `profile_id`, `portfolio_id`,
-`experiment_id`, and `config_id` fields. JSON-valued columns retain the exact
-solver configuration, allowed/used fertilizers, objective elements, achieved
-concentrations, and errors.
+`portfolio_role`, `experiment_id`, and `config_id` fields. JSON-valued columns
+retain the exact solver configuration, allowed/used fertilizers, objective
+elements, achieved concentrations, and errors. Portfolio
+`reference_amounts` live in the manifest because they are provenance rather
+than per-run solver inputs.
 
 `scripts/solver_matrix_analyze.py` writes:
 
 - `analysis_summary.json`: paired setting effects, per-profile winners, named
-  portfolio comparisons, and leave-one-out impacts;
+  selection-portfolio comparisons, separately labelled diagnostic honeypots,
+  and leave-one-out impacts;
 - `analysis_report.md`: the same evidence in a readable report.
 
 Analyzer rankings use paired percentage improvement from each profile's

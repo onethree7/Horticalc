@@ -110,6 +110,7 @@ def _compact_row(row: dict[str, str]) -> dict[str, Any]:
         "profile_group": row.get("profile_group", ""),
         "phase": row.get("phase", ""),
         "portfolio_id": row.get("portfolio_id", ""),
+        "portfolio_role": row.get("portfolio_role", "selection"),
         "omitted_fertilizer": row.get("omitted_fertilizer", ""),
         "experiment_id": row.get("experiment_id", ""),
         "config_id": row.get("config_id", ""),
@@ -190,14 +191,20 @@ def analyze_run(run_dir: Path, *, top_limit: int = 30) -> dict[str, Any]:
     config_stats: dict[tuple[str, str], ComparisonStats] = defaultdict(ComparisonStats)
     parameter_stats: dict[str, dict[str, dict[str, dict[str, Any]]]] = defaultdict(lambda: defaultdict(dict))
     best_by_profile: dict[str, dict[str, Any]] = {}
+    best_diagnostic_by_profile: dict[str, dict[str, Any]] = {}
     best_setting_by_profile: dict[str, dict[str, Any]] = {}
 
     for row in ok_rows:
         compact = _compact_row(row)
         profile_id = compact["profile_id"]
-        current = best_by_profile.get(profile_id)
-        if current is None or compact["score"] < current["score"]:
-            best_by_profile[profile_id] = compact
+        if compact["portfolio_role"] == "diagnostic":
+            current_diagnostic = best_diagnostic_by_profile.get(profile_id)
+            if current_diagnostic is None or compact["score"] < current_diagnostic["score"]:
+                best_diagnostic_by_profile[profile_id] = compact
+        else:
+            current = best_by_profile.get(profile_id)
+            if current is None or compact["score"] < current["score"]:
+                best_by_profile[profile_id] = compact
         if compact["phase"] != "settings":
             continue
         current_setting = best_setting_by_profile.get(profile_id)
@@ -259,6 +266,7 @@ def analyze_run(run_dir: Path, *, top_limit: int = 30) -> dict[str, Any]:
         mass_stats[portfolio_id].add(score, baseline_scores[profile_id], elapsed)
         mass_meta[portfolio_id] = {
             "portfolio_source": row.get("portfolio_source", ""),
+            "portfolio_role": row.get("portfolio_role", "selection"),
             "omitted_fertilizer": row.get("omitted_fertilizer", ""),
             "product_count": int(row.get("subset_size") or 0),
         }
@@ -266,7 +274,9 @@ def analyze_run(run_dir: Path, *, top_limit: int = 30) -> dict[str, Any]:
         if omitted:
             omission_stats[omitted].add(score, baseline_scores[profile_id], elapsed)
 
-    portfolio_comparison = [{"portfolio_id": key, **mass_meta[key], **stats} for key, stats in _ranked(mass_stats)]
+    all_portfolio_comparisons = [{"portfolio_id": key, **mass_meta[key], **stats} for key, stats in _ranked(mass_stats)]
+    portfolio_comparison = [row for row in all_portfolio_comparisons if row["portfolio_role"] == "selection"]
+    diagnostic_comparison = [row for row in all_portfolio_comparisons if row["portfolio_role"] == "diagnostic"]
     omission_impact = [{"fertilizer": key, **stats} for key, stats in _ranked(omission_stats)]
     # For omission results, positive delta means the removed product was useful.
     omission_impact.sort(key=lambda item: (-item["avg_delta"], item["fertilizer"]))
@@ -301,11 +311,13 @@ def analyze_run(run_dir: Path, *, top_limit: int = 30) -> dict[str, Any]:
         "baseline_by_profile": baseline_by_profile,
         "best_setting_by_profile": dict(sorted(best_setting_by_profile.items())),
         "best_final_by_profile": dict(sorted(best_by_profile.items())),
+        "best_diagnostic_by_profile": dict(sorted(best_diagnostic_by_profile.items())),
         "settings_global_top": global_ranked[:top_limit],
         "settings_global_bottom": list(reversed(global_ranked[-top_limit:])),
         "settings_by_experiment": dict(sorted(settings_by_experiment.items())),
         "setting_effects": setting_effects,
         "mass_barrage_portfolios": portfolio_comparison,
+        "diagnostic_portfolios": diagnostic_comparison,
         "fertilizer_omission_impact": omission_impact,
     }
 
@@ -440,6 +452,24 @@ def write_markdown_report(analysis: dict[str, Any], path: Path) -> None:
             lines.append(
                 f"| `{row['fertilizer']}` | {_fmt(row['avg_delta'])} | "
                 f"{row['wins']} / {row['ties']} / {row['losses']} |"
+            )
+
+    if analysis["diagnostic_portfolios"]:
+        lines.extend(
+            [
+                "",
+                "## Diagnostic Honeypot Portfolios",
+                "",
+                "These cases are computed for failure detection and are excluded from winner selection.",
+                "",
+                "| Portfolio | Products | Average delta | Improvement | Wins / ties / losses |",
+                "|---|---:|---:|---:|---:|",
+            ]
+        )
+        for row in analysis["diagnostic_portfolios"]:
+            lines.append(
+                f"| `{row['portfolio_id']}` | {row['product_count']} | {_fmt(row['avg_delta'])} | "
+                f"{_fmt(row['avg_improvement_percent'])}% | {row['wins']} / {row['ties']} / {row['losses']} |"
             )
 
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")

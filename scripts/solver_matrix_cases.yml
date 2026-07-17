@@ -25,22 +25,22 @@ benchmark_profiles:
   - id: Long_Ashton_Nutrient_Solution_LANS_NitrateType
     group: scientific
   - id: augmented_saloner_bernstein
-    group: honeypot
+    group: handcrafted
     recipe: recipes/solve_augmented_saloner_bernstein.yml
   - id: solve_golden
-    group: honeypot
+    group: handcrafted
     recipe: recipes/solve_golden.yml
 
 unresolved_profiles: []
 
-# Snapshots of fertilizers_allowed from the named recipes. The primary union is
-# intentionally explicit: generated output remains reproducible if a user
-# recipe later changes. The two HuminTech products are part of every honeypot
-# run through the primary union.
-primary_portfolio: recipe_union_honeypot
+# `selection` portfolios determine rankings. `diagnostic` portfolios are run
+# and reported but never influence winner selection. Reference amounts retain
+# recipe provenance only; they are not solver dose constraints.
+primary_portfolio: real_recipe_union
 fertilizer_portfolios:
-  - id: recipe_union_honeypot
-    source: Union of 23-10-17, augmented Saloner, and solve_golden allowed lists; HuminTech additions included
+  - id: real_recipe_union
+    evaluation_role: selection
+    source: Explicit union of all non-honeypot recipe pools; no HuminTech products
     fertilizers:
       - Yara Tera CALCINIT
       - K+S EPSO Top Bittersalz 16-39
@@ -59,9 +59,13 @@ fertilizer_portfolios:
       - Haifa DUO 3-0-9+34CaO
       - Haifa SOP Bio Kaliumsulfat wasserlöslich 0-0-52
       - ICL Nova PeKacid 0-60-20
-      - HuminTech AMINO POWER Plus Liquid
-      - HuminTech Fulvital Plus Liquid
+      - Ph- Plagron Universal
+      - GH Ca-EDTA
+      - GHE Flora Grow 3-1-6
+      - GHE Flora Bloom 0-5-4
+      - GHE Flora Micro 5-0-1 Soft
   - id: seed_23_10_17
+    evaluation_role: selection
     source: user/recipes/23-10-17__24CaO__8MgO__Low_Bernstein_augmentiert_mit_Si___S.yml
     fertilizers:
       - Yara Tera CALCINIT
@@ -77,7 +81,8 @@ fertilizer_portfolios:
       - Agrolution Special 313 14-7-14+14CaO+TE
       - Peters Professional Blossom Booster 10-30-20+2MgO+TE
   - id: augmented_saloner
-    source: user/recipes/Augmented__Saloner_Bernstein_Cannabis_NPK_Target_Optimization.yml
+    evaluation_role: selection
+    source: Augmented Saloner allowed list without HuminTech products
     fertilizers:
       - Yara Tera CALCINIT
       - K+S EPSO Top Bittersalz 16-39
@@ -90,18 +95,129 @@ fertilizer_portfolios:
       - Haifa DUO 3-0-9+34CaO
       - Haifa SOP Bio Kaliumsulfat wasserlöslich 0-0-52
       - ICL Nova PeKacid 0-60-20
+      - Agrolution Special 313 14-7-14+14CaO+TE
+      - Compo Hakaphos Soft16-8-22(+3) Spezial
+    reference_amounts:
+      Yara Tera CALCINIT: 3.5400667611842356
+      K+S EPSO Top Bittersalz 16-39: 0.3514281081202175
+      S3 Kaliwasser 28 Be: 0.6451058228516668
+      Compo Fetrilon Combi 1: 0.17243495009427762
+      Haifa MAG Magnesiumnitrat 11-0-0+16MgO: 2.0246713748373297
+      ICL Nova PeKacid 0-60-20: 0.4612283348195081
+      Agrolution Special 313 14-7-14+14CaO+TE: 1.7629679291508717
+      Compo Hakaphos Soft16-8-22(+3) Spezial: 3.5904274184269394
+  - id: augmented_saloner_humin_honeypot
+    evaluation_role: diagnostic
+    source: Augmented Saloner allowed list with both HuminTech honeypot products
+    fertilizers:
+      - Yara Tera CALCINIT
+      - K+S EPSO Top Bittersalz 16-39
+      - S3 Kaliwasser 28 Be
+      - Yara Tera KRISTALON ROT CALCIUM
+      - Compo Fetrilon Combi 1
+      - Peters Professional Combi Sol 6-18-36+3MgO+TE
+      - Haifa MAG Magnesiumnitrat 11-0-0+16MgO
+      - Haifa Monokaliumphosphat MKP
+      - Haifa DUO 3-0-9+34CaO
+      - Haifa SOP Bio Kaliumsulfat wasserlöslich 0-0-52
+      - ICL Nova PeKacid 0-60-20
+      - Agrolution Special 313 14-7-14+14CaO+TE
+      - Compo Hakaphos Soft16-8-22(+3) Spezial
       - HuminTech AMINO POWER Plus Liquid
       - HuminTech Fulvital Plus Liquid
-      - Agrolution Special 313 14-7-14+14CaO+TE
   - id: solve_golden
-    source: recipes/solve_golden.yml
+    evaluation_role: selection
+    source: recipes/golden.yml nonzero products; synthetic S=999 replaced by recipe-derived S
     fertilizers:
       - Yara Tera CALCINIT
       - K+S EPSO Top Bittersalz 16-39
       - Agrolution Special 313 14-7-14+14CaO+TE
-      - Compo Hakaphos Basis3 3-15-36(+4)
       - S3 Kaliwasser 28 Be
+    reference_amounts:
+      Yara Tera CALCINIT: 2
+      K+S EPSO Top Bittersalz 16-39: 6
+      Agrolution Special 313 14-7-14+14CaO+TE: 9
+      S3 Kaliwasser 28 Be: 1
+  - id: solve_golden_humin_honeypot
+    evaluation_role: diagnostic
+    source: Golden nonzero product pool plus both HuminTech honeypot products
+    fertilizers:
+      - Yara Tera CALCINIT
+      - K+S EPSO Top Bittersalz 16-39
+      - Agrolution Special 313 14-7-14+14CaO+TE
+      - S3 Kaliwasser 28 Be
+      - HuminTech AMINO POWER Plus Liquid
+      - HuminTech Fulvital Plus Liquid
+    reference_amounts:
+      Yara Tera CALCINIT: 2
+      K+S EPSO Top Bittersalz 16-39: 6
+      Agrolution Special 313 14-7-14+14CaO+TE: 9
+      S3 Kaliwasser 28 Be: 1
+  - id: blossom_calcinit_epso_313
+    evaluation_role: selection
+    source: Handcrafted nonzero pool supplied 2026-07-17
+    fertilizers:
+      - Peters Professional Blossom Booster 10-30-20+2MgO+TE
+      - Yara Tera CALCINIT
+      - K+S EPSO Top Bittersalz 16-39
+      - Agrolution Special 313 14-7-14+14CaO+TE
+    reference_amounts:
+      Peters Professional Blossom Booster 10-30-20+2MgO+TE: 1
+      Yara Tera CALCINIT: 2
+      K+S EPSO Top Bittersalz 16-39: 6
+      Agrolution Special 313 14-7-14+14CaO+TE: 8
+  - id: kristalon_epso_313
+    evaluation_role: selection
+    source: Handcrafted nonzero pool supplied 2026-07-17
+    fertilizers:
+      - Yara Tera KRISTALON ROT CALCIUM
+      - K+S EPSO Top Bittersalz 16-39
+      - Agrolution Special 313 14-7-14+14CaO+TE
+    reference_amounts:
+      Yara Tera KRISTALON ROT CALCIUM: 6
+      K+S EPSO Top Bittersalz 16-39: 6
+      Agrolution Special 313 14-7-14+14CaO+TE: 7
+  - id: epso_313_s3
+    evaluation_role: selection
+    source: Handcrafted nonzero pool supplied 2026-07-17
+    fertilizers:
+      - K+S EPSO Top Bittersalz 16-39
+      - Agrolution Special 313 14-7-14+14CaO+TE
+      - S3 Kaliwasser 28 Be
+    reference_amounts:
+      K+S EPSO Top Bittersalz 16-39: 5
+      Agrolution Special 313 14-7-14+14CaO+TE: 12
+      S3 Kaliwasser 28 Be: 0.4
+  - id: plagron_ca_edta_basis3_epso_313
+    evaluation_role: selection
+    source: Handcrafted nonzero pool supplied 2026-07-17
+    fertilizers:
+      - Ph- Plagron Universal
+      - GH Ca-EDTA
+      - Compo Hakaphos Basis3 3-15-36(+4)
+      - K+S EPSO Top Bittersalz 16-39
+      - Agrolution Special 313 14-7-14+14CaO+TE
+    reference_amounts:
+      Ph- Plagron Universal: 0.75
+      GH Ca-EDTA: 7
+      Compo Hakaphos Basis3 3-15-36(+4): 5
+      K+S EPSO Top Bittersalz 16-39: 3.1
+      Agrolution Special 313 14-7-14+14CaO+TE: 5
+  - id: plagron_ghe_tripart
+    evaluation_role: selection
+    source: Handcrafted nonzero pool supplied 2026-07-17
+    fertilizers:
+      - Ph- Plagron Universal
+      - GHE Flora Grow 3-1-6
+      - GHE Flora Bloom 0-5-4
+      - GHE Flora Micro 5-0-1 Soft
+    reference_amounts:
+      Ph- Plagron Universal: 1.15
+      GHE Flora Grow 3-1-6: 8
+      GHE Flora Bloom 0-5-4: 24
+      GHE Flora Micro 5-0-1 Soft: 16
   - id: restricted_blossom_fetrilon_pekacid_spezial
+    evaluation_role: selection
     source: User-requested seven-product portfolio, 2026-07-15
     fertilizers:
       - Yara Tera CALCINIT
@@ -112,6 +228,7 @@ fertilizer_portfolios:
       - ICL Nova PeKacid 0-60-20
       - Compo Hakaphos Soft16-8-22(+3) Spezial
   - id: restricted_313_bittersalz_mkp
+    evaluation_role: selection
     source: User-requested six-product portfolio, 2026-07-15
     fertilizers:
       - Agrolution Special 313 14-7-14+14CaO+TE
@@ -123,10 +240,17 @@ fertilizer_portfolios:
 
 mass_barrage:
   named_portfolios:
-    - recipe_union_honeypot
+    - real_recipe_union
     - seed_23_10_17
     - augmented_saloner
+    - augmented_saloner_humin_honeypot
     - solve_golden
+    - solve_golden_humin_honeypot
+    - blossom_calcinit_epso_313
+    - kristalon_epso_313
+    - epso_313_s3
+    - plagron_ca_edta_basis3_epso_313
+    - plagron_ghe_tripart
     - restricted_blossom_fetrilon_pekacid_spezial
     - restricted_313_bittersalz_mkp
   leave_one_out_primary: true

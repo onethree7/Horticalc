@@ -228,7 +228,8 @@ def load_context(args: argparse.Namespace) -> BarrageContext:
         "storage": "normalized SQLite; exact achieved vectors deduplicated by SHA-256",
         "selection": (
             "lexicographic worst learned element penalty, worst case, then mean; "
-            "profile and portfolio holdouts plus deterministic bootstrap"
+            "selection-role portfolios only, with profile and portfolio holdouts plus deterministic bootstrap; "
+            "diagnostic-role portfolios are reported but cannot affect ranks"
         ),
     }
     return BarrageContext(
@@ -650,6 +651,19 @@ def _collapsed_rank_map(
     return {str(int(config_id)): int(ranks[index]) for index, config_id in enumerate(config_ids)}
 
 
+def _case_role_masks(
+    cases: list[tuple[str, str]],
+    portfolios: tuple[matrix.FertilizerPortfolio, ...],
+) -> tuple[np.ndarray, np.ndarray]:
+    selection_ids = {portfolio.portfolio_id for portfolio in portfolios if portfolio.evaluation_role == "selection"}
+    diagnostic_ids = {portfolio.portfolio_id for portfolio in portfolios if portfolio.evaluation_role == "diagnostic"}
+    if not selection_ids:
+        raise ValueError("Barrage analysis requires at least one selection-role portfolio")
+    selection_mask = np.array([case[1] in selection_ids for case in cases], dtype=bool)
+    diagnostic_mask = np.array([case[1] in diagnostic_ids for case in cases], dtype=bool)
+    return selection_mask, diagnostic_mask
+
+
 def analyze_barrage(
     connection: sqlite3.Connection,
     context: BarrageContext,
@@ -666,6 +680,8 @@ def analyze_barrage(
         (profile.profile_id, portfolio.portfolio_id) for profile in context.profiles for portfolio in context.portfolios
     ]
     case_index = {case: index for index, case in enumerate(cases)}
+    selection_mask, diagnostic_mask = _case_role_masks(cases, context.portfolios)
+    selection_indices = np.flatnonzero(selection_mask)
     element_costs = np.full((len(config_ids), len(cases)), np.inf, dtype=float)
     total_costs = np.full((len(config_ids), len(cases)), np.inf, dtype=float)
     solution_ids = np.full((len(config_ids), len(cases)), -1, dtype=np.int64)
@@ -743,7 +759,7 @@ def analyze_barrage(
     behavior_hashes = []
     behavior_members: dict[str, list[int]] = {}
     for index, config_id in enumerate(config_ids):
-        digest = hashlib.sha256(solution_ids[index].tobytes()).hexdigest()
+        digest = hashlib.sha256(solution_ids[index, selection_mask].tobytes()).hexdigest()
         behavior_hashes.append(digest)
         behavior_groups.setdefault(digest, []).append(int(config_id))
         behavior_members.setdefault(digest, []).append(index)
@@ -754,7 +770,7 @@ def analyze_barrage(
     )
     representative_position = {digest: position for position, digest in enumerate(representative_hashes)}
     behavior_index = np.array([representative_position[digest] for digest in behavior_hashes], dtype=int)
-    full_mask = np.ones(len(cases), dtype=bool)
+    full_mask = selection_mask
     full_ranks, full_metrics = _collapsed_ranks(
         config_ids,
         element_costs,
@@ -766,21 +782,24 @@ def analyze_barrage(
     order = np.lexsort((config_ids, full_metrics[2], full_metrics[1], full_metrics[0], full_ranks))
     profile_holdouts = {}
     for profile in context.profiles:
-        mask = np.array([case[0] != profile.profile_id for case in cases])
+        mask = selection_mask & np.array([case[0] != profile.profile_id for case in cases])
         if np.any(mask):
             profile_holdouts[profile.profile_id] = _collapsed_rank_map(
                 config_ids, element_costs, total_costs, mask, representatives, behavior_index
             )
     portfolio_holdouts = {}
     for portfolio in context.portfolios:
-        mask = np.array([case[1] != portfolio.portfolio_id for case in cases])
-        portfolio_holdouts[portfolio.portfolio_id] = _collapsed_rank_map(
-            config_ids, element_costs, total_costs, mask, representatives, behavior_index
-        )
+        if portfolio.evaluation_role != "selection":
+            continue
+        mask = selection_mask & np.array([case[1] != portfolio.portfolio_id for case in cases])
+        if np.any(mask):
+            portfolio_holdouts[portfolio.portfolio_id] = _collapsed_rank_map(
+                config_ids, element_costs, total_costs, mask, representatives, behavior_index
+            )
     rng = np.random.default_rng(seed)
     bootstrap_ranks = np.empty((bootstrap_samples, len(representatives)), dtype=np.int32)
     for sample_index in range(bootstrap_samples):
-        sampled = rng.integers(0, len(cases), size=len(cases))
+        sampled = rng.choice(selection_indices, size=len(selection_indices), replace=True)
         sample_order, sample_metrics = _rank_metrics(
             config_ids[representatives],
             element_costs[representatives][:, sampled],
@@ -792,10 +811,15 @@ def analyze_barrage(
     for index in order:
         index = int(index)
         config_id = int(config_ids[index])
-        worst_column = int(np.argmax(element_costs[index]))
-        worst_case_column = int(np.argmax(total_costs[index]))
+        worst_column = int(selection_indices[np.argmax(element_costs[index, selection_mask])])
+        worst_case_column = int(selection_indices[np.argmax(total_costs[index, selection_mask])])
         profile_means = {
-            profile.profile_id: float(total_costs[index, [case[0] == profile.profile_id for case in cases]].mean())
+            profile.profile_id: float(
+                total_costs[
+                    index,
+                    selection_mask & np.array([case[0] == profile.profile_id for case in cases]),
+                ].mean()
+            )
             for profile in context.profiles
         }
         worst_profile_id = max(profile_means, key=profile_means.get)
@@ -818,7 +842,17 @@ def analyze_barrage(
                     "profile_id": cases[worst_case_column][0],
                     "portfolio_id": cases[worst_case_column][1],
                 },
-                "mean_case_cost": float(total_costs[index].mean()),
+                "mean_case_cost": float(total_costs[index, selection_mask].mean()),
+                "diagnostic": (
+                    {
+                        "case_count": int(diagnostic_mask.sum()),
+                        "worst_element_cost": float(element_costs[index, diagnostic_mask].max()),
+                        "worst_case_cost": float(total_costs[index, diagnostic_mask].max()),
+                        "mean_case_cost": float(total_costs[index, diagnostic_mask].mean()),
+                    }
+                    if np.any(diagnostic_mask)
+                    else None
+                ),
                 "behavior_hash": behavior_hashes[index],
                 "equivalent_behavior_count": len(behavior_groups[behavior_hashes[index]]),
                 "worst_profile": {
@@ -849,9 +883,15 @@ def analyze_barrage(
     )
     if second is not None:
         winner_margin = {
-            "worst_element_cost": float(element_costs[second].max() - element_costs[first].max()),
-            "worst_case_cost": float(total_costs[second].max() - total_costs[first].max()),
-            "mean_case_cost": float(total_costs[second].mean() - total_costs[first].mean()),
+            "worst_element_cost": float(
+                element_costs[second, selection_mask].max() - element_costs[first, selection_mask].max()
+            ),
+            "worst_case_cost": float(
+                total_costs[second, selection_mask].max() - total_costs[first, selection_mask].max()
+            ),
+            "mean_case_cost": float(
+                total_costs[second, selection_mask].mean() - total_costs[first, selection_mask].mean()
+            ),
         }
     for row in rows:
         worst_profile_holdout = max(row["leave_one_profile_out_ranks"].values(), default=row["rank"])
@@ -909,7 +949,9 @@ def analyze_barrage(
         "barrage_signature": context.signature,
         "source_matrix_signature": context.manifest["source_matrix_signature"],
         "selection": context.manifest["selection"],
-        "case_count": len(cases),
+        "case_count": int(selection_mask.sum()),
+        "total_case_count": len(cases),
+        "diagnostic_case_count": int(diagnostic_mask.sum()),
         "config_count": len(config_ids),
         "behavior_count": len(representatives),
         "bootstrap_samples": bootstrap_samples,

@@ -8,7 +8,7 @@ import json
 import math
 import sys
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from difflib import get_close_matches
 from pathlib import Path
@@ -47,6 +47,7 @@ CSV_FIELDS = (
     "phase",
     "portfolio_id",
     "portfolio_source",
+    "portfolio_role",
     "omitted_fertilizer",
     "nitrogen_objective_mode",
     "subset_size",
@@ -92,6 +93,8 @@ class FertilizerPortfolio:
     source: str
     fertilizers: tuple[str, ...]
     omitted_fertilizer: str = ""
+    evaluation_role: str = "selection"
+    reference_amounts: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -293,14 +296,40 @@ def load_fertilizer_portfolios(
         portfolio_id = str(entry["id"])
         if portfolio_id in portfolios:
             raise ValueError(f"Duplicate fertilizer portfolio: {portfolio_id}")
+        evaluation_role = str(entry.get("evaluation_role") or "selection")
+        if evaluation_role not in {"selection", "diagnostic"}:
+            raise ValueError(f"Invalid evaluation_role for fertilizer portfolio {portfolio_id}: {evaluation_role!r}")
+        resolved = tuple(resolve_allowed_fertilizers(entry.get("fertilizers") or [], fertilizers))
+        raw_reference_amounts = entry.get("reference_amounts") or {}
+        if not isinstance(raw_reference_amounts, dict):
+            raise ValueError(f"reference_amounts for fertilizer portfolio {portfolio_id} must be a mapping")
+        unknown_amounts = sorted(set(map(str, raw_reference_amounts)) - set(resolved))
+        if unknown_amounts:
+            raise ValueError(
+                f"reference_amounts for fertilizer portfolio {portfolio_id} contain products outside the pool: "
+                + ", ".join(unknown_amounts)
+            )
+        reference_amounts = {str(name): float(value) for name, value in raw_reference_amounts.items()}
+        nonpositive_amounts = sorted(
+            name for name, value in reference_amounts.items() if not math.isfinite(value) or value <= 0.0
+        )
+        if nonpositive_amounts:
+            raise ValueError(
+                f"reference_amounts for fertilizer portfolio {portfolio_id} must be positive: "
+                + ", ".join(nonpositive_amounts)
+            )
         portfolios[portfolio_id] = FertilizerPortfolio(
             portfolio_id=portfolio_id,
             source=str(entry.get("source") or ""),
-            fertilizers=tuple(resolve_allowed_fertilizers(entry.get("fertilizers") or [], fertilizers)),
+            fertilizers=resolved,
+            evaluation_role=evaluation_role,
+            reference_amounts=reference_amounts,
         )
     primary_id = str(cases.get("primary_portfolio") or "")
     if primary_id not in portfolios:
         raise ValueError(f"Unknown primary_portfolio: {primary_id}")
+    if portfolios[primary_id].evaluation_role != "selection":
+        raise ValueError("primary_portfolio must have evaluation_role: selection")
     return portfolios
 
 
@@ -324,6 +353,7 @@ def mass_barrage_portfolios(
                     source=f"{primary.portfolio_id} without {omitted}",
                     fertilizers=tuple(name for name in primary.fertilizers if name != omitted),
                     omitted_fertilizer=omitted,
+                    evaluation_role="selection",
                 )
             )
     return selected
@@ -587,9 +617,10 @@ class MatrixAggregate:
             return
         score = float(row["composite_score"])
         profile_id = str(row["profile_id"])
-        current = self.best_by_profile.get(profile_id)
-        if current is None or score < float(current["composite_score"]):
-            self.best_by_profile[profile_id] = dict(row)
+        if row.get("portfolio_role", "selection") == "selection":
+            current = self.best_by_profile.get(profile_id)
+            if current is None or score < float(current["composite_score"]):
+                self.best_by_profile[profile_id] = dict(row)
         if row["phase"] == "settings":
             key = (str(row["experiment_id"]), str(row["config_id"]))
             stats = self.config_scores.setdefault(
@@ -663,6 +694,7 @@ def solve_case(
         "phase": phase,
         "portfolio_id": portfolio.portfolio_id,
         "portfolio_source": portfolio.source,
+        "portfolio_role": portfolio.evaluation_role,
         "omitted_fertilizer": portfolio.omitted_fertilizer,
         "nitrogen_objective_mode": str(config.values["nitrogen_objective_mode"]),
         "subset_size": len(portfolio.fertilizers),

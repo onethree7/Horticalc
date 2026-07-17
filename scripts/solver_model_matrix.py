@@ -30,14 +30,15 @@ from horticalc.data_io import (  # noqa: E402
     load_molar_masses,
     load_water_profile_data,
 )
-from horticalc.paths import logs_dir, resolve_water_profile_path  # noqa: E402
+from horticalc.paths import logs_dir, resolve_water_profile_path, shipped_fertilizers_path  # noqa: E402
 from horticalc.solver import SolveResult, solve_recipe_data  # noqa: E402
 from horticalc.solver_config import resolve_solver_config  # noqa: E402
 
 SCHEMA_VERSION = 1
-DEFAULT_OUT_DIR = logs_dir(ROOT) / "solver_matrix" / "goal_model"
+DEFAULT_OUT_DIR = logs_dir(ROOT) / "solver_matrix" / "mass_nnls_runtime"
 CALIBRATION_ELEMENTS = matrix.MACRO_KEYS | matrix.MICRO_KEYS | {"Si"}
 LEGACY_34191 = {
+    "solver_model": "legacy",
     "irls_max_outer_iter": 2,
     "n_form_priority_weights": {},
     "n_total_governor_enabled": True,
@@ -70,6 +71,11 @@ def _json(value: Any) -> str:
 
 def model_policies(cases: dict[str, Any]) -> tuple[ModelPolicy, ...]:
     return (
+        ModelPolicy(
+            "mass_nnls",
+            "production",
+            solver_config=resolve_solver_config({"solver_model": "mass_nnls"}),
+        ),
         ModelPolicy(
             "legacy_canonical",
             "legacy",
@@ -146,8 +152,9 @@ def _recipe(
 ) -> dict[str, Any]:
     solver_config = (
         policy.solver_config
-        if policy.kind == "legacy"
+        if policy.kind in {"legacy", "production"}
         else {
+            "solver_model": "legacy",
             "nitrogen_objective_mode": "n_total_only",
             "s_objective_enabled": True,
         }
@@ -179,6 +186,7 @@ def _result_metrics(result: SolveResult, molar_masses: dict[str, float]) -> dict
         "worst_underfill_mmol_per_l": max((-value for value in errors_mmol.values()), default=0.0),
         "worst_overshoot_mmol_per_l": max(errors_mmol.values(), default=0.0),
         "total_abs_error_mmol_per_l": sum(absolute_mmol.values()),
+        "total_squared_error_mg_per_l2": sum(value * value for value in errors_mg.values()),
         "worst_macro_abs_error_mg_per_l": max(macro_errors, default=0.0),
         "n_total_abs_error_mg_per_l": absolute_mg.get("N_total", 0.0),
         "total_fertilizer_mass_g": fertilizer_mass,
@@ -206,7 +214,7 @@ def _solve_row(
             solved = goal.solve_goal_recipe_data(
                 recipe,
                 policy.goal_policy,
-                ferts=fertilizers,
+                ferts=matrix.fertilizers_for_portfolio(portfolio, fertilizers),
                 mm=molar_masses,
                 water_profile_data=water_profile_data,
             )
@@ -217,7 +225,7 @@ def _solve_row(
         else:
             result = solve_recipe_data(
                 recipe,
-                ferts=fertilizers,
+                ferts=matrix.fertilizers_for_portfolio(portfolio, fertilizers),
                 mm=molar_masses,
                 water_profile_data=water_profile_data,
             )
@@ -225,7 +233,7 @@ def _solve_row(
                 recipe,
                 result,
                 error_unit="mmol",
-                ferts=fertilizers,
+                ferts=matrix.fertilizers_for_portfolio(portfolio, fertilizers),
                 mm=molar_masses,
                 water_profile_data=water_profile_data,
             )
@@ -321,6 +329,11 @@ def _policy_summary(rows: list[dict[str, Any]], policy: ModelPolicy) -> dict[str
         "worst_total_fertilizer_mass_g": max(
             (float(row["total_fertilizer_mass_g"]) for row in selection), default=math.inf
         ),
+        "mean_total_squared_error_mg_per_l2": (
+            float(np.mean([float(row["total_squared_error_mg_per_l2"]) for row in selection]))
+            if selection
+            else math.inf
+        ),
         "calibration_worst_abs_error_mmol_per_l": max(
             (float(row["worst_abs_error_mmol_per_l"]) for row in calibrations), default=math.inf
         ),
@@ -331,45 +344,50 @@ def _policy_summary(rows: list[dict[str, Any]], policy: ModelPolicy) -> dict[str
     }
 
 
-def _quality_gate(summaries: list[dict[str, Any]]) -> dict[str, Any]:
-    new = [item for item in summaries if item["policy_kind"] == "goal"]
+def _quality_gate(summaries: list[dict[str, Any]], rows: list[dict[str, Any]]) -> dict[str, Any]:
+    production = [item for item in summaries if item["policy_kind"] == "production"]
     legacy = [item for item in summaries if item["policy_kind"] == "legacy"]
-    best_new = min(
-        new,
-        key=lambda item: (
-            item["failed_case_count"],
-            item["pareto_dominated_selection_count"],
-            tuple(item["lexicographic_error_vector"]),
-        ),
-    )
-    best_legacy = min(
-        legacy,
-        key=lambda item: (
-            item["failed_case_count"],
-            item["pareto_dominated_selection_count"],
-            tuple(item["lexicographic_error_vector"]),
-        ),
-    )
+    goals = [item for item in summaries if item["policy_kind"] == "goal"]
+    if len(production) != 1:
+        raise ValueError("The model matrix requires exactly one production policy")
+    mass = production[0]
+    legacy_reference = next(item for item in legacy if item["policy_id"] == "legacy_canonical")
+    selection_rows = [
+        row
+        for row in rows
+        if row["status"] == "ok" and row["phase"] == "benchmark" and row["portfolio_role"] == "selection"
+    ]
+    by_policy_case = {(row["policy_id"], row["profile_id"], row["portfolio_id"]): row for row in selection_rows}
+    comparisons = []
+    for key, mass_row in by_policy_case.items():
+        policy_id, profile_id, portfolio_id = key
+        if policy_id != "mass_nnls":
+            continue
+        legacy_row = by_policy_case.get(("legacy_canonical", profile_id, portfolio_id))
+        if legacy_row is not None:
+            comparisons.append(
+                float(mass_row["total_squared_error_mg_per_l2"])
+                <= float(legacy_row["total_squared_error_mg_per_l2"]) + 1e-7
+            )
     checks = {
-        "new_models_have_no_failures": all(item["failed_case_count"] == 0 for item in new),
-        "best_new_is_pareto_safe": best_new["pareto_dominated_selection_count"] == 0,
-        "best_new_improves_worst_molar_error": (
-            best_new["worst_abs_error_mmol_per_l"] < best_legacy["worst_abs_error_mmol_per_l"] - 1e-9
-        ),
-        "best_new_roundtrips_reference_recipes": best_new["calibration_worst_abs_error_mmol_per_l"] <= 1e-6,
-        "best_new_outputs_finite_mass": math.isfinite(best_new["worst_total_fertilizer_mass_g"]),
+        "production_has_no_failures": mass["failed_case_count"] == 0,
+        "production_is_pareto_safe": mass["pareto_dominated_selection_count"] == 0,
+        "production_never_worsens_raw_mg_sse_vs_legacy": bool(comparisons) and all(comparisons),
+        "production_roundtrips_reference_recipes": mass["calibration_worst_abs_error_mmol_per_l"] <= 1e-6,
+        "production_outputs_finite_mass": math.isfinite(mass["worst_total_fertilizer_mass_g"]),
+        "research_models_have_no_failures": all(item["failed_case_count"] == 0 for item in goals),
     }
     return {
         "passed": all(checks.values()),
         "checks": checks,
-        "best_new_policy": best_new["policy_id"],
-        "best_legacy_policy": best_legacy["policy_id"],
+        "production_policy": mass["policy_id"],
+        "legacy_reference_policy": legacy_reference["policy_id"],
     }
 
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
     cases = matrix._read_yaml(args.cases)
-    fertilizers = load_fertilizers()
+    fertilizers = load_fertilizers(shipped_fertilizers_path(ROOT))
     molar_masses = load_molar_masses()
     profiles = matrix.load_target_profiles(cases, args.profiles)
     named = matrix.load_fertilizer_portfolios(cases, fertilizers)
@@ -377,9 +395,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     portfolios = _select_ids(portfolios, args.portfolio_ids, "portfolio_id")
     policies = _select_ids(model_policies(cases), args.policies, "policy_id")
     if not any(item.evaluation_role == "selection" for item in portfolios):
-        raise ValueError("The goal-model matrix requires at least one selection-role portfolio")
-    if not any(item.kind == "goal" for item in policies) or not any(item.kind == "legacy" for item in policies):
-        raise ValueError("The quality gate requires at least one goal policy and one legacy control")
+        raise ValueError("The solver-model matrix requires at least one selection-role portfolio")
+    required_kinds = {"production", "goal", "legacy"}
+    if not required_kinds.issubset({item.kind for item in policies}):
+        raise ValueError("The quality gate requires production, goal-research, and legacy policies")
     water_profile_name = args.water_profile or str(cases.get("water_profile") or "65936")
     water_profile_data = dict(load_water_profile_data(resolve_water_profile_path(water_profile_name, ROOT)))
     osmosis_percent = float(cases.get("osmosis_percent") or 0.0)
@@ -439,7 +458,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     for rank, item in enumerate(summaries, start=1):
         item["rank"] = rank
         item.pop("lexicographic_error_vector")
-    quality = _quality_gate([_policy_summary(rows, policy) for policy in policies])
+    quality = _quality_gate([_policy_summary(rows, policy) for policy in policies], rows)
     args.out_dir.mkdir(parents=True, exist_ok=True)
     rows_path = args.out_dir / "model_matrix_rows.jsonl.gz"
     with gzip.open(rows_path, "wt", encoding="utf-8", newline="\n") as handle:
@@ -483,7 +502,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Compare deterministic goal LP models against legacy solver controls.")
+    parser = argparse.ArgumentParser(description="Validate mass NNLS against legacy and goal-research controls.")
     parser.add_argument("--cases", type=Path, default=matrix.DEFAULT_CASES_PATH)
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--profiles", default="all")
@@ -498,11 +517,11 @@ def main(argv: list[str] | None = None) -> int:
     summary = run(args)
     gate = summary["quality_gate"]
     print(
-        f"Goal-model matrix: {summary['completed_rows']:,}/{summary['planned_rows']:,} rows, "
+        f"Solver-model matrix: {summary['completed_rows']:,}/{summary['planned_rows']:,} rows, "
         f"{summary['failed_rows']} failures in {summary['elapsed_seconds']:.2f}s"
     )
     print(
-        f"Best new policy: {gate['best_new_policy']}; best legacy: {gate['best_legacy_policy']}; "
+        f"Production policy: {gate['production_policy']}; legacy reference: {gate['legacy_reference_policy']}; "
         f"quality gate: {'PASS' if gate['passed'] else 'FAIL'}"
     )
     return 0 if gate["passed"] else 2

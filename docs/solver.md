@@ -30,7 +30,9 @@ for fertilizers also listed in `fertilizers_allowed`. The
 - Accepted target keys are in `ALLOWED_TARGET_KEYS` in `src/horticalc/solver.py`. Oxide/form aliases such as `K2O`, `P2O5`, lowercase keys, and unknown keys are rejected.
 - Numeric zero targets are skipped, except N-form zero targets in `n_forms_only` mode.
 - `Na` and `Cl` are report-only and ignored as objectives.
-- `S` is report-only by default. Set `solver_config.s_objective_enabled=true` to allow elemental sulfur as an objective. `SO4` is not a solver target key.
+- `mass_nnls` always includes a non-zero elemental `S` target. In `legacy`,
+  `S` is report-only unless `solver_config.s_objective_enabled=true`. `SO4` is
+  not a solver target key.
 - Nitrogen form handling depends on `nitrogen_objective_mode`.
 
 The output field `objective_elements` is the authoritative list. The solver matrix benchmark scores this list.
@@ -51,6 +53,7 @@ The canonical defaults are in `src/horticalc/solver_config.py`:
 
 | Key | Default | Bounds |
 | --- | --- | --- |
+| `solver_model` | `mass_nnls` | `mass_nnls`, `legacy` |
 | `relative_weighting` | `false` | Boolean |
 | `overshoot_penalty` | `1.0` | `>= 0` |
 | `irls_max_outer_iter` | `4` | `1..12` |
@@ -85,6 +88,40 @@ and tests change too.
 
 ## Optimization Model
 
+`solver_model` selects one of two runtime paths:
+
+- `mass_nnls` is the production default. It minimizes raw elemental squared
+  error in canonical `mg/L`, uses `N_total` whenever that target is present,
+  and includes a non-zero `S` target. Relative weighting, IRLS, governor, and
+  singleton fields do not affect this model.
+- `legacy` retains the existing NNLS/IRLS/singleton implementation and all of
+  the tuning fields below as a compatibility option.
+
+The selected model is returned as `solver_model` in every solve response.
+
+### Mass NNLS model
+
+The solver builds the contribution matrix in elemental `mg/L` and solves:
+
+```text
+minimize sum((achieved_mg_per_l - target_mg_per_l)^2)
+subject to fertilizer dose >= 0
+```
+
+There is no percentage normalization, molar conversion, macro/micro class,
+biological severity table, IRLS reweighting, or singleton post-pass in this
+objective. Consequently, an `N -30 mg/L` residual contributes `900`, while a
+`Cu +0.3 mg/L` residual contributes `0.09`. This is a physical mass-error
+criterion, not a claim that all biological trade-offs are known.
+
+Allowed fertilizers with `SolverRole=fixed_only` are excluded from variable
+dose selection. They still contribute normally when the recipe supplies an
+explicit `fixed_grams` dose. This prevents additive products such as shipped
+HuminTech AMINO POWER and Fulvital from being used as unconstrained nutrient
+concentrates. It is product capability metadata, not a nutrient upper bound.
+
+### Legacy model
+
 The solver builds a contribution matrix: rows are objective elements, columns are allowed fertilizers, and values are mg/L contribution per gram for the current batch size. Water baseline is computed with `compute_solution()` and subtracted from targets before solving. Fixed grams are subtracted before optimizing the remaining variable fertilizers.
 
 The base solve is deterministic non-negative least squares:
@@ -102,6 +139,8 @@ passes use the same upper bounds.
 
 ## Optional Behavior
 
+- The settings below apply only to `legacy`; `mass_nnls` deliberately ignores
+  them.
 - `relative_weighting` scales rows by target/residual magnitude.
 - `overshoot_penalty` and IRLS increase weights for overshoot rows.
 - Singleton passes can reduce dominant-supplier overshoot or top up underfilled dominant nutrients.

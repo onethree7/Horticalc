@@ -55,7 +55,14 @@ def test_save_fertilizers_removes_legacy_number_column(tmp_path: Path) -> None:
         reader = csv.DictReader(f)
         rows = list(reader)
 
-    assert reader.fieldnames == ["Düngername", "Liquid", "Gewicht", "NH4", "SolverMaxDosePerL"]
+    assert reader.fieldnames == [
+        "Düngername",
+        "Liquid",
+        "Gewicht",
+        "NH4",
+        "SolverRole",
+        "SolverMaxDosePerL",
+    ]
     assert rows[0]["Liquid"] == "0"
     assert rows[0]["NH4"] == "0.12"
 
@@ -76,6 +83,40 @@ def test_solver_max_dose_csv_roundtrip_is_not_composition(tmp_path: Path) -> Non
     assert reloaded["Limited"].solver_max_dose_per_l == 0.25
     with csv_path.open("r", encoding="utf-8", newline="") as handle:
         assert list(csv.DictReader(handle).fieldnames or [])[-1] == "SolverMaxDosePerL"
+
+
+def test_solver_role_csv_roundtrip_is_not_composition(tmp_path: Path) -> None:
+    csv_path = tmp_path / "fertilizers.csv"
+    csv_path.write_text(
+        "Düngername,Liquid,Gewicht,NO3,SolverRole\nFixed,0,1,0.1,fixed_only\n",
+        encoding="utf-8",
+    )
+
+    loaded = load_fertilizers(csv_path)
+    assert loaded["Fixed"].comp == {"NO3": 0.1}
+    assert loaded["Fixed"].solver_role == "fixed_only"
+
+    save_fertilizers(loaded, csv_path)
+    reloaded = load_fertilizers(csv_path)
+    assert reloaded["Fixed"].solver_role == "fixed_only"
+
+
+def test_load_fertilizers_defaults_missing_solver_role_to_variable(tmp_path: Path) -> None:
+    csv_path = tmp_path / "fertilizers.csv"
+    csv_path.write_text("Düngername,Liquid,Gewicht,NO3\nDefault,0,1,0.1\n", encoding="utf-8")
+
+    assert load_fertilizers(csv_path)["Default"].solver_role == "variable"
+
+
+def test_load_fertilizers_rejects_unknown_solver_role(tmp_path: Path) -> None:
+    csv_path = tmp_path / "fertilizers.csv"
+    csv_path.write_text(
+        "Düngername,Liquid,Gewicht,SolverRole\nInvalid,0,1,automatic\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="SolverRole"):
+        load_fertilizers(csv_path)
 
 
 @pytest.mark.parametrize("value", ["-0.1", "nan", "inf"])

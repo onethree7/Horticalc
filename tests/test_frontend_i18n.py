@@ -38,6 +38,12 @@ def test_i18n_catalogs_cover_the_supported_themes_and_solver_labels() -> None:
         "solver.config.scaleEpsilon",
         "solver.config.underfillMaxIter",
         "solver.config.nTotalGovernor",
+        "solver.modelLabel",
+        "solver.model.massNnls",
+        "solver.modelMassHint",
+        "solver.fixedOnly",
+        "editor.solverVariable",
+        "editor.solverVariableHint",
     }
 
     for locale in LOCALES:

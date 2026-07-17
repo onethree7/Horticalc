@@ -21,6 +21,7 @@ from horticalc.core import (
     normalize_water_profile,
 )
 from horticalc.data_io import (
+    FERTILIZER_SOLVER_ROLES,
     Fertilizer,
     fertilizer_name_key,
     load_fertilizers,
@@ -99,6 +100,7 @@ class FertilizerPayload(BaseModel):
     weight_factor: float | None = None
     comp: Dict[str, float] | None = None
     solver_max_dose_per_l: FiniteFloat | None = Field(default=None, ge=0)
+    solver_role: str = "variable"
 
 
 class PreferencesPayload(BaseModel):
@@ -163,6 +165,7 @@ class SolveFertilizerEntry(BaseModel):
 
 class SolveResponse(BaseModel):
     liters: float
+    solver_model: str
     fertilizers: List[SolveFertilizerEntry]
     objective_elements: List[str]
     targets_mg_per_l: Dict[str, float]
@@ -426,6 +429,7 @@ def fertilizers() -> List[dict]:
             "weight_factor": fert.weight_factor,
             "comp": fert.comp,
             "solver_max_dose_per_l": fert.solver_max_dose_per_l,
+            "solver_role": fert.solver_role,
         }
         for fert in FERTILIZERS.values()
     ]
@@ -458,12 +462,18 @@ def put_fertilizers(payload: List[FertilizerPayload]) -> dict:
                     continue
                 comp[key] = value
 
+        solver_role = entry.solver_role.strip().casefold()
+        if solver_role not in FERTILIZER_SOLVER_ROLES:
+            choices = ", ".join(FERTILIZER_SOLVER_ROLES)
+            raise HTTPException(status_code=400, detail=f"Invalid solver role; expected one of: {choices}")
+
         new_ferts[name] = Fertilizer(
             name=name,
             liquid=entry.liquid,
             weight_factor=weight,
             comp=comp,
             solver_max_dose_per_l=entry.solver_max_dose_per_l,
+            solver_role=solver_role,
         )
 
     global FERTILIZERS

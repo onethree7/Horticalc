@@ -9,7 +9,7 @@ import os
 import re
 import tempfile
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Callable, Dict
 
@@ -32,11 +32,14 @@ class Fertilizer:
     # composition fractions (mass fraction, e.g. 0.14 = 14%)
     comp: Dict[str, float]
     solver_max_dose_per_l: float | None = None
+    solver_role: str = "variable"
 
 
 FERTILIZER_NAME_FIELDS = ("Düngername", "Duengername")
 FERTILIZER_BASE_FIELDS = ["Düngername", "Liquid", "Gewicht"]
 FERTILIZER_SOLVER_MAX_FIELD = "SolverMaxDosePerL"
+FERTILIZER_SOLVER_ROLE_FIELD = "SolverRole"
+FERTILIZER_SOLVER_ROLES = ("variable", "fixed_only")
 REPLACED_ROW_PATTERN = re.compile(r'replace existing row\s+"([^"]+)"', re.IGNORECASE)
 
 
@@ -63,6 +66,7 @@ def _is_base_fertilizer_field(field: str | None) -> bool:
         "Liquid",
         "Gewicht",
         FERTILIZER_SOLVER_MAX_FIELD,
+        FERTILIZER_SOLVER_ROLE_FIELD,
     )
 
 
@@ -220,6 +224,10 @@ def _load_fertilizer_csv(
                 )
                 if solver_max < 0.0:
                     raise ValueError(f"{csv_path}: {FERTILIZER_SOLVER_MAX_FIELD} for {name} must be >= 0")
+            solver_role = str(row.get(FERTILIZER_SOLVER_ROLE_FIELD) or "variable").strip().casefold()
+            if solver_role not in FERTILIZER_SOLVER_ROLES:
+                choices = ", ".join(FERTILIZER_SOLVER_ROLES)
+                raise ValueError(f"{csv_path}: {FERTILIZER_SOLVER_ROLE_FIELD} for {name} must be one of: {choices}")
 
             comp: Dict[str, float] = {}
             for k, v in row.items():
@@ -244,6 +252,7 @@ def _load_fertilizer_csv(
                 weight_factor=weight,
                 comp=comp,
                 solver_max_dose_per_l=solver_max,
+                solver_role=solver_role,
             )
 
     return ferts
@@ -262,6 +271,11 @@ def _shipped_fertilizer_catalog_keys(csv_path: Path) -> set[str]:
                     continue
                 keys.update(fertilizer_name_key(match) for match in REPLACED_ROW_PATTERN.findall(value))
     return keys
+
+
+def _fertilizer_csv_fields(csv_path: Path) -> set[str]:
+    with csv_path.open("r", encoding="utf-8", newline="") as handle:
+        return set(csv.DictReader(handle).fieldnames or [])
 
 
 def _merge_fertilizer_maps(*maps: Dict[str, Fertilizer]) -> Dict[str, Fertilizer]:
@@ -292,6 +306,8 @@ def _fertilizers_equal(left: Fertilizer, right: Fertilizer) -> bool:
     if abs(float(left.weight_factor) - float(right.weight_factor)) > 1e-12:
         return False
     if left.solver_max_dose_per_l != right.solver_max_dose_per_l:
+        return False
+    if left.solver_role != right.solver_role:
         return False
     if set(left.comp) != set(right.comp):
         return False
@@ -356,6 +372,15 @@ def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
     shipped = _load_fertilizer_csv(shipped_path) if shipped_path.exists() else {}
     overrides_path = paths.user_fertilizer_overrides_path(layout.root)
     overrides = _load_fertilizer_csv(overrides_path) if overrides_path.exists() else {}
+    if overrides and FERTILIZER_SOLVER_ROLE_FIELD not in _fertilizer_csv_fields(overrides_path):
+        shipped_by_key = {_fertilizer_key(fertilizer): fertilizer for fertilizer in shipped.values()}
+        overrides = {
+            name: replace(
+                fertilizer,
+                solver_role=shipped_by_key.get(_fertilizer_key(fertilizer), fertilizer).solver_role,
+            )
+            for name, fertilizer in overrides.items()
+        }
     merged = _merge_fertilizer_maps(shipped, overrides)
 
     disabled_keys = _disabled_fertilizer_keys(paths.user_disabled_fertilizers_path(layout.root))
@@ -382,14 +407,18 @@ def _header_for_fertilizers(fertilizers: Dict[str, Fertilizer], existing_header:
                 header.append(key)
     if not any(field in header for field in FERTILIZER_NAME_FIELDS):
         header.insert(1, "Düngername")
-    if FERTILIZER_SOLVER_MAX_FIELD in header:
-        header.remove(FERTILIZER_SOLVER_MAX_FIELD)
-    header.append(FERTILIZER_SOLVER_MAX_FIELD)
+    for field in (FERTILIZER_SOLVER_ROLE_FIELD, FERTILIZER_SOLVER_MAX_FIELD):
+        if field in header:
+            header.remove(field)
+        header.append(field)
     return header
 
 
 def _validate_fertilizer(fertilizer: Fertilizer) -> None:
     _positive_float(fertilizer.weight_factor, f"Weight for {fertilizer.name}")
+    if fertilizer.solver_role not in FERTILIZER_SOLVER_ROLES:
+        choices = ", ".join(FERTILIZER_SOLVER_ROLES)
+        raise ValueError(f"Solver role for {fertilizer.name} must be one of: {choices}")
     for key, value in fertilizer.comp.items():
         _finite_float(value, f"Composition {key} for {fertilizer.name}")
     if fertilizer.solver_max_dose_per_l is not None:
@@ -421,6 +450,7 @@ def _write_fertilizer_csv(
         row[name_field] = fert.name
         row["Liquid"] = "1" if fert.liquid else "0"
         row["Gewicht"] = format(weight, ".10g")
+        row[FERTILIZER_SOLVER_ROLE_FIELD] = fert.solver_role
         if fert.solver_max_dose_per_l is not None:
             row[FERTILIZER_SOLVER_MAX_FIELD] = format(float(fert.solver_max_dose_per_l), ".10g")
         for key in header:

@@ -39,6 +39,15 @@ The workflow menu has four user-facing areas:
 - **Calculator**: build recipes manually, calculate, and inspect results.
 - **Solver**: enter targets, select allowed fertilizers, and solve for doses.
 
+The Solver's advanced section exposes a model selector. `Mass NNLS
+(recommended)` is the default, minimizes raw elemental `mg/L` error, forces
+N-total and sulfur objectives, and disables irrelevant legacy tuning controls.
+`Legacy (NNLS + tuning)` retains the existing controls as a compatibility
+option. Fixed-only products are labelled in the allowed-fertilizer picker and
+are not variable Solver candidates. The result header and copied output
+identify the model that actually ran. The selection is stored in
+`user/preferences.json` through the normal serialized preference write.
+
 The workflow menu is the single owner of visible area navigation. The large editor and solver picker tables are mounted only while their workflow is active and removed from the DOM when another workflow is selected. Their JavaScript state remains intact.
 
 ## Preferences, Language, Themes, Units

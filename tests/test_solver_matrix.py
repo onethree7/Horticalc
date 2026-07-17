@@ -176,12 +176,22 @@ def test_benchmark_corpus_and_recipe_union_are_explicit() -> None:
     assert sum(portfolio.evaluation_role == "selection" for portfolio in barrage) == 33
     assert sum(portfolio.evaluation_role == "diagnostic" for portfolio in barrage) == 2
     assert sum(bool(portfolio.omitted_fertilizer) for portfolio in barrage) == 22
+    assert portfolios["augmented_saloner_humin_honeypot"].force_variable_products is True
+    assert portfolios["solve_golden_humin_honeypot"].force_variable_products is True
+    assert all(
+        not portfolio.force_variable_products
+        for portfolio in portfolios.values()
+        if portfolio.evaluation_role == "selection"
+    )
 
 
 def test_shipped_fertilizers_define_no_solver_dose_limits() -> None:
     fertilizers = load_fertilizers(solver_matrix.ROOT / "data" / "fertilizers.csv")
 
     assert all(fertilizer.solver_max_dose_per_l is None for fertilizer in fertilizers.values())
+    assert fertilizers["HuminTech AMINO POWER Plus Liquid"].solver_role == "fixed_only"
+    assert fertilizers["HuminTech Fulvital Plus Liquid"].solver_role == "fixed_only"
+    assert fertilizers["Compo Fetrilon Combi 1"].solver_role == "variable"
 
 
 def test_solver_matrix_quick_smoke_writes_self_describing_outputs(

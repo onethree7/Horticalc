@@ -8,7 +8,7 @@ import json
 import math
 import sys
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from difflib import get_close_matches
 from pathlib import Path
@@ -28,7 +28,12 @@ from horticalc.data_io import (  # noqa: E402
     load_nutrient_solution_data,
     load_water_profile_data,
 )
-from horticalc.paths import logs_dir, resolve_water_profile_path, shipped_nutrient_solutions_dir  # noqa: E402
+from horticalc.paths import (  # noqa: E402
+    logs_dir,
+    resolve_water_profile_path,
+    shipped_fertilizers_path,
+    shipped_nutrient_solutions_dir,
+)
 from horticalc.solver import solve_recipe_data  # noqa: E402
 from horticalc.solver_config import resolve_solver_config  # noqa: E402
 
@@ -95,6 +100,7 @@ class FertilizerPortfolio:
     omitted_fertilizer: str = ""
     evaluation_role: str = "selection"
     reference_amounts: dict[str, float] = field(default_factory=dict)
+    force_variable_products: bool = False
 
 
 @dataclass(frozen=True)
@@ -324,6 +330,7 @@ def load_fertilizer_portfolios(
             fertilizers=resolved,
             evaluation_role=evaluation_role,
             reference_amounts=reference_amounts,
+            force_variable_products=bool(entry.get("force_variable_products", False)),
         )
     primary_id = str(cases.get("primary_portfolio") or "")
     if primary_id not in portfolios:
@@ -357,6 +364,22 @@ def mass_barrage_portfolios(
                 )
             )
     return selected
+
+
+def fertilizers_for_portfolio(
+    portfolio: FertilizerPortfolio,
+    fertilizers: dict[str, Fertilizer],
+) -> dict[str, Fertilizer]:
+    """Make fixed-only products variable only for an explicit research honeypot."""
+    if not portfolio.force_variable_products:
+        return fertilizers
+    forced_names = set(portfolio.fertilizers)
+    return {
+        name: replace(fertilizer, solver_role="variable")
+        if name in forced_names and fertilizer.solver_role == "fixed_only"
+        else fertilizer
+        for name, fertilizer in fertilizers.items()
+    }
 
 
 def _config_label(values: dict[str, Any], keys: Iterable[str]) -> str:
@@ -715,7 +738,7 @@ def solve_case(
         }
         result = solve_recipe_data(
             recipe,
-            ferts=fertilizers,
+            ferts=fertilizers_for_portfolio(portfolio, fertilizers),
             mm=molar_masses,
             water_profile_data=water_profile_data,
         )
@@ -818,7 +841,7 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
     cases = _read_yaml(args.cases)
     if int(cases.get("schema_version") or 0) != 2:
         raise ValueError("solver matrix cases must use schema_version: 2")
-    fertilizers = load_fertilizers()
+    fertilizers = load_fertilizers(shipped_fertilizers_path(ROOT))
     molar_masses = load_molar_masses()
     profiles = load_target_profiles(cases, args.profiles)
     if args.max_profiles:

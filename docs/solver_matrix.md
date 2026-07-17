@@ -103,77 +103,83 @@ recipes can be chemically equivalent). That calibration belongs in a distinct
 diagnostic phase before it is added; it must never be averaged into scientific
 or handcrafted-profile rankings.
 
-## Experimental Deterministic Goal Model
+## Runtime Mass NNLS And Research Controls
 
-Status: `research implementation; not a runtime default`.
+Status: `current-state runtime plus research comparison`.
 
-`scripts/solver_goal_model.py` implements a staged linear goal solver. It uses
-non-negative fertilizer doses without maximum-dose bounds. For every objective
-element it introduces independent underfill and overshoot residuals, then:
+Production `mass_nnls` lives only in `src/horticalc/solver.py`. It minimizes
+the unweighted sum of squared elemental residuals in canonical `mg/L`, subject
+to non-negative fertilizer doses. It uses `N_total` whenever present and
+always includes a non-zero elemental S target. It has no percentage or molar
+normalization, macro/micro class, element severity table, IRLS pass, singleton
+pass, or learned biological preference. For scale, `N -30 mg/L` contributes
+`900` to the objective and `Cu +0.3 mg/L` contributes `0.09`.
 
-1. minimizes the largest residual;
-2. freezes that optimum and minimizes total residual;
-3. returns the resulting LP vertex.
+The product catalog supplies a separate capability rule. A fertilizer with
+`SolverRole=fixed_only` is not a variable Solver column, but its explicitly
+supplied `fixed_grams` dose still contributes normally. The shipped HuminTech
+AMINO POWER and Fulvital products are fixed-only; Fetrilon remains variable.
+The two diagnostic Humin portfolios explicitly override that role inside the
+research harness so the failure mode remains observable. Selection portfolios
+use the shipped catalog exactly as production does.
 
-The principal error unit is elemental `mmol/L`, calculated from the signed
-`mg/L` error and the element's molar mass. Consequently a tens-of-mg nitrogen
-error cannot be cancelled by a spectacular percentage error on a fraction of
-a milligram of copper. A raw `mg/L` formulation remains as a control. Global
-underfill multipliers `2`, `4`, and `10` test the general preference that too
-much is preferable to too little without assigning element-specific weights.
+The former deterministic goal implementation now lives only in
+`scripts/solver_goal_model.py`. It remains useful as a research control for
+molar/mg minimax and global underfill hypotheses, but product runtime and UI do
+not import or expose it. `scripts/solver_model_matrix.py` compares eight
+policies:
 
-The rejected strict “underfill first” formulation is intentionally absent from
-the canonical model matrix. With no dose limits it can drive underfill to zero
-by producing extreme overshoots; the observed worst N error approached
-`850 mg/L`. Likewise, fertilizer-count MILP selection is not used because it
-would require a Big-M dose ceiling. A final mass-minimization tie-break was
-also rejected: movement along a degenerate optimum caused small discrepancies
-between the LP coefficient model and the complete chemistry recomputation.
-Accuracy therefore remains the final accepted stage.
-
-`scripts/solver_model_matrix.py` compares seven policies:
-
-- legacy canonical;
-- historical config `34191`;
+- production `mass_nnls`;
+- legacy canonical and historical config `34191`;
 - symmetric mmol/L minimax;
 - mmol/L minimax with global underfill factors `2`, `4`, and `10`;
 - symmetric mg/L minimax.
 
 The matrix contains 10 profiles x 35 portfolios plus seven matched recipe
-roundtrips, or 357 cases per policy and 2,499 result rows. The 33 selection
-portfolios determine ranking; the two Humin portfolios contribute 20 reported
-diagnostic cases but cannot influence it. Evidence is stored as compressed
-`model_matrix_rows.jsonl.gz`; `model_matrix_summary.json` contains the quality
-gate and non-compensating lexicographic ranking.
+roundtrips, or 357 cases per policy and 2,856 result rows. The 33 selection
+portfolios determine quality gates; the two force-variable Humin portfolios
+contribute 20 diagnostic cases per policy without influencing acceptance.
+Evidence is stored as compressed `model_matrix_rows.jsonl.gz`;
+`model_matrix_summary.json` contains the gates and research rankings.
 
-### Goal-model result (2026-07-17)
+### Mass-NNLS runtime result (2026-07-17)
 
-Status: `research result; quality gate passed`.
+Status: `accepted implementation result; quality gate passed`.
 
-The complete run finished 2,499/2,499 rows without failure. All five new LP
-policies produced zero materially Pareto-dominated selection results and all
-seven recipe roundtrips reproduced their generated target vectors. The best
-roundtrip error of the winning policy was below `5e-15 mmol/L`.
+The corrected complete run finished 2,856/2,856 rows without failure in
+20.29 seconds. Production Mass NNLS had zero dominated selection cases,
+round-tripped all seven reference mixtures to numerical precision, returned
+finite non-negative doses, and never produced a larger raw mg/L squared-error
+sum than canonical Legacy in any of the 330 selection cases.
 
-| Rank | Policy | Worst error mmol/L | Worst N error mg/L | Dominated cases |
-|---:|---|---:|---:|---:|
-| 1 | `goal_mmol_symmetric` | 2.209 | 30.943 | 0 |
-| 2 | `goal_mmol_under_x2` | 4.122 | 57.739 | 0 |
-| 3 | `goal_mg_symmetric` | 4.779 | 66.932 | 0 |
-| 4 | `goal_mmol_under_x4` | 7.270 | 101.827 | 0 |
-| 5 | `legacy_34191` | 7.405 | 103.721 | 0 |
-| 6 | `goal_mmol_under_x10` | 13.417 | 187.926 | 0 |
-| 7 | `legacy_canonical` | 4.271 | 59.818 | 7 |
+| Policy | Role | Mean squared error (mg/L)^2 | Worst N error mg/L | Dominated cases |
+|---|---|---:|---:|---:|
+| `mass_nnls` | production | 448.129 | 51.150 | 0 |
+| `goal_mmol_symmetric` | research | 564.522 | 30.943 | 0 |
+| `goal_mg_symmetric` | research | 562.633 | 66.932 | 0 |
+| `goal_mmol_under_x2` | research | 595.587 | 57.739 | 0 |
+| `goal_mmol_under_x4` | research | 727.446 | 101.827 | 0 |
+| `goal_mmol_under_x10` | research | 1056.474 | 187.926 | 0 |
+| `legacy_34191` | legacy | 1948.114 | 103.721 | 0 |
+| `legacy_canonical` | legacy | 539.125 | 59.818 | 7 |
 
-The winner reduced the worst molar error by 48.3% and the worst N error by
-48.3% relative to the canonical legacy control. Its 95th-percentile case-worst
-error fell from `1.619` to `1.009 mmol/L`; the mean fell from `0.318` to
-`0.183 mmol/L`. On matched augmented Saloner it produced `N_total -0.107`,
-`Fe -0.427`, and `Cu +0.190 mg/L`. The factor-4 alternative shifts that
-general trade-off toward underfill avoidance (`N_total -0.038`, `Fe -0.151`,
-`Cu +0.293 mg/L`) but loses global worst-case robustness. This is evidence for
-exposing one global direction preference, not for silently hardcoding factor
-4 or changing the product default.
+The mean raw squared error is 16.9% below canonical Legacy. The summary's
+separate historical lexicographic mmol ranking still places
+`goal_mmol_symmetric` first; that answers a different research question and is
+not used to choose the product model. No single scalar metric is presented as
+biological ground truth.
+
+On the matched augmented Saloner portfolio, Mass NNLS uses unbounded Fetrilon
+at `0.172435 g/10 L`, hits every macro plus Si within `0.0022 mg/L`, and returns
+`N_total -0.0013`, `Fe -0.1629`, and `Cu +0.2979 mg/L`. Merely adding the two
+fixed-only Humin products to the production allowed list leaves that solution
+unchanged and selects neither product. On Bugbee with the same fertilizer
+pool, achieved Fe is `1.3039 mg/L`, Mn `1.1186 mg/L`, and Cu `0.1111 mg/L`;
+the toxic `Fe 21.55 mg/L` regression is not reproduced.
+
+The force-variable diagnostics remain intentionally harsher. They show what
+the mathematical optimizer would do if additive capability metadata were
+removed, without tainting the production portfolio or inventing dose limits.
 
 ## Setting Experiments
 

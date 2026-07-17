@@ -161,6 +161,7 @@ def test_default_n_total_portfolio_avoids_saloner_macro_collapse() -> None:
         "water_profile": "65936",
         "osmosis_percent": 66.0,
         "solver_config": {
+            "solver_model": "legacy",
             "relative_weighting": False,
             "overshoot_penalty": 1.0,
             "irls_max_outer_iter": 4,

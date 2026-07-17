@@ -48,6 +48,8 @@ const solverFertilizersTable = qs("#solverFertilizersTable tbody");
 const solverTargetsResultsTableEl = qs("#solverTargetsResultsTable");
 const solverTargetsResultsTable = qs("#solverTargetsResultsTable tbody");
 const solverTargetsResultsEmpty = qs("#solverTargetsResultsEmpty");
+const solverModelUsed = qs("#solverModelUsed");
+const solverMassModelHint = qs("#solverMassModelHint");
 const solverTargetScaleDownButton = qs("#solverTargetScaleDown");
 const solverTargetScaleUpButton = qs("#solverTargetScaleUp");
 const solverTargetScaleValue = qs("#solverTargetScaleValue");
@@ -60,6 +62,7 @@ const applySolverToCalculatorButton = qs("#applySolverToCalculator");
 const solverUreaToggle = qs("#solverUreaToggle");
 const solverConfigResetDefaultsButton = qs("#solverConfigResetDefaults");
 const solverConfigControls = {
+  solver_model: qs("#solverConfigModel"),
   relative_weighting: qs("#solverConfigRelativeWeighting"),
   nitrogen_objective_mode: qs("#solverConfigNitrogenObjectiveMode"),
   overshoot_penalty: qs("#solverConfigOvershootPenalty"),
@@ -96,6 +99,30 @@ let solverAllowedFilter = "";
 let solverAllowedHideInactive = false;
 let searchTimer;
 let mounted = false;
+
+const MASS_MODEL = "mass_nnls";
+
+function solverModelLabel(model) {
+  return model === MASS_MODEL ? t("solver.model.massNnls") : t("solver.model.legacy");
+}
+
+function syncSolverModelControls() {
+  const massEnabled = solverConfigControls.solver_model?.value === MASS_MODEL;
+  if (massEnabled) {
+    solverConfigControls.nitrogen_objective_mode.checked = true;
+    solverConfigControls.s_objective_enabled.checked = true;
+  }
+  Object.entries(solverConfigControls).forEach(([key, input]) => {
+    if (input && key !== "solver_model") input.disabled = massEnabled;
+  });
+  solverMassModelHint?.classList.toggle("is-hidden", !massEnabled);
+}
+
+function applyConfig(config = {}) {
+  applySolverConfig(solverConfigDefinitions, solverConfigControls, config);
+  syncSolverModelControls();
+  renderSolverResults(null);
+}
 
 
 function updateSolverTargetScaleDisplay() {
@@ -281,7 +308,9 @@ function renderSolverAllowedOptions() {
     });
 
     const nameCell = document.createElement("td");
-    nameCell.textContent = name;
+    nameCell.textContent = fert.solver_role === "fixed_only"
+      ? `${name} · ${t("solver.fixedOnly")}`
+      : name;
     checkCell.appendChild(checkbox);
     row.append(checkCell, nameCell);
     setSolverAllowedRowState(row, checkbox.checked);
@@ -314,7 +343,10 @@ function renderSolverFixedTable() {
     const row = document.createElement("tr");
 
     const nameCell = document.createElement("td");
-    nameCell.textContent = name;
+    const fertilizer = fertilizerOptions.find((item) => item.name === name);
+    nameCell.textContent = fertilizer?.solver_role === "fixed_only"
+      ? `${name} · ${t("solver.fixedOnly")}`
+      : name;
 
     const valueCell = document.createElement("td");
     const input = document.createElement("input");
@@ -349,6 +381,11 @@ function renderSolverResults(data) {
   updateSolverResultActions();
   solverTargetsResultsTableEl?.classList.toggle("is-hidden", !data);
   solverTargetsResultsEmpty?.classList.toggle("is-hidden", Boolean(data));
+  if (solverModelUsed) {
+    solverModelUsed.textContent = data?.solver_model
+      ? `${t("solver.modelLabel")}: ${solverModelLabel(data.solver_model)}`
+      : "";
+  }
   renderSolverTables({
     data,
     fertilizersTable: solverFertilizersTable,
@@ -396,6 +433,7 @@ function buildSolverClipboardText() {
         units.formatVolumeValue(units.litersToDisplayVolume(units.liters)),
       ],
       [t("solver.clipboardOsmosis"), formatNumber(water.osmosisPercent)],
+      [t("solver.modelLabel"), solverModelLabel(lastSolveResult?.solver_model)],
     ], [1])
   );
   lines.push("");
@@ -632,19 +670,25 @@ function bindConfigEvents() {
     const input = solverConfigControls[definition.key];
     if (!input || input.dataset.solverBound === "true") return;
     input.dataset.solverBound = "true";
-    const eventName = definition.type === "boolean" || definition.key === "nitrogen_objective_mode"
+    const eventName = definition.type === "boolean"
+      || definition.type === "string"
+      || definition.key === "nitrogen_objective_mode"
       ? "change"
       : "input";
     input.addEventListener(eventName, () => {
       if (definition.type !== "boolean"
+        && definition.type !== "string"
         && definition.key !== "nitrogen_objective_mode"
         && parseDecimalInput(input.value) === null) return;
+      if (definition.key === "solver_model") syncSolverModelControls();
       renderSolverResults(null);
       api.persistPreferences({
         solver_config: buildSolverConfigPayload(solverConfigDefinitions, solverConfigControls),
       });
     });
-    if (definition.type !== "boolean" && definition.key !== "nitrogen_objective_mode") {
+    if (definition.type !== "boolean"
+      && definition.type !== "string"
+      && definition.key !== "nitrogen_objective_mode") {
       input.addEventListener("change", () => {
         normalizeDecimalInputElement(input, parseDecimalInput(input.value));
       });
@@ -659,6 +703,7 @@ function mount({ configDefinitions = [], config = {} } = {}) {
     (key) => Boolean(solverConfigControls[key]),
   );
   applySolverConfig(solverConfigDefinitions, solverConfigControls, config);
+  syncSolverModelControls();
   bindConfigEvents();
   if (mounted) return;
   mounted = true;
@@ -689,6 +734,7 @@ function mount({ configDefinitions = [], config = {} } = {}) {
   solverAutoApplyInput?.addEventListener("change", persistSolverAutoApplyPreference);
   solverConfigResetDefaultsButton?.addEventListener("click", () => {
     applySolverConfig(solverConfigDefinitions, solverConfigControls);
+    syncSolverModelControls();
     renderSolverResults(null);
     api.persistPreferences({ solver_config: {} });
     notifications.setSolverApplyStatus(t("solver.configResetDone"));
@@ -732,7 +778,7 @@ function refreshLocalized() {
 
 return {
   activate,
-  applyConfig: applySolverConfig,
+  applyConfig,
   applyNutrientSolution,
   buildConfigPayload: () => buildSolverConfigPayload(solverConfigDefinitions, solverConfigControls),
   deactivate,

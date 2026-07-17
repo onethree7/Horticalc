@@ -38,17 +38,4 @@ targets_mg_per_l:
   Si: 11.0
   Zn: 0.39228
 solver_config:
-  relative_weighting: false
-  overshoot_penalty: 1.5
-  irls_max_outer_iter: 4
-  scale_eps_mg_per_l: 1.0
-  singleton_supplier_enabled: false
-  singleton_share_threshold: 0.85
-  singleton_max_regress_pp: 0.25
-  singleton_underfill_enabled: false
-  singleton_underfill_share_threshold: 0.0
-  singleton_underfill_max_iter: 2
-  nitrogen_objective_mode: n_total_only
-  s_objective_enabled: true
-  n_total_governor_enabled: true
-  n_total_governor_weight: 0.05
+  solver_model: mass_nnls

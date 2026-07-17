@@ -145,7 +145,7 @@ python scripts/solver_matrix.py --preset deep --max-runs 0 --out-dir logs/solver
 python scripts/solver_matrix_analyze.py logs/solver_matrix/deep_001 --top 40
 python scripts/solver_matrix_exhaustive.py --workers 24 --queue-depth 10000 --out-dir logs/solver_matrix/exhaustive_001
 python scripts/solver_matrix_exhaustive.py --analyze-only --workers 24 --out-dir logs/solver_matrix/exhaustive_001
-python scripts/solver_model_matrix.py --out-dir logs/solver_matrix/goal_model_001
+python scripts/solver_model_matrix.py --out-dir logs/solver_matrix/mass_nnls_runtime_001
 python scripts/solver_preference.py pairs --count 120
 python scripts/solver_preference.py label
 python scripts/solver_preference.py train --feature-structure grouped
@@ -164,13 +164,13 @@ catalog, and `deep` adds named/leave-one-out nutrient-portfolio barrage rows.
 Generated CSV, JSONL, manifest, summary, analysis JSON, and Markdown files stay
 under the selected ignored output directory.
 
-The goal-model command compares the two legacy controls with deterministic
-mg/L and mmol/L minimax LP policies across all selection and diagnostic
-portfolios plus the seven matched recipe roundtrips. It writes a compact gzip
-JSONL evidence stream and a JSON quality-gate/ranking summary. Exit code `0`
-means every numerical, Pareto, roundtrip, and worst-case improvement gate
-passed; exit code `2` means the evidence must not be committed as an accepted
-research result.
+The solver-model command compares production `mass_nnls`, two legacy controls,
+and deterministic research-only mg/L/mmol/L minimax policies across all
+selection and diagnostic portfolios plus the matched recipe roundtrips. It
+writes a compact gzip JSONL evidence stream and a JSON quality-gate/ranking
+summary. Exit code `0` means every numerical, Pareto, roundtrip, production
+mass-error, and failure gate passed; exit code `2` means the evidence must not
+be committed as an accepted result.
 
 The exhaustive command runs all conditionally effective setting interactions
 and writes a resumable, deduplicated SQLite database plus JSON summary and

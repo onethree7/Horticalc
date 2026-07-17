@@ -68,6 +68,13 @@ Source: `api/app.py`, `frontend/`, `src/horticalc/data_io.py`.
 
 ## Solver
 
+- Default `solver_model`: `mass_nnls`; `legacy` remains an explicit
+  compatibility option. Experimental molar goal policies are research-only.
+- `mass_nnls` minimizes unweighted squared elemental residuals in canonical
+  `mg/L`, uses `N_total` when present, and includes a non-zero `S` target.
+- Fertilizer `SolverRole=fixed_only` prevents variable Solver dosing while
+  preserving explicit fixed doses. The shipped HuminTech AMINO POWER and
+  Fulvital products use this role; Fetrilon remains variable.
 - Default `nitrogen_objective_mode`: `n_total_only`.
 - Default `relative_weighting`: `false`.
 - Default `singleton_supplier_enabled`: `false`.

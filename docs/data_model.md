@@ -41,13 +41,20 @@ Required columns:
 
 Optional solver metadata:
 
+- `SolverRole`: `variable` (default) lets the Solver choose a dose;
+  `fixed_only` excludes the product from variable selection while still
+  allowing an explicit recipe `fixed_grams` dose.
 - `SolverMaxDosePerL`: non-negative maximum dose the Solver may choose per
   liter. Empty means unlimited; `0` excludes the product from variable Solver
   dosing. Explicit recipe `fixed_grams` overrides this maximum.
 
-The shipped `data/fertilizers.csv` currently leaves this field empty for every
-product, so the shipped catalog defines no dose limits. A user override can
-still set the optional field explicitly.
+The shipped `data/fertilizers.csv` currently leaves `SolverMaxDosePerL` empty
+for every product, so the shipped catalog defines no dose limits. HuminTech
+AMINO POWER and Fulvital are shipped as `fixed_only`; all other shipped products
+are `variable`. A user override can set either metadata field explicitly. An
+older override file without a `SolverRole` column inherits the matching shipped
+product's role, so upgrading cannot silently turn a fixed-only additive into a
+variable Solver input.
 
 All other numeric columns are interpreted as composition fractions. A value of
 `0.14` means 14 percent by mass. `NR` or `Nr.` is accepted only for legacy CSV
@@ -71,7 +78,7 @@ number greater than zero; invalid values are rejected instead of being silently
 converted during persistence.
 `SolverMaxDosePerL` uses the same canonical dose convention as Solver results:
 g/L for solids and mL/L for liquids. It limits product dose, not nutrient
-mg/L. The fertilizer editor exposes it as its final column.
+mg/L. The fertilizer editor exposes both solver metadata fields.
 
 ### Dose Units, Mass, And Liquid Fertilizers
 
@@ -190,11 +197,14 @@ The current ion set in `src/horticalc/core.py` is `NH4+`, `K+`, `Ca2+`, `Mg2+`, 
 `SolveResult.to_dict()` in `src/horticalc/solver.py` produces:
 
 1. `liters`
-2. `fertilizers`
-3. `objective_elements`
-4. `targets_mg_per_l`
-5. `achieved_elements_mg_per_l`
-6. `errors_mg_per_l`
-7. `errors_percent`
+2. `solver_model`
+3. `fertilizers`
+4. `objective_elements`
+5. `targets_mg_per_l`
+6. `achieved_elements_mg_per_l`
+7. `errors_mg_per_l`
+8. `errors_percent`
 
-`objective_elements` is the authoritative list of what the solver optimized. The solver matrix benchmark scores this list.
+`solver_model` identifies the actual runtime path (`mass_nnls` or `legacy`).
+`objective_elements` is the authoritative list of what
+the solver optimized. The solver matrix benchmark scores this list.

@@ -27,5 +27,6 @@ def test_fertilizer_api_uses_liquid_boolean_schema() -> None:
         "liquid",
         "weight_factor",
         "comp",
+        "solver_role",
         "solver_max_dose_per_l",
     }

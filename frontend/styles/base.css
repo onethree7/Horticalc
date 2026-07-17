@@ -55,6 +55,7 @@ body {
 .water-control-row input,
 .solver-settings input,
 .solver-settings select,
+.solver-advanced-config select,
 #solverAllowedSearch,
 #fertEditorSearch {
   padding: var(--space-2) var(--space-3);
@@ -466,6 +467,10 @@ main {
 
 #fertilizerEditorTable.grid--fertilizer-editor .col-liquid {
   width: var(--fert-editor-liquid-width);
+}
+
+#fertilizerEditorTable.grid--fertilizer-editor .col-solver-role {
+  width: 7rem;
 }
 
 #fertilizerEditorTable.grid--fertilizer-editor .col-weight {

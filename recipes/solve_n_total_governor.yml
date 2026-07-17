@@ -7,6 +7,7 @@ targets:
   N_total: 50
   N_NO3: 100
 solver_config:
+  solver_model: legacy
   relative_weighting: true
   n_total_governor_enabled: true
   n_total_governor_weight: 0.05

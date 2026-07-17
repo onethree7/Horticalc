@@ -43,6 +43,7 @@ DEFAULT_SOLVER_CONFIG = dict(SOLVER_CONFIG_DEFAULTS)
 @dataclass
 class SolveResult:
     liters: float
+    solver_model: str
     fertilizers: List[Dict[str, float | str]]
     objective_elements: List[str]
     targets_mg_l: Dict[str, float]
@@ -53,6 +54,7 @@ class SolveResult:
     def to_dict(self) -> dict:
         return {
             "liters": self.liters,
+            "solver_model": self.solver_model,
             "fertilizers": self.fertilizers,
             "objective_elements": self.objective_elements,
             "targets_mg_per_l": self.targets_mg_l,
@@ -755,13 +757,15 @@ def _prepare_solve_problem(
 
     targets = _normalize_targets(recipe.get("targets") or recipe.get("targets_mg_per_l") or {})
     solver_config = resolve_solver_config(recipe.get("solver_config"))
+    mass_model_enabled = solver_config["solver_model"] == "mass_nnls"
+    mass_nitrogen_mode = "n_total_only" if targets.get("N_total", 0.0) > 0.0 else "as_targets"
     objective_keys = _objective_keys(
         targets,
-        nitrogen_objective_mode=solver_config["nitrogen_objective_mode"],
-        s_objective_enabled=solver_config["s_objective_enabled"],
+        nitrogen_objective_mode=mass_nitrogen_mode if mass_model_enabled else solver_config["nitrogen_objective_mode"],
+        s_objective_enabled=True if mass_model_enabled else solver_config["s_objective_enabled"],
     )
     if not objective_keys:
-        raise ValueError("No solvable targets defined (Na/Cl are ignored; S requires s_objective_enabled).")
+        raise ValueError("No solvable targets defined (Na/Cl are report-only; legacy S requires s_objective_enabled).")
 
     allowed_names = unique_strings(
         recipe.get("fertilizers_allowed", []),
@@ -791,7 +795,7 @@ def _prepare_solve_problem(
         dtype=float,
     )
     variable_mask = np.array(
-        [fert.name not in fixed_grams for fert in allowed],
+        [fert.name not in fixed_grams and fert.solver_role == "variable" for fert in allowed],
         dtype=bool,
     )
     upper_bounds = np.array(
@@ -897,6 +901,7 @@ def _build_solve_result(
 
     return SolveResult(
         liters=problem.liters,
+        solver_model=str(problem.solver_config["solver_model"]),
         fertilizers=fertilizers_out,
         objective_elements=problem.objective_keys,
         targets_mg_l=problem.targets,
@@ -904,6 +909,21 @@ def _build_solve_result(
         errors_mg_l=errors_mg_l,
         errors_percent=errors_percent,
     )
+
+
+def _solve_mass_nnls(problem: _PreparedProblem) -> SolveResult:
+    """Minimize the unweighted squared elemental error in canonical mg/L."""
+    result = _build_solve_result(problem, _VariantRunner(problem).solve((False, False, False)))
+    values = (
+        *(float(item["grams"]) for item in result.fertilizers),
+        *result.achieved_elements_mg_l.values(),
+        *result.errors_mg_l.values(),
+    )
+    if not all(np.isfinite(value) for value in values):
+        raise ValueError("Mass NNLS produced a non-finite result")
+    if any(float(item["grams"]) < 0.0 for item in result.fertilizers):
+        raise ValueError("Mass NNLS produced a negative fertilizer dose")
+    return result
 
 
 def solve_recipe_data(
@@ -921,6 +941,8 @@ def solve_recipe_data(
         water_profile_data=water_profile_data,
         water_profile_path=water_profile_path,
     )
+    if problem.solver_config["solver_model"] == "mass_nnls":
+        return _solve_mass_nnls(problem)
     return _build_solve_result(problem, _select_solver_variant(problem, _VariantRunner(problem)))
 
 

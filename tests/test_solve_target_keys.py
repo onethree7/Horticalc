@@ -34,6 +34,7 @@ class TestSolveTargetKeys(unittest.TestCase):
                 "fixed_grams": {},
                 "urea_as_nh4": False,
                 "solver_config": {
+                    "solver_model": "mass_nnls",
                     "relative_weighting": True,
                     "overshoot_penalty": 1.5,
                     "n_total_governor_enabled": True,
@@ -44,6 +45,7 @@ class TestSolveTargetKeys(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["liters"], 10)
+        self.assertEqual(response.json()["solver_model"], "mass_nnls")
 
     def test_invalid_solver_config_returns_400(self) -> None:
         base_payload = {
@@ -55,6 +57,7 @@ class TestSolveTargetKeys(unittest.TestCase):
             ({"mystery": True}, "Unknown solver config key: mystery"),
             ({"relative_weighting": "false"}, "Invalid solver config value: relative_weighting"),
             ({"irls_max_outer_iter": 1.5}, "Invalid solver config value: irls_max_outer_iter"),
+            ({"solver_model": "unknown"}, "Invalid solver config value: solver_model"),
             (
                 {"nitrogen_objective_mode": "chaos_mode"},
                 "Invalid solver config value: nitrogen_objective_mode",

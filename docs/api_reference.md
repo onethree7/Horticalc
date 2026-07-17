@@ -52,6 +52,7 @@ The in-memory effective catalog is replaced only after persistence succeeds.
     "liquid": false,
     "weight_factor": 1.0,
     "comp": {"NO3": 0.1, "K2O": 0.2},
+    "solver_role": "variable",
     "solver_max_dose_per_l": 0.25
   }
 ]
@@ -63,6 +64,8 @@ deltas under `user/`. `liquid` is required and Boolean; the API does not accept
 localized form strings. Names must be non-empty and unique, weight factors must
 be positive finite numbers, and nutrient values must be finite; violations
 return HTTP 400 with English error details.
+`solver_role` is optional and accepts `variable` (default) or `fixed_only`.
+Fixed-only products contribute only through an explicit `fixed_grams` dose.
 `solver_max_dose_per_l` is optional, finite, and non-negative. `null` means no
 Solver limit.
 
@@ -118,7 +121,7 @@ Request:
   "fertilizers_allowed": ["Calcinit"],
   "fixed_grams": {},
   "urea_as_nh4": false,
-  "solver_config": {}
+  "solver_config": {"solver_model": "mass_nnls"}
 }
 ```
 
@@ -127,7 +130,8 @@ config overrides use the bounded definitions returned by
 `GET /schema/solver-config`; see [solver.md](solver.md#solver-config-defaults-and-validation).
 
 Response follows `SolveResult.to_dict()` in `src/horticalc/solver.py` and is
-documented in [data_model.md](data_model.md).
+documented in [data_model.md](data_model.md). Its `solver_model` field confirms
+which runtime model produced the doses.
 
 ## Static Frontend
 

@@ -463,7 +463,10 @@
               </div>
 
               <div class="solver-panel solver-panel--target-results">
-                <h3 data-i18n="solver.resultsTitle">Solver results</h3>
+                <div class="solver-panel-heading">
+                  <h3 data-i18n="solver.resultsTitle">Solver results</h3>
+                  <span class="inline-hint" id="solverModelUsed" aria-live="polite"></span>
+                </div>
                 <div class="actions inline-actions solver-results-spacer" aria-hidden="true"></div>
                 <div class="table-wrap">
                   <div class="solver-results-empty" id="solverTargetsResultsEmpty">
@@ -562,6 +565,14 @@
             </div>
             <button id="solverConfigResetDefaults" class="btn btn--outline rail-config-reset" type="button" data-i18n="solver.resetConfig">Reset solver configuration</button>
             <div class="rail-config-grid rail-config-grid--advanced">
+              <label>
+                <span data-i18n="solver.modelLabel">Solver model</span>
+                <select id="solverConfigModel">
+                  <option value="mass_nnls" data-i18n="solver.model.massNnls">Mass balance (mg/L², recommended)</option>
+                  <option value="legacy" data-i18n="solver.model.legacy">Legacy (NNLS + tuning)</option>
+                </select>
+              </label>
+              <p class="hint" id="solverMassModelHint" data-i18n="solver.modelMassHint">Mass balance minimizes squared errors directly in mg/L. It always uses N-total when available and includes sulfur; legacy tuning is ignored.</p>
               <label class="toggle">
                 <input id="solverConfigRelativeWeighting" type="checkbox" />
                 <span data-i18n="solver.config.relativeWeighting">Relative weighting</span>

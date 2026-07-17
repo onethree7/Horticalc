@@ -18,7 +18,7 @@ Horticalc has five runtime layers:
 | EC | `src/horticalc/ec.py` | Computes ion-based EC at 18 C and 25 C. |
 | NPK and ratios | `src/horticalc/metrics.py` | Formats NPK strings and summary ratios. |
 | Sluijsmann | `src/horticalc/sluijsmann.py` | CaO-equivalent alkalinity/acidity metric. |
-| Solver | `src/horticalc/solver.py`, `src/horticalc/solver_config.py` | Solves target profiles into fertilizer doses. |
+| Solver | `src/horticalc/solver.py`, `src/horticalc/solver_config.py` | Solves target profiles through production mass NNLS or the legacy compatibility model. |
 | Unit definitions | `src/horticalc/units.py` | Canonical volume and dose conversions. |
 | Data paths | `src/horticalc/paths.py` | AppRoot, shipped defaults, user overrides, logs, lockfile. |
 | Persistence IO | `src/horticalc/data_io.py` | Loads and saves CSV, YAML, and JSON. |
@@ -38,7 +38,7 @@ Horticalc has five runtime layers:
 ### Solver
 
 1. UI posts target values, allowed fertilizers, optional fixed doses, water profile, and solver config to `/solve`.
-2. `solve_recipe_data()` in `src/horticalc/solver.py` subtracts the water baseline, builds the fertilizer contribution matrix, solves non-negative doses, recomputes the achieved solution with `compute_solution()`, and returns solver errors.
+2. `solve_recipe_data()` in `src/horticalc/solver.py` subtracts the water baseline, builds the fertilizer contribution matrix, excludes fixed-only products from variable dosing, dispatches to production mass NNLS or the legacy compatibility model, recomputes the achieved solution with `compute_solution()`, and returns solver errors plus the selected model identifier.
 
 ## AppRoot And Portable Data Layout
 

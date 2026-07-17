@@ -10,10 +10,17 @@ from typing import Any
 from .chemistry import N_FORM_KEYS
 
 NITROGEN_OBJECTIVE_MODES = ("as_targets", "n_total_only", "n_forms_only")
+SOLVER_MODELS = ("mass_nnls", "legacy")
 MAX_IRLS_MAX_OUTER_ITER = 12
 MAX_SINGLETON_UNDERFILL_MAX_ITER = 8
 
 SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
+    {
+        "key": "solver_model",
+        "type": "string",
+        "default": "mass_nnls",
+        "choices": list(SOLVER_MODELS),
+    },
     {"key": "relative_weighting", "type": "boolean", "default": False},
     {"key": "overshoot_penalty", "type": "number", "default": 1.0, "minimum": 0.0},
     {
@@ -203,7 +210,8 @@ def validate_solver_config(
         elif value_type == "string":
             if not isinstance(value, str):
                 raise ValueError(f"Invalid solver config value: {key}")
-            if key == "nitrogen_objective_mode" and value not in NITROGEN_OBJECTIVE_MODES:
+            choices = definition.get("choices")
+            if choices is not None and value not in choices:
                 raise ValueError(f"Invalid solver config value: {key}")
         elif value_type == "mapping":
             if key != "n_form_priority_weights" or not isinstance(value, Mapping):

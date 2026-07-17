@@ -10,6 +10,7 @@ import {
 import { buildSolvePayload, formatClipboardIonLabel } from "../../frontend/app/solver_payload.js";
 
 const fallback = [
+  { key: "solver_model", type: "string", defaultValue: "mass_nnls", choices: ["mass_nnls", "legacy"] },
   { key: "irls_max_outer_iter", type: "integer", defaultValue: 4, minimum: 1, maximum: 12 },
   { key: "scale_eps_mg_per_l", type: "number", defaultValue: 1, exclusiveMinimum: 0 },
 ];
@@ -21,13 +22,16 @@ test("solver configuration retains schema bounds and normalizes input", () => {
     () => true,
   );
   const controls = {
+    solver_model: { value: "legacy" },
     irls_max_outer_iter: { value: "99" },
     scale_eps_mg_per_l: { value: "0" },
   };
   applySolverConfig(definitions, controls, {});
   controls.irls_max_outer_iter.value = "99";
   controls.scale_eps_mg_per_l.value = "0";
+  controls.solver_model.value = "mass_nnls";
   assert.deepEqual(buildSolverConfigPayload(definitions, controls), {
+    solver_model: "mass_nnls",
     irls_max_outer_iter: 12,
     scale_eps_mg_per_l: 1,
   });

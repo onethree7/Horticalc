@@ -86,6 +86,15 @@ def test_goal_solver_uses_corrected_golden_s_target_without_dominance() -> None:
     assert all(float(item["grams"]) >= 0.0 for item in solved.result.fertilizers)
 
 
+def test_model_matrix_keeps_historical_34191_on_legacy_runtime() -> None:
+    root = Path(__file__).resolve().parents[1]
+    cases = yaml.safe_load((root / "scripts" / "solver_matrix_cases.yml").read_text(encoding="utf-8"))
+    policy = next(item for item in model_matrix.model_policies(cases) if item.policy_id == "legacy_34191")
+
+    assert policy.solver_config is not None
+    assert policy.solver_config["solver_model"] == "legacy"
+
+
 def test_goal_model_matrix_smoke_passes_quality_gate(tmp_path: Path) -> None:
     exit_code = model_matrix.main(
         [
@@ -100,8 +109,8 @@ def test_goal_model_matrix_smoke_passes_quality_gate(tmp_path: Path) -> None:
 
     summary = json.loads((tmp_path / "model_matrix_summary.json").read_text(encoding="utf-8"))
     assert exit_code == 0
-    assert summary["completed_rows"] == 56
+    assert summary["completed_rows"] == 64
     assert summary["failed_rows"] == 0
     assert summary["quality_gate"]["passed"] is True
-    assert summary["quality_gate"]["best_new_policy"] == "goal_mmol_symmetric"
+    assert summary["quality_gate"]["production_policy"] == "mass_nnls"
     assert (tmp_path / "model_matrix_rows.jsonl.gz").exists()

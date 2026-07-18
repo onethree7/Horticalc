@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from copy import deepcopy
 from typing import Any
 
-from .chemistry import N_FORM_KEYS
+from .chemistry import ALLOWED_TARGET_KEYS, N_FORM_KEYS
 
 NITROGEN_OBJECTIVE_MODES = ("as_targets", "n_total_only", "n_forms_only")
 SOLVER_MODELS = ("mass_nnls", "legacy")
@@ -20,6 +20,12 @@ SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
         "type": "string",
         "default": "mass_nnls",
         "choices": list(SOLVER_MODELS),
+    },
+    {
+        "key": "ignored_elements",
+        "type": "string_list",
+        "default": [],
+        "choices": sorted(ALLOWED_TARGET_KEYS),
     },
     {"key": "relative_weighting", "type": "boolean", "default": False},
     {"key": "overshoot_penalty", "type": "number", "default": 1.0, "minimum": 0.0},
@@ -119,7 +125,7 @@ def add_solver_config_arguments(parser: argparse.ArgumentParser) -> None:
                 default=None,
                 help=f"Override solver_config.{key}",
             )
-        elif definition["type"] == "mapping":
+        elif definition["type"] in {"mapping", "string_list"}:
             continue
         else:
             group.add_argument(
@@ -170,6 +176,11 @@ def _coerce_solver_config_value(key: str, value: Any) -> Any:
         parsed = json.loads(value) if isinstance(value, str) else value
         if not isinstance(parsed, dict):
             raise ValueError(f"Expected object value for {key}, got {value!r}")
+        return parsed
+    if value_type == "string_list":
+        parsed = json.loads(value) if isinstance(value, str) else value
+        if not isinstance(parsed, list):
+            raise ValueError(f"Expected array value for {key}, got {value!r}")
         return parsed
     if isinstance(value, str):
         try:
@@ -229,6 +240,13 @@ def validate_solver_config(
                     raise ValueError(f"Invalid n_form_priority_weights value: {form_key}")
                 weights[form_key] = weight
             value = weights
+        elif value_type == "string_list":
+            if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+                raise ValueError(f"Invalid solver config value: {key}")
+            choices = set(definition.get("choices") or [])
+            if len(value) != len(set(value)) or any(item not in choices for item in value):
+                raise ValueError(f"Invalid solver config value: {key}")
+            value = list(value)
 
         if value_type in {"integer", "number"}:
             minimum = definition.get("minimum")

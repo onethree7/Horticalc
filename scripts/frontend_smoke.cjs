@@ -109,7 +109,7 @@ async function assertNoPageOverflow(page, label) {
     });
     const potassiumInput = page.locator("#solverTargetsTable tbody tr")
       .filter({ has: page.locator("td:first-child", { hasText: /^K$/ }) })
-      .locator("input");
+      .locator('input[type="text"]');
     await potassiumInput.fill("50");
     await page.locator("#solveBtn").click();
     await potassiumInput.fill("100");

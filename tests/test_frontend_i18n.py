@@ -42,6 +42,12 @@ def test_i18n_catalogs_cover_the_supported_themes_and_solver_labels() -> None:
         "solver.model.massNnls",
         "solver.modelMassHint",
         "solver.fixedOnly",
+        "solver.ignoreElement",
+        "solver.ignoreHint",
+        "solver.ignoreElementHint",
+        "solver.ignoreElementAria",
+        "solver.reportOnlyHint",
+        "solver.ignoredSuffix",
         "editor.solverVariable",
         "editor.solverVariableHint",
     }

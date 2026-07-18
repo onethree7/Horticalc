@@ -27,11 +27,15 @@ function appendTargetRows(tableBody, data, displayKeys, labels, formatNutrient) 
   const errors = data.errors_mg_per_l || {};
   const errorsPercent = data.errors_percent || {};
   const objectiveKeys = new Set(data.objective_elements || []);
+  const ignoredKeys = new Set(data.ignored_elements || []);
 
   displayKeys.forEach((key) => {
     const row = document.createElement("tr");
     const keyCell = document.createElement("td");
-    keyCell.textContent = labels[key] || key;
+    keyCell.textContent = ignoredKeys.has(key)
+      ? `${labels[key] || key} · ${labels.ignored}`
+      : labels[key] || key;
+    if (ignoredKeys.has(key)) row.classList.add("solver-result-ignored");
     const nitrogenExtra = key !== "N_total" && NITROGEN_KEYS.includes(key);
     if (nitrogenExtra) keyCell.classList.add("solver-n-extra");
 

@@ -50,6 +50,49 @@ def test_mass_nnls_uses_raw_mg_per_l_squared_error() -> None:
     assert result.errors_mg_l["K"] == pytest.approx(0.0, abs=1e-7)
 
 
+def test_mass_nnls_ignores_selected_elements_but_still_reports_their_result() -> None:
+    result = solve_recipe_data(
+        {
+            "liters": 10.0,
+            "targets_mg_per_l": {"N_total": 100.0, "Cu": 0.1},
+            "fertilizers_allowed": ["Coupled"],
+            "solver_config": {"solver_model": "mass_nnls", "ignored_elements": ["Cu"]},
+        },
+        ferts={
+            "Coupled": Fertilizer(
+                name="Coupled",
+                liquid=False,
+                weight_factor=1.0,
+                comp={"NO3": 0.1, "Cu": 0.01},
+            )
+        },
+        mm=MOLAR_MASSES,
+        water_profile_data={"mg_per_l": {}},
+    )
+
+    assert result.objective_elements == ["N_total"]
+    assert result.ignored_elements == ["Cu"]
+    assert result.targets_mg_l["Cu"] == pytest.approx(0.1)
+    assert result.achieved_elements_mg_l["Cu"] == pytest.approx(10.0)
+    assert "Cu" not in result.errors_mg_l
+    assert result.errors_mg_l["N_total"] == pytest.approx(0.0, abs=1e-7)
+
+
+def test_mass_nnls_rejects_ignoring_every_active_objective() -> None:
+    with pytest.raises(ValueError, match="all active targets are ignored"):
+        solve_recipe_data(
+            {
+                "liters": 10.0,
+                "targets_mg_per_l": {"N_total": 100.0},
+                "fertilizers_allowed": ["N"],
+                "solver_config": {"solver_model": "mass_nnls", "ignored_elements": ["N_total"]},
+            },
+            ferts={"N": _fertilizer("N", "NO3", 0.1)},
+            mm=MOLAR_MASSES,
+            water_profile_data={"mg_per_l": {}},
+        )
+
+
 def test_mass_nnls_does_not_optimize_fixed_only_products_without_a_fixed_dose() -> None:
     recipe = {
         "liters": 10.0,
@@ -120,14 +163,22 @@ def test_mass_nnls_forces_total_nitrogen_and_sulfur_when_available() -> None:
     assert result.errors_mg_l["S"] == pytest.approx(0.0, abs=1e-7)
 
 
-def _solve_shipped_profile(targets: dict[str, float], allowed: list[str]):
+def _solve_shipped_profile(
+    targets: dict[str, float],
+    allowed: list[str],
+    *,
+    ignored_elements: list[str] | None = None,
+):
     return solve_recipe_data(
         {
             "liters": 10.0,
             "osmosis_percent": 66.0,
             "targets_mg_per_l": targets,
             "fertilizers_allowed": allowed,
-            "solver_config": {"solver_model": "mass_nnls"},
+            "solver_config": {
+                "solver_model": "mass_nnls",
+                "ignored_elements": ignored_elements or [],
+            },
         },
         ferts=load_fertilizers(shipped_fertilizers_path(ROOT)),
         mm=MOLAR_MASSES,
@@ -143,6 +194,25 @@ def test_saloner_regression_stays_mass_accurate_with_unbounded_fetrilon() -> Non
     doses = {row["name"]: float(row["grams"]) for row in result.fertilizers}
     assert result.achieved_elements_mg_l["Fe"] == pytest.approx(1.51242, abs=1e-4)
     assert doses["Compo Fetrilon Combi 1"] == pytest.approx(0.17243, abs=1e-4)
+    for element in ("N_total", "P", "K", "Ca", "Mg", "S", "Si"):
+        assert abs(result.errors_mg_l[element]) < 0.01
+
+
+def test_saloner_can_trade_ignored_copper_and_boron_for_closer_iron() -> None:
+    recipe = yaml.safe_load((ROOT / "recipes" / "solve_augmented_saloner_bernstein.yml").read_text(encoding="utf-8"))
+
+    result = _solve_shipped_profile(
+        recipe["targets_mg_per_l"],
+        recipe["fertilizers_allowed"],
+        ignored_elements=["Cu", "B"],
+    )
+
+    assert result.ignored_elements == ["Cu", "B"]
+    assert result.achieved_elements_mg_l["Fe"] == pytest.approx(1.61964, abs=1e-4)
+    assert result.achieved_elements_mg_l["Cu"] == pytest.approx(0.43031, abs=1e-4)
+    assert result.achieved_elements_mg_l["B"] == pytest.approx(0.24946, abs=1e-4)
+    assert "Cu" not in result.errors_mg_l
+    assert "B" not in result.errors_mg_l
     for element in ("N_total", "P", "K", "Ca", "Mg", "S", "Si"):
         assert abs(result.errors_mg_l[element]) < 0.01
 

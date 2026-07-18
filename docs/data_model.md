@@ -140,6 +140,8 @@ The calculator uses `fertilizers`. The solver uses `targets`,
 `fertilizers_allowed`, `fixed_grams`, and `solver_config`.
 `fertilizers_allowed` stores exact fertilizer names and must not repeat the
 same name within one recipe.
+`solver_config.ignored_elements` may contain a duplicate-free list of target
+keys to exclude from the optimization while retaining them in Solver output.
 `liters` defaults to `10` only when omitted or null; an explicit zero, negative,
 or non-finite value is invalid. Fertilizer `grams` values are finite and
 non-negative.
@@ -200,11 +202,15 @@ The current ion set in `src/horticalc/core.py` is `NH4+`, `K+`, `Ca2+`, `Mg2+`, 
 2. `solver_model`
 3. `fertilizers`
 4. `objective_elements`
-5. `targets_mg_per_l`
-6. `achieved_elements_mg_per_l`
-7. `errors_mg_per_l`
-8. `errors_percent`
+5. `ignored_elements`
+6. `targets_mg_per_l`
+7. `achieved_elements_mg_per_l`
+8. `errors_mg_per_l`
+9. `errors_percent`
 
 `solver_model` identifies the actual runtime path (`mass_nnls` or `legacy`).
 `objective_elements` is the authoritative list of what
 the solver optimized. The solver matrix benchmark scores this list.
+`ignored_elements` records only explicit user exclusions. Ignored targets and
+achieved values remain available for display and audit; error mappings contain
+objective residuals only.

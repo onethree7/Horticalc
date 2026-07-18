@@ -48,6 +48,15 @@ are not variable Solver candidates. The result header and copied output
 identify the model that actually ran. The selection is stored in
 `user/preferences.json` through the normal serialized preference write.
 
+Every target row also has an **Ignore** control, labelled **Egal** in German.
+Checking it removes that element from the next Solver objective without hiding
+its target, achieved value, or deviation. Ignored result rows are visibly
+labelled, and the selection is persisted as
+`solver_config.ignored_elements`. All user-selectable elements participate by
+default; `Na` and `Cl` remain disabled report-only rows. Ignoring every active
+objective produces a validation error. This control does not apply an upper or
+lower bound and does not assert that the ignored concentration is safe.
+
 The workflow menu is the single owner of visible area navigation. The large editor and solver picker tables are mounted only while their workflow is active and removed from the DOM when another workflow is selected. Their JavaScript state remains intact.
 
 ## Preferences, Language, Themes, Units
@@ -97,6 +106,7 @@ Tests rely on:
 - solver copy/apply controls,
 - summary tabs and output tables,
 - reduced solver config controls from `/schema/solver-config`,
+- per-element Solver objective exclusions and their visible result labels,
 - frontend i18n catalogs with matching keys for `de`, `en`, `nl`, `es`, and `zh`.
 
 Before changing IDs or panel names, search tests and the `frontend/app/` modules.

@@ -84,6 +84,7 @@ const solverTargetDefinitions = [
 ].map((key) => ({ key, label: key }));
 const solverTargetValues = Object.fromEntries(solverTargetDefinitions.map(({ key }) => [key, 0]));
 const solverTargetBaseValues = { ...solverTargetValues };
+const solverIgnoredElements = new Set();
 const solverAllowedFertilizers = [];
 const solverFixedGrams = {};
 const solveRequests = createLatestRequestGate();
@@ -101,6 +102,32 @@ let searchTimer;
 let mounted = false;
 
 const MASS_MODEL = "mass_nnls";
+const REPORT_ONLY_TARGETS = new Set(["Na", "Cl"]);
+
+function orderedIgnoredElements() {
+  return solverTargetDefinitions
+    .map(({ key }) => key)
+    .filter((key) => solverIgnoredElements.has(key));
+}
+
+function setIgnoredElements(elements) {
+  const validElements = new Set(solverTargetDefinitions.map(({ key }) => key));
+  solverIgnoredElements.clear();
+  (Array.isArray(elements) ? elements : []).forEach((key) => {
+    if (validElements.has(key) && !REPORT_ONLY_TARGETS.has(key)) solverIgnoredElements.add(key);
+  });
+}
+
+function buildCurrentSolverConfig() {
+  return {
+    ...buildSolverConfigPayload(solverConfigDefinitions, solverConfigControls),
+    ignored_elements: orderedIgnoredElements(),
+  };
+}
+
+function persistCurrentSolverConfig() {
+  api.persistPreferences({ solver_config: buildCurrentSolverConfig() });
+}
 
 function solverModelLabel(model) {
   return model === MASS_MODEL ? t("solver.model.massNnls") : t("solver.model.legacy");
@@ -119,11 +146,12 @@ function syncSolverModelControls() {
 }
 
 function applyConfig(config = {}) {
+  setIgnoredElements(config.ignored_elements);
   applySolverConfig(solverConfigDefinitions, solverConfigControls, config);
   syncSolverModelControls();
+  renderSolverTargetsTable();
   renderSolverResults(null);
 }
-
 
 function updateSolverTargetScaleDisplay() {
   if (solverTargetScaleValue) solverTargetScaleValue.textContent = `${solverTargetScaleFactor.toFixed(2)}x`;
@@ -149,7 +177,7 @@ function buildSolvePayload() {
     allowedFertilizers: solverAllowedFertilizers,
     fixedGrams: solverFixedGrams,
     ureaAsNh4: solverUreaToggle.checked,
-    solverConfig: buildSolverConfigPayload(solverConfigDefinitions, solverConfigControls),
+    solverConfig: buildCurrentSolverConfig(),
   });
 }
 
@@ -180,7 +208,26 @@ function renderSolverTargetsTable() {
     });
     valueCell.appendChild(input);
 
-    row.append(labelCell, valueCell);
+    const ignoreCell = document.createElement("td");
+    ignoreCell.className = "solver-ignore-cell";
+    const ignoreInput = document.createElement("input");
+    ignoreInput.type = "checkbox";
+    const reportOnly = REPORT_ONLY_TARGETS.has(field.key);
+    ignoreInput.checked = reportOnly || solverIgnoredElements.has(field.key);
+    ignoreInput.disabled = reportOnly;
+    ignoreInput.setAttribute("aria-label", t("solver.ignoreElementAria", { element: field.label }));
+    ignoreInput.title = reportOnly ? t("solver.reportOnlyHint") : t("solver.ignoreElementHint");
+    row.classList.toggle("solver-target-ignored", solverIgnoredElements.has(field.key));
+    ignoreInput.addEventListener("change", () => {
+      if (ignoreInput.checked) solverIgnoredElements.add(field.key);
+      else solverIgnoredElements.delete(field.key);
+      row.classList.toggle("solver-target-ignored", solverIgnoredElements.has(field.key));
+      renderSolverResults(null);
+      persistCurrentSolverConfig();
+    });
+    ignoreCell.appendChild(ignoreInput);
+
+    row.append(labelCell, valueCell, ignoreCell);
     solverTargetsTable.appendChild(row);
   });
 }
@@ -399,6 +446,7 @@ function renderSolverResults(data) {
       N_NO3: t("solver.nNo3"),
       N_NH4: t("solver.nNh4"),
       N_UREA: t("solver.nUrea"),
+      ignored: t("solver.ignoredSuffix"),
     },
     formatNutrient: (value) => formatNumber(value, nutrientFormatter),
   });
@@ -485,6 +533,7 @@ function buildSolverClipboardText() {
     const targets = lastSolveResult?.targets_mg_per_l || {};
     const achieved = lastSolveResult?.achieved_elements_mg_per_l || {};
     const errors = lastSolveResult?.errors_mg_per_l || {};
+    const ignoredElements = new Set(lastSolveResult?.ignored_elements || []);
     const solverRows = solverResultDisplayKeys(lastSolveResult, summaryColumnOrder).map((key) => {
       const targetValue = Number(targets[key] ?? 0);
       const achievedValue = Number(achieved[key] ?? 0);
@@ -492,7 +541,9 @@ function buildSolverClipboardText() {
         ? Number(errors[key])
         : achievedValue - targetValue;
       return [
-        formatClipboardIonLabel(key),
+        ignoredElements.has(key)
+          ? `${formatClipboardIonLabel(key)} (${t("solver.ignoredSuffix")})`
+          : formatClipboardIonLabel(key),
         targetValue > 0 ? formatNumber(targetValue, nutrientFormatter) : "-",
         formatNumber(achievedValue, nutrientFormatter),
         formatNumber(errorValue, nutrientFormatter),
@@ -683,7 +734,7 @@ function bindConfigEvents() {
       if (definition.key === "solver_model") syncSolverModelControls();
       renderSolverResults(null);
       api.persistPreferences({
-        solver_config: buildSolverConfigPayload(solverConfigDefinitions, solverConfigControls),
+        solver_config: buildCurrentSolverConfig(),
       });
     });
     if (definition.type !== "boolean"
@@ -702,6 +753,7 @@ function mount({ configDefinitions = [], config = {} } = {}) {
     FALLBACK_SOLVER_CONFIG_DEFINITIONS,
     (key) => Boolean(solverConfigControls[key]),
   );
+  setIgnoredElements(config.ignored_elements);
   applySolverConfig(solverConfigDefinitions, solverConfigControls, config);
   syncSolverModelControls();
   bindConfigEvents();
@@ -733,8 +785,10 @@ function mount({ configDefinitions = [], config = {} } = {}) {
   solverAllowedClearButton?.addEventListener("click", () => updateSolverAllowedFertilizers([], "replace"));
   solverAutoApplyInput?.addEventListener("change", persistSolverAutoApplyPreference);
   solverConfigResetDefaultsButton?.addEventListener("click", () => {
+    solverIgnoredElements.clear();
     applySolverConfig(solverConfigDefinitions, solverConfigControls);
     syncSolverModelControls();
+    renderSolverTargetsTable();
     renderSolverResults(null);
     api.persistPreferences({ solver_config: {} });
     notifications.setSolverApplyStatus(t("solver.configResetDone"));
@@ -780,7 +834,7 @@ return {
   activate,
   applyConfig,
   applyNutrientSolution,
-  buildConfigPayload: () => buildSolverConfigPayload(solverConfigDefinitions, solverConfigControls),
+  buildConfigPayload: buildCurrentSolverConfig,
   deactivate,
   get allowedFertilizers() { return [...solverAllowedFertilizers]; },
   get lastResult() { return lastSolveResult; },

@@ -30,12 +30,18 @@ for fertilizers also listed in `fertilizers_allowed`. The
 - Accepted target keys are in `ALLOWED_TARGET_KEYS` in `src/horticalc/solver.py`. Oxide/form aliases such as `K2O`, `P2O5`, lowercase keys, and unknown keys are rejected.
 - Numeric zero targets are skipped, except N-form zero targets in `n_forms_only` mode.
 - `Na` and `Cl` are report-only and ignored as objectives.
+- Keys listed in `solver_config.ignored_elements` are removed from the
+  objective at the user's request. Their targets and achieved concentrations
+  remain in the response, but their residuals cannot change the selected
+  fertilizer doses.
 - `mass_nnls` always includes a non-zero elemental `S` target. In `legacy`,
   `S` is report-only unless `solver_config.s_objective_enabled=true`. `SO4` is
   not a solver target key.
 - Nitrogen form handling depends on `nitrogen_objective_mode`.
 
-The output field `objective_elements` is the authoritative list. The solver matrix benchmark scores this list.
+The output field `objective_elements` is the authoritative list. The solver
+matrix benchmark scores this list. `ignored_elements` records the explicit
+user exclusions separately. A solve is rejected when no objective remains.
 
 ## Nitrogen Modes
 
@@ -54,6 +60,7 @@ The canonical defaults are in `src/horticalc/solver_config.py`:
 | Key | Default | Bounds |
 | --- | --- | --- |
 | `solver_model` | `mass_nnls` | `mass_nnls`, `legacy` |
+| `ignored_elements` | `[]` | Unique target-key strings |
 | `relative_weighting` | `false` | Boolean |
 | `overshoot_penalty` | `1.0` | `>= 0` |
 | `irls_max_outer_iter` | `4` | `1..12` |
@@ -72,10 +79,13 @@ The canonical defaults are in `src/horticalc/solver_config.py`:
 
 Solver configuration has one validation contract in
 `src/horticalc/solver_config.py`. API and YAML values must use their native
-Boolean, numeric, integer, string, or mapping types; numeric values must be
-finite, unknown keys are rejected, and `nitrogen_objective_mode` must be one of
-the three documented modes. The CLI's `KEY=VALUE` form is the only boundary
-that converts text values. `n_form_priority_weights` remains an advanced
+Boolean, numeric, integer, string, list, or mapping types; numeric values must
+be finite, unknown keys are rejected, and `nitrogen_objective_mode` must be one
+of the three documented modes. `ignored_elements` must be a duplicate-free
+list of accepted target keys. The CLI's `KEY=VALUE` form is the only boundary
+that converts text values; for example,
+`--solver-config ignored_elements='["Cu","B"]'`.
+`n_form_priority_weights` remains an advanced
 mapping for `N_NH4`, `N_NO3`, and `N_UREA` with finite, non-negative weights.
 It is accepted in recipes and direct solve inputs, but not in UI preferences.
 Iteration count `1` performs the initial pass. Refinements are disabled through
@@ -113,6 +123,12 @@ biological severity table, IRLS reweighting, or singleton post-pass in this
 objective. Consequently, an `N -30 mg/L` residual contributes `900`, while a
 `Cu +0.3 mg/L` residual contributes `0.09`. This is a physical mass-error
 criterion, not a claim that all biological trade-offs are known.
+
+The optional `ignored_elements` list is a transparent objective projection,
+not a hidden weight or safety rule. It can intentionally allow a large error in
+an excluded element, so ignored concentrations are always calculated and
+reported. The default is empty: Horticalc does not hardcode Cu, B, Ca, Mg, or
+any other user-selectable element as biologically unimportant.
 
 Allowed fertilizers with `SolverRole=fixed_only` are excluded from variable
 dose selection. They still contribute normally when the recipe supplies an

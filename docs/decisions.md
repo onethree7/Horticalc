@@ -79,7 +79,13 @@ Source: `api/app.py`, `frontend/`, `src/horticalc/data_io.py`.
 - Default `relative_weighting`: `false`.
 - Default `singleton_supplier_enabled`: `false`.
 - Default `singleton_underfill_enabled`: `true`.
-- Report-only ignored target keys: `Na`, `Cl`. `S` is report-only unless `s_objective_enabled` is true.
+- Default `ignored_elements`: empty. Users may explicitly remove individual
+  target elements from the objective; those elements remain visible in the
+  result. There are no built-in biological importance weights or directional
+  under/overshoot rules in `mass_nnls`.
+- Report-only target keys: `Na`, `Cl`. In `legacy`, `S` is report-only unless
+  `s_objective_enabled` is true; `mass_nnls` includes every non-zero S target
+  unless the user explicitly excludes it.
 - Solver matrix scoring follows `result.objective_elements`.
 
 Source: `src/horticalc/solver_config.py`, `src/horticalc/solver.py`.

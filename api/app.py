@@ -168,6 +168,7 @@ class SolveResponse(BaseModel):
     solver_model: str
     fertilizers: List[SolveFertilizerEntry]
     objective_elements: List[str]
+    ignored_elements: List[str]
     targets_mg_per_l: Dict[str, float]
     achieved_elements_mg_per_l: Dict[str, float]
     errors_mg_per_l: Dict[str, float]

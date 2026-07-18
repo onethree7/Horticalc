@@ -82,6 +82,8 @@ def test_solve_cli_passes_solver_config_overrides(monkeypatch, capsys, tmp_path)
             "n_forms_only",
             "--solver-config",
             'n_form_priority_weights={"N_NO3": 3.0}',
+            "--solver-config",
+            'ignored_elements=["Cu","B"]',
         ]
     )
 
@@ -95,6 +97,7 @@ def test_solve_cli_passes_solver_config_overrides(monkeypatch, capsys, tmp_path)
         "n_total_governor_weight": 0.05,
         "nitrogen_objective_mode": "n_forms_only",
         "n_form_priority_weights": {"N_NO3": 3.0},
+        "ignored_elements": ["Cu", "B"],
     }
 
 
@@ -142,6 +145,7 @@ def test_solver_config_validation_preserves_valid_partial_values() -> None:
     config = {
         "relative_weighting": True,
         "overshoot_penalty": 1,
+        "ignored_elements": ["Cu", "B"],
         "n_form_priority_weights": {"N_NO3": 3.0},
     }
 
@@ -149,6 +153,7 @@ def test_solver_config_validation_preserves_valid_partial_values() -> None:
     resolved = resolve_solver_config(config)
     assert resolved["relative_weighting"] is True
     assert resolved["overshoot_penalty"] == 1
+    assert resolved["ignored_elements"] == ["Cu", "B"]
     assert resolved["n_form_priority_weights"] == {"N_NO3": 3.0}
     assert set(resolved) == set(SOLVER_CONFIG_DEFAULTS)
 
@@ -165,6 +170,9 @@ def test_solver_config_validation_preserves_valid_partial_values() -> None:
         ),
         ({"overshoot_penalty": float("nan")}, "Invalid solver config value"),
         ({"nitrogen_objective_mode": "chaos_mode"}, "Invalid solver config value"),
+        ({"ignored_elements": "Cu"}, "Invalid solver config value"),
+        ({"ignored_elements": ["Cu", "Cu"]}, "Invalid solver config value"),
+        ({"ignored_elements": ["UNKNOWN"]}, "Invalid solver config value"),
         (
             {"singleton_underfill_max_iter": MAX_SINGLETON_UNDERFILL_MAX_ITER + 1},
             "Invalid solver config value: singleton_underfill_max_iter must be <=",

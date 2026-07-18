@@ -123,6 +123,13 @@ The two diagnostic Humin portfolios explicitly override that role inside the
 research harness so the failure mode remains observable. Selection portfolios
 use the shipped catalog exactly as production does.
 
+Production also supports explicit user objective exclusions through
+`solver_config.ignored_elements`. The benchmark keeps this list empty because
+there is no biological ground truth for deciding that an element is generally
+irrelevant. Exclusion combinations are therefore not swept or ranked as
+candidate defaults; they are an inspectable per-user trade-off, and excluded
+concentrations remain present in every solve result.
+
 The former deterministic goal implementation now lives only in
 `scripts/solver_goal_model.py`. It remains useful as a research control for
 molar/mg minimax and global underfill hypotheses, but product runtime and UI do

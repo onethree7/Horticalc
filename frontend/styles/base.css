@@ -1028,6 +1028,18 @@ main {
   height: 1.95rem;
 }
 
+#solverTargetsTable .solver-ignore-cell,
+#solverTargetsTable th:last-child {
+  width: 4.5rem;
+  text-align: center;
+}
+
+.solver-target-ignored td:first-child,
+.solver-result-ignored td:first-child {
+  color: var(--app-muted);
+  font-style: italic;
+}
+
 .solver-results-empty {
   min-height: 8rem;
   display: grid;

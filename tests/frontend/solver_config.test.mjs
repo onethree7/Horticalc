@@ -50,7 +50,7 @@ test("solver payload formatting removes zero entries without changing public key
     allowedFertilizers: ["A"],
     fixedGrams: { A: 0, B: 2 },
     ureaAsNh4: false,
-    solverConfig: { irls_max_outer_iter: 4 },
+    solverConfig: { irls_max_outer_iter: 4, ignored_elements: ["Cu", "B"] },
   }), {
     liters: 10,
     targets: { K: 100 },
@@ -58,6 +58,6 @@ test("solver payload formatting removes zero entries without changing public key
     fertilizers_allowed: ["A"],
     fixed_grams: { B: 2 },
     urea_as_nh4: false,
-    solver_config: { irls_max_outer_iter: 4 },
+    solver_config: { irls_max_outer_iter: 4, ignored_elements: ["Cu", "B"] },
   });
 });

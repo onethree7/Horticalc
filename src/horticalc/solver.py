@@ -46,6 +46,7 @@ class SolveResult:
     solver_model: str
     fertilizers: List[Dict[str, float | str]]
     objective_elements: List[str]
+    ignored_elements: List[str]
     targets_mg_l: Dict[str, float]
     achieved_elements_mg_l: Dict[str, float]
     errors_mg_l: Dict[str, float]
@@ -57,6 +58,7 @@ class SolveResult:
             "solver_model": self.solver_model,
             "fertilizers": self.fertilizers,
             "objective_elements": self.objective_elements,
+            "ignored_elements": self.ignored_elements,
             "targets_mg_per_l": self.targets_mg_l,
             "achieved_elements_mg_per_l": self.achieved_elements_mg_l,
             "errors_mg_per_l": self.errors_mg_l,
@@ -588,6 +590,7 @@ class _PreparedProblem:
     osmosis_percent: float
     targets: Dict[str, float]
     objective_keys: List[str]
+    ignored_elements: List[str]
     allowed: List[Fertilizer]
     fixed_weights: np.ndarray
     variable_mask: np.ndarray
@@ -764,8 +767,13 @@ def _prepare_solve_problem(
         nitrogen_objective_mode=mass_nitrogen_mode if mass_model_enabled else solver_config["nitrogen_objective_mode"],
         s_objective_enabled=True if mass_model_enabled else solver_config["s_objective_enabled"],
     )
+    ignored_elements = list(solver_config["ignored_elements"])
+    ignored_element_set = set(ignored_elements)
+    objective_keys = [key for key in objective_keys if key not in ignored_element_set]
     if not objective_keys:
-        raise ValueError("No solvable targets defined (Na/Cl are report-only; legacy S requires s_objective_enabled).")
+        raise ValueError(
+            "No solvable targets defined (all active targets are ignored, report-only, or disabled for this model)."
+        )
 
     allowed_names = unique_strings(
         recipe.get("fertilizers_allowed", []),
@@ -839,6 +847,7 @@ def _prepare_solve_problem(
         osmosis_percent=osmosis_percent,
         targets=targets,
         objective_keys=objective_keys,
+        ignored_elements=ignored_elements,
         allowed=allowed,
         fixed_weights=fixed_weights,
         variable_mask=variable_mask,
@@ -904,6 +913,7 @@ def _build_solve_result(
         solver_model=str(problem.solver_config["solver_model"]),
         fertilizers=fertilizers_out,
         objective_elements=problem.objective_keys,
+        ignored_elements=problem.ignored_elements,
         targets_mg_l=problem.targets,
         achieved_elements_mg_l=achieved_elements,
         errors_mg_l=errors_mg_l,

@@ -121,7 +121,10 @@ Request:
   "fertilizers_allowed": ["Calcinit"],
   "fixed_grams": {},
   "urea_as_nh4": false,
-  "solver_config": {"solver_model": "mass_nnls"}
+  "solver_config": {
+    "solver_model": "mass_nnls",
+    "ignored_elements": ["Cu", "B"]
+  }
 }
 ```
 
@@ -131,7 +134,9 @@ config overrides use the bounded definitions returned by
 
 Response follows `SolveResult.to_dict()` in `src/horticalc/solver.py` and is
 documented in [data_model.md](data_model.md). Its `solver_model` field confirms
-which runtime model produced the doses.
+which runtime model produced the doses. `objective_elements` lists the rows
+that affected the optimization; `ignored_elements` echoes explicit exclusions,
+whose target and achieved concentrations are still returned.
 
 ## Static Frontend
 

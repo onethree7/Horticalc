@@ -10,6 +10,7 @@ from horticalc.data_io import (
     load_nutrient_solution_data,
     load_recipe,
     load_water_profile_data,
+    save_nutrient_solution,
     save_recipe,
 )
 
@@ -111,6 +112,32 @@ def test_recipe_save_rejects_non_finite_numbers(tmp_path: Path) -> None:
         save_recipe(path, {"name": "Invalid", "liters": float("inf")})
 
     assert not path.exists()
+
+
+def test_nutrient_solution_persists_solver_priorities(tmp_path: Path) -> None:
+    path = tmp_path / "prioritized.yml"
+    solver_config = {
+        "solver_model": "hierarchical",
+        "target_priorities": {
+            "N_total": {"under": 1, "over": 1},
+            "Ca": {"under": 2, "over": 4},
+        },
+    }
+
+    save_nutrient_solution(
+        path,
+        name="Prioritized",
+        source="Test",
+        targets_mg_per_l={"N_total": 160.0, "Ca": 120.0},
+        solver_config=solver_config,
+    )
+
+    assert load_nutrient_solution_data(path) == {
+        "name": "Prioritized",
+        "source": "Test",
+        "targets_mg_per_l": {"N_total": 160.0, "Ca": 120.0},
+        "solver_config": solver_config,
+    }
 
 
 def test_atomic_yaml_save_preserves_existing_file_on_replace_failure(

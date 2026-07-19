@@ -39,23 +39,32 @@ The workflow menu has four user-facing areas:
 - **Calculator**: build recipes manually, calculate, and inspect results.
 - **Solver**: enter targets, select allowed fertilizers, and solve for doses.
 
-The Solver's advanced section exposes a model selector. `Mass NNLS
-(recommended)` is the default, minimizes raw elemental `mg/L` error, forces
-N-total and sulfur objectives, and disables irrelevant legacy tuning controls.
-`Legacy (NNLS + tuning)` retains the existing controls as a compatibility
-option. Fixed-only products are labelled in the allowed-fertilizer picker and
-are not variable Solver candidates. The result header and copied output
-identify the model that actually ran. The selection is stored in
-`user/preferences.json` through the normal serialized preference write.
+The Solver model selector is visible above the workbench rather than hidden in
+the advanced section. `Mass balance (mg/L²)` remains the compatibility-safe
+default. `Prioritized targets (staged)` exposes separate **Too little** and
+**Too much** priority selectors for every target. `Legacy (NNLS + tuning)`
+retains the previous controls as a compatibility option. Tuning controls are
+disabled for both non-legacy models. Fixed-only products are labelled in the
+allowed-fertilizer picker and are not variable Solver candidates. The result
+header and copied output identify the model that actually ran. The selection
+is stored in `user/preferences.json` through the normal serialized preference
+write.
 
-Every target row also has an **Ignore** control, labelled **Egal** in German.
-Checking it removes that element from the next Solver objective without hiding
-its target, achieved value, or deviation. Ignored result rows are visibly
-labelled, and the selection is persisted as
-`solver_config.ignored_elements`. All user-selectable elements participate by
-default; `Na` and `Cl` remain disabled report-only rows. Ignoring every active
-objective produces a validation error. This control does not apply an upper or
-lower bound and does not assert that the ignored concentration is safe.
+Directional priority values are `1 Must`, `2 Important`, `3 Normal`,
+`4 Flexible`, and `0 Report only`. Priority `1` is solved first; later tiers
+cannot worsen a completed earlier tier. These selectors define ordering, not
+numeric weights or concentration limits. Every omitted user-selectable
+direction defaults to `3`; no element-specific priority is built into the UI.
+`Na` and `Cl` remain disabled report-only rows. Results show the effective
+`↓under` and `↑over` levels beside each target, and copied output includes the
+same audit label. Setting both directions to `0` produces a visibly muted
+report-only row; setting every active direction to `0` produces a validation
+error.
+
+The obsolete **Ignore/Egal** control is not rendered. Existing
+`solver_config.ignored_elements` values are migrated in memory to priority `0`
+in both directions and the next GUI persistence writes the canonical
+`target_priorities` mapping.
 
 The workflow menu is the single owner of visible area navigation. The large editor and solver picker tables are mounted only while their workflow is active and removed from the DOM when another workflow is selected. Their JavaScript state remains intact.
 
@@ -65,7 +74,7 @@ The `Configuration` card in `frontend/index.html` contains the global batch volu
 
 `frontend/app/api.js` fetches unit definitions from `/schema/units`. `frontend/app/units.js` keeps working values in canonical liters and g-for-solids/mL-for-liquids. `frontend/app/settings.js` applies the selected theme to `document.body.dataset.theme`. The selected language is stored in `localStorage` and `user/preferences.json` so it overrides browser detection on later loads. Data contracts such as API route names, JSON keys, CSV fields, element symbols, solver config keys, and units remain literal and are not translated.
 
-Preferences supply startup defaults. An explicitly loaded recipe overrides its liters and any non-empty `solver_config` for the current working state without rewriting the user's defaults. A water profile loaded with the water-profile controls becomes the next startup profile; a water profile loaded indirectly from a recipe does not.
+Preferences supply startup defaults. An explicitly loaded recipe overrides its liters and any non-empty `solver_config` for the current working state without rewriting the user's defaults. A saved nutrient target profile also restores its non-empty `solver_config`, including directional priorities. Saving a target profile writes the current Solver config with the targets. A water profile loaded with the water-profile controls becomes the next startup profile; a water profile loaded indirectly from a recipe does not.
 
 ## Browser State And `localStorage`
 
@@ -106,7 +115,7 @@ Tests rely on:
 - solver copy/apply controls,
 - summary tabs and output tables,
 - reduced solver config controls from `/schema/solver-config`,
-- per-element Solver objective exclusions and their visible result labels,
+- per-element Solver directional priorities and their visible result labels,
 - frontend i18n catalogs with matching keys for `de`, `en`, `nl`, `es`, and `zh`.
 
 Before changing IDs or panel names, search tests and the `frontend/app/` modules.

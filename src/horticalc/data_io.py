@@ -587,11 +587,17 @@ def load_nutrient_solution_data(path: Path) -> dict:
         f"{path}: targets_mg_per_l",
         _non_negative_float,
     )
-    return {
+    result = {
         "name": data.get("name") or path.stem,
         "source": data.get("source") or "",
         "targets_mg_per_l": targets,
     }
+    raw_solver_config = data.get("solver_config")
+    if raw_solver_config:
+        from .solver_config import validate_solver_config
+
+        result["solver_config"] = validate_solver_config(raw_solver_config)
+    return result
 
 
 def save_nutrient_solution(
@@ -599,6 +605,7 @@ def save_nutrient_solution(
     name: str,
     source: str,
     targets_mg_per_l: Dict[str, float],
+    solver_config: Dict[str, object] | None = None,
 ) -> None:
     payload = {
         "name": name,
@@ -609,6 +616,10 @@ def save_nutrient_solution(
             _non_negative_float,
         ),
     }
+    if solver_config:
+        from .solver_config import validate_solver_config
+
+        payload["solver_config"] = validate_solver_config(solver_config)
     _save_yaml(path, payload)
 
 

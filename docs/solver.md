@@ -30,18 +30,23 @@ for fertilizers also listed in `fertilizers_allowed`. The
 - Accepted target keys are in `ALLOWED_TARGET_KEYS` in `src/horticalc/solver.py`. Oxide/form aliases such as `K2O`, `P2O5`, lowercase keys, and unknown keys are rejected.
 - Numeric zero targets are skipped, except N-form zero targets in `n_forms_only` mode.
 - `Na` and `Cl` are report-only and ignored as objectives.
-- Keys listed in `solver_config.ignored_elements` are removed from the
-  objective at the user's request. Their targets and achieved concentrations
-  remain in the response, but their residuals cannot change the selected
-  fertilizer doses.
-- `mass_nnls` always includes a non-zero elemental `S` target. In `legacy`,
+- In `hierarchical`, each active target has separate `under` and `over`
+  priorities from `solver_config.target_priorities`. Direction priority `0`
+  is report-only; a target is absent from the objective only when both
+  directions are `0`.
+- The older `solver_config.ignored_elements` input remains accepted for API,
+  recipe, and preference compatibility. In `hierarchical` it migrates to
+  `{under: 0, over: 0}`. The GUI writes only `target_priorities`.
+- `mass_nnls` and `hierarchical` always include a non-zero elemental `S` target. In `legacy`,
   `S` is report-only unless `solver_config.s_objective_enabled=true`. `SO4` is
   not a solver target key.
 - Nitrogen form handling depends on `nitrogen_objective_mode`.
 
-The output field `objective_elements` is the authoritative list. The solver
-matrix benchmark scores this list. `ignored_elements` records the explicit
-user exclusions separately. A solve is rejected when no objective remains.
+The output field `objective_elements` is the authoritative list.
+`target_priorities` contains the resolved directional priorities used by a
+hierarchical solve. `ignored_elements` is retained as a compatibility field
+and lists targets for which both directions are report-only. A solve is
+rejected when no objective remains.
 
 ## Nitrogen Modes
 
@@ -59,8 +64,9 @@ The canonical defaults are in `src/horticalc/solver_config.py`:
 
 | Key | Default | Bounds |
 | --- | --- | --- |
-| `solver_model` | `mass_nnls` | `mass_nnls`, `legacy` |
+| `solver_model` | `mass_nnls` | `mass_nnls`, `hierarchical`, `legacy` |
 | `ignored_elements` | `[]` | Unique target-key strings |
+| `target_priorities` | `{}` | Target keys mapped to optional integer `under`/`over` priorities in `0..4`; omitted directions resolve to `3` |
 | `relative_weighting` | `false` | Boolean |
 | `overshoot_penalty` | `1.0` | `>= 0` |
 | `irls_max_outer_iter` | `4` | `1..12` |
@@ -82,9 +88,10 @@ Solver configuration has one validation contract in
 Boolean, numeric, integer, string, list, or mapping types; numeric values must
 be finite, unknown keys are rejected, and `nitrogen_objective_mode` must be one
 of the three documented modes. `ignored_elements` must be a duplicate-free
-list of accepted target keys. The CLI's `KEY=VALUE` form is the only boundary
+list of accepted target keys. `target_priorities` rejects unknown target or
+direction keys, non-integer priorities, and values outside `0..4`. The CLI's `KEY=VALUE` form is the only boundary
 that converts text values; for example,
-`--solver-config ignored_elements='["Cu","B"]'`.
+`--solver-config target_priorities='{"N_total":{"under":1,"over":1},"Ca":{"under":2,"over":3}}'`.
 `n_form_priority_weights` remains an advanced
 mapping for `N_NH4`, `N_NO3`, and `N_UREA` with finite, non-negative weights.
 It is accepted in recipes and direct solve inputs, but not in UI preferences.
@@ -98,12 +105,15 @@ and tests change too.
 
 ## Optimization Model
 
-`solver_model` selects one of two runtime paths:
+`solver_model` selects one of three runtime paths:
 
 - `mass_nnls` is the production default. It minimizes raw elemental squared
   error in canonical `mg/L`, uses `N_total` whenever that target is present,
   and includes a non-zero `S` target. Relative weighting, IRLS, governor, and
   singleton fields do not affect this model.
+- `hierarchical` uses strict directional priority tiers in raw `mg/L`. It uses
+  the same N-total and sulfur objective selection as `mass_nnls`, but it does
+  not use legacy weights or post-passes.
 - `legacy` retains the existing NNLS/IRLS/singleton implementation and all of
   the tuning fields below as a compatibility option.
 
@@ -124,17 +134,57 @@ objective. Consequently, an `N -30 mg/L` residual contributes `900`, while a
 `Cu +0.3 mg/L` residual contributes `0.09`. This is a physical mass-error
 criterion, not a claim that all biological trade-offs are known.
 
-The optional `ignored_elements` list is a transparent objective projection,
-not a hidden weight or safety rule. It can intentionally allow a large error in
-an excluded element, so ignored concentrations are always calculated and
-reported. The default is empty: Horticalc does not hardcode Cu, B, Ca, Mg, or
-any other user-selectable element as biologically unimportant.
+The compatibility-only `ignored_elements` list is a transparent objective
+projection, not a hidden weight or safety rule. It can intentionally allow a
+large error in an excluded element, so ignored concentrations are always
+calculated and reported. The default is empty: Horticalc does not hardcode Cu,
+B, Ca, Mg, or any other user-selectable element as biologically unimportant.
 
 Allowed fertilizers with `SolverRole=fixed_only` are excluded from variable
 dose selection. They still contribute normally when the recipe supplies an
 explicit `fixed_grams` dose. This prevents additive products such as shipped
 HuminTech AMINO POWER and Fulvital from being used as unconstrained nutrient
 concentrates. It is product capability metadata, not a nutrient upper bound.
+
+### Hierarchical directional-priority model
+
+`src/horticalc/priority_solver.py` formulates the fertilizer matrix as a
+linear program and solves it with SciPy HiGHS. Every active element has two
+non-negative residuals:
+
+```text
+achieved + under - over = target
+```
+
+Priorities have these product meanings:
+
+| Value | UI label | Meaning |
+| ---: | --- | --- |
+| `1` | Must | Solved first |
+| `2` | Important | Solved after every priority-1 direction is fixed |
+| `3` | Normal | Default for an omitted direction |
+| `4` | Flexible | Last optimized tier |
+| `0` | Report only | Direction is calculated but does not affect doses |
+
+For each non-empty tier, the solver first minimizes that tier's largest
+directional residual in `mg/L`, then minimizes its sum of residuals without
+worsening the first optimum. Both optima become constraints for all later
+tiers. A final effective-product-mass minimization only breaks chemically
+equivalent ties and cannot worsen any nutrient tier.
+
+This is lexicographic goal programming, not weighted least squares. There is
+no numeric multiplier through which many lower-priority improvements can
+compensate for one higher-priority error. There are also no nutrient
+concentration bounds, macro/micro classes, learned biological severities, or
+hardcoded element priorities. The user or saved target profile supplies the
+directional order. Raw `mg/L` inside each tier ensures that, for example,
+`N -30 mg/L` is not numerically equated with `Cu +0.3 mg/L` merely because
+both may have a similar percentage error.
+
+Fixed fertilizer doses, per-product `SolverMaxDosePerL`, water subtraction,
+liquid density, and `SolverRole=fixed_only` have the same meaning as in the
+other runtime models. `priority_stages` in the solve response exposes each
+tier's retained maximum and total residual for audit.
 
 ### Legacy model
 
@@ -155,8 +205,8 @@ passes use the same upper bounds.
 
 ## Optional Behavior
 
-- The settings below apply only to `legacy`; `mass_nnls` deliberately ignores
-  them.
+- The settings below apply only to `legacy`; `mass_nnls` and `hierarchical`
+  deliberately ignore them.
 - `relative_weighting` scales rows by target/residual magnitude.
 - `overshoot_penalty` and IRLS increase weights for overshoot rows.
 - Singleton passes can reduce dominant-supplier overshoot or top up underfilled dominant nutrients.

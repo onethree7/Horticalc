@@ -10,7 +10,11 @@ from typing import Any
 from .chemistry import ALLOWED_TARGET_KEYS, N_FORM_KEYS
 
 NITROGEN_OBJECTIVE_MODES = ("as_targets", "n_total_only", "n_forms_only")
-SOLVER_MODELS = ("mass_nnls", "legacy")
+SOLVER_MODELS = ("mass_nnls", "hierarchical", "legacy")
+TARGET_PRIORITY_DIRECTIONS = ("under", "over")
+MIN_TARGET_PRIORITY = 0
+MAX_TARGET_PRIORITY = 4
+DEFAULT_TARGET_PRIORITY = 3
 MAX_IRLS_MAX_OUTER_ITER = 12
 MAX_SINGLETON_UNDERFILL_MAX_ITER = 8
 
@@ -25,6 +29,15 @@ SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
         "key": "ignored_elements",
         "type": "string_list",
         "default": [],
+        "choices": sorted(ALLOWED_TARGET_KEYS),
+    },
+    {
+        "key": "target_priorities",
+        "type": "priority_mapping",
+        "default": {},
+        "priority_minimum": MIN_TARGET_PRIORITY,
+        "priority_maximum": MAX_TARGET_PRIORITY,
+        "priority_default": DEFAULT_TARGET_PRIORITY,
         "choices": sorted(ALLOWED_TARGET_KEYS),
     },
     {"key": "relative_weighting", "type": "boolean", "default": False},
@@ -125,7 +138,7 @@ def add_solver_config_arguments(parser: argparse.ArgumentParser) -> None:
                 default=None,
                 help=f"Override solver_config.{key}",
             )
-        elif definition["type"] in {"mapping", "string_list"}:
+        elif definition["type"] in {"mapping", "priority_mapping", "string_list"}:
             continue
         else:
             group.add_argument(
@@ -172,7 +185,7 @@ def _coerce_solver_config_value(key: str, value: Any) -> Any:
         return float(value)
     if value_type == "string":
         return str(value)
-    if value_type == "mapping":
+    if value_type in {"mapping", "priority_mapping"}:
         parsed = json.loads(value) if isinstance(value, str) else value
         if not isinstance(parsed, dict):
             raise ValueError(f"Expected object value for {key}, got {value!r}")
@@ -240,6 +253,30 @@ def validate_solver_config(
                     raise ValueError(f"Invalid n_form_priority_weights value: {form_key}")
                 weights[form_key] = weight
             value = weights
+        elif value_type == "priority_mapping":
+            if not isinstance(value, Mapping):
+                raise ValueError(f"Invalid solver config value: {key}")
+            priorities: dict[str, dict[str, int]] = {}
+            for element, direction_values in value.items():
+                if element not in ALLOWED_TARGET_KEYS:
+                    raise ValueError(f"Invalid target_priorities key: {element}")
+                if not isinstance(direction_values, Mapping) or not direction_values:
+                    raise ValueError(f"Invalid target_priorities value: {element}")
+                unknown_directions = set(direction_values) - set(TARGET_PRIORITY_DIRECTIONS)
+                if unknown_directions:
+                    raise ValueError(f"Invalid target_priorities direction: {element}")
+                validated_directions: dict[str, int] = {}
+                for direction, priority in direction_values.items():
+                    if (
+                        not isinstance(priority, int)
+                        or isinstance(priority, bool)
+                        or priority < MIN_TARGET_PRIORITY
+                        or priority > MAX_TARGET_PRIORITY
+                    ):
+                        raise ValueError(f"Invalid target_priorities value: {element}.{direction}")
+                    validated_directions[direction] = priority
+                priorities[element] = validated_directions
+            value = priorities
         elif value_type == "string_list":
             if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
                 raise ValueError(f"Invalid solver config value: {key}")

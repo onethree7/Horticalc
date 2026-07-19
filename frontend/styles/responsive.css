@@ -59,6 +59,11 @@
     grid-template-columns: 1fr;
   }
 
+  .solver-model-bar {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
   .solver-picker-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

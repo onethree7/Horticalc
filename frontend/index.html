@@ -440,6 +440,17 @@
             <button id="solveBtn" class="btn btn--solver-primary" type="button" data-i18n="solver.solve">Run solver</button>
           </div>
           <p class="hint" data-i18n="solver.hint">Set target values, allow fertilizers, and check the result directly in the calculator.</p>
+          <div class="solver-model-bar">
+            <label>
+              <span data-i18n="solver.modelLabel">Solver model</span>
+              <select id="solverConfigModel">
+                <option value="mass_nnls" data-i18n="solver.model.massNnls">Mass balance (mg/L²)</option>
+                <option value="hierarchical" data-i18n="solver.model.hierarchical">Prioritized targets</option>
+                <option value="legacy" data-i18n="solver.model.legacy">Legacy (NNLS + tuning)</option>
+              </select>
+            </label>
+            <p class="hint" id="solverMassModelHint" data-i18n="solver.modelMassHint">Mass balance minimizes the sum of squared deviations in mg/L. It always includes N-total and sulfur.</p>
+          </div>
           <div class="solver-workbench">
             <div class="solver-results solver-comparison-grid">
               <div class="solver-panel solver-panel--targets">
@@ -448,7 +459,7 @@
                   <button id="solverTargetScaleDown" class="btn btn--outline btn--icon icon-button" type="button" data-i18n-aria-label="aria.scaleDown" data-i18n-title="aria.scaleDown">-</button>
                   <button id="solverTargetScaleUp" class="btn btn--outline btn--icon icon-button" type="button" data-i18n-aria-label="aria.scaleUp" data-i18n-title="aria.scaleUp">+</button>
                   <span class="inline-hint"><span data-i18n="calculator.scale">Scaling</span> <span id="solverTargetScaleValue">1.00x</span></span>
-                  <span class="inline-hint" data-i18n="solver.ignoreHint">Ignored elements are still reported but do not influence the fertilizer doses.</span>
+                  <span class="inline-hint is-hidden" id="solverPriorityLegend" data-i18n="solver.priority.legend">Priority 1 is solved first. Lower levels may not worsen a completed higher level. 0 only reports the result.</span>
                 </div>
                 <div class="table-wrap solver-target-wrap">
                   <table class="grid grid--form" id="solverTargetsTable">
@@ -456,7 +467,8 @@
                       <tr>
                         <th data-i18n="common.element">Element</th>
                         <th data-i18n="common.target">Target</th>
-                        <th data-i18n="solver.ignoreElement">Ignore</th>
+                        <th class="solver-priority-heading" data-i18n="solver.priority.under">Too little</th>
+                        <th class="solver-priority-heading" data-i18n="solver.priority.over">Too much</th>
                       </tr>
                     </thead>
                     <tbody></tbody>
@@ -567,14 +579,6 @@
             </div>
             <button id="solverConfigResetDefaults" class="btn btn--outline rail-config-reset" type="button" data-i18n="solver.resetConfig">Reset solver configuration</button>
             <div class="rail-config-grid rail-config-grid--advanced">
-              <label>
-                <span data-i18n="solver.modelLabel">Solver model</span>
-                <select id="solverConfigModel">
-                  <option value="mass_nnls" data-i18n="solver.model.massNnls">Mass balance (mg/L², recommended)</option>
-                  <option value="legacy" data-i18n="solver.model.legacy">Legacy (NNLS + tuning)</option>
-                </select>
-              </label>
-              <p class="hint" id="solverMassModelHint" data-i18n="solver.modelMassHint">Mass balance minimizes squared errors directly in mg/L. It always uses N-total when available and includes sulfur; legacy tuning is ignored.</p>
               <label class="toggle">
                 <input id="solverConfigRelativeWeighting" type="checkbox" />
                 <span data-i18n="solver.config.relativeWeighting">Relative weighting</span>

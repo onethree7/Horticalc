@@ -54,6 +54,7 @@ Solve a target recipe:
 python -m horticalc solve recipes/solve_golden.yml --pretty
 python -m horticalc solve recipes/solve_golden.yml --nitrogen-objective-mode n_forms_only --pretty
 python -m horticalc solve recipes/solve_golden.yml --solver-config relative_weighting=true
+python -m horticalc solve recipes/solve_golden.yml --solver-config solver_model=hierarchical --solver-config 'target_priorities={"N_total":{"under":1,"over":1},"Ca":{"under":2,"over":3}}'
 ```
 
 Global options for both modes:

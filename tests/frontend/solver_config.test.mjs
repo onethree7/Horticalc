@@ -10,7 +10,7 @@ import {
 import { buildSolvePayload, formatClipboardIonLabel } from "../../frontend/app/solver_payload.js";
 
 const fallback = [
-  { key: "solver_model", type: "string", defaultValue: "mass_nnls", choices: ["mass_nnls", "legacy"] },
+  { key: "solver_model", type: "string", defaultValue: "mass_nnls", choices: ["mass_nnls", "hierarchical", "legacy"] },
   { key: "irls_max_outer_iter", type: "integer", defaultValue: 4, minimum: 1, maximum: 12 },
   { key: "scale_eps_mg_per_l", type: "number", defaultValue: 1, exclusiveMinimum: 0 },
 ];
@@ -50,7 +50,10 @@ test("solver payload formatting removes zero entries without changing public key
     allowedFertilizers: ["A"],
     fixedGrams: { A: 0, B: 2 },
     ureaAsNh4: false,
-    solverConfig: { irls_max_outer_iter: 4, ignored_elements: ["Cu", "B"] },
+    solverConfig: {
+      solver_model: "hierarchical",
+      target_priorities: { N_total: { under: 1, over: 1 }, Cu: { under: 4, over: 4 } },
+    },
   }), {
     liters: 10,
     targets: { K: 100 },
@@ -58,6 +61,9 @@ test("solver payload formatting removes zero entries without changing public key
     fertilizers_allowed: ["A"],
     fixed_grams: { B: 2 },
     urea_as_nh4: false,
-    solver_config: { irls_max_outer_iter: 4, ignored_elements: ["Cu", "B"] },
+    solver_config: {
+      solver_model: "hierarchical",
+      target_priorities: { N_total: { under: 1, over: 1 }, Cu: { under: 4, over: 4 } },
+    },
   });
 });

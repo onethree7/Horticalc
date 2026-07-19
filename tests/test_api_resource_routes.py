@@ -90,3 +90,46 @@ def test_resource_routes_layer_user_yaml_over_shipped_defaults(monkeypatch, tmp_
     assert client.get("/water-profiles/tap").json()["mg_per_l"] == {"Ca": 42.0}
     assert client.get("/recipes/golden").json()["name"] == "User golden"
     assert client.get("/recipes/default").json()["name"] == "Shipped default"
+
+
+def test_nutrient_solution_round_trips_directional_solver_priorities(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+    client = TestClient(api_app.app)
+    payload = {
+        "name": "Prioritized target",
+        "source": "Test",
+        "targets_mg_per_l": {"N_total": 160, "Ca": 120},
+        "solver_config": {
+            "solver_model": "hierarchical",
+            "target_priorities": {
+                "N_total": {"under": 1, "over": 1},
+                "Ca": {"under": 2, "over": 4},
+            },
+        },
+    }
+
+    save_response = client.post("/nutrient-solutions", json=payload)
+
+    assert save_response.status_code == 200
+    loaded = client.get("/nutrient-solutions/Prioritized_target")
+    assert loaded.status_code == 200
+    assert loaded.json() == payload
+
+
+def test_nutrient_solution_rejects_invalid_directional_priority(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+
+    response = TestClient(api_app.app).post(
+        "/nutrient-solutions",
+        json={
+            "name": "Invalid priority",
+            "targets_mg_per_l": {"N_total": 160},
+            "solver_config": {
+                "solver_model": "hierarchical",
+                "target_priorities": {"N_total": {"under": 9}},
+            },
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid target_priorities value: N_total.under"

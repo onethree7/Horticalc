@@ -33,6 +33,7 @@ export function createSolverController({
   api, i18n, notifications, units, water, getSelectedFertilizers,
   onApplyResult, isActive,
 }) {
+const solverTargetsTableEl = qs("#solverTargetsTable");
 const solverTargetsTable = qs("#solverTargetsTable tbody");
 const solverAllowedFertilizersSelect = qs("#solverAllowedFertilizers");
 const solverAllowedSearchInput = qs("#solverAllowedSearch");
@@ -53,6 +54,7 @@ const solverMassModelHint = qs("#solverMassModelHint");
 const solverTargetScaleDownButton = qs("#solverTargetScaleDown");
 const solverTargetScaleUpButton = qs("#solverTargetScaleUp");
 const solverTargetScaleValue = qs("#solverTargetScaleValue");
+const solverPriorityLegend = qs("#solverPriorityLegend");
 const solveButton = qs("#solveBtn");
 const copySolverResultsButton = qs("#copySolverResults");
 const solverAutoApplyInput = qs("#solverAutoApply");
@@ -84,7 +86,7 @@ const solverTargetDefinitions = [
 ].map((key) => ({ key, label: key }));
 const solverTargetValues = Object.fromEntries(solverTargetDefinitions.map(({ key }) => [key, 0]));
 const solverTargetBaseValues = { ...solverTargetValues };
-const solverIgnoredElements = new Set();
+const solverTargetPriorities = {};
 const solverAllowedFertilizers = [];
 const solverFixedGrams = {};
 const solveRequests = createLatestRequestGate();
@@ -102,26 +104,45 @@ let searchTimer;
 let mounted = false;
 
 const MASS_MODEL = "mass_nnls";
+const HIERARCHICAL_MODEL = "hierarchical";
+const LEGACY_MODEL = "legacy";
 const REPORT_ONLY_TARGETS = new Set(["Na", "Cl"]);
+const DEFAULT_TARGET_PRIORITY = 3;
+const TARGET_PRIORITY_LEVELS = [1, 2, 3, 4, 0];
 
-function orderedIgnoredElements() {
-  return solverTargetDefinitions
-    .map(({ key }) => key)
-    .filter((key) => solverIgnoredElements.has(key));
+function normalizedPriority(value, fallback = DEFAULT_TARGET_PRIORITY) {
+  const priority = Number(value);
+  return Number.isInteger(priority) && priority >= 0 && priority <= 4 ? priority : fallback;
 }
 
-function setIgnoredElements(elements) {
-  const validElements = new Set(solverTargetDefinitions.map(({ key }) => key));
-  solverIgnoredElements.clear();
-  (Array.isArray(elements) ? elements : []).forEach((key) => {
-    if (validElements.has(key) && !REPORT_ONLY_TARGETS.has(key)) solverIgnoredElements.add(key);
+function setTargetPriorities(priorities = {}, ignoredElements = []) {
+  const ignored = new Set(Array.isArray(ignoredElements) ? ignoredElements : []);
+  solverTargetDefinitions.forEach(({ key }) => {
+    const reportOnly = REPORT_ONLY_TARGETS.has(key) || ignored.has(key);
+    const configured = priorities?.[key] || {};
+    solverTargetPriorities[key] = {
+      under: reportOnly ? 0 : normalizedPriority(configured.under),
+      over: reportOnly ? 0 : normalizedPriority(configured.over),
+    };
   });
+}
+
+function serializedTargetPriorities() {
+  return Object.fromEntries(solverTargetDefinitions.flatMap(({ key }) => {
+    if (REPORT_ONLY_TARGETS.has(key)) return [];
+    const priorities = solverTargetPriorities[key] || {
+      under: DEFAULT_TARGET_PRIORITY,
+      over: DEFAULT_TARGET_PRIORITY,
+    };
+    if (priorities.under === DEFAULT_TARGET_PRIORITY && priorities.over === DEFAULT_TARGET_PRIORITY) return [];
+    return [[key, { ...priorities }]];
+  }));
 }
 
 function buildCurrentSolverConfig() {
   return {
     ...buildSolverConfigPayload(solverConfigDefinitions, solverConfigControls),
-    ignored_elements: orderedIgnoredElements(),
+    target_priorities: serializedTargetPriorities(),
   };
 }
 
@@ -130,23 +151,43 @@ function persistCurrentSolverConfig() {
 }
 
 function solverModelLabel(model) {
-  return model === MASS_MODEL ? t("solver.model.massNnls") : t("solver.model.legacy");
+  if (model === HIERARCHICAL_MODEL) return t("solver.model.hierarchical");
+  return model === LEGACY_MODEL ? t("solver.model.legacy") : t("solver.model.massNnls");
+}
+
+function targetPrioritySummary(data, key) {
+  if (data?.solver_model !== HIERARCHICAL_MODEL) return "";
+  const configured = data?.target_priorities?.[key];
+  if (!configured) return "";
+  const under = normalizedPriority(configured.under, 0);
+  const over = normalizedPriority(configured.over, 0);
+  if (under === 0 && over === 0) return t("solver.priority.reportOnlyResult");
+  return t("solver.priority.resultSummary", {
+    under: under || "–",
+    over: over || "–",
+  });
 }
 
 function syncSolverModelControls() {
-  const massEnabled = solverConfigControls.solver_model?.value === MASS_MODEL;
-  if (massEnabled) {
-    solverConfigControls.nitrogen_objective_mode.checked = true;
-    solverConfigControls.s_objective_enabled.checked = true;
-  }
+  const model = solverConfigControls.solver_model?.value || MASS_MODEL;
+  const legacyEnabled = model === LEGACY_MODEL;
   Object.entries(solverConfigControls).forEach(([key, input]) => {
-    if (input && key !== "solver_model") input.disabled = massEnabled;
+    if (input && key !== "solver_model") input.disabled = !legacyEnabled;
   });
-  solverMassModelHint?.classList.toggle("is-hidden", !massEnabled);
+  if (solverMassModelHint) {
+    const hintKey = model === HIERARCHICAL_MODEL
+      ? "solver.modelHierarchicalHint"
+      : model === LEGACY_MODEL
+        ? "solver.modelLegacyHint"
+        : "solver.modelMassHint";
+    solverMassModelHint.dataset.i18n = hintKey;
+    solverMassModelHint.textContent = t(hintKey);
+  }
+  solverPriorityLegend?.classList.toggle("is-hidden", model !== HIERARCHICAL_MODEL);
 }
 
 function applyConfig(config = {}) {
-  setIgnoredElements(config.ignored_elements);
+  setTargetPriorities(config.target_priorities, config.ignored_elements);
   applySolverConfig(solverConfigDefinitions, solverConfigControls, config);
   syncSolverModelControls();
   renderSolverTargetsTable();
@@ -182,6 +223,11 @@ function buildSolvePayload() {
 }
 
 function renderSolverTargetsTable() {
+  const priorityEnabled = solverConfigControls.solver_model?.value === HIERARCHICAL_MODEL;
+  solverTargetsTableEl?.classList.toggle("solver-priorities-active", priorityEnabled);
+  solverTargetsTableEl
+    ?.closest(".solver-comparison-grid")
+    ?.classList.toggle("solver-comparison-grid--priorities", priorityEnabled);
   solverTargetsTable.innerHTML = "";
   solverTargetDefinitions.forEach((field) => {
     const row = document.createElement("tr");
@@ -208,26 +254,48 @@ function renderSolverTargetsTable() {
     });
     valueCell.appendChild(input);
 
-    const ignoreCell = document.createElement("td");
-    ignoreCell.className = "solver-ignore-cell";
-    const ignoreInput = document.createElement("input");
-    ignoreInput.type = "checkbox";
     const reportOnly = REPORT_ONLY_TARGETS.has(field.key);
-    ignoreInput.checked = reportOnly || solverIgnoredElements.has(field.key);
-    ignoreInput.disabled = reportOnly;
-    ignoreInput.setAttribute("aria-label", t("solver.ignoreElementAria", { element: field.label }));
-    ignoreInput.title = reportOnly ? t("solver.reportOnlyHint") : t("solver.ignoreElementHint");
-    row.classList.toggle("solver-target-ignored", solverIgnoredElements.has(field.key));
-    ignoreInput.addEventListener("change", () => {
-      if (ignoreInput.checked) solverIgnoredElements.add(field.key);
-      else solverIgnoredElements.delete(field.key);
-      row.classList.toggle("solver-target-ignored", solverIgnoredElements.has(field.key));
-      renderSolverResults(null);
-      persistCurrentSolverConfig();
-    });
-    ignoreCell.appendChild(ignoreInput);
+    const priorities = solverTargetPriorities[field.key] || {
+      under: reportOnly ? 0 : DEFAULT_TARGET_PRIORITY,
+      over: reportOnly ? 0 : DEFAULT_TARGET_PRIORITY,
+    };
+    const createPriorityCell = (direction) => {
+      const cell = document.createElement("td");
+      cell.className = "solver-priority-cell";
+      const select = document.createElement("select");
+      select.className = "solver-priority-select";
+      TARGET_PRIORITY_LEVELS.forEach((priority) => {
+        const option = document.createElement("option");
+        option.value = String(priority);
+        option.textContent = priority === 0
+          ? t("solver.priority.reportOnly")
+          : t(`solver.priority.level${priority}`);
+        select.appendChild(option);
+      });
+      select.value = String(priorities[direction]);
+      select.disabled = reportOnly || !priorityEnabled;
+      select.setAttribute(
+        "aria-label",
+        t(`solver.priority.${direction}Aria`, { element: field.label }),
+      );
+      select.title = reportOnly
+        ? t("solver.reportOnlyHint")
+        : priorityEnabled
+          ? t(`solver.priority.${direction}Hint`)
+          : t("solver.priority.selectHierarchicalHint");
+      select.addEventListener("change", () => {
+        solverTargetPriorities[field.key][direction] = normalizedPriority(select.value);
+        const current = solverTargetPriorities[field.key];
+        row.classList.toggle("solver-target-report-only", current.under === 0 && current.over === 0);
+        renderSolverResults(null);
+        persistCurrentSolverConfig();
+      });
+      cell.appendChild(select);
+      return cell;
+    };
+    row.classList.toggle("solver-target-report-only", priorities.under === 0 && priorities.over === 0);
 
-    row.append(labelCell, valueCell, ignoreCell);
+    row.append(labelCell, valueCell, createPriorityCell("under"), createPriorityCell("over"));
     solverTargetsTable.appendChild(row);
   });
 }
@@ -446,7 +514,7 @@ function renderSolverResults(data) {
       N_NO3: t("solver.nNo3"),
       N_NH4: t("solver.nNh4"),
       N_UREA: t("solver.nUrea"),
-      ignored: t("solver.ignoredSuffix"),
+      prioritySummary: (key) => targetPrioritySummary(data, key),
     },
     formatNutrient: (value) => formatNumber(value, nutrientFormatter),
   });
@@ -533,7 +601,6 @@ function buildSolverClipboardText() {
     const targets = lastSolveResult?.targets_mg_per_l || {};
     const achieved = lastSolveResult?.achieved_elements_mg_per_l || {};
     const errors = lastSolveResult?.errors_mg_per_l || {};
-    const ignoredElements = new Set(lastSolveResult?.ignored_elements || []);
     const solverRows = solverResultDisplayKeys(lastSolveResult, summaryColumnOrder).map((key) => {
       const targetValue = Number(targets[key] ?? 0);
       const achievedValue = Number(achieved[key] ?? 0);
@@ -541,9 +608,9 @@ function buildSolverClipboardText() {
         ? Number(errors[key])
         : achievedValue - targetValue;
       return [
-        ignoredElements.has(key)
-          ? `${formatClipboardIonLabel(key)} (${t("solver.ignoredSuffix")})`
-          : formatClipboardIonLabel(key),
+        [formatClipboardIonLabel(key), targetPrioritySummary(lastSolveResult, key)]
+          .filter(Boolean)
+          .join(" · "),
         targetValue > 0 ? formatNumber(targetValue, nutrientFormatter) : "-",
         formatNumber(achievedValue, nutrientFormatter),
         formatNumber(errorValue, nutrientFormatter),
@@ -596,6 +663,10 @@ function applyNutrientSolution(solution) {
     solverTargetValues[field.key] = value;
   });
   updateSolverTargetScaleDisplay();
+  if (solution?.solver_config && Object.keys(solution.solver_config).length) {
+    applyConfig({ ...buildCurrentSolverConfig(), ...solution.solver_config });
+    return;
+  }
   renderSolverTargetsTable();
 }
 
@@ -731,7 +802,10 @@ function bindConfigEvents() {
         && definition.type !== "string"
         && definition.key !== "nitrogen_objective_mode"
         && parseDecimalInput(input.value) === null) return;
-      if (definition.key === "solver_model") syncSolverModelControls();
+      if (definition.key === "solver_model") {
+        syncSolverModelControls();
+        renderSolverTargetsTable();
+      }
       renderSolverResults(null);
       api.persistPreferences({
         solver_config: buildCurrentSolverConfig(),
@@ -753,7 +827,7 @@ function mount({ configDefinitions = [], config = {} } = {}) {
     FALLBACK_SOLVER_CONFIG_DEFINITIONS,
     (key) => Boolean(solverConfigControls[key]),
   );
-  setIgnoredElements(config.ignored_elements);
+  setTargetPriorities(config.target_priorities, config.ignored_elements);
   applySolverConfig(solverConfigDefinitions, solverConfigControls, config);
   syncSolverModelControls();
   bindConfigEvents();
@@ -785,7 +859,7 @@ function mount({ configDefinitions = [], config = {} } = {}) {
   solverAllowedClearButton?.addEventListener("click", () => updateSolverAllowedFertilizers([], "replace"));
   solverAutoApplyInput?.addEventListener("change", persistSolverAutoApplyPreference);
   solverConfigResetDefaultsButton?.addEventListener("click", () => {
-    solverIgnoredElements.clear();
+    setTargetPriorities();
     applySolverConfig(solverConfigDefinitions, solverConfigControls);
     syncSolverModelControls();
     renderSolverTargetsTable();

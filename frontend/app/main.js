@@ -133,6 +133,7 @@ profiles = createProfilesController({
       name,
       source: "Horticalc UI",
       targets_mg_per_l: solver.targets,
+      solver_config: solver.buildConfigPayload(),
     }),
     buildSolverRecipe: (name) => calculator.buildRecipePayloadFromSolver(name),
     hasSolverResult: () => Boolean(solver.lastResult),

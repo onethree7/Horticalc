@@ -47,6 +47,11 @@ def test_recipe_payload_persists_solver_config() -> None:
         "liters": 30,
         "fertilizers": [{"name": "Calcinit", "grams": 4.5}],
         "solver_config": {
+            "solver_model": "hierarchical",
+            "target_priorities": {
+                "N_total": {"under": 1, "over": 1},
+                "Ca": {"under": 2, "over": 3},
+            },
             "relative_weighting": True,
             "overshoot_penalty": 1.5,
             "n_total_governor_enabled": True,

@@ -89,7 +89,12 @@ export const SUMMARY_COLUMN_ORDER = [
 ];
 
 export const FALLBACK_SOLVER_CONFIG_DEFINITIONS = [
-  { key: "solver_model", type: "string", defaultValue: "mass_nnls", choices: ["mass_nnls", "legacy"] },
+  {
+    key: "solver_model",
+    type: "string",
+    defaultValue: "mass_nnls",
+    choices: ["mass_nnls", "hierarchical", "legacy"],
+  },
   { key: "relative_weighting", type: "boolean", defaultValue: false },
   { key: "nitrogen_objective_mode", type: "string", defaultValue: "n_total_only" },
   { key: "overshoot_penalty", type: "number", defaultValue: 1, minimum: 0 },

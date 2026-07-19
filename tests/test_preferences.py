@@ -67,9 +67,13 @@ def test_preferences_merge_typed_workspace_defaults(monkeypatch, tmp_path) -> No
             "default_liters": 100,
             "last_water_profile": "tap.yml",
             "solver_config": {
+                "solver_model": "hierarchical",
                 "relative_weighting": True,
                 "overshoot_penalty": 1.2,
-                "ignored_elements": ["Cu", "B"],
+                "target_priorities": {
+                    "N_total": {"under": 1, "over": 1},
+                    "Ca": {"under": 2, "over": 3},
+                },
             },
         },
     )
@@ -81,9 +85,13 @@ def test_preferences_merge_typed_workspace_defaults(monkeypatch, tmp_path) -> No
         "default_liters": 100.0,
         "last_water_profile": "tap.yml",
         "solver_config": {
+            "solver_model": "hierarchical",
             "relative_weighting": True,
             "overshoot_penalty": 1.2,
-            "ignored_elements": ["Cu", "B"],
+            "target_priorities": {
+                "N_total": {"under": 1, "over": 1},
+                "Ca": {"under": 2, "over": 3},
+            },
         },
     }
     assert client.get("/preferences").json() == response.json()

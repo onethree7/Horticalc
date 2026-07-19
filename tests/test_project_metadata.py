@@ -24,7 +24,7 @@ def test_pyproject_declares_runtime_dependencies_used_by_entrypoints() -> None:
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     dependency_names = _dependency_names(pyproject["project"]["dependencies"])
 
-    assert {"fastapi", "pydantic", "uvicorn", "pyyaml", "numpy"} <= dependency_names
+    assert {"fastapi", "pydantic", "uvicorn", "pyyaml", "numpy", "scipy"} <= dependency_names
     assert pyproject["project"]["license"] == "GPL-3.0-or-later"
     assert pyproject["project"]["license-files"] == ["LICENSE"]
 

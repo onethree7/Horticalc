@@ -28,7 +28,9 @@ from .data_io import (
     load_water_profile_data,
 )
 from .paths import resolve_water_profile_name
+from .priority_solver import solve_hierarchical_priorities
 from .solver_config import (
+    DEFAULT_TARGET_PRIORITY,
     NITROGEN_OBJECTIVE_MODES,
     SOLVER_CONFIG_DEFAULTS,
     resolve_solver_config,
@@ -47,6 +49,8 @@ class SolveResult:
     fertilizers: List[Dict[str, float | str]]
     objective_elements: List[str]
     ignored_elements: List[str]
+    target_priorities: Dict[str, Dict[str, int]]
+    priority_stages: List[Dict[str, int | float]]
     targets_mg_l: Dict[str, float]
     achieved_elements_mg_l: Dict[str, float]
     errors_mg_l: Dict[str, float]
@@ -59,6 +63,8 @@ class SolveResult:
             "fertilizers": self.fertilizers,
             "objective_elements": self.objective_elements,
             "ignored_elements": self.ignored_elements,
+            "target_priorities": self.target_priorities,
+            "priority_stages": self.priority_stages,
             "targets_mg_per_l": self.targets_mg_l,
             "achieved_elements_mg_per_l": self.achieved_elements_mg_l,
             "errors_mg_per_l": self.errors_mg_l,
@@ -591,6 +597,7 @@ class _PreparedProblem:
     targets: Dict[str, float]
     objective_keys: List[str]
     ignored_elements: List[str]
+    target_priorities: Dict[str, Dict[str, int]]
     allowed: List[Fertilizer]
     fixed_weights: np.ndarray
     variable_mask: np.ndarray
@@ -761,15 +768,39 @@ def _prepare_solve_problem(
     targets = _normalize_targets(recipe.get("targets") or recipe.get("targets_mg_per_l") or {})
     solver_config = resolve_solver_config(recipe.get("solver_config"))
     mass_model_enabled = solver_config["solver_model"] == "mass_nnls"
+    hierarchical_model_enabled = solver_config["solver_model"] == "hierarchical"
+    mass_objective_model_enabled = mass_model_enabled or hierarchical_model_enabled
     mass_nitrogen_mode = "n_total_only" if targets.get("N_total", 0.0) > 0.0 else "as_targets"
     objective_keys = _objective_keys(
         targets,
-        nitrogen_objective_mode=mass_nitrogen_mode if mass_model_enabled else solver_config["nitrogen_objective_mode"],
-        s_objective_enabled=True if mass_model_enabled else solver_config["s_objective_enabled"],
+        nitrogen_objective_mode=(
+            mass_nitrogen_mode if mass_objective_model_enabled else solver_config["nitrogen_objective_mode"]
+        ),
+        s_objective_enabled=True if mass_objective_model_enabled else solver_config["s_objective_enabled"],
     )
-    ignored_elements = list(solver_config["ignored_elements"])
-    ignored_element_set = set(ignored_elements)
-    objective_keys = [key for key in objective_keys if key not in ignored_element_set]
+    configured_ignored_elements = list(solver_config["ignored_elements"])
+    ignored_element_set = set(configured_ignored_elements)
+    target_priorities: dict[str, dict[str, int]] = {}
+    if hierarchical_model_enabled:
+        configured_priorities = solver_config["target_priorities"]
+        active_objective_keys: list[str] = []
+        ignored_elements: list[str] = []
+        for key in objective_keys:
+            configured = configured_priorities.get(key, {})
+            under = int(configured.get("under", DEFAULT_TARGET_PRIORITY))
+            over = int(configured.get("over", DEFAULT_TARGET_PRIORITY))
+            if key in ignored_element_set:
+                under = 0
+                over = 0
+            target_priorities[key] = {"under": under, "over": over}
+            if under > 0 or over > 0:
+                active_objective_keys.append(key)
+            else:
+                ignored_elements.append(key)
+        objective_keys = active_objective_keys
+    else:
+        ignored_elements = configured_ignored_elements
+        objective_keys = [key for key in objective_keys if key not in ignored_element_set]
     if not objective_keys:
         raise ValueError(
             "No solvable targets defined (all active targets are ignored, report-only, or disabled for this model)."
@@ -848,6 +879,7 @@ def _prepare_solve_problem(
         targets=targets,
         objective_keys=objective_keys,
         ignored_elements=ignored_elements,
+        target_priorities=target_priorities,
         allowed=allowed,
         fixed_weights=fixed_weights,
         variable_mask=variable_mask,
@@ -898,6 +930,8 @@ def _select_solver_variant(problem: _PreparedProblem, runner: _VariantRunner) ->
 def _build_solve_result(
     problem: _PreparedProblem,
     variant_result: _VariantResult,
+    *,
+    priority_stages: List[Dict[str, int | float]] | None = None,
 ) -> SolveResult:
     fertilizers_out, achieved_elements = variant_result
     errors_mg_l: dict[str, float] = {}
@@ -914,6 +948,8 @@ def _build_solve_result(
         fertilizers=fertilizers_out,
         objective_elements=problem.objective_keys,
         ignored_elements=problem.ignored_elements,
+        target_priorities=problem.target_priorities,
+        priority_stages=priority_stages or [],
         targets_mg_l=problem.targets,
         achieved_elements_mg_l=achieved_elements,
         errors_mg_l=errors_mg_l,
@@ -936,6 +972,53 @@ def _solve_mass_nnls(problem: _PreparedProblem) -> SolveResult:
     return result
 
 
+def _solve_hierarchical(problem: _PreparedProblem) -> SolveResult:
+    variable_matrix = problem.matrix[:, problem.variable_mask]
+    variable_upper_bounds = problem.upper_bounds[problem.variable_mask]
+    remaining_targets = problem.remaining_targets - problem.matrix @ problem.fixed_weights
+    variable_fertilizers = [
+        fertilizer for fertilizer, variable in zip(problem.allowed, problem.variable_mask, strict=True) if variable
+    ]
+    priority_result = solve_hierarchical_priorities(
+        variable_matrix,
+        remaining_targets,
+        variable_upper_bounds,
+        [
+            (
+                problem.target_priorities[key]["under"],
+                problem.target_priorities[key]["over"],
+            )
+            for key in problem.objective_keys
+        ],
+        np.asarray([float(fertilizer.weight_factor or 1.0) for fertilizer in variable_fertilizers], dtype=float),
+    )
+    weights = problem.fixed_weights.copy()
+    weights[problem.variable_mask] += priority_result.doses
+    variant_result = _VariantRunner(problem)._build_solution_for_weights(weights)
+    result = _build_solve_result(
+        problem,
+        variant_result,
+        priority_stages=[
+            {
+                "priority": stage.priority,
+                "max_error_mg_per_l": stage.max_error_mg_per_l,
+                "total_error_mg_per_l": stage.total_error_mg_per_l,
+            }
+            for stage in priority_result.stages
+        ],
+    )
+    values = (
+        *(float(item["grams"]) for item in result.fertilizers),
+        *result.achieved_elements_mg_l.values(),
+        *result.errors_mg_l.values(),
+    )
+    if not all(np.isfinite(value) for value in values):
+        raise ValueError("Hierarchical solver produced a non-finite result")
+    if any(float(item["grams"]) < 0.0 for item in result.fertilizers):
+        raise ValueError("Hierarchical solver produced a negative fertilizer dose")
+    return result
+
+
 def solve_recipe_data(
     recipe: dict,
     *,
@@ -953,6 +1036,8 @@ def solve_recipe_data(
     )
     if problem.solver_config["solver_model"] == "mass_nnls":
         return _solve_mass_nnls(problem)
+    if problem.solver_config["solver_model"] == "hierarchical":
+        return _solve_hierarchical(problem)
     return _build_solve_result(problem, _select_solver_variant(problem, _VariantRunner(problem)))
 
 

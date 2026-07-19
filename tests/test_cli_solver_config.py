@@ -146,6 +146,10 @@ def test_solver_config_validation_preserves_valid_partial_values() -> None:
         "relative_weighting": True,
         "overshoot_penalty": 1,
         "ignored_elements": ["Cu", "B"],
+        "target_priorities": {
+            "N_total": {"under": 1, "over": 2},
+            "Cu": {"over": 0},
+        },
         "n_form_priority_weights": {"N_NO3": 3.0},
     }
 
@@ -154,6 +158,7 @@ def test_solver_config_validation_preserves_valid_partial_values() -> None:
     assert resolved["relative_weighting"] is True
     assert resolved["overshoot_penalty"] == 1
     assert resolved["ignored_elements"] == ["Cu", "B"]
+    assert resolved["target_priorities"] == config["target_priorities"]
     assert resolved["n_form_priority_weights"] == {"N_NO3": 3.0}
     assert set(resolved) == set(SOLVER_CONFIG_DEFAULTS)
 
@@ -173,6 +178,12 @@ def test_solver_config_validation_preserves_valid_partial_values() -> None:
         ({"ignored_elements": "Cu"}, "Invalid solver config value"),
         ({"ignored_elements": ["Cu", "Cu"]}, "Invalid solver config value"),
         ({"ignored_elements": ["UNKNOWN"]}, "Invalid solver config value"),
+        ({"target_priorities": []}, "Invalid solver config value"),
+        ({"target_priorities": {"UNKNOWN": {"under": 1}}}, "Invalid target_priorities key"),
+        ({"target_priorities": {"N_total": {}}}, "Invalid target_priorities value"),
+        ({"target_priorities": {"N_total": {"sideways": 1}}}, "Invalid target_priorities direction"),
+        ({"target_priorities": {"N_total": {"under": 5}}}, "Invalid target_priorities value"),
+        ({"target_priorities": {"N_total": {"under": 1.5}}}, "Invalid target_priorities value"),
         (
             {"singleton_underfill_max_iter": MAX_SINGLETON_UNDERFILL_MAX_ITER + 1},
             "Invalid solver config value: singleton_underfill_max_iter must be <=",

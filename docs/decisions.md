@@ -68,8 +68,9 @@ Source: `api/app.py`, `frontend/`, `src/horticalc/data_io.py`.
 
 ## Solver
 
-- Default `solver_model`: `mass_nnls`; `legacy` remains an explicit
-  compatibility option. Experimental molar goal policies are research-only.
+- Default `solver_model`: `mass_nnls`; `hierarchical` is the explicit
+  production directional-priority model, and `legacy` remains a compatibility
+  option. Experimental molar goal policies are research-only.
 - `mass_nnls` minimizes unweighted squared elemental residuals in canonical
   `mg/L`, uses `N_total` when present, and includes a non-zero `S` target.
 - Fertilizer `SolverRole=fixed_only` prevents variable Solver dosing while
@@ -79,13 +80,15 @@ Source: `api/app.py`, `frontend/`, `src/horticalc/data_io.py`.
 - Default `relative_weighting`: `false`.
 - Default `singleton_supplier_enabled`: `false`.
 - Default `singleton_underfill_enabled`: `true`.
-- Default `ignored_elements`: empty. Users may explicitly remove individual
-  target elements from the objective; those elements remain visible in the
-  result. There are no built-in biological importance weights or directional
-  under/overshoot rules in `mass_nnls`.
+- Default `target_priorities`: empty, resolving every active hierarchical
+  direction to tier `3`. Users set separate under/over tiers `1..4`; `0` is
+  report-only. Tiers are strict lexicographic constraints in raw mg/L, not
+  scalar weights or nutrient limits. There are no built-in element-specific
+  priorities. `ignored_elements` remains input/output compatibility and maps
+  to priority `0` in both directions for `hierarchical`.
 - Report-only target keys: `Na`, `Cl`. In `legacy`, `S` is report-only unless
-  `s_objective_enabled` is true; `mass_nnls` includes every non-zero S target
-  unless the user explicitly excludes it.
+  `s_objective_enabled` is true; `mass_nnls` and `hierarchical` include every
+  non-zero S target unless it is report-only.
 - Solver matrix scoring follows `result.objective_elements`.
 
 Source: `src/horticalc/solver_config.py`, `src/horticalc/solver.py`.

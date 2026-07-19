@@ -76,6 +76,26 @@ class TestSolveTargetKeys(unittest.TestCase):
                 self.assertEqual(response.status_code, 400)
                 self.assertEqual(response.json()["detail"], detail)
 
+    def test_hierarchical_solver_returns_resolved_priorities_and_stage_diagnostics(self) -> None:
+        response = self.client.post(
+            "/solve",
+            json={
+                "liters": 10,
+                "targets": {"N_total": 20},
+                "fertilizers_allowed": ["Compo Basfoliar Top-N SL"],
+                "solver_config": {
+                    "solver_model": "hierarchical",
+                    "target_priorities": {"N_total": {"under": 1, "over": 2}},
+                },
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["solver_model"], "hierarchical")
+        self.assertEqual(payload["target_priorities"], {"N_total": {"under": 1, "over": 2}})
+        self.assertEqual([stage["priority"] for stage in payload["priority_stages"]], [1, 2])
+
 
 if __name__ == "__main__":
     unittest.main()

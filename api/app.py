@@ -169,6 +169,8 @@ class SolveResponse(BaseModel):
     fertilizers: List[SolveFertilizerEntry]
     objective_elements: List[str]
     ignored_elements: List[str]
+    target_priorities: Dict[str, Dict[str, int]]
+    priority_stages: List[Dict[str, int | float]]
     targets_mg_per_l: Dict[str, float]
     achieved_elements_mg_per_l: Dict[str, float]
     errors_mg_per_l: Dict[str, float]
@@ -186,6 +188,7 @@ class NutrientSolutionPayload(BaseModel):
     name: str
     source: Optional[str] = ""
     targets_mg_per_l: Dict[str, float] = Field(default_factory=dict)
+    solver_config: Dict[str, Any] = Field(default_factory=dict)
 
 
 class RecipePayload(BaseModel):
@@ -568,6 +571,7 @@ async def save_nutrient_solution_profile(request: Request) -> dict:
         ALLOWED_TARGET_KEYS,
         "Invalid target key",
     )
+    solver_config = _validated_solver_config(solution.solver_config)
 
     nutrient_solutions_dir = _portable_layout().nutrient_solutions
     solution_path = _saved_yaml_path(
@@ -580,6 +584,7 @@ async def save_nutrient_solution_profile(request: Request) -> dict:
         name=name,
         source=solution.source or "",
         targets_mg_per_l=targets_mg_per_l,
+        solver_config=solver_config,
     )
     return {"status": "ok", "filename": solution_path.name}
 

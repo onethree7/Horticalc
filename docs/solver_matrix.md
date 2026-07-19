@@ -103,11 +103,11 @@ recipes can be chemically equivalent). That calibration belongs in a distinct
 diagnostic phase before it is added; it must never be averaged into scientific
 or handcrafted-profile rankings.
 
-## Runtime Mass NNLS And Research Controls
+## Runtime Solver Models And Research Controls
 
 Status: `current-state runtime plus research comparison`.
 
-Production `mass_nnls` lives only in `src/horticalc/solver.py`. It minimizes
+Production `mass_nnls` lives in `src/horticalc/solver.py`. It minimizes
 the unweighted sum of squared elemental residuals in canonical `mg/L`, subject
 to non-negative fertilizer doses. It uses `N_total` whenever present and
 always includes a non-zero elemental S target. It has no percentage or molar
@@ -129,6 +129,24 @@ there is no biological ground truth for deciding that an element is generally
 irrelevant. Exclusion combinations are therefore not swept or ranked as
 candidate defaults; they are an inspectable per-user trade-off, and excluded
 concentrations remain present in every solve result.
+
+Production `hierarchical` lives in `src/horticalc/solver.py` and
+`src/horticalc/priority_solver.py`. It accepts separate `under` and `over`
+tiers `1..4`, with `0` meaning report-only. It first locks the smallest worst
+raw-mg/L residual for a tier, then that tier's smallest total residual, before
+moving to the next tier. Consequently a lower tier cannot compensate for or
+worsen a higher tier. This runtime model has no nutrient bounds, scalar
+severity weights, or hardcoded macro/micro priority table.
+
+The 2,856-row model matrix below predates the hierarchical runtime model and
+does not rank it. A hierarchy is incomplete without an explicit priority
+policy, and treating one author's policy as biological ground truth would
+taint the general benchmark. Current product regression tests instead verify
+the solver's mathematical invariants and run an explicit representative
+priority mapping against both shipped Saloner and Bugbee profiles. In those
+checks N-total, P, K, and Fe remain within `0.00002 mg/L` of target and Fe
+stays below `2 mg/L`; these are regression checks for the supplied mapping,
+not a claim that it is a universal default.
 
 The former deterministic goal implementation now lives only in
 `scripts/solver_goal_model.py`. It remains useful as a research control for

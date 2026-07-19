@@ -87,7 +87,7 @@ Allowed water keys are defined in `src/horticalc/chemistry.py` and reused as `AL
 | `GET` | `/nutrient-solutions/{solution_name}` | Load a target profile. |
 | `POST`/`PUT` | `/nutrient-solutions` | Save a target profile. |
 
-Allowed target keys are defined in `src/horticalc/solver.py` as `ALLOWED_TARGET_KEYS` and reused by `api/app.py`.
+Allowed target keys are defined in `src/horticalc/solver.py` as `ALLOWED_TARGET_KEYS` and reused by `api/app.py`. Save payloads may include a validated `solver_config`; loading the profile returns that mapping so the GUI can restore its model and directional priorities with the targets.
 
 ## Recipes
 
@@ -122,8 +122,14 @@ Request:
   "fixed_grams": {},
   "urea_as_nh4": false,
   "solver_config": {
-    "solver_model": "mass_nnls",
-    "ignored_elements": ["Cu", "B"]
+    "solver_model": "hierarchical",
+    "target_priorities": {
+      "N_total": {"under": 1, "over": 1},
+      "P": {"under": 1, "over": 1},
+      "K": {"under": 1, "over": 1},
+      "Ca": {"under": 2, "over": 3},
+      "Cu": {"under": 4, "over": 4}
+    }
   }
 }
 ```
@@ -135,8 +141,11 @@ config overrides use the bounded definitions returned by
 Response follows `SolveResult.to_dict()` in `src/horticalc/solver.py` and is
 documented in [data_model.md](data_model.md). Its `solver_model` field confirms
 which runtime model produced the doses. `objective_elements` lists the rows
-that affected the optimization; `ignored_elements` echoes explicit exclusions,
-whose target and achieved concentrations are still returned.
+that affected the optimization. For `hierarchical`, `target_priorities`
+returns the resolved directions and `priority_stages` returns each tier's
+retained maximum and total residual in mg/L. `ignored_elements` is the
+backwards-compatible view of targets whose two directions are report-only;
+their target and achieved concentrations are still returned.
 
 ## Static Frontend
 

@@ -140,8 +140,10 @@ The calculator uses `fertilizers`. The solver uses `targets`,
 `fertilizers_allowed`, `fixed_grams`, and `solver_config`.
 `fertilizers_allowed` stores exact fertilizer names and must not repeat the
 same name within one recipe.
-`solver_config.ignored_elements` may contain a duplicate-free list of target
-keys to exclude from the optimization while retaining them in Solver output.
+`solver_config.target_priorities` may map target keys to integer `under` and
+`over` priorities in `0..4`. `ignored_elements` remains a duplicate-free
+compatibility input; the hierarchical model treats each listed key as
+priority `0` in both directions.
 `liters` defaults to `10` only when omitted or null; an explicit zero, negative,
 or non-finite value is invalid. Fertilizer `grams` values are finite and
 non-negative.
@@ -157,9 +159,14 @@ targets_mg_per_l:
   N_total: 140
   P: 30
   K: 180
+solver_config:
+  solver_model: hierarchical
+  target_priorities:
+    N_total: {under: 1, over: 1}
+    Ca: {under: 2, over: 3}
 ```
 
-Targets are element mg/L. Accepted keys live in `ALLOWED_TARGET_KEYS` in `src/horticalc/solver.py`. Oxide aliases such as `K2O` and `P2O5` are fertilizer composition keys, not target keys. `S` is elemental sulfur; `SO4` is not a target key. `load_nutrient_solution_data()` returns only `name`, `source`, and `targets_mg_per_l`.
+Targets are element mg/L. Accepted keys live in `ALLOWED_TARGET_KEYS` in `src/horticalc/solver.py`. Oxide aliases such as `K2O` and `P2O5` are fertilizer composition keys, not target keys. `S` is elemental sulfur; `SO4` is not a target key. `solver_config` is optional and uses the same validated contract as a recipe. `load_nutrient_solution_data()` returns `name`, `source`, and `targets_mg_per_l`, plus `solver_config` when the profile defines a non-empty mapping.
 
 ## Calculation Output
 
@@ -203,14 +210,21 @@ The current ion set in `src/horticalc/core.py` is `NH4+`, `K+`, `Ca2+`, `Mg2+`, 
 3. `fertilizers`
 4. `objective_elements`
 5. `ignored_elements`
-6. `targets_mg_per_l`
-7. `achieved_elements_mg_per_l`
-8. `errors_mg_per_l`
-9. `errors_percent`
+6. `target_priorities`
+7. `priority_stages`
+8. `targets_mg_per_l`
+9. `achieved_elements_mg_per_l`
+10. `errors_mg_per_l`
+11. `errors_percent`
 
-`solver_model` identifies the actual runtime path (`mass_nnls` or `legacy`).
+`solver_model` identifies the actual runtime path (`mass_nnls`, `hierarchical`,
+or `legacy`).
 `objective_elements` is the authoritative list of what
 the solver optimized. The solver matrix benchmark scores this list.
-`ignored_elements` records only explicit user exclusions. Ignored targets and
-achieved values remain available for display and audit; error mappings contain
-objective residuals only.
+`target_priorities` contains the resolved directional tiers used by a
+hierarchical solve and is empty for the other models. `priority_stages`
+contains the retained maximum and total `mg/L` residual for each populated
+tier. `ignored_elements` remains a compatibility view of targets with both
+directions at priority `0`. Report-only target and achieved values remain
+available for display and audit; error mappings contain objective residuals
+only.

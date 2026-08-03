@@ -45,7 +45,7 @@ Calculate a recipe:
 ```bash
 python -m horticalc recipes/golden.yml --pretty
 python -m horticalc recipes/golden.yml --load-water 65936 --pretty
-python -m horticalc recipes/golden.yml --out solutions/golden_output.json --pretty
+python -m horticalc recipes/golden.yml --out user/exports/golden_output.json --pretty
 ```
 
 Solve a target recipe:

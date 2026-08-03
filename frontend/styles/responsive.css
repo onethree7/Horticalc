@@ -29,6 +29,7 @@
 
   .rail-brand,
   .rail-workflow,
+  .rail-history,
   .live-bar {
     grid-column: 1 / -1;
   }

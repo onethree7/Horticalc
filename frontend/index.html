@@ -92,6 +92,7 @@
                   <option value="gch-classic" data-i18n="theme.gchClassic">g.ch Classic</option>
                   <option value="vt-green" data-i18n="theme.vtGreen">VT Green</option>
                   <option value="blue-matrix" data-i18n="theme.blueMatrix">Blue Matrix</option>
+                  <option value="tokyo-night" data-i18n="theme.tokyoNight">Tokyo Night</option>
                 </select>
               </label>
               <label class="rail-theme-control" for="languageSelect">
@@ -131,6 +132,12 @@
                   <option value="imperial_fluid_ounce">Imp fl oz</option>
                 </select>
               </label>
+              <label class="rail-theme-control" for="solverHistoryLimit">
+                <span data-i18n="history.limitLabel">Solver history limit</span>
+                <input id="solverHistoryLimit" type="number" min="0" max="10000" step="1" value="1000" />
+              </label>
+              <button id="clearSolverHistory" class="btn btn--outline" type="button" data-i18n="history.clear">Clear history</button>
+              <span id="solverHistorySettingsStatus" class="inline-hint" aria-live="polite"></span>
             </div>
           </details>
         </section>
@@ -194,6 +201,16 @@
             </ol>
           </details>
         </section>
+        <section class="rail-card rail-history" aria-label="Solver history" data-i18n-aria-label="history.title" data-testid="solver-history-card">
+          <details id="solverHistoryCard" open>
+            <summary>
+              <span data-i18n="history.title">Solver history</span>
+              <span id="solverHistoryCount" class="rail-history-count">0</span>
+            </summary>
+            <div id="solverHistoryList" class="rail-history-list" role="list"></div>
+            <p id="solverHistoryEmpty" class="rail-history-empty" data-i18n="history.empty">No solver runs saved yet.</p>
+          </details>
+        </section>
         <aside class="live-bar" aria-label="Live results" data-i18n-aria-label="aria.liveResults" data-testid="live-bar">
           <div class="live-bar-heading">
             <span data-i18n="live.title">Live results</span>
@@ -253,6 +270,24 @@
           </div>
         </aside>
       </aside>
+
+      <dialog id="solverHistoryDialog" class="solver-history-dialog" aria-labelledby="solverHistoryDialogTitle">
+        <div class="solver-history-dialog-heading">
+          <div>
+            <h2 id="solverHistoryDialogTitle" data-i18n="history.detailTitle">Solver run</h2>
+            <p id="solverHistoryDialogMeta" class="hint"></p>
+          </div>
+          <form method="dialog">
+            <button class="btn btn--outline btn--icon" value="close" type="submit" data-i18n-aria-label="history.close">×</button>
+          </form>
+        </div>
+        <pre id="solverHistoryDialogOutput" class="solver-history-output"></pre>
+        <div class="actions result-actions">
+          <button id="copySolverHistoryEntry" class="btn btn--outline" type="button" data-i18n="common.copyClipboard">Copy to clipboard</button>
+          <button id="restoreSolverHistoryEntry" class="btn btn--solver-primary" type="button" data-i18n="history.restore">Restore setup</button>
+          <span id="solverHistoryDialogStatus" class="inline-hint" aria-live="polite"></span>
+        </div>
+      </dialog>
 
       <section class="workspace" data-testid="workspace-scroll-frame">
       <section class="block water-section is-hidden" id="waterSection" data-panel-anchor="water" data-testid="water-view">
@@ -455,7 +490,7 @@
               <select id="solverConfigModel">
                 <option value="mass_nnls" data-i18n="solver.model.massNnls">Mass balance (mg/L², experimental)</option>
                 <option value="hierarchical" data-i18n="solver.model.hierarchical">Prioritized targets (experimental)</option>
-                <option value="legacy" data-i18n="solver.model.legacy">NNLS + tuning (standard)</option>
+                <option value="nnls_tuning" data-i18n="solver.model.nnlsTuning">NNLS + tuning (standard)</option>
               </select>
             </label>
             <p class="hint" id="solverMassModelHint" data-i18n="solver.modelMassHint">Experimental. Mass balance minimizes the sum of squared deviations in mg/L. It always includes N-total and sulfur.</p>

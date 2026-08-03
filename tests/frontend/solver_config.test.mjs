@@ -10,7 +10,7 @@ import {
 import { buildSolvePayload, formatClipboardIonLabel } from "../../frontend/app/solver_payload.js";
 
 const fallback = [
-  { key: "solver_model", type: "string", defaultValue: "legacy", choices: ["mass_nnls", "hierarchical", "legacy"] },
+  { key: "solver_model", type: "string", defaultValue: "nnls_tuning", choices: ["mass_nnls", "hierarchical", "nnls_tuning"] },
   { key: "irls_max_outer_iter", type: "integer", defaultValue: 4, minimum: 1, maximum: 12 },
   { key: "scale_eps_mg_per_l", type: "number", defaultValue: 1, exclusiveMinimum: 0 },
 ];
@@ -22,7 +22,7 @@ test("solver configuration retains schema bounds and normalizes input", () => {
     () => true,
   );
   const controls = {
-    solver_model: { value: "legacy" },
+    solver_model: { value: "nnls_tuning" },
     irls_max_outer_iter: { value: "99" },
     scale_eps_mg_per_l: { value: "0" },
   };

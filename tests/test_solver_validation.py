@@ -7,7 +7,7 @@ from horticalc.solver import SolveResult, _validate_solve_result, solve_recipe_d
 def _solve_result(*, grams: float = 1.0, achieved: float = 100.0) -> SolveResult:
     return SolveResult(
         liters=10.0,
-        solver_model="legacy",
+        solver_model="nnls_tuning",
         fertilizers=[{"name": "K test", "grams": grams}],
         objective_elements=["K"],
         ignored_elements=[],

@@ -49,8 +49,11 @@ Source: `src/horticalc/launcher.py`.
 - Runtime writes stay under `AppRoot/user/` and `AppRoot/logs/`.
 - The shipped fertilizer catalog remains in `data/fertilizers.csv`; user edits are stored as overrides and disabled names under `user/`.
 - Shipped YAML defaults stay in place; user YAML overrides are layered by filename, and redundant copies from older releases are pruned on startup.
+- Successful API Solver runs are stored as versioned canonical snapshots in
+  `user/solver_history.jsonl`; the default retention is `1000` and recording
+  errors never invalidate a successful solve.
 
-Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`.
+Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`, `src/horticalc/solver_history.py`.
 
 ## API And Frontend
 
@@ -59,7 +62,10 @@ Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`.
 - The frontend is a static Vanilla JS app with one native ES-module entrypoint, controller-owned feature state, and no production bundler.
 - Batch volume is canonical liters in the core, API, CLI, and recipe files; the GUI can display L, US gal, Imp gal, or m³.
 - The fertilizer dose contract remains `grams`: grams for solids, mL for liquids, with `weight_factor` as liquid density.
-- `user/preferences.json` stores theme, default batch liters, volume and dose display units, UI-visible solver defaults, and the last directly loaded water profile.
+- `user/preferences.json` stores theme, default batch liters, volume and dose display units, UI-visible solver defaults, Solver-history retention, and the last directly loaded water profile.
+- Solver history is a collapsible Sidebar utility rather than a fifth workflow.
+  Historical output follows current locale and display units; restoration
+  loads inputs and deliberately requires a new solve.
 - Frontend i18n is implemented without a bundler in `frontend/i18n/`; language selection is stored in `localStorage` and `user/preferences.json`.
 - Numeric values use `.` as the decimal separator in output and persistence; GUI inputs accept `.` or `,`.
 - Fertilizer physical state is stored as Boolean `liquid` and CSV `Liquid` (`0` solid, `1` liquid).
@@ -68,10 +74,10 @@ Source: `api/app.py`, `frontend/`, `src/horticalc/data_io.py`.
 
 ## Solver
 
-- Default and production `solver_model`: `legacy`, presented to users as
-  **NNLS + tuning (standard)**. The internal identifier remains unchanged for
-  stored-data compatibility. `mass_nnls` and `hierarchical` are explicitly
-  experimental.
+- Default and production `solver_model`: `nnls_tuning`, presented to users as
+  **NNLS + tuning (standard)**. `mass_nnls` and `hierarchical` are explicitly
+  experimental. Obsolete model identifiers are migrated in stored files, not
+  accepted as runtime aliases.
   Experimental molar goal policies remain research-only.
 - Experimental `mass_nnls` minimizes unweighted squared elemental residuals in canonical
   `mg/L`, uses `N_total` when present, and includes a non-zero `S` target.
@@ -88,7 +94,7 @@ Source: `api/app.py`, `frontend/`, `src/horticalc/data_io.py`.
   scalar weights or nutrient limits. There are no built-in element-specific
   priorities. `ignored_elements` remains input/output compatibility and maps
   to priority `0` in both directions for `hierarchical`.
-- Report-only target keys: `Na`, `Cl`. In `legacy`, `S` is report-only unless
+- Report-only target keys: `Na`, `Cl`. In `nnls_tuning`, `S` is report-only unless
   `s_objective_enabled` is true; `mass_nnls` and `hierarchical` include every
   non-zero S target unless it is report-only.
 - Solver matrix scoring follows `result.objective_elements`.

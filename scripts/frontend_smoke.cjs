@@ -1,5 +1,6 @@
 const { chromium } = require("playwright");
 const fs = require("node:fs");
+const { URL } = require("node:url");
 
 const baseUrl = process.env.HORTICALC_TEST_URL || "http://127.0.0.1:8765";
 const browserCandidates = process.platform === "win32"
@@ -21,6 +22,37 @@ async function assertNoPageOverflow(page, label) {
   }
 }
 
+async function assertHistoryPreviewLayout(page, historyEntry) {
+  if (await historyEntry.getAttribute("title")) {
+    throw new Error("Solver history row still exposes a competing native tooltip");
+  }
+  await historyEntry.hover();
+  const historyPreview = page.locator(".solver-history-preview:not(.is-hidden)");
+  await historyPreview.waitFor();
+  const previewLayout = await historyPreview.evaluate((element) => ({
+    overflow: element.ownerDocument.defaultView.getComputedStyle(element).overflow,
+    scrollHeight: element.scrollHeight,
+    clientHeight: element.clientHeight,
+  }));
+  if (previewLayout.overflow !== "hidden" || previewLayout.scrollHeight > previewLayout.clientHeight + 1) {
+    throw new Error(`Solver history hover preview is scrollable: ${JSON.stringify(previewLayout)}`);
+  }
+}
+
+async function assertTokyoNightPalette(page) {
+  const palette = await page.locator("body").evaluate((element) => {
+    const styles = element.ownerDocument.defaultView.getComputedStyle(element);
+    return {
+      panel: styles.getPropertyValue("--app-panel").trim(),
+      text: styles.getPropertyValue("--app-text").trim(),
+      solver: styles.getPropertyValue("--app-solver").trim(),
+    };
+  });
+  if (palette.panel !== "#121326" || palette.text !== "#edf0ff" || palette.solver !== "#ff4fd8") {
+    throw new Error(`Tokyo Night palette was not applied: ${JSON.stringify(palette)}`);
+  }
+}
+
 async function waitForSmokeCondition(page, predicate, errorMessage) {
   for (let attempt = 0; attempt < 20 && !predicate(); attempt += 1) {
     await page.waitForTimeout(25);
@@ -38,6 +70,7 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = [];
   const dialogs = [];
+  const smokeHistory = [];
   let acceptNextDialog = false;
   page.on("pageerror", (error) => errors.push(String(error)));
   page.on("console", (message) => {
@@ -66,6 +99,44 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
       body: route.request().postData() || "{}",
     });
   });
+  await page.route("**/solver-history**", async (route) => {
+    const request = route.request();
+    const pathname = new URL(request.url()).pathname;
+    if (request.method() === "DELETE") {
+      smokeHistory.length = 0;
+      await route.fulfill({ status: 200, contentType: "application/json", body: '{"status":"ok"}' });
+      return;
+    }
+    if (pathname === "/solver-history") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          limit: 1000,
+          entries: smokeHistory.map((entry) => ({
+            id: entry.id,
+            created_at: entry.created_at,
+            liters: entry.result.liters,
+            solver_model: entry.result.solver_model,
+            targets_mg_per_l: {
+              N_total: entry.result.targets_mg_per_l.N_total || 0,
+              P: entry.result.targets_mg_per_l.P || 0,
+              K: entry.result.targets_mg_per_l.K || 0,
+            },
+            fertilizer_count: entry.result.fertilizers.length,
+          })),
+        }),
+      });
+      return;
+    }
+    const entryId = decodeURIComponent(pathname.split("/").pop());
+    const entry = smokeHistory.find(({ id }) => id === entryId);
+    await route.fulfill({
+      status: entry ? 200 : 404,
+      contentType: "application/json",
+      body: JSON.stringify(entry || { detail: "not found" }),
+    });
+  });
 
   try {
     await page.goto(baseUrl, { waitUntil: "networkidle" });
@@ -91,13 +162,14 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
 
     const themes = [
       "horticalc-dark", "horticalc-light", "high-contrast", "soil",
-      "gch-classic", "vt-green", "blue-matrix",
+      "gch-classic", "vt-green", "blue-matrix", "tokyo-night",
     ];
     for (const theme of themes) {
       await page.locator("#themeSelect").selectOption(theme, { force: true });
       const appliedTheme = await page.locator("body").getAttribute("data-theme");
       if (appliedTheme !== theme) throw new Error(`Theme ${theme} was not applied`);
     }
+    await assertTokyoNightPalette(page);
 
     await page.locator("[data-shell-view='water']").click();
     await page.locator("#waterSection:not(.is-hidden)").waitFor();
@@ -243,9 +315,28 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
     await page.route("**/solve", async (route) => {
       solveRequestCount += 1;
       const requestNumber = solveRequestCount;
+      const requestPayload = route.request().postDataJSON();
       const response = await route.fetch();
+      const responsePayload = await response.json();
+      smokeHistory.unshift({
+        schema_version: 1,
+        id: `smoke-${requestNumber}`,
+        created_at: new Date().toISOString(),
+        setup: {
+          liters: requestPayload.liters,
+          targets: requestPayload.targets,
+          water_profile: requestPayload.water_profile,
+          fertilizers_allowed: requestPayload.fertilizers_allowed,
+          fixed_grams: requestPayload.fixed_grams,
+          urea_as_nh4: requestPayload.urea_as_nh4,
+          solver_config: requestPayload.solver_config,
+        },
+        result: responsePayload,
+        fertilizer_kinds: Object.fromEntries(responsePayload.fertilizers.map(({ name }) => [name, "solid"])),
+        calculation: {},
+      });
       if (requestNumber === 1) await new Promise((resolve) => setTimeout(resolve, 500));
-      await route.fulfill({ response });
+      await route.fulfill({ response, json: responsePayload });
     });
     const potassiumInput = page.locator("#solverTargetsTable tbody tr")
       .filter({ has: page.locator("td:first-child", { hasText: /^K$/ }) })
@@ -263,6 +354,28 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
       throw new Error("A stale solver response replaced the latest result");
     }
     await page.locator("#applySolverToCalculatorInline").click();
+    await page.locator("#calculatorMode:not(.is-hidden)").waitFor();
+    await page.locator("[data-shell-view='solver']").click();
+    await page.locator("#solverMode:not(.is-hidden)").waitFor();
+    const historyEntry = page.locator("#solverHistoryList .rail-history-entry").first();
+    await historyEntry.waitFor();
+    await assertHistoryPreviewLayout(page, historyEntry);
+    await potassiumInput.fill("1");
+    await historyEntry.click();
+    await page.locator("#solverHistoryDialog[open]").waitFor();
+    await page.locator("#solverHistoryDialogOutput", { hasText: "100" }).waitFor();
+    await page.locator("#copySolverHistoryEntry").click();
+    await page.locator("#solverHistoryDialogStatus:not(:empty)").waitFor();
+    await page.locator("#restoreSolverHistoryEntry").click();
+    await page.waitForFunction(() => {
+      const row = Array.from(document.querySelectorAll("#solverTargetsTable tbody tr"))
+        .find((candidate) => candidate.querySelector("td")?.textContent.trim() === "K");
+      return Number(row?.querySelector('input[type="text"]')?.value) === 100;
+    });
+    if (!(await page.locator("#copySolverResults").isDisabled())) {
+      throw new Error("Restoring solver history unexpectedly retained a solved result");
+    }
+    await page.locator("[data-shell-view='fertilizers']").click();
     await page.waitForTimeout(250);
     if (errors.length) throw new Error(`Browser errors:\n${errors.join("\n")}`);
     if (dialogs.length) throw new Error(`Application dialogs:\n${dialogs.join("\n")}`);
@@ -272,6 +385,12 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
       await page.setViewportSize({ width, height: 900 });
       await page.waitForTimeout(50);
       await assertNoPageOverflow(page, `${width}px layout`);
+      if (width === 500) {
+        await page.locator("#solverHistoryList .rail-history-entry").first().click();
+        await page.locator("#solverHistoryDialog[open]").waitFor();
+        await page.locator("#solverHistoryDialog form button[value='close']").click();
+        await page.locator("#solverHistoryDialog").waitFor({ state: "hidden" });
+      }
     }
 
     if (errors.length) throw new Error(`Browser errors:\n${errors.join("\n")}`);

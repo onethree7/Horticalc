@@ -35,6 +35,7 @@ export const THEME_OPTIONS = new Set([
   "gch-classic",
   "vt-green",
   "blue-matrix",
+  "tokyo-night",
 ]);
 
 export const LAST_SOLUTION_CALCULATED_KEY = "last_solution_calculated";
@@ -92,8 +93,8 @@ export const FALLBACK_SOLVER_CONFIG_DEFINITIONS = [
   {
     key: "solver_model",
     type: "string",
-    defaultValue: "legacy",
-    choices: ["mass_nnls", "hierarchical", "legacy"],
+    defaultValue: "nnls_tuning",
+    choices: ["mass_nnls", "hierarchical", "nnls_tuning"],
   },
   { key: "relative_weighting", type: "boolean", defaultValue: false },
   { key: "nitrogen_objective_mode", type: "string", defaultValue: "n_total_only" },

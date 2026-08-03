@@ -7,7 +7,6 @@ import {
 } from "./constants.js";
 import { appendDoseInput, qs } from "./dom.js";
 import {
-  buildAlignedRows,
   decimalInputValue,
   formatNumber,
   normalizeDecimalInputElement,
@@ -23,16 +22,16 @@ import {
 import {
   activeFixedAmountCount,
   buildSolvePayload as createSolvePayload,
-  formatClipboardIonLabel,
   solverResultDisplayKeys,
 } from "./solver_payload.js";
 import { renderSolverTables } from "./solver_rendering.js";
+import { buildSolverPrintableText } from "./solver_printable.js";
 import { storageGet, storageSet } from "./storage.js";
 import { createLatestRequestGate } from "../request_gate.js";
 
 export function createSolverController({
   api, i18n, notifications, units, water, getSelectedFertilizers,
-  onApplyResult, onFixedAmountsChange = () => {}, isActive,
+  onApplyResult, onFixedAmountsChange = () => {}, onSolved = () => {}, isActive,
 }) {
 const solverTargetsTableEl = qs("#solverTargetsTable");
 const solverTargetsTable = qs("#solverTargetsTable tbody");
@@ -106,7 +105,7 @@ let mounted = false;
 
 const MASS_MODEL = "mass_nnls";
 const HIERARCHICAL_MODEL = "hierarchical";
-const LEGACY_MODEL = "legacy";
+const NNLS_TUNING_MODEL = "nnls_tuning";
 const REPORT_ONLY_TARGETS = new Set(["Na", "Cl"]);
 const DEFAULT_TARGET_PRIORITY = 3;
 const TARGET_PRIORITY_LEVELS = [1, 2, 3, 4, 0];
@@ -153,7 +152,7 @@ function persistCurrentSolverConfig() {
 
 function solverModelLabel(model) {
   if (model === HIERARCHICAL_MODEL) return t("solver.model.hierarchical");
-  return model === LEGACY_MODEL ? t("solver.model.legacy") : t("solver.model.massNnls");
+  return model === NNLS_TUNING_MODEL ? t("solver.model.nnlsTuning") : t("solver.model.massNnls");
 }
 
 function targetPrioritySummary(data, key) {
@@ -171,15 +170,15 @@ function targetPrioritySummary(data, key) {
 
 function syncSolverModelControls() {
   const model = solverConfigControls.solver_model?.value || MASS_MODEL;
-  const legacyEnabled = model === LEGACY_MODEL;
+  const tuningEnabled = model === NNLS_TUNING_MODEL;
   Object.entries(solverConfigControls).forEach(([key, input]) => {
-    if (input && key !== "solver_model") input.disabled = !legacyEnabled;
+    if (input && key !== "solver_model") input.disabled = !tuningEnabled;
   });
   if (solverMassModelHint) {
     const hintKey = model === HIERARCHICAL_MODEL
       ? "solver.modelHierarchicalHint"
-      : model === LEGACY_MODEL
-        ? "solver.modelLegacyHint"
+      : model === NNLS_TUNING_MODEL
+        ? "solver.modelNnlsTuningHint"
         : "solver.modelMassHint";
     solverMassModelHint.dataset.i18n = hintKey;
     solverMassModelHint.textContent = t(hintKey);
@@ -538,96 +537,23 @@ function persistSolverAutoApplyPreference() {
 
 function buildSolverClipboardText() {
   const fertilizers = Array.isArray(lastSolveResult?.fertilizers) ? lastSolveResult.fertilizers : [];
-  const lines = [t("solver.clipboardTitle")];
-  lines.push(
-    ...buildAlignedRows(null, [
-      [
-        t("solver.clipboardBatchVolume", { unit: units.getVolumeUnitDefinition().symbol }),
-        units.formatVolumeValue(units.litersToDisplayVolume(units.liters)),
-      ],
-      [t("solver.clipboardOsmosis"), formatNumber(water.osmosisPercent)],
-      [t("solver.modelLabel"), solverModelLabel(lastSolveResult?.solver_model)],
-    ], [1])
-  );
-  lines.push("");
-  lines.push(
-    ...buildAlignedRows(
-      [t("common.fertilizer"), t("common.amount"), t("common.unit")],
-      fertilizers.map((fert) => [
-        fert.name || "",
-        units.formatDoseDisplay(Number(fert.grams), fert.name),
-        units.doseUnitDefinition(fert.name).symbol,
-      ]),
-      [1]
-    )
-  );
-
   const calculateData = {
     liters: units.liters,
     fertilizers,
+    urea_as_nh4: solverUreaToggle.checked,
     water_mg_l: water.buildWaterPayload(),
     osmosis_percent: water.osmosisPercent,
   };
 
-  return api.calculate(calculateData, t("errors.calculateFailed")).then((data) => {
-    const npkMetrics = data?.npk_metrics || {};
-    const ecValues = data?.ec?.ec_mS_per_cm || {};
-    const ionValues = data?.elements_mg_per_l || {};
-
-    lines.push("");
-    lines.push(t("solver.clipboardNpk"));
-    lines.push(
-      ...buildAlignedRows(null, [
-        [t("live.npkTotal"), npkMetrics.npk_all_pct || "-"],
-        [t("live.npkPNorm"), npkMetrics.npk_p_norm || "-"],
-        [t("live.npkRatio"), npkMetrics.npk_npk_pct || "-"],
-      ], [1])
-    );
-
-    lines.push("");
-    lines.push(t("live.ec"));
-    lines.push(
-      ...buildAlignedRows(null, [
-        [t("common.ec") + " 25°C", formatNumber(Number(ecValues["25.0"]))],
-        [t("common.ec") + " 18°C", formatNumber(Number(ecValues["18.0"]))],
-      ], [1])
-    );
-
-    lines.push("");
-    lines.push(t("solver.clipboardTargets"));
-    const targets = lastSolveResult?.targets_mg_per_l || {};
-    const achieved = lastSolveResult?.achieved_elements_mg_per_l || {};
-    const errors = lastSolveResult?.errors_mg_per_l || {};
-    const solverRows = solverResultDisplayKeys(lastSolveResult, summaryColumnOrder).map((key) => {
-      const targetValue = Number(targets[key] ?? 0);
-      const achievedValue = Number(achieved[key] ?? 0);
-      const errorValue = Number.isFinite(errors[key])
-        ? Number(errors[key])
-        : achievedValue - targetValue;
-      return [
-        [formatClipboardIonLabel(key), targetPrioritySummary(lastSolveResult, key)]
-          .filter(Boolean)
-          .join(" · "),
-        targetValue > 0 ? formatNumber(targetValue, nutrientFormatter) : "-",
-        formatNumber(achievedValue, nutrientFormatter),
-        formatNumber(errorValue, nutrientFormatter),
-      ];
-    });
-    lines.push(
-      ...buildAlignedRows([t("common.element"), t("common.target"), t("common.achieved"), t("common.delta")], solverRows, [1, 2, 3])
-    );
-
-    lines.push("");
-    lines.push(t("solver.clipboardIons"));
-    const ionRows = summaryColumnOrder.map((column) => {
-      const key = column.element;
-      const value = Number(ionValues[key]);
-      return [formatClipboardIonLabel(key), formatNumber(value, nutrientFormatter)];
-    });
-    lines.push(...buildAlignedRows(null, ionRows, [1]));
-
-    return lines.join("\n");
-  });
+  return api.calculate(calculateData, t("errors.calculateFailed")).then((calculation) =>
+    buildSolverPrintableText({
+      result: lastSolveResult,
+      calculation,
+      liters: units.liters,
+      osmosisPercent: water.osmosisPercent,
+      t,
+      units,
+    }));
 }
 
 async function copySolverResultsToClipboard() {
@@ -898,6 +824,7 @@ function mount({ configDefinitions = [], config = {} } = {}) {
       const data = await solveRecipe();
       if (!solveRequests.isCurrent(version)) return;
       renderSolverResults(data);
+      onSolved(data);
       if (solverAutoApplyEnabled()) onApplyResult({ switchToCalculator: false });
     } catch (error) {
       if (solveRequests.isCurrent(version)) notifications.reportError(error, t("errors.solveFailed"));

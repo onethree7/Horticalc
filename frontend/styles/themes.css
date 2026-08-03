@@ -91,6 +91,12 @@
   --app-balance-label: var(--app-muted);
   --app-fert-editor-head-bg: #202c30;
   --app-fert-editor-input-bg: #0a100f;
+  --app-rail-border: var(--app-border);
+  --app-brand-accent: var(--app-green);
+  --app-logo-accent: var(--app-green);
+  --app-brand-title-shadow: none;
+  --app-workflow-glow: var(--app-green);
+  --app-live-value-shadow: none;
   --app-sticky-offset: 1rem;
   --content-max-width: 1480px;
 }
@@ -613,4 +619,113 @@
   --app-balance-label: #a9b7ca;
   --app-fert-editor-head-bg: #20354f;
   --app-fert-editor-input-bg: #07101a;
+}
+
+.app-body[data-theme="tokyo-night"] {
+  --app-color-scheme: dark;
+  --app-bg: #080812;
+  --app-panel: #121326;
+  --app-panel-soft: #1b1d38;
+  --app-border: #454b7a;
+  --app-text: #edf0ff;
+  --app-muted: #b7c2f4;
+  --app-green: #b6ff5e;
+  --app-teal: #33f6ff;
+  --app-amber: #ffd166;
+  --app-red: #ff4d8d;
+  --app-solver: #ff4fd8;
+  --app-solver-glow: #37f3ff;
+  --app-body-bg:
+    radial-gradient(circle at 82% -8%, rgb(255 79 216 / 18%), transparent 34%),
+    radial-gradient(circle at 6% 96%, rgb(51 246 255 / 13%), transparent 30%),
+    linear-gradient(180deg, #171a36, #070711 34rem),
+    var(--app-bg);
+  --app-shell-bg:
+    radial-gradient(circle at 4% 4%, rgb(51 246 255 / 13%), transparent 28%),
+    radial-gradient(circle at 94% 0%, rgb(255 79 216 / 12%), transparent 31%),
+    linear-gradient(145deg, rgb(18 19 38 / 98%), rgb(7 7 17 / 99%));
+  --app-shell-border: rgb(117 111 255 / 42%);
+  --app-shell-shadow:
+    0 24px 58px rgb(0 0 0 / 52%),
+    0 0 32px rgb(92 74 255 / 12%),
+    inset 0 1px 0 rgb(51 246 255 / 7%);
+  --app-rail-bg: linear-gradient(180deg, rgb(24 26 52 / 98%), rgb(10 10 24 / 99%));
+  --app-rail-shadow: 0 12px 30px rgb(0 0 0 / 38%), inset 0 1px 0 rgb(51 246 255 / 6%);
+  --app-scrollbar-thumb: #6257b8;
+  --app-scrollbar-track: #0b0b1a;
+  --app-card-bg:
+    radial-gradient(circle at 88% 12%, rgb(255 79 216 / 10%), transparent 36%),
+    rgb(18 19 38 / 88%);
+  --app-config-bg:
+    radial-gradient(circle at 90% 8%, rgb(51 246 255 / 13%), transparent 34%),
+    rgb(18 19 38 / 88%);
+  --app-workflow-bg:
+    radial-gradient(circle at 88% 12%, rgb(182 255 94 / 10%), transparent 36%),
+    rgb(18 19 38 / 88%);
+  --app-brand-bg:
+    radial-gradient(circle at 18% 18%, rgb(255 79 216 / 18%), transparent 42%),
+    linear-gradient(145deg, rgb(25 24 55 / 94%), rgb(14 16 34 / 94%));
+  --app-workspace-block-bg: linear-gradient(145deg, rgb(28 30 61 / 95%), rgb(13 13 29 / 99%));
+  --app-subpanel-bg: rgb(10 10 25 / 66%);
+  --app-table-wrap-bg: linear-gradient(145deg, rgb(25 27 55 / 92%), rgb(10 10 24 / 95%));
+  --app-table-head-bg: #292756;
+  --app-table-head-text: #f4f2ff;
+  --app-table-card-bg:
+    radial-gradient(circle at 88% 22%, rgb(51 246 255 / 10%), transparent 34%),
+    rgb(22 23 47 / 93%);
+  --app-table-card-border: rgb(51 246 255 / 25%);
+  --app-table-badge-bg: rgb(255 79 216 / 12%);
+  --app-table-badge-border: rgb(255 79 216 / 30%);
+  --app-table-badge-text: #f2b9ff;
+  --app-table-row-odd: rgb(25 27 55 / 90%);
+  --app-table-row-even: rgb(13 14 32 / 92%);
+  --app-fert-editor-row-odd-bg: #191b37;
+  --app-fert-editor-row-even-bg: #0d0e20;
+  --app-table-row-hover: rgb(68 52 112 / 88%);
+  --app-input-bg: #0b0b1b;
+  --app-input-border: #54518d;
+  --app-helper-bg: #17182f;
+  --app-helper-text: #939ee0;
+  --app-button-outline-border: #625da8;
+  --app-button-outline-text: #e9ecff;
+  --app-button-outline-hover: rgb(51 246 255 / 13%);
+  --app-focus: rgb(51 246 255 / 86%);
+  --app-heading-text: #f0f2ff;
+  --app-heading-icon-bg:
+    radial-gradient(circle at 50% 42%, rgb(51 246 255 / 30%), transparent 56%),
+    linear-gradient(145deg, rgb(95 65 210 / 26%), rgb(255 79 216 / 14%));
+  --app-workflow-step-bg: linear-gradient(145deg, rgb(28 31 64 / 94%), rgb(13 14 32 / 96%));
+  --app-workflow-step-hover: rgb(42 42 83 / 96%);
+  --app-workflow-step-border: rgb(108 104 211 / 34%);
+  --app-workflow-step-active-border: rgb(51 246 255 / 72%);
+  --app-workflow-active-bg: linear-gradient(135deg, rgb(16 131 179 / 96%), rgb(72 69 190 / 95%));
+  --app-workflow-active-text: #fff;
+  --app-solver-step-bg: linear-gradient(145deg, rgb(71 31 92 / 82%), rgb(25 38 74 / 84%));
+  --app-solver-step-active-bg: linear-gradient(135deg, rgb(188 44 157 / 96%), rgb(83 54 185 / 94%), rgb(16 123 159 / 90%));
+  --app-live-bg:
+    radial-gradient(circle at 90% 0%, rgb(51 246 255 / 15%), transparent 34%),
+    radial-gradient(circle at 8% 100%, rgb(255 79 216 / 10%), transparent 38%),
+    rgb(15 16 34 / 90%);
+  --app-live-tile-bg: linear-gradient(145deg, rgb(25 28 57 / 88%), rgb(10 10 25 / 94%));
+  --app-live-primary: #b6ff5e;
+  --app-live-secondary: #33f6ff;
+  --app-live-ratio: #ff5be5;
+  --app-live-warning: #ffd166;
+  --app-segmented-bg: rgb(10 10 25 / 92%);
+  --app-segmented-border: rgb(111 102 219 / 34%);
+  --app-segmented-text: #b7c2f4;
+  --app-segmented-active-bg: rgb(73 54 160 / 42%);
+  --app-segmented-active-border: rgb(51 246 255 / 52%);
+  --app-segmented-active-text: #fff;
+  --app-compact-label: #b7c2f4;
+  --app-balance-tile-bg: rgb(18 20 43 / 90%);
+  --app-balance-label: #b7c2f4;
+  --app-fert-editor-head-bg: #30265e;
+  --app-fert-editor-input-bg: #0b0b1b;
+  --app-rail-border: color-mix(in srgb, var(--app-teal) 26%, transparent);
+  --app-brand-accent: var(--app-solver);
+  --app-logo-accent: var(--app-teal);
+  --app-brand-title-shadow: 0 0 14px color-mix(in srgb, var(--app-solver) 34%, transparent);
+  --app-workflow-glow: var(--app-teal);
+  --app-live-value-shadow: 0 0 10px currentcolor;
 }

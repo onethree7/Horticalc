@@ -10,6 +10,7 @@ import {
 } from "./constants.js";
 import { createCalculatorController } from "./calculator.js";
 import { createEditorController } from "./editor.js";
+import { createHistoryController } from "./history.js";
 import { createNotifications } from "./notifications.js";
 import { createProfilesController } from "./profiles.js";
 import { createSettingsController } from "./settings.js";
@@ -26,6 +27,7 @@ import { createWaterController } from "./water.js";
 const notifications = createNotifications(i18n);
 let calculator;
 let editor;
+let history;
 let profiles;
 let settings;
 let shell;
@@ -45,6 +47,7 @@ const units = createUnitService({
   onDoseUnitsChange() {
     calculator.refreshDoseUnits();
     solver.refreshDoseUnits();
+    history?.refreshDisplay();
   },
 });
 
@@ -64,6 +67,7 @@ solver = createSolverController({
   getSelectedFertilizers: () => calculator.collectSelectedFertilizerNames(),
   onApplyResult: (options) => calculator.applySolverResult(options),
   onFixedAmountsChange: () => profiles?.refreshSetupWarning(),
+  onSolved: () => history?.refresh(),
   isActive: () => shell?.isActive("solver") || false,
 });
 
@@ -78,6 +82,45 @@ calculator = createCalculatorController({
   getSolverUrea: () => solver.ureaAsNh4,
   onCalculation: (data) => shell.updateLiveResult(data),
   onShowCalculator: () => shell.show("fertilizers"),
+});
+
+async function restoreSolverHistorySetup(setup = {}) {
+  const missing = solver.missingFertilizers([...new Set([
+    ...(setup.fertilizers_allowed || []),
+    ...Object.keys(setup.fixed_grams || {}),
+  ])]);
+  if (missing.length) {
+    throw new Error(i18n.t("errors.solverHistoryMissingFertilizers", { names: missing.join(", ") }));
+  }
+
+  const waterProfile = setup.water_profile || {};
+  units.setLiters(setup.liters || DEFAULT_LITERS, {
+    scaleBatch: false,
+    recalculate: false,
+    invalidateSolver: false,
+  });
+  water.setSelectedProfile("");
+  water.applyProfile({
+    name: "",
+    mg_per_l: waterProfile.mg_per_l || {},
+    osmosis_percent: waterProfile.osmosis_percent || 0,
+  });
+  solver.applyNutrientSolution({
+    targets_mg_per_l: setup.targets || {},
+    solver_config: setup.solver_config || {},
+  });
+  solver.setAllowedFertilizers(setup.fertilizers_allowed || [], "replace");
+  solver.setFixedGrams(setup.fixed_grams || {});
+  solver.setUreaAsNh4(setup.urea_as_nh4);
+  shell.show("solver");
+}
+
+history = createHistoryController({
+  api,
+  i18n,
+  notifications,
+  units,
+  onRestore: restoreSolverHistorySetup,
 });
 
 editor = createEditorController({
@@ -233,6 +276,7 @@ function refreshLocalizedUi() {
   if (shell.isActive("editor")) editor.refreshLocalized();
   else if (shell.isActive("solver")) solver.refreshLocalized();
   else if (shell.isActive("fertilizers")) calculator.refreshLocalized();
+  history.refreshLocalized();
 }
 
 settings = createSettingsController({
@@ -240,6 +284,10 @@ settings = createSettingsController({
   i18n,
   persistPreferences: api.persistPreferences,
   onLocaleChange: refreshLocalizedUi,
+  onUnitsChange: () => history.refreshDisplay(),
+  clearSolverHistory: api.clearSolverHistory,
+  onSolverHistoryChange: () => history.refresh(),
+  reportError: notifications.reportError,
 });
 
 function resourceValue(result, fallback, message, errors) {
@@ -318,6 +366,7 @@ async function init() {
   profiles.setProfiles({ recipeProfiles: resources.recipes, solutions: resources.solutions });
   profiles.mount();
   shell.mount();
+  history.mount();
   solver.setAllowedContext("global");
 
   const snapshot = storageGet(LAST_SOLUTION_CALCULATED_KEY, null);

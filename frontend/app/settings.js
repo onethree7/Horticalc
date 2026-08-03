@@ -2,7 +2,16 @@ import { DEFAULT_LITERS, DEFAULT_THEME, THEME_OPTIONS, THEME_STORAGE_KEY } from 
 import { qs } from "./dom.js";
 import { storageGet, storageSet } from "./storage.js";
 
-export function createSettingsController({ units, i18n, persistPreferences, onLocaleChange }) {
+export function createSettingsController({
+  units,
+  i18n,
+  persistPreferences,
+  onLocaleChange,
+  onUnitsChange = () => {},
+  clearSolverHistory = async () => {},
+  onSolverHistoryChange = () => {},
+  reportError = () => {},
+}) {
   const litersInput = qs("#configLiters");
   const litersStatus = qs("#configLitersStatus");
   const volumeUnitSymbol = qs("#configVolumeUnitSymbol");
@@ -12,7 +21,11 @@ export function createSettingsController({ units, i18n, persistPreferences, onLo
   const liquidDoseUnitSelect = qs("#configLiquidDoseUnit");
   const themeSelect = qs("#themeSelect");
   const languageSelect = qs("#languageSelect");
+  const solverHistoryLimitInput = qs("#solverHistoryLimit");
+  const clearSolverHistoryButton = qs("#clearSolverHistory");
+  const solverHistorySettingsStatus = qs("#solverHistorySettingsStatus");
   let mounted = false;
+  let solverHistoryLimit = 1000;
 
   const normalizeTheme = (theme) => THEME_OPTIONS.has(theme) ? theme : DEFAULT_THEME;
 
@@ -81,6 +94,7 @@ export function createSettingsController({ units, i18n, persistPreferences, onLo
       units.setVolumeUnit(event.target.value);
       persistPreferences({ volume_unit: units.volumeUnit });
       render();
+      onUnitsChange();
     });
     solidDoseUnitSelect?.addEventListener("change", (event) => {
       units.setSolidDoseUnit(event.target.value, true);
@@ -91,6 +105,32 @@ export function createSettingsController({ units, i18n, persistPreferences, onLo
       units.setLiquidDoseUnit(event.target.value, true);
       persistPreferences({ liquid_dose_unit: units.liquidDoseUnit });
       render();
+    });
+    solverHistoryLimitInput?.addEventListener("change", async (event) => {
+      const rawValue = String(event.target.value).trim();
+      const value = Number(rawValue);
+      if (!rawValue || !Number.isInteger(value) || value < 0 || value > 10000) {
+        event.target.value = String(solverHistoryLimit);
+        return;
+      }
+      if (value === 0 && solverHistoryLimit !== 0 && !window.confirm(i18n.t("history.confirmDisable"))) {
+        event.target.value = String(solverHistoryLimit);
+        return;
+      }
+      solverHistoryLimit = value;
+      await persistPreferences({ solver_history_limit: value });
+      solverHistorySettingsStatus.textContent = i18n.t("history.limitSaved");
+      onSolverHistoryChange();
+    });
+    clearSolverHistoryButton?.addEventListener("click", async () => {
+      if (!window.confirm(i18n.t("history.confirmClear"))) return;
+      try {
+        await clearSolverHistory(i18n.t("errors.clearSolverHistory"));
+        solverHistorySettingsStatus.textContent = i18n.t("history.cleared");
+        onSolverHistoryChange();
+      } catch (error) {
+        reportError(error, i18n.t("errors.clearSolverHistory"));
+      }
     });
     i18n.onLocaleChange(() => {
       render();
@@ -111,6 +151,10 @@ export function createSettingsController({ units, i18n, persistPreferences, onLo
     applyTheme(preferences.theme || storageGet(THEME_STORAGE_KEY, DEFAULT_THEME));
     i18n.setLocale(preferences.locale || i18n.getLocale(), { persist: Boolean(preferences.locale) });
     if (languageSelect) languageSelect.value = i18n.getLocale();
+    solverHistoryLimit = Number.isInteger(preferences.solver_history_limit)
+      ? preferences.solver_history_limit
+      : 1000;
+    if (solverHistoryLimitInput) solverHistoryLimitInput.value = String(solverHistoryLimit);
     bindEvents();
     render();
   }

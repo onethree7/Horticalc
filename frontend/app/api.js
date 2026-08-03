@@ -37,6 +37,10 @@ export async function putJson(url, payload, errorMessage, { keepalive = false } 
   return responseJson(response, errorMessage);
 }
 
+export async function deleteJson(url, errorMessage) {
+  return responseJson(await fetch(url, { method: "DELETE" }), errorMessage);
+}
+
 export function loadPreferences() {
   if (!preferenceLoadPromise) {
     preferenceLoadPromise = getJson("/preferences", "Unable to load preferences")
@@ -82,6 +86,10 @@ export const saveNutrientSolutionData = (payload, message) =>
   postJson("/nutrient-solutions", payload, message);
 export const calculate = (payload, message) => postJson("/calculate", payload, message);
 export const solve = (payload, message) => postJson("/solve", payload, message);
+export const fetchSolverHistory = (message) => getJson("/solver-history", message);
+export const fetchSolverHistoryEntry = (entryId, message) =>
+  getJson(`/solver-history/${encodeURIComponent(entryId)}`, message);
+export const clearSolverHistory = (message) => deleteJson("/solver-history", message);
 
 export async function fetchFertilizerCompKeys(message) {
   const data = await getJson("/schema/fertilizer-comp-keys", message);

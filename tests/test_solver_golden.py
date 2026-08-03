@@ -29,7 +29,7 @@ def test_solver_golden_uses_recipe_derived_s_target_when_enabled() -> None:
 
     result = solve_recipe(
         recipe_path,
-        solver_config_overrides={"solver_model": "legacy", "s_objective_enabled": True},
+        solver_config_overrides={"solver_model": "nnls_tuning", "s_objective_enabled": True},
     )
 
     assert "S" in result.objective_elements

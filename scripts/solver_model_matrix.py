@@ -38,7 +38,7 @@ SCHEMA_VERSION = 1
 DEFAULT_OUT_DIR = logs_dir(ROOT) / "solver_matrix" / "mass_nnls_runtime"
 CALIBRATION_ELEMENTS = matrix.MACRO_KEYS | matrix.MICRO_KEYS | {"Si"}
 LEGACY_34191 = {
-    "solver_model": "legacy",
+    "solver_model": "nnls_tuning",
     "irls_max_outer_iter": 2,
     "n_form_priority_weights": {},
     "n_total_governor_enabled": True,
@@ -154,7 +154,7 @@ def _recipe(
         policy.solver_config
         if policy.kind in {"legacy", "production"}
         else {
-            "solver_model": "legacy",
+            "solver_model": "nnls_tuning",
             "nitrogen_objective_mode": "n_total_only",
             "s_objective_enabled": True,
         }

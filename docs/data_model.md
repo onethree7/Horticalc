@@ -17,6 +17,7 @@ Runtime user overrides:
 - `user/fertilizers_overrides.csv`
 - `user/fertilizers_disabled.txt`
 - `user/preferences.json`
+- `user/solver_history.jsonl`
 - `user/water_profiles/*.yml`
 - `user/nutrient_solutions/*.yml`
 - `user/recipes/*.yml`
@@ -28,6 +29,21 @@ Water profiles, nutrient solutions, and recipes are read from shipped defaults w
 API list routes omit malformed or unreadable user YAML files and log a warning.
 Water and target mappings must contain finite, non-negative numbers; API save
 routes reject negatives, `NaN`, and infinity.
+
+## Solver History JSONL
+
+`src/horticalc/solver_history.py` owns `user/solver_history.jsonl`. Each line
+is a schema-versioned object containing a UUID, UTC timestamp, canonical Solver
+setup, unchanged `SolveResult` mapping, fertilizer solid/liquid kinds, and the
+EC/NPK/element projection needed by the printable UI output. The setup embeds
+the actual water values and osmosis share rather than depending on a mutable
+water-profile filename.
+
+Entries are stored oldest first and returned newest first. The effective
+retention default is `1000`, bounded to `0..10000`; reducing it removes oldest
+entries immediately and `0` removes the file. Writes are serialized and
+atomic. Malformed lines are logged and skipped so valid history remains
+readable.
 
 ## Fertilizers CSV
 
@@ -245,7 +261,7 @@ The current ion set in `src/horticalc/core.py` is `NH4+`, `K+`, `Ca2+`, `Mg2+`, 
 11. `errors_percent`
 
 `solver_model` identifies the actual runtime path (`mass_nnls`, `hierarchical`,
-or `legacy`).
+or `nnls_tuning`).
 `objective_elements` is the authoritative list of what
 the solver optimized. The solver matrix benchmark scores this list.
 `target_priorities` contains the resolved directional tiers used by a

@@ -260,7 +260,7 @@ mass_barrage:
 # N_total and elemental S stay enabled in every case. N-form priority weights
 # are intentionally not swept because they are inactive in n_total_only mode.
 solver_baseline:
-  solver_model: legacy
+  solver_model: nnls_tuning
   relative_weighting: false
   overshoot_penalty: 1.0
   irls_max_outer_iter: 4

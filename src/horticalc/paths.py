@@ -97,6 +97,10 @@ def user_preferences_path(root: Path | None = None) -> Path:
     return user_dir(root) / "preferences.json"
 
 
+def user_solver_history_path(root: Path | None = None) -> Path:
+    return user_dir(root) / "solver_history.jsonl"
+
+
 def user_water_profiles_dir(root: Path | None = None) -> Path:
     return user_dir(root) / "water_profiles"
 

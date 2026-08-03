@@ -107,7 +107,7 @@ or handcrafted-profile rankings.
 
 Status: `current-state runtime plus research comparison`.
 
-The current production default is NNLS + tuning (persisted model id `legacy`).
+The current production default is NNLS + tuning (`nnls_tuning`).
 Runtime `mass_nnls` is an experimental comparison model in
 `src/horticalc/solver.py`. It minimizes
 the unweighted sum of squared elemental residuals in canonical `mg/L`, subject
@@ -157,8 +157,7 @@ not import or expose it. `scripts/solver_model_matrix.py` compares eight
 policies:
 
 - the then-production `mass_nnls` baseline;
-- tuned-NNLS canonical and historical config `34191` (stored under the
-  compatibility identifier `legacy`);
+- tuned-NNLS canonical and historical config `34191`;
 - symmetric mmol/L minimax;
 - mmol/L minimax with global underfill factors `2`, `4`, and `10`;
 - symmetric mg/L minimax.

@@ -18,6 +18,8 @@ The frontend is a static Vanilla JS app in `frontend/`. It is served by FastAPI 
 - `frontend/app/solver_config.js`: solver schema normalization and bounded control values.
 - `frontend/app/solver_payload.js`: solve/clipboard payload formatting and result-key ordering.
 - `frontend/app/solver_rendering.js`: stateless solver result-table rendering.
+- `frontend/app/solver_printable.js`: shared pure formatting for live and historical Solver output.
+- `frontend/app/history.js`: Solver-history summaries, lazy detail preview, dialog, copy, and restore controller.
 - `frontend/app/editor.js`: editor controller, owned rows, sorting, and save/load.
 - `frontend/app/profiles.js`: recipe and nutrient-target profile controls.
 - `frontend/app/settings.js`: batch, unit, theme, and language controls.
@@ -39,9 +41,19 @@ The workflow menu has four user-facing areas:
 - **Calculator**: build recipes manually, calculate, and inspect results.
 - **Solver**: enter targets, select allowed fertilizers, and solve for doses.
 
+The collapsible **Solver history** Sidebar card is not a fifth workflow. It
+shows compact newest-first rows in its own scroll area. Hover or keyboard focus
+opens a short, non-scrollable and non-interactive preview without an additional
+native tooltip; click opens the full scrollable dialog on desktop and touch
+layouts. Detail records load lazily and are cached in the current page.
+Copy and preview use the same formatter as current Solver clipboard output.
+Restoring preflights fertilizer names, then replaces liters, embedded water,
+osmosis, targets, allowed fertilizers, fixed doses, urea mode, and Solver
+configuration. It clears the current result and does not run the Solver.
+
 The Solver model selector is visible above the workbench rather than hidden in
-the advanced section. `NNLS + tuning (standard)` is the production default;
-its persisted internal identifier remains `legacy` for compatibility.
+the advanced section. `NNLS + tuning (standard)` is the production default
+and is persisted as `nnls_tuning`.
 `Mass balance (mg/L², experimental)` and `Prioritized targets (staged,
 experimental)` are opt-in models. The latter exposes separate **Too little**
 and **Too much** priority selectors for every target. Tuning controls are
@@ -76,7 +88,7 @@ profile and osmosis share, allowed fertilizers, fixed amounts, urea mode, and
 Solver configuration. Loading such a profile preflights its referenced water
 and fertilizer names, then replaces the complete saved setup. A missing
 dependency leaves the current state unchanged and produces an explicit error.
-Profiles without setup change only the targets; legacy profiles containing
+Profiles without setup change only the targets; profiles containing
 only `solver_config` continue to apply it. Active fixed amounts produce a
 visible warning and confirmation when the setup option is off. Saving as a
 fertilizer recipe remains an output operation and does not retain Solver
@@ -88,7 +100,7 @@ names from silently colliding after filename sanitization. Source:
 
 ## Preferences, Language, Themes, Units
 
-The `Configuration` card in `frontend/index.html` contains the global batch volume input, volume unit selector, solid dose unit selector, liquid dose unit selector, theme selector, and language selector. Theme options are defined in `api/app.py` (`THEME_OPTIONS`). Locale options are `de`, `en`, `nl`, `es`, `zh` (`LOCALE_OPTIONS` in `api/app.py`).
+The `Configuration` card in `frontend/index.html` contains the global batch volume input, volume unit selector, solid dose unit selector, liquid dose unit selector, theme selector, language selector, Solver-history limit, and confirmed clear action. The history limit is `0..10000`, defaults to `1000`, and `0` disables and removes history after confirmation. Theme options, including the cyan, magenta, violet, and acid-green `tokyo-night` palette, are defined in `api/app.py` (`THEME_OPTIONS`) and styled through tokens in `frontend/styles/themes.css`. Locale options are `de`, `en`, `nl`, `es`, `zh` (`LOCALE_OPTIONS` in `api/app.py`).
 
 `frontend/app/api.js` fetches unit definitions from `/schema/units`. `frontend/app/units.js` keeps working values in canonical liters and g-for-solids/mL-for-liquids. `frontend/app/settings.js` applies the selected theme to `document.body.dataset.theme`. The selected language is stored in `localStorage` and `user/preferences.json` so it overrides browser detection on later loads. Data contracts such as API route names, JSON keys, CSV fields, element symbols, solver config keys, and units remain literal and are not translated.
 
@@ -103,7 +115,7 @@ The UI stores small workflow state in `localStorage`:
 - solver auto-apply preference,
 - selected frontend language.
 
-`user/preferences.json` stores theme, default batch liters, volume and dose display units, solver defaults, and last directly loaded water profile. Solver config is not restored from saved solution snapshots.
+`user/preferences.json` stores theme, default batch liters, volume and dose display units, solver defaults, Solver-history retention, and last directly loaded water profile. Full Solver history lives in portable `user/solver_history.jsonl`, not `localStorage`. Solver config is not restored from saved solution snapshots.
 
 ## API Calls From The Frontend
 
@@ -120,6 +132,7 @@ The UI calls:
 - `/molar-masses`
 - `/calculate`
 - `/solve`
+- `/solver-history`
 
 The API base is the same origin as the served frontend.
 

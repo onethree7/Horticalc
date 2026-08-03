@@ -37,7 +37,7 @@ for fertilizers also listed in `fertilizers_allowed`. The
 - The older `solver_config.ignored_elements` input remains accepted for API,
   recipe, and preference compatibility. In `hierarchical` it migrates to
   `{under: 0, over: 0}`. The GUI writes only `target_priorities`.
-- `mass_nnls` and `hierarchical` always include a non-zero elemental `S` target. In `legacy`,
+- `mass_nnls` and `hierarchical` always include a non-zero elemental `S` target. In `nnls_tuning`,
   `S` is report-only unless `solver_config.s_objective_enabled=true`. `SO4` is
   not a solver target key.
 - Nitrogen form handling depends on `nitrogen_objective_mode`.
@@ -54,7 +54,7 @@ doses.
 
 `solver_config.nitrogen_objective_mode` supports:
 
-- `as_targets`: legacy behavior; use non-zero N keys as provided.
+- `as_targets`: original behavior; use non-zero N keys as provided.
 - `n_total_only`: optimize `N_total` and exclude `N_NH4`, `N_NO3`, `N_UREA`.
 - `n_forms_only`: optimize N forms, exclude `N_total`, and keep zero N-form targets when present.
 
@@ -66,7 +66,7 @@ The canonical defaults are in `src/horticalc/solver_config.py`:
 
 | Key | Default | Bounds |
 | --- | --- | --- |
-| `solver_model` | `legacy` (NNLS + tuning) | `mass_nnls`, `hierarchical`, `legacy` |
+| `solver_model` | `nnls_tuning` | `mass_nnls`, `hierarchical`, `nnls_tuning` |
 | `ignored_elements` | `[]` | Unique target-key strings |
 | `target_priorities` | `{}` | Target keys mapped to optional integer `under`/`over` priorities in `0..4`; omitted directions resolve to `3` |
 | `relative_weighting` | `false` | Boolean |
@@ -109,8 +109,8 @@ and tests change too.
 
 `solver_model` selects one of three runtime paths:
 
-- `legacy` is the production default. Despite its compatibility-preserving
-  internal identifier, this is the standard NNLS + tuning model. It contains
+- `nnls_tuning` is the production default. It is the standard NNLS + tuning
+  model and contains
   the configurable NNLS/IRLS/singleton implementation and all tuning fields
   below.
 - `mass_nnls` is experimental. It minimizes raw elemental squared
@@ -119,7 +119,7 @@ and tests change too.
   singleton fields do not affect this model.
 - `hierarchical` is experimental. It uses strict directional priority tiers in
   raw `mg/L`, with the same N-total and sulfur objective selection as
-  `mass_nnls`, but without legacy weights or post-passes.
+  `mass_nnls`, but without tuning weights or post-passes.
 
 The selected model is returned as `solver_model` in every solve response.
 
@@ -190,7 +190,7 @@ liquid density have the same meaning as in the other runtime models.
 `priority_stages` in the solve response exposes each tier's retained maximum
 and total residual for audit.
 
-### NNLS + tuning model (standard; internal id `legacy`)
+### NNLS + tuning model (standard; `nnls_tuning`)
 
 The solver builds a contribution matrix: rows are objective elements, columns are allowed fertilizers, and values are mg/L contribution per gram for the current batch size. Water baseline is computed with `compute_solution()` and subtracted from targets before solving. Fixed grams are subtracted before optimizing the remaining variable fertilizers.
 
@@ -209,7 +209,7 @@ passes use the same upper bounds.
 
 ## Optional Behavior
 
-- The settings below apply only to `legacy`; `mass_nnls` and `hierarchical`
+- The settings below apply only to `nnls_tuning`; `mass_nnls` and `hierarchical`
   deliberately ignore them.
 - `relative_weighting` scales rows by target/residual magnitude.
 - `overshoot_penalty` and IRLS increase weights for overshoot rows.

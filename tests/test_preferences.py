@@ -12,10 +12,10 @@ def test_theme_preference_persists_in_user_directory(monkeypatch, tmp_path) -> N
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
     client = TestClient(api_app.app)
 
-    response = client.put("/preferences", json={"theme": "soil"})
+    response = client.put("/preferences", json={"theme": "tokyo-night"})
 
     assert response.status_code == 200
-    assert client.get("/preferences").json() == {"theme": "soil"}
+    assert client.get("/preferences").json() == {"theme": "tokyo-night"}
     assert paths.user_preferences_path(tmp_path).exists()
 
 

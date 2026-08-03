@@ -19,7 +19,7 @@ from horticalc.solver_config import (
 def test_solver_config_definitions_use_data_backed_defaults() -> None:
     defaults = {definition["key"]: definition["default"] for definition in SOLVER_CONFIG_DEFINITIONS}
 
-    assert defaults["solver_model"] == "legacy"
+    assert defaults["solver_model"] == "nnls_tuning"
     assert defaults["nitrogen_objective_mode"] == "n_total_only"
     assert defaults["relative_weighting"] is False
     assert defaults["singleton_supplier_enabled"] is False
@@ -175,6 +175,7 @@ def test_solver_config_validation_preserves_valid_partial_values() -> None:
             f"Invalid solver config value: irls_max_outer_iter must be <= {MAX_IRLS_MAX_OUTER_ITER}",
         ),
         ({"overshoot_penalty": float("nan")}, "Invalid solver config value"),
+        ({"solver_model": "legacy"}, "Invalid solver config value"),
         ({"nitrogen_objective_mode": "chaos_mode"}, "Invalid solver config value"),
         ({"ignored_elements": "Cu"}, "Invalid solver config value"),
         ({"ignored_elements": ["Cu", "Cu"]}, "Invalid solver config value"),

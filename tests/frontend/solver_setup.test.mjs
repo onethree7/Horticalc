@@ -63,7 +63,7 @@ test("Solver setup profiles preserve inputs and only positive fixed amounts", ()
   assert.equal(activeFixedAmountCount(payload.fixed_grams), 2);
 });
 
-test("legacy profiles containing only solver_config still report saved setup", () => {
+test("profiles containing only solver_config still report saved setup", () => {
   assert.equal(nutrientSolutionHasSetup({
     name: "Legacy",
     targets_mg_per_l: { K: 100 },

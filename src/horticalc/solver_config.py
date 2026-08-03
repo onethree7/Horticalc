@@ -10,7 +10,7 @@ from typing import Any
 from .chemistry import ALLOWED_TARGET_KEYS, N_FORM_KEYS
 
 NITROGEN_OBJECTIVE_MODES = ("as_targets", "n_total_only", "n_forms_only")
-SOLVER_MODELS = ("mass_nnls", "hierarchical", "legacy")
+SOLVER_MODELS = ("mass_nnls", "hierarchical", "nnls_tuning")
 TARGET_PRIORITY_DIRECTIONS = ("under", "over")
 MIN_TARGET_PRIORITY = 0
 MAX_TARGET_PRIORITY = 4
@@ -22,7 +22,7 @@ SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {
         "key": "solver_model",
         "type": "string",
-        "default": "legacy",
+        "default": "nnls_tuning",
         "choices": list(SOLVER_MODELS),
     },
     {

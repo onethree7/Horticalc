@@ -92,7 +92,7 @@ def test_model_matrix_keeps_historical_34191_on_legacy_runtime() -> None:
     policy = next(item for item in model_matrix.model_policies(cases) if item.policy_id == "legacy_34191")
 
     assert policy.solver_config is not None
-    assert policy.solver_config["solver_model"] == "legacy"
+    assert policy.solver_config["solver_model"] == "nnls_tuning"
 
 
 def test_goal_model_matrix_smoke_passes_quality_gate(tmp_path: Path) -> None:

@@ -33,6 +33,7 @@ def test_i18n_catalogs_cover_the_supported_themes_and_solver_labels() -> None:
         "theme.gchClassic",
         "theme.vtGreen",
         "theme.blueMatrix",
+        "theme.tokyoNight",
         "solver.config.relativeWeighting",
         "solver.config.overshootPenalty",
         "solver.config.scaleEpsilon",
@@ -41,10 +42,10 @@ def test_i18n_catalogs_cover_the_supported_themes_and_solver_labels() -> None:
         "solver.modelLabel",
         "solver.model.massNnls",
         "solver.model.hierarchical",
-        "solver.model.legacy",
+        "solver.model.nnlsTuning",
         "solver.modelMassHint",
         "solver.modelHierarchicalHint",
-        "solver.modelLegacyHint",
+        "solver.modelNnlsTuningHint",
         "solver.priority.legend",
         "solver.priority.under",
         "solver.priority.over",
@@ -77,5 +78,5 @@ def test_nonstandard_solver_models_are_marked_experimental_in_every_locale() -> 
         assert marker in catalog["solver.model.hierarchical"].casefold(), locale
         assert marker in catalog["solver.modelMassHint"].casefold(), locale
         assert marker in catalog["solver.modelHierarchicalHint"].casefold(), locale
-        assert marker not in catalog["solver.model.legacy"].casefold(), locale
-        assert marker not in catalog["solver.modelLegacyHint"].casefold(), locale
+        assert marker not in catalog["solver.model.nnlsTuning"].casefold(), locale
+        assert marker not in catalog["solver.modelNnlsTuningHint"].casefold(), locale

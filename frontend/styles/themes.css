@@ -1,5 +1,28 @@
 /* Horticalc framed app shell */
 :root {
+  --app-font-family: inter, "Segoe UI", system-ui, sans-serif;
+  --app-radius-card: 8px;
+  --app-radius-panel: 10px;
+  --app-radius-shell: 12px;
+  --app-surface-shadow: inset 0 1px 0 rgb(255 255 255 / 3.5%);
+  --app-workspace-shadow: var(--app-surface-shadow), 0 12px 32px rgb(0 0 0 / 24%);
+  --app-control-shadow: none;
+  --app-input-shadow: none;
+  --app-text-shadow: none;
+  --app-overlay-bg: none;
+  --app-overlay-opacity: 0;
+  --app-button-bg: #2e63ff;
+  --app-button-hover: #3f73ff;
+  --app-button-text: #fff;
+  --app-primary-button-text: color-mix(in srgb, white 92%, var(--app-green));
+  --app-disabled-bg: color-mix(in srgb, var(--app-panel-soft) 86%, var(--app-border));
+  --app-disabled-border: var(--app-border);
+  --app-disabled-text: var(--app-muted);
+  --app-deemphasized-text: var(--app-muted);
+  --app-status-text: color-mix(in srgb, white 72%, var(--app-green));
+  --app-config-badge-text: color-mix(in srgb, white 82%, var(--app-teal));
+  --app-ion-ratio-bg: rgb(4 8 7 / 32%);
+  --app-ion-ratio-border: rgb(174 183 166 / 12%);
   --app-color-scheme: dark;
   --app-bg: #10120f;
   --app-panel: #171a15;
@@ -95,6 +118,8 @@
   --app-brand-accent: var(--app-green);
   --app-logo-accent: var(--app-green);
   --app-brand-title-shadow: none;
+  --app-brand-title: var(--app-text);
+  --app-brand-subtitle: var(--app-muted);
   --app-workflow-glow: var(--app-green);
   --app-live-value-shadow: none;
   --app-sticky-offset: 1rem;
@@ -728,4 +753,447 @@
   --app-brand-title-shadow: 0 0 14px color-mix(in srgb, var(--app-solver) 34%, transparent);
   --app-workflow-glow: var(--app-teal);
   --app-live-value-shadow: 0 0 10px currentcolor;
+}
+
+/* Shared semantic skin contract. New skins only define tokens, never component rules. */
+.app-body:is(
+  [data-theme="solarized-light"],
+  [data-theme="dracula"],
+  [data-theme="gruvbox-dark"],
+  [data-theme="catppuccin-mocha"],
+  [data-theme="monokai-classic"],
+  [data-theme="windows-95"],
+  [data-theme="commodore-64"],
+  [data-theme="game-boy-dmg"],
+  [data-theme="amber-crt"]
+) {
+  --app-body-bg:
+    radial-gradient(circle at 86% 0%, color-mix(in srgb, var(--app-solver) 12%, transparent), transparent 30%),
+    linear-gradient(180deg, color-mix(in srgb, var(--app-panel-soft) 96%, var(--app-teal)), var(--app-bg) 34rem);
+  --app-shell-bg: linear-gradient(145deg, color-mix(in srgb, var(--app-panel) 96%, var(--app-teal)), var(--app-bg));
+  --app-shell-border: color-mix(in srgb, var(--app-border) 88%, var(--app-teal));
+  --app-shell-shadow: 0 24px 58px color-mix(in srgb, var(--app-bg) 72%, transparent), var(--app-surface-shadow);
+  --app-rail-bg: linear-gradient(180deg, var(--app-panel-soft), color-mix(in srgb, var(--app-panel) 90%, var(--app-bg)));
+  --app-rail-shadow: 0 12px 30px color-mix(in srgb, var(--app-bg) 62%, transparent), var(--app-surface-shadow);
+  --app-scrollbar-thumb: color-mix(in srgb, var(--app-border) 68%, var(--app-muted));
+  --app-scrollbar-track: var(--app-bg);
+  --app-card-bg: color-mix(in srgb, var(--app-panel) 90%, transparent);
+  --app-config-bg: color-mix(in srgb, var(--app-panel) 90%, var(--app-teal) 10%);
+  --app-workflow-bg: color-mix(in srgb, var(--app-panel) 90%, var(--app-green) 10%);
+  --app-brand-bg: linear-gradient(145deg, color-mix(in srgb, var(--app-panel-soft) 84%, var(--app-solver)), var(--app-panel));
+  --app-workspace-block-bg: linear-gradient(145deg, var(--app-panel-soft), var(--app-panel));
+  --app-subpanel-bg: color-mix(in srgb, var(--app-bg) 54%, transparent);
+  --app-table-wrap-bg: color-mix(in srgb, var(--app-panel) 88%, var(--app-teal) 12%);
+  --app-table-head-bg: color-mix(in srgb, var(--app-panel-soft) 78%, var(--app-solver));
+  --app-table-head-text: var(--app-heading-text);
+  --app-table-card-bg: color-mix(in srgb, var(--app-panel) 92%, var(--app-teal) 8%);
+  --app-table-card-border: color-mix(in srgb, var(--app-border) 82%, var(--app-teal));
+  --app-table-badge-bg: color-mix(in srgb, var(--app-panel) 76%, var(--app-solver));
+  --app-table-badge-border: color-mix(in srgb, var(--app-border) 72%, var(--app-solver));
+  --app-table-badge-text: var(--app-muted);
+  --app-table-row-odd: color-mix(in srgb, var(--app-panel-soft) 84%, var(--app-bg));
+  --app-table-row-even: color-mix(in srgb, var(--app-panel) 88%, var(--app-bg));
+  --app-fert-editor-row-odd-bg: color-mix(in srgb, var(--app-panel-soft) 84%, var(--app-bg));
+  --app-fert-editor-row-even-bg: color-mix(in srgb, var(--app-panel) 88%, var(--app-bg));
+  --app-table-row-hover: color-mix(in srgb, var(--app-panel-soft) 68%, var(--app-teal));
+  --app-input-bg: color-mix(in srgb, var(--app-bg) 80%, var(--app-panel));
+  --app-input-border: color-mix(in srgb, var(--app-border) 82%, var(--app-muted));
+  --app-helper-bg: color-mix(in srgb, var(--app-bg) 88%, var(--app-teal));
+  --app-helper-text: var(--app-muted);
+  --app-button-bg: color-mix(in srgb, var(--app-teal) 76%, var(--app-bg));
+  --app-button-hover: color-mix(in srgb, var(--app-teal) 88%, var(--app-text));
+  --app-primary-button-text: var(--app-text);
+  --app-disabled-bg: color-mix(in srgb, var(--app-panel-soft) 88%, var(--app-border));
+  --app-disabled-border: color-mix(in srgb, var(--app-border) 86%, var(--app-muted));
+  --app-disabled-text: color-mix(in srgb, var(--app-muted) 88%, var(--app-text));
+  --app-deemphasized-text: color-mix(in srgb, var(--app-muted) 88%, var(--app-text));
+  --app-button-outline-border: color-mix(in srgb, var(--app-border) 62%, var(--app-teal));
+  --app-button-outline-text: var(--app-text);
+  --app-button-outline-hover: color-mix(in srgb, var(--app-teal) 14%, transparent);
+  --app-focus: color-mix(in srgb, var(--app-teal) 78%, transparent);
+  --app-heading-text: var(--app-text);
+  --app-heading-icon-bg: linear-gradient(145deg, color-mix(in srgb, var(--app-teal) 24%, var(--app-panel)), color-mix(in srgb, var(--app-green) 12%, var(--app-panel)));
+  --app-workflow-step-bg: linear-gradient(145deg, var(--app-panel-soft), color-mix(in srgb, var(--app-panel) 86%, var(--app-bg)));
+  --app-workflow-step-hover: color-mix(in srgb, var(--app-panel-soft) 72%, var(--app-teal));
+  --app-workflow-step-border: var(--app-border);
+  --app-workflow-step-active-border: var(--app-teal);
+  --app-workflow-active-bg: linear-gradient(135deg, color-mix(in srgb, var(--app-teal) 70%, var(--app-bg)), color-mix(in srgb, var(--app-green) 54%, var(--app-bg)));
+  --app-workflow-active-text: var(--app-heading-text);
+  --app-solver-step-bg: linear-gradient(145deg, color-mix(in srgb, var(--app-solver) 32%, var(--app-panel)), var(--app-panel));
+  --app-solver-step-active-bg: linear-gradient(135deg, color-mix(in srgb, var(--app-solver) 68%, var(--app-bg)), color-mix(in srgb, var(--app-solver-glow) 52%, var(--app-bg)));
+  --app-live-bg: color-mix(in srgb, var(--app-panel) 90%, var(--app-teal) 10%);
+  --app-live-tile-bg: linear-gradient(145deg, var(--app-panel-soft), var(--app-panel));
+  --app-live-primary: var(--app-green);
+  --app-live-secondary: var(--app-teal);
+  --app-live-ratio: var(--app-solver);
+  --app-live-warning: var(--app-amber);
+  --app-segmented-bg: color-mix(in srgb, var(--app-bg) 76%, var(--app-panel));
+  --app-segmented-border: var(--app-border);
+  --app-segmented-text: var(--app-muted);
+  --app-segmented-active-bg: color-mix(in srgb, var(--app-teal) 20%, var(--app-panel));
+  --app-segmented-active-border: var(--app-teal);
+  --app-segmented-active-text: var(--app-heading-text);
+  --app-compact-label: var(--app-muted);
+  --app-balance-tile-bg: var(--app-table-row-even);
+  --app-balance-label: var(--app-muted);
+  --app-fert-editor-head-bg: var(--app-table-head-bg);
+  --app-fert-editor-input-bg: var(--app-input-bg);
+  --app-rail-border: var(--app-border);
+  --app-brand-accent: var(--app-solver);
+  --app-logo-accent: var(--app-green);
+  --app-brand-title-shadow: none;
+  --app-brand-title: var(--app-text);
+  --app-brand-subtitle: var(--app-muted);
+  --app-workflow-glow: var(--app-teal);
+  --app-live-value-shadow: none;
+  --app-status-text: color-mix(in srgb, var(--app-green) 70%, var(--app-text));
+  --app-config-badge-text: color-mix(in srgb, var(--app-teal) 70%, var(--app-text));
+  --app-ion-ratio-bg: var(--app-table-row-even);
+  --app-ion-ratio-border: var(--app-border);
+}
+
+.app-body[data-theme="solarized-light"] {
+  --app-color-scheme: light;
+  --app-bg: #eee8d5;
+  --app-panel: #fdf6e3;
+  --app-panel-soft: #eee8d5;
+  --app-border: #93a1a1;
+  --app-text: #073642;
+  --app-muted: #586e75;
+  --app-green: #859900;
+  --app-teal: #2aa198;
+  --app-amber: #b58900;
+  --app-red: #dc322f;
+  --app-solver: #6c71c4;
+  --app-solver-glow: #268bd2;
+  --app-shell-shadow: 0 18px 48px rgb(88 110 117 / 22%), var(--app-surface-shadow);
+  --app-rail-shadow: 0 10px 24px rgb(88 110 117 / 14%), var(--app-surface-shadow);
+  --app-surface-shadow: inset 0 1px 0 rgb(255 255 255 / 74%);
+  --app-workspace-shadow: var(--app-surface-shadow), 0 10px 24px rgb(88 110 117 / 15%);
+  --app-button-bg: #268bd2;
+  --app-button-hover: #2aa198;
+}
+
+.app-body[data-theme="dracula"] {
+  --app-bg: #191a21;
+  --app-panel: #282a36;
+  --app-panel-soft: #343746;
+  --app-border: #6272a4;
+  --app-text: #f8f8f2;
+  --app-muted: #bdc3df;
+  --app-green: #50fa7b;
+  --app-teal: #8be9fd;
+  --app-amber: #f1fa8c;
+  --app-red: #f55;
+  --app-solver: #ff79c6;
+  --app-solver-glow: #bd93f9;
+  --app-button-bg: #6272a4;
+  --app-button-hover: #bd93f9;
+}
+
+.app-body[data-theme="gruvbox-dark"] {
+  --app-bg: #1d2021;
+  --app-panel: #282828;
+  --app-panel-soft: #3c3836;
+  --app-border: #665c54;
+  --app-text: #fbf1c7;
+  --app-muted: #d5c4a1;
+  --app-green: #b8bb26;
+  --app-teal: #8ec07c;
+  --app-amber: #fabd2f;
+  --app-red: #fb4934;
+  --app-solver: #d3869b;
+  --app-solver-glow: #83a598;
+  --app-button-bg: #689d6a;
+  --app-button-hover: #8ec07c;
+}
+
+.app-body[data-theme="catppuccin-mocha"] {
+  --app-bg: #11111b;
+  --app-panel: #1e1e2e;
+  --app-panel-soft: #313244;
+  --app-border: #585b70;
+  --app-text: #cdd6f4;
+  --app-muted: #bac2de;
+  --app-green: #a6e3a1;
+  --app-teal: #94e2d5;
+  --app-amber: #f9e2af;
+  --app-red: #f38ba8;
+  --app-solver: #cba6f7;
+  --app-solver-glow: #89b4fa;
+  --app-button-bg: #7287fd;
+  --app-button-hover: #89b4fa;
+}
+
+.app-body[data-theme="monokai-classic"] {
+  --app-bg: #191a16;
+  --app-panel: #272822;
+  --app-panel-soft: #3e3d32;
+  --app-border: #75715e;
+  --app-text: #f8f8f2;
+  --app-muted: #cfcfc2;
+  --app-green: #a6e22e;
+  --app-teal: #66d9ef;
+  --app-amber: #e6db74;
+  --app-red: #f92672;
+  --app-solver: #ae81ff;
+  --app-solver-glow: #66d9ef;
+  --app-button-bg: #7b9f18;
+  --app-button-hover: #a6e22e;
+}
+
+.app-body[data-theme="windows-95"] {
+  --app-color-scheme: light;
+  --app-font-family: tahoma, "MS Sans Serif", "Segoe UI", sans-serif;
+  --radius-1: 0;
+  --radius-2: 0;
+  --app-radius-card: 0;
+  --app-radius-panel: 0;
+  --app-radius-shell: 0;
+  --app-bg: #008080;
+  --app-panel: #c0c0c0;
+  --app-panel-soft: #d4d0c8;
+  --app-border: #808080;
+  --app-text: #000;
+  --app-muted: #404040;
+  --app-green: #008000;
+  --app-teal: #000080;
+  --app-amber: #808000;
+  --app-red: #800000;
+  --app-solver: #800080;
+  --app-solver-glow: #000080;
+  --app-body-bg: #008080;
+  --app-shell-bg: #c0c0c0;
+  --app-shell-border: #fff;
+  --app-shell-shadow: inset 2px 2px #fff, inset -2px -2px #404040, 8px 8px 0 rgb(0 0 0 / 30%);
+  --app-rail-bg: #c0c0c0;
+  --app-rail-shadow: inset 2px 2px #fff, inset -2px -2px #404040;
+  --app-card-bg: #c0c0c0;
+  --app-config-bg: #c0c0c0;
+  --app-workflow-bg: #c0c0c0;
+  --app-brand-bg: linear-gradient(90deg, #000080, #1084d0);
+  --app-brand-accent: #fff;
+  --app-logo-accent: #008000;
+  --app-brand-title: #fff;
+  --app-brand-subtitle: #fff;
+  --app-workspace-block-bg: #c0c0c0;
+  --app-subpanel-bg: #d4d0c8;
+  --app-table-wrap-bg: #c0c0c0;
+  --app-table-head-bg: #000080;
+  --app-table-head-text: #fff;
+  --app-table-card-bg: #c0c0c0;
+  --app-table-card-border: #808080;
+  --app-table-badge-bg: #d4d0c8;
+  --app-table-badge-border: #808080;
+  --app-table-row-odd: #fff;
+  --app-table-row-even: #e8e8e8;
+  --app-fert-editor-row-odd-bg: #fff;
+  --app-fert-editor-row-even-bg: #e8e8e8;
+  --app-table-row-hover: #000080;
+  --app-input-bg: #fff;
+  --app-input-border: #808080;
+  --app-helper-bg: #ffffe1;
+  --app-helper-text: #000;
+  --app-button-bg: #c0c0c0;
+  --app-button-hover: #d4d0c8;
+  --app-button-text: #000;
+  --app-button-outline-border: #404040;
+  --app-button-outline-text: #000;
+  --app-button-outline-hover: #d4d0c8;
+  --app-focus: #000080;
+  --app-heading-text: #000;
+  --app-heading-icon-bg: #d4d0c8;
+  --app-workflow-step-bg: #c0c0c0;
+  --app-workflow-step-hover: #d4d0c8;
+  --app-workflow-step-border: #808080;
+  --app-workflow-step-active-border: #000080;
+  --app-workflow-active-bg: #000080;
+  --app-workflow-active-text: #fff;
+  --app-solver-step-bg: #c0c0c0;
+  --app-solver-step-active-bg: #800080;
+  --app-live-bg: #c0c0c0;
+  --app-live-tile-bg: #d4d0c8;
+  --app-live-primary: #008000;
+  --app-live-secondary: #000080;
+  --app-live-ratio: #800080;
+  --app-live-warning: #800000;
+  --app-segmented-bg: #c0c0c0;
+  --app-segmented-border: #808080;
+  --app-segmented-text: #000;
+  --app-segmented-active-bg: #000080;
+  --app-segmented-active-border: #000080;
+  --app-segmented-active-text: #fff;
+  --app-fert-editor-head-bg: #000080;
+  --app-fert-editor-input-bg: #fff;
+  --app-surface-shadow: inset 1px 1px #fff, inset -1px -1px #808080;
+  --app-workspace-shadow: inset 2px 2px #fff, inset -2px -2px #404040;
+  --app-control-shadow: inset 1px 1px #fff, inset -2px -2px #404040;
+  --app-input-shadow: inset 1px 1px #404040, inset -1px -1px #fff;
+}
+
+.app-body[data-theme="commodore-64"] {
+  --app-font-family: "Cascadia Mono", consolas, "Courier New", monospace;
+  --radius-1: 1px;
+  --radius-2: 2px;
+  --app-radius-card: 2px;
+  --app-radius-panel: 2px;
+  --app-radius-shell: 2px;
+  --app-bg: #352879;
+  --app-panel: #40318d;
+  --app-panel-soft: #5146a0;
+  --app-border: #6c5eb5;
+  --app-text: #c8c1ff;
+  --app-muted: #aaa4e8;
+  --app-green: #9ad284;
+  --app-teal: #70a4b2;
+  --app-amber: #b8c76f;
+  --app-red: #d07a71;
+  --app-solver: #c181d2;
+  --app-solver-glow: #8ecbd8;
+  --app-body-bg: #352879;
+  --app-shell-bg: #40318d;
+  --app-shell-border: #c8c1ff;
+  --app-shell-shadow: 0 0 0 4px #6c5eb5, 12px 12px 0 rgb(0 0 0 / 30%);
+  --app-rail-bg: #352879;
+  --app-rail-shadow: inset 0 0 0 2px #6c5eb5;
+  --app-surface-shadow: inset 0 0 0 1px rgb(200 193 255 / 24%);
+  --app-workspace-shadow: inset 0 0 0 2px #6c5eb5;
+  --app-control-shadow: 2px 2px 0 #1b1444;
+  --app-input-shadow: inset 2px 2px 0 #1b1444;
+  --app-overlay-bg: none;
+  --app-overlay-opacity: 0;
+  --app-button-bg: #6c5eb5;
+  --app-button-hover: #70a4b2;
+}
+
+.app-body[data-theme="game-boy-dmg"] {
+  --app-color-scheme: light;
+  --app-font-family: inter, "Segoe UI", system-ui, sans-serif;
+  --radius-1: 0;
+  --radius-2: 0;
+  --app-radius-card: 0;
+  --app-radius-panel: 0;
+  --app-radius-shell: 0;
+  --app-bg: #0f380f;
+  --app-panel: #9bbc0f;
+  --app-panel-soft: #8bac0f;
+  --app-border: #306230;
+  --app-text: #0f380f;
+  --app-muted: #0f380f;
+  --app-green: #0f380f;
+  --app-teal: #306230;
+  --app-amber: #306230;
+  --app-red: #0f380f;
+  --app-solver: #306230;
+  --app-solver-glow: #0f380f;
+  --app-body-bg: #0f380f;
+  --app-shell-bg: #306230;
+  --app-shell-border: #0f380f;
+  --app-shell-shadow: 8px 8px 0 #0f380f;
+  --app-rail-bg: #306230;
+  --app-rail-shadow: inset 0 0 0 2px #306230;
+  --app-card-bg: #9bbc0f;
+  --app-config-bg: #9bbc0f;
+  --app-workflow-bg: #9bbc0f;
+  --app-brand-bg: #306230;
+  --app-brand-accent: #9bbc0f;
+  --app-logo-accent: #0f380f;
+  --app-brand-title: #9bbc0f;
+  --app-brand-subtitle: #9bbc0f;
+  --app-workspace-block-bg: #9bbc0f;
+  --app-subpanel-bg: #8bac0f;
+  --app-table-wrap-bg: #8bac0f;
+  --app-table-head-bg: #306230;
+  --app-table-head-text: #9bbc0f;
+  --app-table-card-bg: #8bac0f;
+  --app-table-card-border: #306230;
+  --app-table-badge-bg: #9bbc0f;
+  --app-table-badge-border: #306230;
+  --app-table-row-odd: #9bbc0f;
+  --app-table-row-even: #8bac0f;
+  --app-fert-editor-row-odd-bg: #9bbc0f;
+  --app-fert-editor-row-even-bg: #8bac0f;
+  --app-table-row-hover: #306230;
+  --app-input-bg: #9bbc0f;
+  --app-input-border: #306230;
+  --app-helper-bg: #8bac0f;
+  --app-helper-text: #0f380f;
+  --app-button-bg: #306230;
+  --app-button-hover: #0f380f;
+  --app-button-text: #9bbc0f;
+  --app-button-outline-border: #306230;
+  --app-button-outline-text: #0f380f;
+  --app-button-outline-hover: #8bac0f;
+  --app-focus: #0f380f;
+  --app-heading-text: #0f380f;
+  --app-heading-icon-bg: #8bac0f;
+  --app-workflow-step-bg: #9bbc0f;
+  --app-workflow-step-hover: #8bac0f;
+  --app-workflow-step-border: #306230;
+  --app-workflow-step-active-border: #0f380f;
+  --app-workflow-active-bg: #0f380f;
+  --app-workflow-active-text: #9bbc0f;
+  --app-solver-step-bg: #8bac0f;
+  --app-solver-step-active-bg: #0f380f;
+  --app-live-bg: #8bac0f;
+  --app-live-tile-bg: #9bbc0f;
+  --app-live-primary: #0f380f;
+  --app-live-secondary: #306230;
+  --app-live-ratio: #0f380f;
+  --app-live-warning: #306230;
+  --app-segmented-bg: #9bbc0f;
+  --app-segmented-border: #306230;
+  --app-segmented-text: #306230;
+  --app-segmented-active-bg: #0f380f;
+  --app-segmented-active-border: #0f380f;
+  --app-segmented-active-text: #9bbc0f;
+  --app-fert-editor-head-bg: #306230;
+  --app-fert-editor-input-bg: #9bbc0f;
+  --app-scrollbar-thumb: #0f380f;
+  --app-scrollbar-track: #306230;
+  --app-surface-shadow: inset 0 0 0 2px #306230;
+  --app-workspace-shadow: inset 0 0 0 2px #306230, 4px 4px 0 #0f380f;
+  --app-control-shadow: 2px 2px 0 #0f380f;
+  --app-input-shadow: inset 2px 2px 0 #306230;
+  --app-overlay-bg: none;
+  --app-overlay-opacity: 0;
+}
+
+.app-body[data-theme="amber-crt"] {
+  --app-font-family: "Cascadia Mono", consolas, "Courier New", monospace;
+  --radius-1: 1px;
+  --radius-2: 2px;
+  --app-radius-card: 2px;
+  --app-radius-panel: 2px;
+  --app-radius-shell: 2px;
+  --app-bg: #030200;
+  --app-panel: #0b0700;
+  --app-panel-soft: #171000;
+  --app-border: #6f4300;
+  --app-text: #ffc247;
+  --app-muted: #c98218;
+  --app-green: #ffd15c;
+  --app-teal: #ffb000;
+  --app-amber: #ffd15c;
+  --app-red: #ff5a1f;
+  --app-solver: #ff8f1f;
+  --app-solver-glow: #ffb000;
+  --app-body-bg: radial-gradient(ellipse at 50% 42%, #241500, #030200 68%);
+  --app-shell-bg: rgb(6 4 0 / 96%);
+  --app-shell-border: #8d5500;
+  --app-shell-shadow: 0 0 34px rgb(255 176 0 / 14%), inset 0 0 26px rgb(255 176 0 / 5%);
+  --app-rail-bg: #080500;
+  --app-rail-shadow: inset 0 0 22px rgb(255 176 0 / 6%);
+  --app-surface-shadow: inset 0 0 14px rgb(255 176 0 / 5%);
+  --app-workspace-shadow: inset 0 0 18px rgb(255 176 0 / 7%), 0 0 12px rgb(255 176 0 / 5%);
+  --app-control-shadow: 0 0 8px rgb(255 176 0 / 18%);
+  --app-input-shadow: inset 0 0 10px rgb(255 176 0 / 8%);
+  --app-text-shadow: 0 0 5px rgb(255 176 0 / 38%);
+  --app-overlay-bg: repeating-linear-gradient(180deg, transparent 0 3px, rgb(0 0 0 / 52%) 3px 4px);
+  --app-overlay-opacity: 0.042;
+  --app-brand-title-shadow: 0 0 10px rgb(255 176 0 / 62%);
+  --app-live-value-shadow: 0 0 9px currentcolor;
+  --app-button-bg: #8d5500;
+  --app-button-hover: #b86d00;
+  --app-button-text: #030200;
 }

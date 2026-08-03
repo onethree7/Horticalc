@@ -13,6 +13,7 @@
   background: var(--app-input-bg);
   border-color: var(--app-input-border);
   color: var(--app-text);
+  box-shadow: var(--app-input-shadow);
 }
 
 .rail-config .rail-config-liters input {
@@ -29,9 +30,9 @@
 .summary-scroll,
 .solver-results .table-wrap {
   border: 1px solid rgb(174 183 166 / 13%);
-  border-radius: 12px;
+  border-radius: var(--app-radius-shell);
   background: var(--app-table-wrap-bg);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 2.8%);
+  box-shadow: var(--app-surface-shadow);
 }
 
 .table-wrap {
@@ -40,7 +41,7 @@
 
 button,
 .btn--outline {
-  border-radius: 6px;
+  border-radius: var(--radius-2);
 }
 
 .btn--outline {
@@ -50,6 +51,17 @@ button,
 
 .btn--outline:hover {
   background: var(--app-button-outline-hover);
+}
+
+button:disabled,
+button:disabled:hover,
+:is(input, select, textarea):disabled {
+  border-color: var(--app-disabled-border);
+  background: var(--app-disabled-bg);
+  color: var(--app-disabled-text);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 1;
 }
 
 .grid th {
@@ -86,9 +98,9 @@ button,
 
 .table-card {
   border-color: var(--app-table-card-border);
-  border-radius: 12px;
+  border-radius: var(--app-radius-shell);
   background: var(--app-table-card-bg);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 3.5%);
+  box-shadow: var(--app-surface-shadow);
 }
 
 .segmented {
@@ -108,7 +120,7 @@ button,
 .data-grid {
   padding: var(--space-3);
   border: 1px solid rgb(174 183 166 / 10%);
-  border-radius: 12px;
+  border-radius: var(--app-radius-shell);
   background: var(--app-subpanel-bg);
 }
 
@@ -140,7 +152,7 @@ button,
 
 #solverMode .block {
   border-color: color-mix(in srgb, var(--app-green) 22%, transparent);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 3.5%);
+  box-shadow: var(--app-surface-shadow);
 }
 
 #solverMode .block > h2:first-child::before {
@@ -156,7 +168,7 @@ button,
 
 .table-wrap--editor {
   padding: 0;
-  border-radius: 12px;
+  border-radius: var(--app-radius-shell);
 }
 
 #fertilizerEditorTable th {
@@ -197,9 +209,9 @@ button,
   max-width: 100%;
   padding: var(--space-3);
   border: 1px solid color-mix(in srgb, var(--app-teal) 18%, transparent);
-  border-radius: 8px;
+  border-radius: var(--app-radius-card);
   background: var(--app-live-bg);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 3.5%);
+  box-shadow: var(--app-surface-shadow);
   color: var(--app-muted);
   font-size: var(--text-sm);
 }
@@ -226,7 +238,7 @@ button,
   min-width: 0;
   padding: var(--space-3);
   border: 1px solid rgb(174 183 166 / 14%);
-  border-radius: 8px;
+  border-radius: var(--app-radius-card);
   background: var(--app-live-tile-bg);
 }
 
@@ -349,9 +361,9 @@ button,
   justify-items: center;
   min-width: 0;
   padding: var(--space-2);
-  border: 1px solid rgb(174 183 166 / 12%);
-  border-radius: 6px;
-  background: rgb(4 8 7 / 32%);
+  border: 1px solid var(--app-ion-ratio-border);
+  border-radius: var(--radius-2);
+  background: var(--app-ion-ratio-bg);
   text-align: center;
 }
 
@@ -387,7 +399,7 @@ button,
 .live-chip--strong {
   padding: 0 var(--space-3);
   border: 1px solid color-mix(in srgb, var(--app-green) 42%, transparent);
-  border-radius: 6px;
+  border-radius: var(--radius-2);
   background: rgb(83 119 48 / 20%);
 }
 
@@ -399,7 +411,7 @@ button,
   padding: var(--space-3);
   overflow: hidden;
   border: 1px solid var(--app-border);
-  border-radius: var(--radius-2);
+  border-radius: var(--app-radius-card);
   background: var(--app-panel);
   color: var(--app-text);
   box-shadow: var(--app-shell-shadow);
@@ -417,7 +429,7 @@ button,
   padding: var(--space-4);
   overflow: hidden;
   border: 1px solid var(--app-border);
-  border-radius: var(--radius-2);
+  border-radius: var(--app-radius-card);
   background: var(--app-panel);
   color: var(--app-text);
   box-shadow: var(--app-shell-shadow);

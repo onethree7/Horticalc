@@ -67,17 +67,18 @@ body {
 }
 
 button {
-  background: #2e63ff;
-  color: #fff;
+  background: var(--app-button-bg);
+  color: var(--app-button-text);
   border: none;
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-2);
+  box-shadow: var(--app-control-shadow);
   cursor: pointer;
   font-size: var(--text-sm);
 }
 
 button:hover {
-  background: #3f73ff;
+  background: var(--app-button-hover);
 }
 
 .btn--outline {
@@ -95,7 +96,7 @@ button:hover {
   min-height: 2.45rem;
   padding-inline: calc(var(--space-4) * 2);
   border: 1px solid color-mix(in srgb, var(--app-green) 72%, transparent);
-  color: color-mix(in srgb, white 92%, var(--app-green));
+  color: var(--app-primary-button-text);
   background: linear-gradient(145deg, color-mix(in srgb, var(--app-green) 48%, var(--app-panel)), color-mix(in srgb, var(--app-teal) 38%, var(--app-panel)));
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-green) 12%, transparent);
   font-weight: 800;
@@ -195,7 +196,7 @@ main {
 }
 
 .hint {
-  color: #b4bdc8;
+  color: var(--app-muted);
   margin: 0 0 var(--space-3);
   font-size: var(--text-sm);
 }
@@ -637,7 +638,7 @@ main {
 }
 
 .inline-hint {
-  color: #b4bdc8;
+  color: var(--app-muted);
   font-size: var(--text-sm);
 }
 
@@ -977,9 +978,9 @@ main {
 .solver-panel {
   min-width: 0;
   padding: var(--space-3);
-  border: 1px solid rgb(174 183 166 / 12%);
-  border-radius: 10px;
-  background: rgb(11 16 15 / 32%);
+  border: 1px solid color-mix(in srgb, var(--app-border) 72%, transparent);
+  border-radius: var(--app-radius-panel);
+  background: var(--app-subpanel-bg);
 }
 
 .solver-panel h3 {
@@ -1043,9 +1044,9 @@ main {
   align-items: end;
   margin: var(--space-3) 0 var(--space-4);
   padding: var(--space-3);
-  border: 1px solid rgb(174 183 166 / 14%);
-  border-radius: 10px;
-  background: rgb(11 16 15 / 38%);
+  border: 1px solid color-mix(in srgb, var(--app-border) 78%, transparent);
+  border-radius: var(--app-radius-panel);
+  background: var(--app-subpanel-bg);
 }
 
 .solver-model-bar label {
@@ -1162,9 +1163,9 @@ main {
 .solver-picker-toggle {
   display: flex;
   justify-content: center;
-  border: 1px solid #3d4737;
-  border-radius: 6px;
-  color: #dfe8d7;
+  border: 1px solid var(--app-button-outline-border);
+  border-radius: var(--radius-2);
+  color: var(--app-button-outline-text);
 }
 
 .result-actions {
@@ -1242,15 +1243,15 @@ main {
 }
 
 .solver-result-inactive {
-  opacity: 0.52;
+  color: var(--app-deemphasized-text);
 }
 
 .solver-result-inactive:hover {
-  opacity: 0.75;
+  color: var(--app-text);
 }
 
 .solver-results .solver-n-extra {
-  color: rgb(255 255 255 / 60%);
+  color: var(--app-deemphasized-text);
   font-size: 0.9em;
 }
 

@@ -67,6 +67,7 @@ Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`, `src/horticalc/sol
   Historical output follows current locale and display units; restoration
   loads inputs and deliberately requires a new solve.
 - Frontend i18n is implemented without a bundler in `frontend/i18n/`; language selection is stored in `localStorage` and `user/preferences.json`.
+- Themes use one semantic token contract in `frontend/styles/themes.css`; even full retro skins change only tokens, never theme-specific component selectors.
 - Numeric values use `.` as the decimal separator in output and persistence; GUI inputs accept `.` or `,`.
 - Fertilizer physical state is stored as Boolean `liquid` and CSV `Liquid` (`0` solid, `1` liquid).
 

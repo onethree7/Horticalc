@@ -8,14 +8,29 @@ from horticalc import paths
 from horticalc.data_io import load_user_preferences, save_user_preferences
 
 
-def test_theme_preference_persists_in_user_directory(monkeypatch, tmp_path) -> None:
+@pytest.mark.parametrize(
+    "theme",
+    [
+        "tokyo-night",
+        "solarized-light",
+        "dracula",
+        "gruvbox-dark",
+        "catppuccin-mocha",
+        "monokai-classic",
+        "windows-95",
+        "commodore-64",
+        "game-boy-dmg",
+        "amber-crt",
+    ],
+)
+def test_theme_preference_persists_in_user_directory(monkeypatch, tmp_path, theme: str) -> None:
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
     client = TestClient(api_app.app)
 
-    response = client.put("/preferences", json={"theme": "tokyo-night"})
+    response = client.put("/preferences", json={"theme": theme})
 
     assert response.status_code == 200
-    assert client.get("/preferences").json() == {"theme": "tokyo-night"}
+    assert client.get("/preferences").json() == {"theme": theme}
     assert paths.user_preferences_path(tmp_path).exists()
 
 

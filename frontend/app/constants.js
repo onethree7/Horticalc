@@ -36,6 +36,15 @@ export const THEME_OPTIONS = new Set([
   "vt-green",
   "blue-matrix",
   "tokyo-night",
+  "solarized-light",
+  "dracula",
+  "gruvbox-dark",
+  "catppuccin-mocha",
+  "monokai-classic",
+  "windows-95",
+  "commodore-64",
+  "game-boy-dmg",
+  "amber-crt",
 ]);
 
 export const LAST_SOLUTION_CALCULATED_KEY = "last_solution_calculated";

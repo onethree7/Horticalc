@@ -39,7 +39,7 @@ async function assertHistoryPreviewLayout(page, historyEntry) {
   }
 }
 
-async function assertTokyoNightPalette(page) {
+async function assertThemePalette(page, theme, expected) {
   const palette = await page.locator("body").evaluate((element) => {
     const styles = element.ownerDocument.defaultView.getComputedStyle(element);
     return {
@@ -48,8 +48,8 @@ async function assertTokyoNightPalette(page) {
       solver: styles.getPropertyValue("--app-solver").trim(),
     };
   });
-  if (palette.panel !== "#121326" || palette.text !== "#edf0ff" || palette.solver !== "#ff4fd8") {
-    throw new Error(`Tokyo Night palette was not applied: ${JSON.stringify(palette)}`);
+  if (Object.entries(expected).some(([token, value]) => palette[token] !== value)) {
+    throw new Error(`${theme} palette was not applied: ${JSON.stringify(palette)}`);
   }
 }
 
@@ -163,13 +163,26 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
     const themes = [
       "horticalc-dark", "horticalc-light", "high-contrast", "soil",
       "gch-classic", "vt-green", "blue-matrix", "tokyo-night",
+      "solarized-light", "dracula", "gruvbox-dark", "catppuccin-mocha",
+      "monokai-classic", "windows-95", "commodore-64", "game-boy-dmg", "amber-crt",
     ];
+    const newThemePalettes = {
+      "solarized-light": { panel: "#fdf6e3", text: "#073642", solver: "#6c71c4" },
+      dracula: { panel: "#282a36", text: "#f8f8f2", solver: "#ff79c6" },
+      "gruvbox-dark": { panel: "#282828", text: "#fbf1c7", solver: "#d3869b" },
+      "catppuccin-mocha": { panel: "#1e1e2e", text: "#cdd6f4", solver: "#cba6f7" },
+      "monokai-classic": { panel: "#272822", text: "#f8f8f2", solver: "#ae81ff" },
+      "windows-95": { panel: "#c0c0c0", text: "#000", solver: "#800080" },
+      "commodore-64": { panel: "#40318d", text: "#c8c1ff", solver: "#c181d2" },
+      "game-boy-dmg": { panel: "#9bbc0f", text: "#0f380f", solver: "#306230" },
+      "amber-crt": { panel: "#0b0700", text: "#ffc247", solver: "#ff8f1f" },
+    };
     for (const theme of themes) {
       await page.locator("#themeSelect").selectOption(theme, { force: true });
       const appliedTheme = await page.locator("body").getAttribute("data-theme");
       if (appliedTheme !== theme) throw new Error(`Theme ${theme} was not applied`);
+      if (newThemePalettes[theme]) await assertThemePalette(page, theme, newThemePalettes[theme]);
     }
-    await assertTokyoNightPalette(page);
 
     await page.locator("[data-shell-view='water']").click();
     await page.locator("#waterSection:not(.is-hidden)").waitFor();

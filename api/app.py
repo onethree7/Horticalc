@@ -410,6 +410,15 @@ THEME_OPTIONS = {
     "vt-green",
     "blue-matrix",
     "tokyo-night",
+    "solarized-light",
+    "dracula",
+    "gruvbox-dark",
+    "catppuccin-mocha",
+    "monokai-classic",
+    "windows-95",
+    "commodore-64",
+    "game-boy-dmg",
+    "amber-crt",
 }
 LOCALE_OPTIONS = {"de", "en", "nl", "es", "zh"}
 

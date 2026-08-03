@@ -38,8 +38,6 @@ class Fertilizer:
 FERTILIZER_NAME_FIELDS = ("Düngername", "Duengername")
 FERTILIZER_BASE_FIELDS = ["Düngername", "Liquid", "Gewicht"]
 FERTILIZER_SOLVER_MAX_FIELD = "SolverMaxDosePerL"
-# Removed catalog metadata is discarded when an older user CSV is saved.
-OBSOLETE_FERTILIZER_FIELDS = {"SolverRole"}
 REPLACED_ROW_PATTERN = re.compile(r'replace existing row\s+"([^"]+)"', re.IGNORECASE)
 
 
@@ -66,7 +64,6 @@ def _is_base_fertilizer_field(field: str | None) -> bool:
         "Liquid",
         "Gewicht",
         FERTILIZER_SOLVER_MAX_FIELD,
-        *OBSOLETE_FERTILIZER_FIELDS,
     )
 
 
@@ -370,7 +367,7 @@ def load_fertilizers(csv_path: Path | None = None) -> Dict[str, Fertilizer]:
 def _header_for_fertilizers(fertilizers: Dict[str, Fertilizer], existing_header: list[str] | None = None) -> list[str]:
     header = [field for field in existing_header if not _is_number_field(field)] if existing_header else None
     if header is not None:
-        header = [field for field in header if field != "Form" and field not in OBSOLETE_FERTILIZER_FIELDS]
+        header = [field for field in header if field != "Form"]
     if header is not None and "Liquid" not in header:
         weight_index = header.index("Gewicht") if "Gewicht" in header else len(header)
         header.insert(weight_index, "Liquid")

@@ -84,19 +84,6 @@ def test_solver_max_dose_csv_roundtrip_is_not_composition(tmp_path: Path) -> Non
         assert list(csv.DictReader(handle).fieldnames or [])[-1] == "SolverMaxDosePerL"
 
 
-def test_save_fertilizers_removes_obsolete_solver_role_column(tmp_path: Path) -> None:
-    csv_path = tmp_path / "fertilizers.csv"
-    csv_path.write_text(
-        "Düngername,Liquid,Gewicht,NO3,SolverRole\nFixed,0,1,0.1,fixed_only\n",
-        encoding="utf-8",
-    )
-
-    save_fertilizers(load_fertilizers(csv_path), csv_path)
-
-    with csv_path.open("r", encoding="utf-8", newline="") as handle:
-        assert "SolverRole" not in (csv.DictReader(handle).fieldnames or [])
-
-
 @pytest.mark.parametrize("value", ["-0.1", "nan", "inf"])
 def test_load_fertilizers_rejects_invalid_solver_max(tmp_path: Path, value: str) -> None:
     csv_path = tmp_path / "fertilizers.csv"

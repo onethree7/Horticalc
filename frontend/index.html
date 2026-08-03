@@ -453,12 +453,12 @@
             <label>
               <span data-i18n="solver.modelLabel">Solver model</span>
               <select id="solverConfigModel">
-                <option value="mass_nnls" data-i18n="solver.model.massNnls">Mass balance (mg/L²)</option>
-                <option value="hierarchical" data-i18n="solver.model.hierarchical">Prioritized targets</option>
-                <option value="legacy" data-i18n="solver.model.legacy">Legacy (NNLS + tuning)</option>
+                <option value="mass_nnls" data-i18n="solver.model.massNnls">Mass balance (mg/L², experimental)</option>
+                <option value="hierarchical" data-i18n="solver.model.hierarchical">Prioritized targets (experimental)</option>
+                <option value="legacy" data-i18n="solver.model.legacy">NNLS + tuning (standard)</option>
               </select>
             </label>
-            <p class="hint" id="solverMassModelHint" data-i18n="solver.modelMassHint">Mass balance minimizes the sum of squared deviations in mg/L. It always includes N-total and sulfur.</p>
+            <p class="hint" id="solverMassModelHint" data-i18n="solver.modelMassHint">Experimental. Mass balance minimizes the sum of squared deviations in mg/L. It always includes N-total and sulfur.</p>
           </div>
           <div class="solver-workbench">
             <div class="solver-results solver-comparison-grid">

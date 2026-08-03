@@ -66,7 +66,7 @@ The canonical defaults are in `src/horticalc/solver_config.py`:
 
 | Key | Default | Bounds |
 | --- | --- | --- |
-| `solver_model` | `mass_nnls` | `mass_nnls`, `hierarchical`, `legacy` |
+| `solver_model` | `legacy` (NNLS + tuning) | `mass_nnls`, `hierarchical`, `legacy` |
 | `ignored_elements` | `[]` | Unique target-key strings |
 | `target_priorities` | `{}` | Target keys mapped to optional integer `under`/`over` priorities in `0..4`; omitted directions resolve to `3` |
 | `relative_weighting` | `false` | Boolean |
@@ -109,19 +109,21 @@ and tests change too.
 
 `solver_model` selects one of three runtime paths:
 
-- `mass_nnls` is the production default. It minimizes raw elemental squared
+- `legacy` is the production default. Despite its compatibility-preserving
+  internal identifier, this is the standard NNLS + tuning model. It contains
+  the configurable NNLS/IRLS/singleton implementation and all tuning fields
+  below.
+- `mass_nnls` is experimental. It minimizes raw elemental squared
   error in canonical `mg/L`, uses `N_total` whenever that target is present,
   and includes a non-zero `S` target. Relative weighting, IRLS, governor, and
   singleton fields do not affect this model.
-- `hierarchical` uses strict directional priority tiers in raw `mg/L`. It uses
-  the same N-total and sulfur objective selection as `mass_nnls`, but it does
-  not use legacy weights or post-passes.
-- `legacy` retains the existing NNLS/IRLS/singleton implementation and all of
-  the tuning fields below as a compatibility option.
+- `hierarchical` is experimental. It uses strict directional priority tiers in
+  raw `mg/L`, with the same N-total and sulfur objective selection as
+  `mass_nnls`, but without legacy weights or post-passes.
 
 The selected model is returned as `solver_model` in every solve response.
 
-### Mass NNLS model
+### Mass NNLS model (experimental)
 
 The solver builds the contribution matrix in elemental `mg/L` and solves:
 
@@ -148,7 +150,7 @@ an explicit `fixed_grams` dose. The shipped HuminTech AMINO POWER and Fulvital
 products use this zero limit so they cannot act as unconstrained nutrient
 concentrates.
 
-### Hierarchical directional-priority model
+### Hierarchical directional-priority model (experimental)
 
 `src/horticalc/priority_solver.py` formulates the fertilizer matrix as a
 linear program and solves it with SciPy HiGHS. Every active element has two
@@ -188,7 +190,7 @@ liquid density have the same meaning as in the other runtime models.
 `priority_stages` in the solve response exposes each tier's retained maximum
 and total residual for audit.
 
-### Legacy model
+### NNLS + tuning model (standard; internal id `legacy`)
 
 The solver builds a contribution matrix: rows are objective elements, columns are allowed fertilizers, and values are mg/L contribution per gram for the current batch size. Water baseline is computed with `compute_solution()` and subtracted from targets before solving. Fixed grams are subtracted before optimizing the remaining variable fertilizers.
 

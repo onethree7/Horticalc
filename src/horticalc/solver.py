@@ -970,7 +970,7 @@ def _validate_solve_result(result: SolveResult) -> SolveResult:
     model_label = {
         "mass_nnls": "Mass NNLS",
         "hierarchical": "Hierarchical solver",
-        "legacy": "Legacy solver",
+        "legacy": "NNLS + tuning solver",
     }.get(result.solver_model, f"Solver model {result.solver_model!r}")
     if not all(np.isfinite(value) for value in values):
         raise ValueError(f"{model_label} produced a non-finite result")

@@ -21,12 +21,12 @@ def _solve_result(*, grams: float = 1.0, achieved: float = 100.0) -> SolveResult
 
 
 def test_shared_solver_result_validation_rejects_non_finite_values() -> None:
-    with pytest.raises(ValueError, match="Legacy solver produced a non-finite result"):
+    with pytest.raises(ValueError, match=r"NNLS \+ tuning solver produced a non-finite result"):
         _validate_solve_result(_solve_result(achieved=float("nan")))
 
 
 def test_shared_solver_result_validation_rejects_negative_doses() -> None:
-    with pytest.raises(ValueError, match="Legacy solver produced a negative fertilizer dose"):
+    with pytest.raises(ValueError, match=r"NNLS \+ tuning solver produced a negative fertilizer dose"):
         _validate_solve_result(_solve_result(grams=-0.1))
 
 

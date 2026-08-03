@@ -7,7 +7,7 @@ from horticalc.solver import solve_recipe
 
 def test_solver_golden_solution_close() -> None:
     recipe_path = Path(__file__).resolve().parents[1] / "recipes" / "solve_golden.yml"
-    result = solve_recipe(recipe_path)
+    result = solve_recipe(recipe_path, solver_config_overrides={"solver_model": "mass_nnls"})
 
     assert result.solver_model == "mass_nnls"
     objective_upper = {key.upper() for key in result.objective_elements}

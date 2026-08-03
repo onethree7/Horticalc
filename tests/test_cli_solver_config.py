@@ -19,6 +19,7 @@ from horticalc.solver_config import (
 def test_solver_config_definitions_use_data_backed_defaults() -> None:
     defaults = {definition["key"]: definition["default"] for definition in SOLVER_CONFIG_DEFINITIONS}
 
+    assert defaults["solver_model"] == "legacy"
     assert defaults["nitrogen_objective_mode"] == "n_total_only"
     assert defaults["relative_weighting"] is False
     assert defaults["singleton_supplier_enabled"] is False

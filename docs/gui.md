@@ -40,14 +40,16 @@ The workflow menu has four user-facing areas:
 - **Solver**: enter targets, select allowed fertilizers, and solve for doses.
 
 The Solver model selector is visible above the workbench rather than hidden in
-the advanced section. `Mass balance (mg/L²)` remains the compatibility-safe
-default. `Prioritized targets (staged)` exposes separate **Too little** and
-**Too much** priority selectors for every target. `Legacy (NNLS + tuning)`
-retains the previous controls as a compatibility option. Tuning controls are
-disabled for both non-legacy models. Fixed-only products are labelled in the
-allowed-fertilizer picker and are not variable Solver candidates. The result
-header and copied output identify the model that actually ran. The selection
-is stored in `user/preferences.json` through the normal serialized preference
+the advanced section. `NNLS + tuning (standard)` is the production default;
+its persisted internal identifier remains `legacy` for compatibility.
+`Mass balance (mg/L², experimental)` and `Prioritized targets (staged,
+experimental)` are opt-in models. The latter exposes separate **Too little**
+and **Too much** priority selectors for every target. Tuning controls are
+disabled for both experimental models. A product with
+`SolverMaxDosePerL=0` is excluded from variable dosing but remains available
+for an explicit fixed amount. The result header and copied output identify the
+model that actually ran, including any experimental label. The selection is
+stored in `user/preferences.json` through the normal serialized preference
 write.
 
 Directional priority values are `1 Must`, `2 Important`, `3 Normal`,

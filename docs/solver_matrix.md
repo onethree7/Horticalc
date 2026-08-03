@@ -107,7 +107,9 @@ or handcrafted-profile rankings.
 
 Status: `current-state runtime plus research comparison`.
 
-Production `mass_nnls` lives in `src/horticalc/solver.py`. It minimizes
+The current production default is NNLS + tuning (persisted model id `legacy`).
+Runtime `mass_nnls` is an experimental comparison model in
+`src/horticalc/solver.py`. It minimizes
 the unweighted sum of squared elemental residuals in canonical `mg/L`, subject
 to non-negative fertilizer doses. It uses `N_total` whenever present and
 always includes a non-zero elemental S target. It has no percentage or molar
@@ -130,7 +132,7 @@ irrelevant. Exclusion combinations are therefore not swept or ranked as
 candidate defaults; they are an inspectable per-user trade-off, and excluded
 concentrations remain present in every solve result.
 
-Production `hierarchical` lives in `src/horticalc/solver.py` and
+Experimental `hierarchical` lives in `src/horticalc/solver.py` and
 `src/horticalc/priority_solver.py`. It accepts separate `under` and `over`
 tiers `1..4`, with `0` meaning report-only. It first locks the smallest worst
 raw-mg/L residual for a tier, then that tier's smallest total residual, before
@@ -154,16 +156,18 @@ molar/mg minimax and global underfill hypotheses, but product runtime and UI do
 not import or expose it. `scripts/solver_model_matrix.py` compares eight
 policies:
 
-- production `mass_nnls`;
-- legacy canonical and historical config `34191`;
+- the then-production `mass_nnls` baseline;
+- tuned-NNLS canonical and historical config `34191` (stored under the
+  compatibility identifier `legacy`);
 - symmetric mmol/L minimax;
 - mmol/L minimax with global underfill factors `2`, `4`, and `10`;
 - symmetric mg/L minimax.
 
 The matrix contains 10 profiles x 35 portfolios plus seven matched recipe
 roundtrips, or 357 cases per policy and 2,856 result rows. The 33 selection
-portfolios determine quality gates; the two force-variable Humin portfolios
-contribute 20 diagnostic cases per policy without influencing acceptance.
+portfolios determine quality gates; the two Humin portfolios that explicitly
+ignore dose limits contribute 20 diagnostic cases per policy without
+influencing acceptance.
 Evidence is stored as compressed `model_matrix_rows.jsonl.gz`;
 `model_matrix_summary.json` contains the gates and research rankings.
 
@@ -179,14 +183,14 @@ sum than canonical Legacy in any of the 330 selection cases.
 
 | Policy | Role | Mean squared error (mg/L)^2 | Worst N error mg/L | Dominated cases |
 |---|---|---:|---:|---:|
-| `mass_nnls` | production | 448.129 | 51.150 | 0 |
+| `mass_nnls` | then-production baseline | 448.129 | 51.150 | 0 |
 | `goal_mmol_symmetric` | research | 564.522 | 30.943 | 0 |
 | `goal_mg_symmetric` | research | 562.633 | 66.932 | 0 |
 | `goal_mmol_under_x2` | research | 595.587 | 57.739 | 0 |
 | `goal_mmol_under_x4` | research | 727.446 | 101.827 | 0 |
 | `goal_mmol_under_x10` | research | 1056.474 | 187.926 | 0 |
-| `legacy_34191` | legacy | 1948.114 | 103.721 | 0 |
-| `legacy_canonical` | legacy | 539.125 | 59.818 | 7 |
+| `legacy_34191` | historical tuned-NNLS control | 1948.114 | 103.721 | 0 |
+| `legacy_canonical` | canonical tuned-NNLS control | 539.125 | 59.818 | 7 |
 
 The mean raw squared error is 16.9% below canonical Legacy. The summary's
 separate historical lexicographic mmol ranking still places
@@ -197,14 +201,14 @@ biological ground truth.
 On the matched augmented Saloner portfolio, Mass NNLS uses unbounded Fetrilon
 at `0.172435 g/10 L`, hits every macro plus Si within `0.0022 mg/L`, and returns
 `N_total -0.0013`, `Fe -0.1629`, and `Cu +0.2979 mg/L`. Merely adding the two
-fixed-only Humin products to the production allowed list leaves that solution
+zero-limited Humin products to the production allowed list leaves that solution
 unchanged and selects neither product. On Bugbee with the same fertilizer
 pool, achieved Fe is `1.3039 mg/L`, Mn `1.1186 mg/L`, and Cu `0.1111 mg/L`;
 the toxic `Fe 21.55 mg/L` regression is not reproduced.
 
-The force-variable diagnostics remain intentionally harsher. They show what
-the mathematical optimizer would do if additive capability metadata were
-removed, without tainting the production portfolio or inventing dose limits.
+The ignore-dose-limit diagnostics remain intentionally harsher. They show what
+the mathematical optimizer would do without those product limits, without
+tainting the production portfolio or inventing new limits.
 
 ## Setting Experiments
 

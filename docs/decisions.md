@@ -68,10 +68,12 @@ Source: `api/app.py`, `frontend/`, `src/horticalc/data_io.py`.
 
 ## Solver
 
-- Default `solver_model`: `mass_nnls`; `hierarchical` is the explicit
-  production directional-priority model, and `legacy` remains a compatibility
-  option. Experimental molar goal policies are research-only.
-- `mass_nnls` minimizes unweighted squared elemental residuals in canonical
+- Default and production `solver_model`: `legacy`, presented to users as
+  **NNLS + tuning (standard)**. The internal identifier remains unchanged for
+  stored-data compatibility. `mass_nnls` and `hierarchical` are explicitly
+  experimental.
+  Experimental molar goal policies remain research-only.
+- Experimental `mass_nnls` minimizes unweighted squared elemental residuals in canonical
   `mg/L`, uses `N_total` when present, and includes a non-zero `S` target.
 - A fertilizer `SolverMaxDosePerL` of `0` prevents variable Solver dosing while
   preserving explicit fixed doses. The shipped HuminTech AMINO POWER and

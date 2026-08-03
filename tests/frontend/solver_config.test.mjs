@@ -10,7 +10,7 @@ import {
 import { buildSolvePayload, formatClipboardIonLabel } from "../../frontend/app/solver_payload.js";
 
 const fallback = [
-  { key: "solver_model", type: "string", defaultValue: "mass_nnls", choices: ["mass_nnls", "hierarchical", "legacy"] },
+  { key: "solver_model", type: "string", defaultValue: "legacy", choices: ["mass_nnls", "hierarchical", "legacy"] },
   { key: "irls_max_outer_iter", type: "integer", defaultValue: 4, minimum: 1, maximum: 12 },
   { key: "scale_eps_mg_per_l", type: "number", defaultValue: 1, exclusiveMinimum: 0 },
 ];

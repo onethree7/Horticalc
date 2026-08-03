@@ -92,7 +92,7 @@ export const FALLBACK_SOLVER_CONFIG_DEFINITIONS = [
   {
     key: "solver_model",
     type: "string",
-    defaultValue: "mass_nnls",
+    defaultValue: "legacy",
     choices: ["mass_nnls", "hierarchical", "legacy"],
   },
   { key: "relative_weighting", type: "boolean", defaultValue: false },

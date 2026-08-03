@@ -165,7 +165,8 @@ catalog, and `deep` adds named/leave-one-out nutrient-portfolio barrage rows.
 Generated CSV, JSONL, manifest, summary, analysis JSON, and Markdown files stay
 under the selected ignored output directory.
 
-The solver-model command compares production `mass_nnls`, two legacy controls,
+The historical solver-model research command compares its then-production
+`mass_nnls` baseline, two tuned-NNLS controls,
 and deterministic research-only mg/L/mmol/L minimax policies across all
 selection and diagnostic portfolios plus the matched recipe roundtrips. It
 writes a compact gzip JSONL evidence stream and a JSON quality-gate/ranking

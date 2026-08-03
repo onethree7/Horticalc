@@ -41,6 +41,7 @@ def test_i18n_catalogs_cover_the_supported_themes_and_solver_labels() -> None:
         "solver.modelLabel",
         "solver.model.massNnls",
         "solver.model.hierarchical",
+        "solver.model.legacy",
         "solver.modelMassHint",
         "solver.modelHierarchicalHint",
         "solver.modelLegacyHint",
@@ -59,3 +60,22 @@ def test_i18n_catalogs_cover_the_supported_themes_and_solver_labels() -> None:
 
     for locale in LOCALES:
         assert required_keys <= set(_catalog(locale)), locale
+
+
+def test_nonstandard_solver_models_are_marked_experimental_in_every_locale() -> None:
+    markers = {
+        "de": "experimentell",
+        "en": "experimental",
+        "nl": "experimenteel",
+        "es": "experimental",
+        "zh": "实验性",
+    }
+
+    for locale, marker in markers.items():
+        catalog = _catalog(locale)
+        assert marker in catalog["solver.model.massNnls"].casefold(), locale
+        assert marker in catalog["solver.model.hierarchical"].casefold(), locale
+        assert marker in catalog["solver.modelMassHint"].casefold(), locale
+        assert marker in catalog["solver.modelHierarchicalHint"].casefold(), locale
+        assert marker not in catalog["solver.model.legacy"].casefold(), locale
+        assert marker not in catalog["solver.modelLegacyHint"].casefold(), locale

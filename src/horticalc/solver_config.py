@@ -22,7 +22,7 @@ SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {
         "key": "solver_model",
         "type": "string",
-        "default": "mass_nnls",
+        "default": "legacy",
         "choices": list(SOLVER_MODELS),
     },
     {

@@ -14,13 +14,14 @@ import {
   parseDecimalInput,
   roundScaledValue,
 } from "./formatting.js";
-import { applyScaledValues, bindScaleButtons } from "./scaling.js";
+import { applyScaledValues, bindScaleButtons, scaleAmountsByVolume } from "./scaling.js";
 import {
   applySolverConfig,
   buildSolverConfigPayload,
   normalizeSolverConfigDefinitions,
 } from "./solver_config.js";
 import {
+  activeFixedAmountCount,
   buildSolvePayload as createSolvePayload,
   formatClipboardIonLabel,
   solverResultDisplayKeys,
@@ -31,7 +32,7 @@ import { createLatestRequestGate } from "../request_gate.js";
 
 export function createSolverController({
   api, i18n, notifications, units, water, getSelectedFertilizers,
-  onApplyResult, isActive,
+  onApplyResult, onFixedAmountsChange = () => {}, isActive,
 }) {
 const solverTargetsTableEl = qs("#solverTargetsTable");
 const solverTargetsTable = qs("#solverTargetsTable tbody");
@@ -436,7 +437,7 @@ function renderSolverAllowedOptions() {
 }
 
 function activeSolverOverrideCount() {
-  return Object.values(solverFixedGrams).filter((value) => Number(value) > 0).length;
+  return activeFixedAmountCount(solverFixedGrams);
 }
 
 function syncSolverOverridePanel({ forceOpen = false } = {}) {
@@ -447,6 +448,7 @@ function syncSolverOverridePanel({ forceOpen = false } = {}) {
   if (solverOverridesDetails && (forceOpen || activeCount > 0)) {
     solverOverridesDetails.open = true;
   }
+  onFixedAmountsChange(activeCount);
 }
 
 function renderSolverFixedTable() {
@@ -663,11 +665,12 @@ function applyNutrientSolution(solution) {
     solverTargetValues[field.key] = value;
   });
   updateSolverTargetScaleDisplay();
-  if (solution?.solver_config && Object.keys(solution.solver_config).length) {
+  if (solution && Object.prototype.hasOwnProperty.call(solution, "solver_config")) {
     applyConfig({ ...buildCurrentSolverConfig(), ...solution.solver_config });
-    return;
+  } else {
+    renderSolverTargetsTable();
   }
-  renderSolverTargetsTable();
+  renderSolverResults(null);
 }
 
 function resetSolverTargets() {
@@ -699,6 +702,28 @@ function pruneSolverFixedGrams() {
       delete solverFixedGrams[key];
     }
   });
+}
+
+function setSolverFixedGrams(values = {}) {
+  Object.keys(solverFixedGrams).forEach((key) => delete solverFixedGrams[key]);
+  Object.entries(values).forEach(([name, value]) => {
+    const numeric = Number(value);
+    if (solverAllowedFertilizers.includes(name) && Number.isFinite(numeric) && numeric > 0) {
+      solverFixedGrams[name] = numeric;
+    }
+  });
+  renderSolverFixedTable();
+  renderSolverResults(null);
+}
+
+function setSolverUreaAsNh4(value) {
+  solverUreaToggle.checked = Boolean(value);
+  renderSolverResults(null);
+}
+
+function missingFertilizers(names = []) {
+  const available = new Set(fertilizerOptions.map((fertilizer) => fertilizer.name));
+  return names.filter((name) => !available.has(name));
 }
 
 function updateSolverAllowedFertilizers(names, mode = "merge", { rerenderPicker = true } = {}) {
@@ -780,10 +805,10 @@ function setAllowedContext(context) {
 }
 
 function scaleFixedAmounts(previousLiters, nextLiters) {
-  const factor = nextLiters / previousLiters;
-  Object.keys(solverFixedGrams).forEach((key) => {
-    solverFixedGrams[key] = roundScaledValue((Number(solverFixedGrams[key]) || 0) * factor);
-  });
+  Object.assign(
+    solverFixedGrams,
+    scaleAmountsByVolume(solverFixedGrams, previousLiters, nextLiters),
+  );
   renderSolverFixedTable();
 }
 
@@ -911,9 +936,12 @@ return {
   buildConfigPayload: buildCurrentSolverConfig,
   deactivate,
   get allowedFertilizers() { return [...solverAllowedFertilizers]; },
+  get fixedGrams() { return { ...solverFixedGrams }; },
   get lastResult() { return lastSolveResult; },
   get targets() { return { ...solverTargetValues }; },
   get ureaAsNh4() { return solverUreaToggle.checked; },
+  get activeFixedAmountCount() { return activeSolverOverrideCount(); },
+  missingFertilizers,
   mount,
   refreshDoseUnits() { renderSolverFixedTable(); if (lastSolveResult) renderSolverResults(lastSolveResult); },
   refreshLocalized,
@@ -923,6 +951,8 @@ return {
   scaleFixedAmounts,
   setAllowedContext,
   setAllowedFertilizers: updateSolverAllowedFertilizers,
+  setFixedGrams: setSolverFixedGrams,
   setFertilizers,
+  setUreaAsNh4: setSolverUreaAsNh4,
 };
 }

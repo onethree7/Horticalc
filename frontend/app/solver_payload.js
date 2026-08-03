@@ -2,6 +2,62 @@ export function formatClipboardIonLabel(key) {
   return key === "N_total" ? "N" : key;
 }
 
+export const NUTRIENT_SOLUTION_SETUP_FIELDS = [
+  "liters",
+  "water_profile",
+  "osmosis_percent",
+  "fertilizers_allowed",
+  "fixed_grams",
+  "urea_as_nh4",
+  "solver_config",
+];
+
+export function positiveEntries(values = {}) {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => Number(value) > 0),
+  );
+}
+
+export function activeFixedAmountCount(values = {}) {
+  return Object.keys(positiveEntries(values)).length;
+}
+
+export function nutrientSolutionHasSetup(solution = {}) {
+  return NUTRIENT_SOLUTION_SETUP_FIELDS.some((field) =>
+    Object.prototype.hasOwnProperty.call(solution, field)
+  );
+}
+
+export function buildNutrientSolutionPayload({
+  name,
+  targets,
+  includeSetup = false,
+  liters,
+  waterProfile,
+  osmosisPercent,
+  allowedFertilizers,
+  fixedGrams,
+  ureaAsNh4,
+  solverConfig,
+}) {
+  const payload = {
+    name,
+    source: "Horticalc UI",
+    targets_mg_per_l: targets,
+  };
+  if (!includeSetup) return payload;
+  return {
+    ...payload,
+    liters,
+    water_profile: String(waterProfile || "").replace(/\.yml$/i, ""),
+    osmosis_percent: osmosisPercent,
+    fertilizers_allowed: [...allowedFertilizers],
+    fixed_grams: positiveEntries(fixedGrams),
+    urea_as_nh4: ureaAsNh4,
+    solver_config: solverConfig,
+  };
+}
+
 export function buildSolvePayload({
   liters,
   targetValues,
@@ -12,9 +68,6 @@ export function buildSolvePayload({
   ureaAsNh4,
   solverConfig,
 }) {
-  const positiveEntries = (values) => Object.fromEntries(
-    Object.entries(values).filter(([, value]) => Number(value) > 0),
-  );
   return {
     liters,
     targets: positiveEntries(targetValues),

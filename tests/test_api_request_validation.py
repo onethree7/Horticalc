@@ -89,11 +89,39 @@ def test_requests_reject_non_finite_runtime_numbers() -> None:
         ),
         ("/calculate", '{"osmosis_percent": Infinity}'),
         ("/solve", '{"fixed_grams": {"Yara Tera CALCINIT": Infinity}}'),
+        (
+            "/nutrient-solutions",
+            '{"name": "bad", "fixed_grams": {"Yara Tera CALCINIT": Infinity}}',
+        ),
     ]
 
     for route, payload in requests:
         response = client.post(route, content=payload, headers={"content-type": "application/json"})
         assert response.status_code == 422, (route, response.text)
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected_status"),
+    [
+        ({"name": "bad liters", "liters": 0}, 422),
+        ({"name": "bad osmosis", "osmosis_percent": 101}, 422),
+        (
+            {
+                "name": "bad fixed amount",
+                "fertilizers_allowed": ["A"],
+                "fixed_grams": {"A": -1},
+            },
+            400,
+        ),
+    ],
+)
+def test_nutrient_solution_rejects_invalid_solver_setup_numbers(
+    payload: dict,
+    expected_status: int,
+) -> None:
+    response = TestClient(api_app.app).post("/nutrient-solutions", json=payload)
+
+    assert response.status_code == expected_status
 
 
 @pytest.mark.parametrize(

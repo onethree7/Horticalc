@@ -99,6 +99,98 @@ async function assertNoPageOverflow(page, label) {
     await page.locator("#loadProfile").click();
     await page.locator("#solverAllowedFromRecipe").click();
 
+    let savedTargetPayload = null;
+    await page.route("**/nutrient-solutions/Browser_solver_setup*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(savedTargetPayload || {}),
+      });
+    });
+    await page.route("**/nutrient-solutions", async (route) => {
+      if (route.request().method() === "POST") {
+        savedTargetPayload = route.request().postDataJSON();
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ status: "ok", filename: "Browser_solver_setup.yml" }),
+        });
+        return;
+      }
+      const response = await route.fetch();
+      const profiles = await response.json();
+      if (savedTargetPayload) {
+        profiles.push({ name: savedTargetPayload.name, filename: "Browser_solver_setup.yml" });
+      }
+      await route.fulfill({ response, json: profiles });
+    });
+
+    await page.locator("#solverOverrides").evaluate((element) => { element.open = true; });
+    const firstFixedAmount = page.locator("#solverFixedTable input").first();
+    await firstFixedAmount.fill("2");
+    await page.locator("#saveSolverSetup").uncheck();
+    await page.locator("#solverSetupSaveWarning:not(.is-hidden)").waitFor();
+    await page.locator("#profileName").fill("Browser solver setup");
+    await page.locator("#saveProfile").click();
+    if (dialogs.length !== 1 || !dialogs[0].includes("1")) {
+      throw new Error(`Expected fixed-amount save warning, got: ${JSON.stringify(dialogs)}`);
+    }
+    dialogs.length = 0;
+    if (savedTargetPayload) throw new Error("Dismissed target-only warning still saved the profile");
+
+    await page.locator("#saveSolverSetup").check();
+    await page.locator("#saveProfile").click();
+    await page.locator("#profileSelect option", { hasText: "Browser solver setup" })
+      .waitFor({ state: "attached" });
+    if (!savedTargetPayload?.water_profile || savedTargetPayload.liters <= 0) {
+      throw new Error(`Saved Solver setup is incomplete: ${JSON.stringify(savedTargetPayload)}`);
+    }
+    if (Object.values(savedTargetPayload.fixed_grams || {}).length !== 1) {
+      throw new Error(`Saved fixed amounts are incomplete: ${JSON.stringify(savedTargetPayload)}`);
+    }
+
+    await page.locator("#solverAllowedClear").click();
+    if (await page.locator("#solverFixedTable input").count()) {
+      throw new Error("Clearing allowed fertilizers did not clear the fixed-amount table");
+    }
+    await page.locator("#profileSelect").selectOption("Browser_solver_setup.yml");
+    await page.locator("#loadProfile").click();
+    await page.waitForFunction(() => Array.from(
+      document.querySelectorAll("#solverFixedTable input"),
+      (input) => Number(input.value),
+    ).some((value) => value === 2));
+    await page.locator("#saveSolverSetup:checked").waitFor();
+    const restoredFixedValues = await page.locator("#solverFixedTable input")
+      .evaluateAll((inputs) => inputs.map((input) => input.value));
+    if (!restoredFixedValues.some((value) => Number(value) === 2)) {
+      throw new Error(
+        `Loading a target profile did not restore its fixed amount: ${JSON.stringify({
+          saved: savedTargetPayload.fixed_grams,
+          restored: restoredFixedValues,
+        })}`,
+      );
+    }
+
+    await page.locator("#saveSolverSetup").uncheck();
+    await page.locator("#saveProfile").click();
+    for (let attempt = 0; attempt < 20 && !dialogs.length; attempt += 1) {
+      await page.waitForTimeout(25);
+    }
+    if (dialogs.length !== 1 || !dialogs[0].toLowerCase().includes("setup")) {
+      throw new Error(`Expected stored-setup removal warning, got: ${JSON.stringify(dialogs)}`);
+    }
+    dialogs.length = 0;
+    await page.locator("#saveSolverSetup").check();
+
+    const litersInput = page.locator("#configLiters");
+    const previousVolume = Number(await litersInput.inputValue());
+    await litersInput.fill(String(previousVolume * 2));
+    const scaledFixedValues = (await page.locator("#solverFixedTable input")
+      .evaluateAll((inputs) => inputs.map((input) => input.value))).map(Number);
+    if (!scaledFixedValues.some((value) => Math.abs(value - 4) <= 0.0001)) {
+      throw new Error(`Fixed amount did not scale from 2 to 4: ${JSON.stringify(scaledFixedValues)}`);
+    }
+
     let solveRequestCount = 0;
     await page.route("**/solve", async (route) => {
       solveRequestCount += 1;

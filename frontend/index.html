@@ -328,11 +328,20 @@
               <input id="profileName" type="text" placeholder="e.g. default" data-i18n-placeholder="common.defaultNamePlaceholder" />
               <button id="saveProfile" class="btn btn--outline" type="button" data-i18n="common.save">Save</button>
             </div>
+            <div class="profile-setup-option is-hidden" id="solverSetupSaveOption">
+              <label class="toggle" for="saveSolverSetup">
+                <input id="saveSolverSetup" type="checkbox" />
+                <span data-i18n="profile.saveSolverSetup">Save Solver setup</span>
+              </label>
+              <span class="inline-hint" data-i18n="profile.saveSolverSetupHint">Fertilizer selection, fixed amounts, batch size, water, and Solver settings.</span>
+              <span class="inline-hint profile-setup-warning is-hidden" id="solverSetupSaveWarning" aria-live="polite"></span>
+            </div>
           </div>
         </div>
         <div class="actions is-hidden" id="solverProfileActions">
           <button id="saveSolverAsRecipe" class="btn btn--outline" type="button" data-i18n="profile.saveSolverAsRecipe">Save as fertilizer recipe</button>
           <button id="applySolverToCalculator" class="btn btn--outline" type="button" data-i18n="profile.viewInCalculator">View in calculator</button>
+          <span class="inline-hint" data-i18n="profile.solverRecipeOutputHint">A fertilizer recipe stores calculated doses, not the Solver setup.</span>
         </div>
       </section>
 

@@ -118,6 +118,21 @@ button,
   background: transparent;
 }
 
+.profile-setup-option {
+  display: grid;
+  gap: var(--space-1);
+  align-items: start;
+}
+
+.profile-setup-option .toggle {
+  justify-self: start;
+}
+
+.profile-setup-warning {
+  color: var(--app-live-warning);
+  font-weight: 700;
+}
+
 .solver-results .table-wrap,
 .solver-lower-grid .table-wrap {
   min-width: 0;

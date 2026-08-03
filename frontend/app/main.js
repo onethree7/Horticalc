@@ -15,6 +15,10 @@ import { createProfilesController } from "./profiles.js";
 import { createSettingsController } from "./settings.js";
 import { createShellController } from "./shell.js";
 import { createSolverController } from "./solver.js";
+import {
+  buildNutrientSolutionPayload,
+  nutrientSolutionHasSetup,
+} from "./solver_payload.js";
 import { storageGet } from "./storage.js";
 import { createUnitService } from "./units.js";
 import { createWaterController } from "./water.js";
@@ -59,6 +63,7 @@ solver = createSolverController({
   water,
   getSelectedFertilizers: () => calculator.collectSelectedFertilizerNames(),
   onApplyResult: (options) => calculator.applySolverResult(options),
+  onFixedAmountsChange: () => profiles?.refreshSetupWarning(),
   isActive: () => shell?.isActive("solver") || false,
 });
 
@@ -120,22 +125,89 @@ async function applyRecipeProfile(recipe, context, isCurrent = () => true) {
   return true;
 }
 
+function hasOwn(object, field) {
+  return Boolean(object) && Object.prototype.hasOwnProperty.call(object, field);
+}
+
+async function applyNutrientSolutionProfile(solution, isCurrent = () => true) {
+  const allowed = hasOwn(solution, "fertilizers_allowed")
+    ? solution.fertilizers_allowed || []
+    : null;
+  const missing = solver.missingFertilizers(allowed || []);
+  if (missing.length) {
+    throw new Error(i18n.t("errors.solverSetupMissingFertilizers", { names: missing.join(", ") }));
+  }
+
+  let profile = null;
+  let filename = "";
+  if (hasOwn(solution, "water_profile")) {
+    filename = solution.water_profile.endsWith(".yml")
+      ? solution.water_profile
+      : `${solution.water_profile}.yml`;
+    try {
+      profile = await water.loadProfile(solution.water_profile);
+    } catch (error) {
+      throw new Error(
+        i18n.t("errors.solverSetupMissingWater", { name: solution.water_profile }),
+        { cause: error },
+      );
+    }
+  }
+  if (!isCurrent()) return false;
+
+  if (hasOwn(solution, "liters")) {
+    units.setLiters(solution.liters, {
+      scaleBatch: false,
+      recalculate: false,
+      invalidateSolver: false,
+    });
+  }
+  solver.applyNutrientSolution(solution);
+  if (allowed) solver.setAllowedFertilizers(allowed, "replace");
+  if (hasOwn(solution, "fixed_grams")) solver.setFixedGrams(solution.fixed_grams || {});
+  if (hasOwn(solution, "urea_as_nh4")) solver.setUreaAsNh4(solution.urea_as_nh4);
+  if (profile) {
+    water.setSelectedProfile(filename);
+    water.applyProfile(profile);
+  }
+  if (hasOwn(solution, "osmosis_percent")) {
+    water.setOsmosisPercent(solution.osmosis_percent);
+  }
+  if (nutrientSolutionHasSetup(solution)) calculator.scheduleRecalculate();
+  return true;
+}
+
+function buildTargetProfile(name, includeSetup) {
+  if (includeSetup && !water.selectedProfile) {
+    throw new Error(i18n.t("errors.solverSetupWaterRequired"));
+  }
+  return buildNutrientSolutionPayload({
+    name,
+    targets: solver.targets,
+    includeSetup,
+    liters: units.liters,
+    waterProfile: water.selectedProfile,
+    osmosisPercent: water.osmosisPercent,
+    allowedFertilizers: solver.allowedFertilizers,
+    fixedGrams: solver.fixedGrams,
+    ureaAsNh4: solver.ureaAsNh4,
+    solverConfig: solver.buildConfigPayload(),
+  });
+}
+
 profiles = createProfilesController({
   api,
   i18n,
   notifications,
   actions: {
-    applyNutrientSolution: (solution) => solver.applyNutrientSolution(solution),
+    applyNutrientSolution: applyNutrientSolutionProfile,
     applyRecipeProfile,
     applySolverResult: (options) => calculator.applySolverResult(options),
     buildCalculatorRecipe: (name) => calculator.buildRecipePayloadFromSelection(name),
-    buildNutrientSolution: (name) => ({
-      name,
-      source: "Horticalc UI",
-      targets_mg_per_l: solver.targets,
-      solver_config: solver.buildConfigPayload(),
-    }),
+    buildNutrientSolution: buildTargetProfile,
     buildSolverRecipe: (name) => calculator.buildRecipePayloadFromSolver(name),
+    getActiveFixedAmountCount: () => solver.activeFixedAmountCount,
+    hasNutrientSolutionSetup: nutrientSolutionHasSetup,
     hasSolverResult: () => Boolean(solver.lastResult),
     resetSolverTargets: () => solver.resetTargets(),
   },

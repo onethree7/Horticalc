@@ -87,7 +87,7 @@ Allowed water keys are defined in `src/horticalc/chemistry.py` and reused as `AL
 | `GET` | `/nutrient-solutions/{solution_name}` | Load a target profile. |
 | `POST`/`PUT` | `/nutrient-solutions` | Save a target profile. |
 
-Allowed target keys are defined in `src/horticalc/solver.py` as `ALLOWED_TARGET_KEYS` and reused by `api/app.py`. Save payloads may include a validated `solver_config`; loading the profile returns that mapping so the GUI can restore its model and directional priorities with the targets.
+Allowed target keys are defined in `src/horticalc/solver.py` as `ALLOWED_TARGET_KEYS` and reused by `api/app.py`. Save payloads always use `name`, `source`, and `targets_mg_per_l`. They may also include `liters`, `water_profile`, `osmosis_percent`, `fertilizers_allowed`, `fixed_grams`, `urea_as_nh4`, and a validated `solver_config`. Loading returns the optional fields so the GUI can restore the saved Solver setup. Allowed fertilizer names must be unique, and every finite non-negative `fixed_grams` entry must be included in `fertilizers_allowed`.
 
 ## Recipes
 

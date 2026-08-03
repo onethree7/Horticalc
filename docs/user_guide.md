@@ -38,6 +38,14 @@ CSV columns, or API fields.
 4. Click **Calculate**.
 5. Review target, achieved, and difference values. The `objective_elements` list shows what was actually optimized. Apply the result to the calculator or copy it.
 
+When saving the target profile, enable **Save Solver setup** to retain the
+batch volume, water profile and osmosis share, allowed fertilizers, fixed
+amounts, urea mode, and Solver settings. Without this option, the profile keeps
+only its nutrient targets. Horticalc warns before active fixed amounts or an
+existing stored setup are omitted. **Save as fertilizer recipe** stores the
+calculated doses for mixing; it does not store which doses were fixed Solver
+inputs.
+
 Sulfur targets are report-only by default; enable the sulfur objective in the advanced solver settings if sulfur should affect the fit.
 
 ## UI Preferences, Units, Language, And Persistence

@@ -166,7 +166,33 @@ solver_config:
     Ca: {under: 2, over: 3}
 ```
 
-Targets are element mg/L. Accepted keys live in `ALLOWED_TARGET_KEYS` in `src/horticalc/solver.py`. Oxide aliases such as `K2O` and `P2O5` are fertilizer composition keys, not target keys. `S` is elemental sulfur; `SO4` is not a target key. `solver_config` is optional and uses the same validated contract as a recipe. `load_nutrient_solution_data()` returns `name`, `source`, and `targets_mg_per_l`, plus `solver_config` when the profile defines a non-empty mapping.
+Targets are element mg/L. Accepted keys live in `ALLOWED_TARGET_KEYS` in `src/horticalc/solver.py`. Oxide aliases such as `K2O` and `P2O5` are fertilizer composition keys, not target keys. `S` is elemental sulfur; `SO4` is not a target key. `solver_config` is optional and uses the same validated contract as a recipe. `load_nutrient_solution_data()` returns `name`, `source`, and `targets_mg_per_l`, plus every optional Solver-setup field present in the YAML.
+
+Target profiles saved with **Save Solver setup** may additionally contain the
+current Solver inputs:
+
+```yaml
+liters: 10
+water_profile: default
+osmosis_percent: 0
+fertilizers_allowed:
+  - Compo Fetrilon Combi 1
+  - ICL Nova PeKacid 0-60-20
+fixed_grams:
+  Compo Fetrilon Combi 1: 2
+  ICL Nova PeKacid 0-60-20: 6
+urea_as_nh4: false
+solver_config:
+  solver_model: mass_nnls
+```
+
+These fields are optional as a group in the GUI and remain individually
+optional for older files and API clients. `liters` is positive,
+`osmosis_percent` is within `0..100`, allowed fertilizer names are unique,
+and every finite non-negative `fixed_grams` entry must also occur in
+`fertilizers_allowed`. Fixed amounts are canonical batch totals and scale
+proportionally when the GUI batch volume changes. Source:
+`src/horticalc/data_io.py` and `api/app.py`.
 
 ## Calculation Output
 

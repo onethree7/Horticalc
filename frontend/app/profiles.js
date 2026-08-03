@@ -9,6 +9,9 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
   const resetButton = qs("#resetProfile");
   const nameInput = qs("#profileName");
   const saveButton = qs("#saveProfile");
+  const solverSetupOption = qs("#solverSetupSaveOption");
+  const saveSolverSetupInput = qs("#saveSolverSetup");
+  const solverSetupWarning = qs("#solverSetupSaveWarning");
   const solverActions = qs("#solverProfileActions");
   const saveSolverAsRecipeButton = qs("#saveSolverAsRecipe");
   const applySolverButton = qs("#applySolverToCalculator");
@@ -18,6 +21,20 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
   let nutrientSolutions = [];
   let mounted = false;
   const t = (key, params) => i18n.t(key, params);
+
+  function refreshSetupWarning() {
+    const activeCount = actions.getActiveFixedAmountCount();
+    const visible = mode === "solver" && !saveSolverSetupInput.checked && activeCount > 0;
+    solverSetupWarning.classList.toggle("is-hidden", !visible);
+    solverSetupWarning.textContent = visible
+      ? t("profile.solverSetupFixedWarning", { count: activeCount })
+      : "";
+  }
+
+  function setSetupIncluded(included) {
+    saveSolverSetupInput.checked = Boolean(included);
+    refreshSetupWarning();
+  }
 
   function renderOptions() {
     const profiles = mode === "solver" ? nutrientSolutions : recipes;
@@ -43,6 +60,8 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
     sectionTitle.textContent = t(titleKey);
     sectionHint.textContent = t(hintKey);
     solverActions.classList.toggle("is-hidden", mode !== "solver");
+    solverSetupOption.classList.toggle("is-hidden", mode !== "solver");
+    refreshSetupWarning();
     renderOptions();
   }
 
@@ -57,7 +76,9 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
       if (activeMode === "solver") {
         const solution = await api.fetchNutrientSolutionData(select.value, t("errors.loadNutrientSolution"));
         if (!requests.isCurrent(version) || mode !== activeMode) return;
-        actions.applyNutrientSolution(solution);
+        await actions.applyNutrientSolution(solution, () => requests.isCurrent(version));
+        if (!requests.isCurrent(version) || mode !== activeMode) return;
+        setSetupIncluded(actions.hasNutrientSolutionSetup(solution));
         nameInput.value = solution.name || "";
       } else {
         const recipe = await api.fetchRecipeData(select.value, t("errors.loadRecipe"));
@@ -78,6 +99,7 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
     try {
       if (activeMode === "solver") {
         actions.resetSolverTargets();
+        setSetupIncluded(false);
       } else {
         const recipe = await api.fetchDefaultRecipe(t("errors.loadDefaultRecipe"));
         if (!requests.isCurrent(version) || mode !== activeMode) return;
@@ -98,7 +120,32 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
     }
     try {
       if (mode === "solver") {
-        await api.saveNutrientSolutionData(actions.buildNutrientSolution(name), t("errors.saveNutrientSolutionFailed"));
+        const includeSetup = saveSolverSetupInput.checked;
+        if (!includeSetup) {
+          const activeCount = actions.getActiveFixedAmountCount();
+          const existing = nutrientSolutions.find((profile) =>
+            String(profile.name || "").trim().toLocaleLowerCase()
+              === name.toLocaleLowerCase()
+          );
+          let removesStoredSetup = false;
+          if (existing) {
+            const stored = await api.fetchNutrientSolutionData(
+              existing.filename,
+              t("errors.loadNutrientSolution"),
+            );
+            removesStoredSetup = actions.hasNutrientSolutionSetup(stored);
+          }
+          const confirmKey = removesStoredSetup
+            ? "profile.confirmRemoveSolverSetup"
+            : activeCount > 0
+              ? "profile.confirmOmitFixedAmounts"
+              : "";
+          if (confirmKey && !window.confirm(t(confirmKey, { count: activeCount }))) return;
+        }
+        await api.saveNutrientSolutionData(
+          actions.buildNutrientSolution(name, includeSetup),
+          t("errors.saveNutrientSolutionFailed"),
+        );
         nutrientSolutions = await api.fetchNutrientSolutions(t("errors.loadNutrientSolutions"));
       } else {
         await api.saveRecipeData(actions.buildCalculatorRecipe(name), t("errors.saveRecipeFailed"));
@@ -135,6 +182,7 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
     loadButton.addEventListener("click", loadSelected);
     resetButton.addEventListener("click", reset);
     saveButton.addEventListener("click", save);
+    saveSolverSetupInput.addEventListener("change", refreshSetupWarning);
     saveSolverAsRecipeButton.addEventListener("click", saveSolverRecipe);
     applySolverButton.addEventListener("click", () => actions.applySolverResult({ switchToCalculator: true }));
     setMode("calculator");
@@ -143,6 +191,7 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
   return {
     mount,
     refreshLocalized() { setMode(mode); },
+    refreshSetupWarning,
     setMode,
     setProfiles({ recipeProfiles = [], solutions = [] } = {}) {
       recipes = recipeProfiles;

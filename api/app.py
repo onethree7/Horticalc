@@ -188,7 +188,13 @@ class NutrientSolutionPayload(BaseModel):
     name: str
     source: Optional[str] = ""
     targets_mg_per_l: Dict[str, float] = Field(default_factory=dict)
-    solver_config: Dict[str, Any] = Field(default_factory=dict)
+    liters: Optional[FiniteFloat] = Field(default=None, gt=0)
+    water_profile: Optional[str] = None
+    osmosis_percent: Optional[FiniteFloat] = Field(default=None, ge=0, le=100)
+    fertilizers_allowed: Optional[List[str]] = None
+    fixed_grams: Optional[Dict[str, FiniteFloat]] = None
+    urea_as_nh4: Optional[bool] = None
+    solver_config: Optional[Dict[str, Any]] = None
 
 
 class RecipePayload(BaseModel):
@@ -223,7 +229,12 @@ def _validated_request_model(model_type: type[BaseModel], payload: dict) -> Base
     try:
         return model_type.model_validate(payload)
     except ValidationError as exc:
-        raise HTTPException(status_code=422, detail=exc.errors(include_url=False)) from exc
+        errors = exc.errors(include_url=False)
+        for error in errors:
+            invalid_input = error.get("input")
+            if isinstance(invalid_input, float) and not math.isfinite(invalid_input):
+                error["input"] = str(invalid_input)
+        raise HTTPException(status_code=422, detail=errors) from exc
 
 
 def _model_dump(model: BaseModel) -> dict:
@@ -571,7 +582,34 @@ async def save_nutrient_solution_profile(request: Request) -> dict:
         ALLOWED_TARGET_KEYS,
         "Invalid target key",
     )
-    solver_config = _validated_solver_config(solution.solver_config)
+    fields_set = solution.model_fields_set
+    solver_config = _validated_solver_config(solution.solver_config or {}) if "solver_config" in fields_set else None
+    water_profile = None
+    if "water_profile" in fields_set:
+        water_profile = (solution.water_profile or "").strip()
+        if not water_profile:
+            raise HTTPException(status_code=400, detail="water_profile must be a non-empty string")
+    fertilizers_allowed = None
+    if "fertilizers_allowed" in fields_set:
+        fertilizers_allowed = _validated_unique_names(
+            [str(entry) for entry in solution.fertilizers_allowed or [] if str(entry).strip()],
+            field_name="fertilizers_allowed",
+        )
+    fixed_grams = None
+    if "fixed_grams" in fields_set:
+        try:
+            fixed_grams = {
+                str(fertilizer): non_negative_float(value, f"fixed_grams: {fertilizer}")
+                for fertilizer, value in (solution.fixed_grams or {}).items()
+            }
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        outside_allowed = sorted(set(fixed_grams) - set(fertilizers_allowed or []))
+        if outside_allowed:
+            raise HTTPException(
+                status_code=400,
+                detail=f"fixed_grams not in fertilizers_allowed: {outside_allowed}",
+            )
 
     nutrient_solutions_dir = _portable_layout().nutrient_solutions
     solution_path = _saved_yaml_path(
@@ -584,6 +622,14 @@ async def save_nutrient_solution_profile(request: Request) -> dict:
         name=name,
         source=solution.source or "",
         targets_mg_per_l=targets_mg_per_l,
+        liters=solution.liters if "liters" in fields_set else None,
+        water_profile=water_profile,
+        osmosis_percent=(
+            _validated_osmosis_percent(solution.osmosis_percent) if "osmosis_percent" in fields_set else None
+        ),
+        fertilizers_allowed=fertilizers_allowed,
+        fixed_grams=fixed_grams,
+        urea_as_nh4=solution.urea_as_nh4 if "urea_as_nh4" in fields_set else None,
         solver_config=solver_config,
     )
     return {"status": "ok", "filename": solution_path.name}

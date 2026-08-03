@@ -20,6 +20,7 @@ from .validation import finite_float as _finite_float
 from .validation import non_negative_float as _non_negative_float
 from .validation import percentage_float as _percentage_float
 from .validation import positive_float as _positive_float
+from .validation import unique_strings as _unique_strings
 
 logger = logging.getLogger(__name__)
 
@@ -592,11 +593,49 @@ def load_nutrient_solution_data(path: Path) -> dict:
         "source": data.get("source") or "",
         "targets_mg_per_l": targets,
     }
-    raw_solver_config = data.get("solver_config")
-    if raw_solver_config:
+    if "liters" in data:
+        result["liters"] = _positive_float(data["liters"], f"{path}: liters")
+    if "water_profile" in data:
+        water_profile = data["water_profile"]
+        if not isinstance(water_profile, str) or not water_profile.strip():
+            raise ValueError(f"{path}: water_profile must be a non-empty string")
+        result["water_profile"] = water_profile.strip()
+    if "osmosis_percent" in data:
+        result["osmosis_percent"] = _percentage_float(
+            data["osmosis_percent"],
+            f"{path}: osmosis_percent",
+        )
+    fertilizers_allowed: list[str] | None = None
+    if "fertilizers_allowed" in data:
+        raw_allowed = data["fertilizers_allowed"]
+        if not isinstance(raw_allowed, list):
+            raise ValueError(f"{path}: fertilizers_allowed must be a list")
+        fertilizers_allowed = _unique_strings(raw_allowed, "fertilizers_allowed")
+        if any(not name.strip() for name in fertilizers_allowed):
+            raise ValueError(f"{path}: fertilizers_allowed must contain non-empty names")
+        result["fertilizers_allowed"] = fertilizers_allowed
+    if "fixed_grams" in data:
+        raw_fixed_grams = data["fixed_grams"]
+        if not isinstance(raw_fixed_grams, dict):
+            raise ValueError(f"{path}: fixed_grams must be a mapping")
+        fixed_grams = _float_mapping(
+            raw_fixed_grams,
+            f"{path}: fixed_grams",
+            _non_negative_float,
+        )
+        outside_allowed = sorted(set(fixed_grams) - set(fertilizers_allowed or []))
+        if outside_allowed:
+            raise ValueError(f"{path}: fixed_grams not in fertilizers_allowed: {outside_allowed}")
+        result["fixed_grams"] = fixed_grams
+    if "urea_as_nh4" in data:
+        if not isinstance(data["urea_as_nh4"], bool):
+            raise ValueError(f"{path}: urea_as_nh4 must be a boolean")
+        result["urea_as_nh4"] = data["urea_as_nh4"]
+    if "solver_config" in data:
+        raw_solver_config = data["solver_config"]
         from .solver_config import validate_solver_config
 
-        result["solver_config"] = validate_solver_config(raw_solver_config)
+        result["solver_config"] = validate_solver_config(raw_solver_config or {})
     return result
 
 
@@ -605,6 +644,12 @@ def save_nutrient_solution(
     name: str,
     source: str,
     targets_mg_per_l: Dict[str, float],
+    liters: float | None = None,
+    water_profile: str | None = None,
+    osmosis_percent: float | None = None,
+    fertilizers_allowed: list[str] | None = None,
+    fixed_grams: Dict[str, float] | None = None,
+    urea_as_nh4: bool | None = None,
     solver_config: Dict[str, object] | None = None,
 ) -> None:
     payload = {
@@ -616,7 +661,37 @@ def save_nutrient_solution(
             _non_negative_float,
         ),
     }
-    if solver_config:
+    if liters is not None:
+        payload["liters"] = _positive_float(liters, f"{path}: liters")
+    if water_profile is not None:
+        normalized_water_profile = str(water_profile).strip()
+        if not normalized_water_profile:
+            raise ValueError(f"{path}: water_profile must be a non-empty string")
+        payload["water_profile"] = normalized_water_profile
+    if osmosis_percent is not None:
+        payload["osmosis_percent"] = _percentage_float(
+            osmosis_percent,
+            f"{path}: osmosis_percent",
+        )
+    normalized_allowed: list[str] | None = None
+    if fertilizers_allowed is not None:
+        normalized_allowed = _unique_strings(fertilizers_allowed, "fertilizers_allowed")
+        if any(not name.strip() for name in normalized_allowed):
+            raise ValueError(f"{path}: fertilizers_allowed must contain non-empty names")
+        payload["fertilizers_allowed"] = normalized_allowed
+    if fixed_grams is not None:
+        normalized_fixed = _float_mapping(
+            fixed_grams,
+            f"{path}: fixed_grams",
+            _non_negative_float,
+        )
+        outside_allowed = sorted(set(normalized_fixed) - set(normalized_allowed or []))
+        if outside_allowed:
+            raise ValueError(f"{path}: fixed_grams not in fertilizers_allowed: {outside_allowed}")
+        payload["fixed_grams"] = normalized_fixed
+    if urea_as_nh4 is not None:
+        payload["urea_as_nh4"] = bool(urea_as_nh4)
+    if solver_config is not None:
         from .solver_config import validate_solver_config
 
         payload["solver_config"] = validate_solver_config(solver_config)

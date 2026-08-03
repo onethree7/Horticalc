@@ -116,6 +116,103 @@ def test_nutrient_solution_round_trips_directional_solver_priorities(monkeypatch
     assert loaded.json() == payload
 
 
+def test_nutrient_solution_persists_complete_solver_setup(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+    client = TestClient(api_app.app)
+    payload = {
+        "name": "Fixed micronutrients",
+        "source": "Horticalc UI",
+        "targets_mg_per_l": {"N_total": 100, "P": 10},
+        "liters": 10,
+        "water_profile": "default",
+        "osmosis_percent": 20,
+        "fertilizers_allowed": [
+            "Compo Fetrilon Combi 1",
+            "ICL Nova PeKacid 0-60-20",
+        ],
+        "fixed_grams": {
+            "Compo Fetrilon Combi 1": 2,
+            "ICL Nova PeKacid 0-60-20": 6,
+        },
+        "urea_as_nh4": False,
+        "solver_config": {"solver_model": "mass_nnls"},
+    }
+
+    save_response = client.post("/nutrient-solutions", json=payload)
+
+    assert save_response.status_code == 200
+    loaded = client.get("/nutrient-solutions/Fixed_micronutrients")
+    assert loaded.status_code == 200
+    assert loaded.json() == payload
+
+
+def test_nutrient_solution_without_setup_omits_setup_fields(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+    client = TestClient(api_app.app)
+    payload = {
+        "name": "Targets only",
+        "source": "Horticalc UI",
+        "targets_mg_per_l": {"K": 180},
+    }
+
+    assert client.post("/nutrient-solutions", json=payload).status_code == 200
+    loaded = client.get("/nutrient-solutions/Targets_only")
+
+    assert loaded.status_code == 200
+    assert loaded.json() == payload
+
+
+def test_nutrient_solution_rejects_fixed_amount_outside_allowed_list(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+
+    response = TestClient(api_app.app).post(
+        "/nutrient-solutions",
+        json={
+            "name": "Invalid fixed amount",
+            "targets_mg_per_l": {"K": 180},
+            "fertilizers_allowed": ["Allowed"],
+            "fixed_grams": {"Other": 2},
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "fixed_grams not in fertilizers_allowed: ['Other']"
+
+
+def test_nutrient_solution_rejects_duplicate_allowed_fertilizers(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+
+    response = TestClient(api_app.app).post(
+        "/nutrient-solutions",
+        json={
+            "name": "Duplicate fertilizers",
+            "targets_mg_per_l": {"K": 180},
+            "fertilizers_allowed": ["Repeated", "Repeated"],
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == ("fertilizers_allowed must not contain duplicates: ['Repeated']")
+
+
+def test_nutrient_solution_rejects_empty_water_profile(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+
+    response = TestClient(api_app.app).post(
+        "/nutrient-solutions",
+        json={"name": "Invalid water", "water_profile": "   "},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "water_profile must be a non-empty string"
+
+
 def test_nutrient_solution_rejects_invalid_directional_priority(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
 

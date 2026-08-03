@@ -424,9 +424,7 @@ function renderSolverAllowedOptions() {
     });
 
     const nameCell = document.createElement("td");
-    nameCell.textContent = fert.solver_role === "fixed_only"
-      ? `${name} · ${t("solver.fixedOnly")}`
-      : name;
+    nameCell.textContent = name;
     checkCell.appendChild(checkbox);
     row.append(checkCell, nameCell);
     setSolverAllowedRowState(row, checkbox.checked);
@@ -460,10 +458,7 @@ function renderSolverFixedTable() {
     const row = document.createElement("tr");
 
     const nameCell = document.createElement("td");
-    const fertilizer = fertilizerOptions.find((item) => item.name === name);
-    nameCell.textContent = fertilizer?.solver_role === "fixed_only"
-      ? `${name} · ${t("solver.fixedOnly")}`
-      : name;
+    nameCell.textContent = name;
 
     const valueCell = document.createElement("td");
     const input = document.createElement("input");

@@ -44,7 +44,6 @@ def test_i18n_catalogs_cover_the_supported_themes_and_solver_labels() -> None:
         "solver.modelMassHint",
         "solver.modelHierarchicalHint",
         "solver.modelLegacyHint",
-        "solver.fixedOnly",
         "solver.priority.legend",
         "solver.priority.under",
         "solver.priority.over",
@@ -55,8 +54,7 @@ def test_i18n_catalogs_cover_the_supported_themes_and_solver_labels() -> None:
         "solver.priority.overAria",
         "solver.priority.resultSummary",
         "solver.reportOnlyHint",
-        "editor.solverVariable",
-        "editor.solverVariableHint",
+        "editor.solverMaxDoseHint",
     }
 
     for locale in LOCALES:

@@ -41,20 +41,14 @@ Required columns:
 
 Optional solver metadata:
 
-- `SolverRole`: `variable` (default) lets the Solver choose a dose;
-  `fixed_only` excludes the product from variable selection while still
-  allowing an explicit recipe `fixed_grams` dose.
 - `SolverMaxDosePerL`: non-negative maximum dose the Solver may choose per
   liter. Empty means unlimited; `0` excludes the product from variable Solver
   dosing. Explicit recipe `fixed_grams` overrides this maximum.
 
-The shipped `data/fertilizers.csv` currently leaves `SolverMaxDosePerL` empty
-for every product, so the shipped catalog defines no dose limits. HuminTech
-AMINO POWER and Fulvital are shipped as `fixed_only`; all other shipped products
-are `variable`. A user override can set either metadata field explicitly. An
-older override file without a `SolverRole` column inherits the matching shipped
-product's role, so upgrading cannot silently turn a fixed-only additive into a
-variable Solver input.
+The shipped `data/fertilizers.csv` sets `SolverMaxDosePerL` to `0` for
+HuminTech AMINO POWER and Fulvital, so the Solver uses those additives only at
+an explicit fixed dose. Every other shipped product leaves the field empty.
+A user override can change or remove a product limit explicitly.
 
 All other numeric columns are interpreted as composition fractions. A value of
 `0.14` means 14 percent by mass. `NR` or `Nr.` is accepted only for legacy CSV
@@ -78,7 +72,7 @@ number greater than zero; invalid values are rejected instead of being silently
 converted during persistence.
 `SolverMaxDosePerL` uses the same canonical dose convention as Solver results:
 g/L for solids and mL/L for liquids. It limits product dose, not nutrient
-mg/L. The fertilizer editor exposes both solver metadata fields.
+mg/L. The fertilizer editor exposes this field directly.
 
 ### Dose Units, Mass, And Liquid Fertilizers
 

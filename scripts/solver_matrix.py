@@ -100,7 +100,7 @@ class FertilizerPortfolio:
     omitted_fertilizer: str = ""
     evaluation_role: str = "selection"
     reference_amounts: dict[str, float] = field(default_factory=dict)
-    force_variable_products: bool = False
+    ignore_dose_limits: bool = False
 
 
 @dataclass(frozen=True)
@@ -330,7 +330,7 @@ def load_fertilizer_portfolios(
             fertilizers=resolved,
             evaluation_role=evaluation_role,
             reference_amounts=reference_amounts,
-            force_variable_products=bool(entry.get("force_variable_products", False)),
+            ignore_dose_limits=bool(entry.get("ignore_dose_limits", False)),
         )
     primary_id = str(cases.get("primary_portfolio") or "")
     if primary_id not in portfolios:
@@ -370,13 +370,13 @@ def fertilizers_for_portfolio(
     portfolio: FertilizerPortfolio,
     fertilizers: dict[str, Fertilizer],
 ) -> dict[str, Fertilizer]:
-    """Make fixed-only products variable only for an explicit research honeypot."""
-    if not portfolio.force_variable_products:
+    """Remove product dose limits only for an explicit research honeypot."""
+    if not portfolio.ignore_dose_limits:
         return fertilizers
     forced_names = set(portfolio.fertilizers)
     return {
-        name: replace(fertilizer, solver_role="variable")
-        if name in forced_names and fertilizer.solver_role == "fixed_only"
+        name: replace(fertilizer, solver_max_dose_per_l=None)
+        if name in forced_names and fertilizer.solver_max_dose_per_l is not None
         else fertilizer
         for name, fertilizer in fertilizers.items()
     }

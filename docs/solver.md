@@ -142,11 +142,11 @@ large error in an excluded element, so ignored concentrations are always
 calculated and reported. The default is empty: Horticalc does not hardcode Cu,
 B, Ca, Mg, or any other user-selectable element as biologically unimportant.
 
-Allowed fertilizers with `SolverRole=fixed_only` are excluded from variable
-dose selection. They still contribute normally when the recipe supplies an
-explicit `fixed_grams` dose. This prevents additive products such as shipped
-HuminTech AMINO POWER and Fulvital from being used as unconstrained nutrient
-concentrates. It is product capability metadata, not a nutrient upper bound.
+`SolverMaxDosePerL` bounds the dose chosen for each allowed fertilizer. A value
+of `0` excludes the product from variable dose selection while still allowing
+an explicit `fixed_grams` dose. The shipped HuminTech AMINO POWER and Fulvital
+products use this zero limit so they cannot act as unconstrained nutrient
+concentrates.
 
 ### Hierarchical directional-priority model
 
@@ -183,10 +183,10 @@ directional order. Raw `mg/L` inside each tier ensures that, for example,
 `N -30 mg/L` is not numerically equated with `Cu +0.3 mg/L` merely because
 both may have a similar percentage error.
 
-Fixed fertilizer doses, per-product `SolverMaxDosePerL`, water subtraction,
-liquid density, and `SolverRole=fixed_only` have the same meaning as in the
-other runtime models. `priority_stages` in the solve response exposes each
-tier's retained maximum and total residual for audit.
+Fixed fertilizer doses, per-product `SolverMaxDosePerL`, water subtraction, and
+liquid density have the same meaning as in the other runtime models.
+`priority_stages` in the solve response exposes each tier's retained maximum
+and total residual for audit.
 
 ### Legacy model
 

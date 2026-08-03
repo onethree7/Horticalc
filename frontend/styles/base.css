@@ -469,10 +469,6 @@ main {
   width: var(--fert-editor-liquid-width);
 }
 
-#fertilizerEditorTable.grid--fertilizer-editor .col-solver-role {
-  width: 7rem;
-}
-
 #fertilizerEditorTable.grid--fertilizer-editor .col-weight {
   width: var(--fert-editor-weight-width);
 }
@@ -481,15 +477,13 @@ main {
   width: 8rem;
 }
 
-#fertilizerEditorTable th:nth-child(3) .table-sort-button,
-#fertilizerEditorTable th:nth-child(4) .table-sort-button {
+#fertilizerEditorTable th:nth-child(3) .table-sort-button {
   padding-left: 4px;
   padding-right: 4px;
   text-align: center;
 }
 
-#fertilizerEditorTable td:nth-child(3),
-#fertilizerEditorTable td:nth-child(4) {
+#fertilizerEditorTable td:nth-child(3) {
   padding-left: 4px;
   padding-right: 4px;
 }

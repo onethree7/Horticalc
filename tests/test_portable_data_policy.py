@@ -75,7 +75,6 @@ def test_portable_layout_uses_shipped_catalog_and_user_overlay(
             "Liquid",
             "Gewicht",
             "N",
-            "SolverRole",
             "SolverMaxDosePerL",
         ]
     assert disabled_txt.read_text(encoding="utf-8").strip() == "Remove Me"
@@ -87,30 +86,6 @@ def test_portable_layout_uses_shipped_catalog_and_user_overlay(
     assert "Extra" in reloaded
     assert "New Shipped" in reloaded
     assert "Remove Me" not in reloaded
-
-
-def test_old_override_without_solver_role_inherits_shipped_role(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    shipped_csv = tmp_path / "data" / "fertilizers.csv"
-    shipped_csv.parent.mkdir(parents=True, exist_ok=True)
-    shipped_csv.write_text(
-        "Düngername,Liquid,Gewicht,N,SolverRole\nFixed additive,0,1,0.1,fixed_only\n",
-        encoding="utf-8",
-    )
-    override_csv = paths.user_fertilizer_overrides_path(tmp_path)
-    override_csv.parent.mkdir(parents=True, exist_ok=True)
-    override_csv.write_text(
-        "Düngername,Liquid,Gewicht,N\nFixed additive,0,1,0.2\n",
-        encoding="utf-8",
-    )
-    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
-
-    fertilizer = load_fertilizers()["Fixed additive"]
-
-    assert fertilizer.comp == {"N": 0.2}
-    assert fertilizer.solver_role == "fixed_only"
 
 
 def test_portable_layout_prunes_copied_defaults_and_preserves_user_yaml(tmp_path: Path) -> None:
@@ -236,7 +211,6 @@ def test_pre_liquid_user_fertilizers_migrate_without_blocking_startup(
             "Liquid",
             "Gewicht",
             "N",
-            "SolverRole",
             "SolverMaxDosePerL",
         ]
     assert not legacy_path.exists()

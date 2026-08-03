@@ -834,7 +834,11 @@ def _prepare_solve_problem(
         dtype=float,
     )
     variable_mask = np.array(
-        [fert.name not in fixed_grams and fert.solver_role == "variable" for fert in allowed],
+        [
+            fert.name not in fixed_grams
+            and not (fert.solver_max_dose_per_l is not None and fert.solver_max_dose_per_l == 0.0)
+            for fert in allowed
+        ],
         dtype=bool,
     )
     upper_bounds = np.array(

@@ -115,13 +115,13 @@ normalization, macro/micro class, element severity table, IRLS pass, singleton
 pass, or learned biological preference. For scale, `N -30 mg/L` contributes
 `900` to the objective and `Cu +0.3 mg/L` contributes `0.09`.
 
-The product catalog supplies a separate capability rule. A fertilizer with
-`SolverRole=fixed_only` is not a variable Solver column, but its explicitly
+The product catalog supplies per-product dose limits. A
+`SolverMaxDosePerL` value of `0` prevents variable dosing, but an explicitly
 supplied `fixed_grams` dose still contributes normally. The shipped HuminTech
-AMINO POWER and Fulvital products are fixed-only; Fetrilon remains variable.
-The two diagnostic Humin portfolios explicitly override that role inside the
-research harness so the failure mode remains observable. Selection portfolios
-use the shipped catalog exactly as production does.
+AMINO POWER and Fulvital products use this zero limit; Fetrilon is unlimited by
+default. The two diagnostic Humin portfolios explicitly remove product dose
+limits inside the research harness so the failure mode remains observable.
+Selection portfolios use the shipped catalog exactly as production does.
 
 Production also supports explicit user objective exclusions through
 `solver_config.ignored_elements`. The benchmark keeps this list empty because

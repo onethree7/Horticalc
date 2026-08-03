@@ -108,7 +108,7 @@ fertilizer_portfolios:
       Compo Hakaphos Soft16-8-22(+3) Spezial: 3.5904274184269394
   - id: augmented_saloner_humin_honeypot
     evaluation_role: diagnostic
-    force_variable_products: true
+    ignore_dose_limits: true
     source: Augmented Saloner allowed list with both HuminTech honeypot products
     fertilizers:
       - Yara Tera CALCINIT
@@ -141,7 +141,7 @@ fertilizer_portfolios:
       S3 Kaliwasser 28 Be: 1
   - id: solve_golden_humin_honeypot
     evaluation_role: diagnostic
-    force_variable_products: true
+    ignore_dose_limits: true
     source: Golden nonzero product pool plus both HuminTech honeypot products
     fertilizers:
       - Yara Tera CALCINIT

@@ -53,7 +53,6 @@ function setFertilizerEditorData(fertilizers) {
   fertilizerEditorRows = (fertilizers || []).map((fert) => ({
     name: fert.name || "",
     liquid: Boolean(fert.liquid),
-    solver_role: fert.solver_role === "fixed_only" ? "fixed_only" : "variable",
     weight_factor: Number.isFinite(fert.weight_factor) ? fert.weight_factor : null,
     comp: { ...(fert.comp || {}) },
     solver_max_dose_per_l: Number.isFinite(fert.solver_max_dose_per_l)
@@ -130,9 +129,6 @@ function fertilizerEditorSortValue(row, key) {
   }
   if (key === "liquid") {
     return row.liquid ? 1 : 0;
-  }
-  if (key === "solver_role") {
-    return row.solver_role === "variable" ? 1 : 0;
   }
   return String(row[key] || "").trim();
 }
@@ -248,7 +244,6 @@ function renderFertilizerEditor() {
     "col-index",
     "col-name",
     "col-liquid",
-    "col-solver-role",
     "col-weight",
     ...fertilizerEditorCompKeys.map(() => "col-nutrient"),
     "col-solver-max",
@@ -257,7 +252,6 @@ function renderFertilizerEditor() {
     { label: "#" },
     fertilizerEditorHeader("Fertilizer name", "name", "editor.fertilizerName"),
     fertilizerEditorHeader("Liquid", "liquid", "common.liquid"),
-    fertilizerEditorHeader("Solver variable", "solver_role", "editor.solverVariable"),
     fertilizerEditorHeader("Density / factor", "weight_factor", "editor.densityFactor"),
     ...fertilizerEditorCompKeys.map((key) => fertilizerEditorHeader(key, `comp:${key}`)),
     fertilizerEditorHeader("Solver max / L", "solver_max_dose_per_l", "editor.solverMaxDosePerL"),
@@ -316,22 +310,6 @@ function renderFertilizerEditor() {
     liquidInput.addEventListener("keydown", handleEditorEnterKey);
     liquidCell.appendChild(liquidInput);
     tr.appendChild(liquidCell);
-    colIndex += 1;
-
-    const solverRoleCell = document.createElement("td");
-    const solverRoleInput = document.createElement("input");
-    solverRoleInput.type = "checkbox";
-    solverRoleInput.checked = row.solver_role === "variable";
-    solverRoleInput.dataset.rowIndex = index;
-    solverRoleInput.dataset.field = "solver_role";
-    solverRoleInput.dataset.colIndex = colIndex;
-    solverRoleInput.title = t("editor.solverVariableHint");
-    solverRoleInput.addEventListener("change", (event) => {
-      row.solver_role = event.target.checked ? "variable" : "fixed_only";
-    });
-    solverRoleInput.addEventListener("keydown", handleEditorEnterKey);
-    solverRoleCell.appendChild(solverRoleInput);
-    tr.appendChild(solverRoleCell);
     colIndex += 1;
 
     const weightCell = document.createElement("td");
@@ -397,6 +375,7 @@ function renderFertilizerEditor() {
     solverMaxInput.dataset.rowIndex = index;
     solverMaxInput.dataset.field = "solver_max_dose_per_l";
     solverMaxInput.dataset.colIndex = colIndex;
+    solverMaxInput.title = t("editor.solverMaxDoseHint");
     solverMaxInput.addEventListener("input", (event) => {
       row.solver_max_dose_per_l = parseDecimalInput(event.target.value);
     });
@@ -446,7 +425,6 @@ async function saveFertilizerEditor() {
     payload.push({
       name,
       liquid: Boolean(row.liquid),
-      solver_role: row.solver_role === "fixed_only" ? "fixed_only" : "variable",
       weight_factor: weight,
       comp,
       solver_max_dose_per_l: Number.isFinite(row.solver_max_dose_per_l)
@@ -480,7 +458,6 @@ function addFertilizerEditorRow() {
   fertilizerEditorRows.push({
     name: "",
     liquid: false,
-    solver_role: "variable",
     weight_factor: null,
     comp: {},
     solver_max_dose_per_l: null,

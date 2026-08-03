@@ -19,13 +19,12 @@ ROOT = Path(__file__).resolve().parents[1]
 MOLAR_MASSES = load_molar_masses()
 
 
-def _fertilizer(name: str, form: str, fraction: float, *, role: str = "variable") -> Fertilizer:
+def _fertilizer(name: str, form: str, fraction: float) -> Fertilizer:
     return Fertilizer(
         name=name,
         liquid=False,
         weight_factor=1.0,
         comp={form: fraction},
-        solver_role=role,
     )
 
 
@@ -91,51 +90,6 @@ def test_mass_nnls_rejects_ignoring_every_active_objective() -> None:
             mm=MOLAR_MASSES,
             water_profile_data={"mg_per_l": {}},
         )
-
-
-def test_mass_nnls_does_not_optimize_fixed_only_products_without_a_fixed_dose() -> None:
-    recipe = {
-        "liters": 10.0,
-        "targets_mg_per_l": {"N_total": 100.0},
-        "fertilizers_allowed": ["Variable", "Additive"],
-        "solver_config": {"solver_model": "mass_nnls"},
-    }
-    fertilizers = {
-        "Variable": _fertilizer("Variable", "NO3", 0.1),
-        "Additive": _fertilizer("Additive", "NO3", 1.0, role="fixed_only"),
-    }
-
-    result = solve_recipe_data(
-        recipe,
-        ferts=fertilizers,
-        mm=MOLAR_MASSES,
-        water_profile_data={"mg_per_l": {}},
-    )
-
-    assert [row["name"] for row in result.fertilizers] == ["Variable"]
-    assert result.fertilizers[0]["grams"] == pytest.approx(10.0)
-
-
-def test_mass_nnls_accounts_for_a_fixed_only_product_at_the_user_dose() -> None:
-    result = solve_recipe_data(
-        {
-            "liters": 10.0,
-            "targets_mg_per_l": {"N_total": 100.0},
-            "fertilizers_allowed": ["Variable", "Additive"],
-            "fixed_grams": {"Additive": 0.5},
-            "solver_config": {"solver_model": "mass_nnls"},
-        },
-        ferts={
-            "Variable": _fertilizer("Variable", "NO3", 0.1),
-            "Additive": _fertilizer("Additive", "NO3", 1.0, role="fixed_only"),
-        },
-        mm=MOLAR_MASSES,
-        water_profile_data={"mg_per_l": {}},
-    )
-
-    doses = {row["name"]: row["grams"] for row in result.fertilizers}
-    assert doses == pytest.approx({"Variable": 5.0, "Additive": 0.5})
-    assert result.errors_mg_l["N_total"] == pytest.approx(0.0, abs=1e-7)
 
 
 def test_mass_nnls_forces_total_nitrogen_and_sulfur_when_available() -> None:
@@ -217,7 +171,7 @@ def test_saloner_can_trade_ignored_copper_and_boron_for_closer_iron() -> None:
         assert abs(result.errors_mg_l[element]) < 0.01
 
 
-def test_allowing_fixed_only_humin_does_not_change_saloner_solution() -> None:
+def test_allowing_zero_limited_humin_does_not_change_saloner_solution() -> None:
     recipe = yaml.safe_load((ROOT / "recipes" / "solve_augmented_saloner_bernstein.yml").read_text(encoding="utf-8"))
     base = _solve_shipped_profile(recipe["targets_mg_per_l"], recipe["fertilizers_allowed"])
     with_humin = _solve_shipped_profile(

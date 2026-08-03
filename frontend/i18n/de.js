@@ -132,6 +132,8 @@ export default {
   "profile.solverSetupFixedWarning": "{count} aktive fixe Mengen werden nicht mitgespeichert.",
   "profile.confirmOmitFixedAmounts": "{count} aktive fixe Mengen werden nicht mitgespeichert. Trotzdem nur die Zielwerte speichern?",
   "profile.confirmRemoveSolverSetup": "Das Solver-Setup des vorhandenen Profils wird entfernt. Trotzdem nur die Zielwerte speichern?",
+  "profile.confirmOverwrite": "Ein gespeichertes Profil namens ›{name}‹ existiert bereits. Überschreiben?",
+  "profile.confirmOverwriteCollision": "Der Name würde das vorhandene Profil ›{name}‹ überschreiben. Wirklich fortfahren?",
   "profile.solverRecipeOutputHint": "Ein Düngerrezept speichert berechnete Dosierungen, nicht das Solver-Setup.",
   "profile.viewInCalculator": "Im Rechner ansehen",
   "calculator.fertilizerComponents": "Düngerkomponenten",

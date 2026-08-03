@@ -140,6 +140,32 @@ def test_nutrient_solution_persists_solver_priorities(tmp_path: Path) -> None:
     }
 
 
+def test_nutrient_solution_writer_uses_strict_canonical_boolean_contract(tmp_path: Path) -> None:
+    path = tmp_path / "invalid.yml"
+
+    with pytest.raises(ValueError, match="urea_as_nh4 must be a boolean"):
+        save_nutrient_solution(
+            path,
+            name="Invalid",
+            source="Test",
+            targets_mg_per_l={"K": 100},
+            urea_as_nh4="false",  # type: ignore[arg-type]
+        )
+
+    assert not path.exists()
+
+
+def test_nutrient_solution_loader_detects_duplicates_after_name_normalization(tmp_path: Path) -> None:
+    path = tmp_path / "duplicate.yml"
+    path.write_text(
+        "name: Duplicate\ntargets_mg_per_l: {K: 100}\nfertilizers_allowed: [A, ' A ']\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="must not contain duplicates"):
+        load_nutrient_solution_data(path)
+
+
 def test_atomic_yaml_save_preserves_existing_file_on_replace_failure(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

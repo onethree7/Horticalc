@@ -162,6 +162,74 @@ def test_nutrient_solution_without_setup_omits_setup_fields(monkeypatch, tmp_pat
     assert loaded.json() == payload
 
 
+def test_nutrient_solution_requires_explicit_overwrite_and_preserves_existing_setup(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+    client = TestClient(api_app.app)
+    setup_payload = {
+        "name": "Protected target",
+        "source": "",
+        "targets_mg_per_l": {"K": 180},
+        "liters": 10,
+        "water_profile": "default",
+        "osmosis_percent": 0,
+        "fertilizers_allowed": ["A"],
+        "fixed_grams": {"A": 2},
+        "urea_as_nh4": False,
+        "solver_config": {},
+    }
+    target_only_payload = {
+        "name": "Protected target",
+        "source": "",
+        "targets_mg_per_l": {"K": 200},
+    }
+
+    assert client.post("/nutrient-solutions", json=setup_payload).status_code == 200
+    conflict = client.post("/nutrient-solutions", json=target_only_payload)
+
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"] == {
+        "code": "nutrient_solution_exists",
+        "name": "Protected target",
+        "filename": "Protected_target.yml",
+        "has_solver_setup": True,
+    }
+    assert client.get("/nutrient-solutions/Protected_target").json() == setup_payload
+
+    overwritten = client.post(
+        "/nutrient-solutions",
+        json={**target_only_payload, "overwrite": True},
+    )
+
+    assert overwritten.status_code == 200
+    assert client.get("/nutrient-solutions/Protected_target").json() == target_only_payload
+
+
+def test_nutrient_solution_filename_collision_cannot_silently_replace_another_profile(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+    client = TestClient(api_app.app)
+    original = {
+        "name": "Collision/A",
+        "source": "",
+        "targets_mg_per_l": {"K": 180},
+        "solver_config": {},
+    }
+
+    assert client.post("/nutrient-solutions", json=original).status_code == 200
+    conflict = client.post(
+        "/nutrient-solutions",
+        json={"name": "Collision?A", "targets_mg_per_l": {"K": 200}},
+    )
+
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"] == {
+        "code": "nutrient_solution_exists",
+        "name": "Collision/A",
+        "filename": "Collision_A.yml",
+        "has_solver_setup": True,
+    }
+    assert client.get("/nutrient-solutions/Collision_A").json() == original
+
+
 def test_nutrient_solution_rejects_fixed_amount_outside_allowed_list(
     monkeypatch,
     tmp_path,

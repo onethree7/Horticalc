@@ -44,7 +44,9 @@ amounts, urea mode, and Solver settings. Without this option, the profile keeps
 only its nutrient targets. Horticalc warns before active fixed amounts or an
 existing stored setup are omitted. **Save as fertilizer recipe** stores the
 calculated doses for mixing; it does not store which doses were fixed Solver
-inputs.
+inputs. Horticalc also asks before replacing any existing target profile. The
+check uses the actual stored filename, so different entered names cannot
+silently overwrite one another after filename cleanup.
 
 Sulfur targets are report-only by default; enable the sulfur objective in the advanced solver settings if sulfur should affect the fit.
 

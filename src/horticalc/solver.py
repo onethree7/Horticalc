@@ -957,19 +957,27 @@ def _build_solve_result(
     )
 
 
-def _solve_mass_nnls(problem: _PreparedProblem) -> SolveResult:
-    """Minimize the unweighted squared elemental error in canonical mg/L."""
-    result = _build_solve_result(problem, _VariantRunner(problem).solve((False, False, False)))
+def _validate_solve_result(result: SolveResult) -> SolveResult:
     values = (
         *(float(item["grams"]) for item in result.fertilizers),
         *result.achieved_elements_mg_l.values(),
         *result.errors_mg_l.values(),
     )
+    model_label = {
+        "mass_nnls": "Mass NNLS",
+        "hierarchical": "Hierarchical solver",
+        "legacy": "Legacy solver",
+    }.get(result.solver_model, f"Solver model {result.solver_model!r}")
     if not all(np.isfinite(value) for value in values):
-        raise ValueError("Mass NNLS produced a non-finite result")
+        raise ValueError(f"{model_label} produced a non-finite result")
     if any(float(item["grams"]) < 0.0 for item in result.fertilizers):
-        raise ValueError("Mass NNLS produced a negative fertilizer dose")
+        raise ValueError(f"{model_label} produced a negative fertilizer dose")
     return result
+
+
+def _solve_mass_nnls(problem: _PreparedProblem) -> SolveResult:
+    """Minimize the unweighted squared elemental error in canonical mg/L."""
+    return _build_solve_result(problem, _VariantRunner(problem).solve((False, False, False)))
 
 
 def _solve_hierarchical(problem: _PreparedProblem) -> SolveResult:
@@ -995,7 +1003,7 @@ def _solve_hierarchical(problem: _PreparedProblem) -> SolveResult:
     weights = problem.fixed_weights.copy()
     weights[problem.variable_mask] += priority_result.doses
     variant_result = _VariantRunner(problem)._build_solution_for_weights(weights)
-    result = _build_solve_result(
+    return _build_solve_result(
         problem,
         variant_result,
         priority_stages=[
@@ -1007,16 +1015,6 @@ def _solve_hierarchical(problem: _PreparedProblem) -> SolveResult:
             for stage in priority_result.stages
         ],
     )
-    values = (
-        *(float(item["grams"]) for item in result.fertilizers),
-        *result.achieved_elements_mg_l.values(),
-        *result.errors_mg_l.values(),
-    )
-    if not all(np.isfinite(value) for value in values):
-        raise ValueError("Hierarchical solver produced a non-finite result")
-    if any(float(item["grams"]) < 0.0 for item in result.fertilizers):
-        raise ValueError("Hierarchical solver produced a negative fertilizer dose")
-    return result
 
 
 def solve_recipe_data(
@@ -1035,10 +1033,12 @@ def solve_recipe_data(
         water_profile_path=water_profile_path,
     )
     if problem.solver_config["solver_model"] == "mass_nnls":
-        return _solve_mass_nnls(problem)
-    if problem.solver_config["solver_model"] == "hierarchical":
-        return _solve_hierarchical(problem)
-    return _build_solve_result(problem, _select_solver_variant(problem, _VariantRunner(problem)))
+        result = _solve_mass_nnls(problem)
+    elif problem.solver_config["solver_model"] == "hierarchical":
+        result = _solve_hierarchical(problem)
+    else:
+        result = _build_solve_result(problem, _select_solver_variant(problem, _VariantRunner(problem)))
+    return _validate_solve_result(result)
 
 
 def solve_recipe(

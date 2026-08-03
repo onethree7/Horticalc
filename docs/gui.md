@@ -78,7 +78,10 @@ Profiles without setup change only the targets; legacy profiles containing
 only `solver_config` continue to apply it. Active fixed amounts produce a
 visible warning and confirmation when the setup option is off. Saving as a
 fertilizer recipe remains an output operation and does not retain Solver
-constraints. Source: `frontend/app/profiles.js`, `frontend/app/main.js`, and
+constraints. Profile replacement is confirmed only after the API identifies
+the effective canonical filename; this also prevents two different visible
+names from silently colliding after filename sanitization. Source:
+`frontend/app/profiles.js`, `frontend/app/main.js`, `frontend/app/api.js`, and
 `frontend/app/solver.js`.
 
 ## Preferences, Language, Themes, Units

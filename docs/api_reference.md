@@ -87,7 +87,22 @@ Allowed water keys are defined in `src/horticalc/chemistry.py` and reused as `AL
 | `GET` | `/nutrient-solutions/{solution_name}` | Load a target profile. |
 | `POST`/`PUT` | `/nutrient-solutions` | Save a target profile. |
 
-Allowed target keys are defined in `src/horticalc/solver.py` as `ALLOWED_TARGET_KEYS` and reused by `api/app.py`. Save payloads always use `name`, `source`, and `targets_mg_per_l`. They may also include `liters`, `water_profile`, `osmosis_percent`, `fertilizers_allowed`, `fixed_grams`, `urea_as_nh4`, and a validated `solver_config`. Loading returns the optional fields so the GUI can restore the saved Solver setup. Allowed fertilizer names must be unique, and every finite non-negative `fixed_grams` entry must be included in `fertilizers_allowed`.
+Allowed target keys are defined in `src/horticalc/chemistry.py` as
+`ALLOWED_TARGET_KEYS`. Save payloads always use `name`, `source`, and
+`targets_mg_per_l`. They may also include `liters`, `water_profile`,
+`osmosis_percent`, `fertilizers_allowed`, `fixed_grams`, `urea_as_nh4`, and a
+validated `solver_config`. Loading returns the optional fields so the GUI can
+restore the saved Solver setup. Allowed fertilizer names must be unique, and
+every finite non-negative `fixed_grams` entry must be included in
+`fertilizers_allowed`. `src/horticalc/nutrient_profiles.py` owns this canonical
+API/YAML normalization contract.
+
+Saving never replaces an effective user or shipped profile implicitly. If the
+canonical filename already exists, the API returns `409` with structured
+`nutrient_solution_exists` details containing the existing name, filename, and
+whether it has Solver setup. Resubmit the same valid payload with
+`overwrite: true` only after explicit confirmation. `overwrite` controls the
+write and is not stored in YAML.
 
 ## Recipes
 

@@ -166,7 +166,13 @@ solver_config:
     Ca: {under: 2, over: 3}
 ```
 
-Targets are element mg/L. Accepted keys live in `ALLOWED_TARGET_KEYS` in `src/horticalc/solver.py`. Oxide aliases such as `K2O` and `P2O5` are fertilizer composition keys, not target keys. `S` is elemental sulfur; `SO4` is not a target key. `solver_config` is optional and uses the same validated contract as a recipe. `load_nutrient_solution_data()` returns `name`, `source`, and `targets_mg_per_l`, plus every optional Solver-setup field present in the YAML.
+Targets are element mg/L. Accepted keys live in `ALLOWED_TARGET_KEYS` in
+`src/horticalc/chemistry.py`. Oxide aliases such as `K2O` and `P2O5` are
+fertilizer composition keys, not target keys. `S` is elemental sulfur; `SO4`
+is not a target key. `solver_config` is optional and uses the same validated
+contract as a recipe. `load_nutrient_solution_data()` returns `name`, `source`,
+and `targets_mg_per_l`, plus every optional Solver-setup field present in the
+YAML.
 
 Target profiles saved with **Save Solver setup** may additionally contain the
 current Solver inputs:
@@ -191,8 +197,9 @@ optional for older files and API clients. `liters` is positive,
 `osmosis_percent` is within `0..100`, allowed fertilizer names are unique,
 and every finite non-negative `fixed_grams` entry must also occur in
 `fertilizers_allowed`. Fixed amounts are canonical batch totals and scale
-proportionally when the GUI batch volume changes. Source:
-`src/horticalc/data_io.py` and `api/app.py`.
+proportionally when the GUI batch volume changes. Both API payloads and YAML
+files use the normalizer in `src/horticalc/nutrient_profiles.py`; persistence
+is owned by `src/horticalc/data_io.py`.
 
 ## Calculation Output
 

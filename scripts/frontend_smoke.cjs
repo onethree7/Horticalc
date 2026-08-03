@@ -21,6 +21,15 @@ async function assertNoPageOverflow(page, label) {
   }
 }
 
+async function waitForSmokeCondition(page, predicate, errorMessage) {
+  for (let attempt = 0; attempt < 20 && !predicate(); attempt += 1) {
+    await page.waitForTimeout(25);
+  }
+  if (!predicate()) {
+    throw new Error(typeof errorMessage === "function" ? errorMessage() : errorMessage);
+  }
+}
+
 (async () => {
   if (!executablePath) {
     throw new Error("Chrome or Chromium is required; set HORTICALC_BROWSER_PATH if it is installed elsewhere");
@@ -29,6 +38,7 @@ async function assertNoPageOverflow(page, label) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = [];
   const dialogs = [];
+  let acceptNextDialog = false;
   page.on("pageerror", (error) => errors.push(String(error)));
   page.on("console", (message) => {
     if (message.type() === "error" && !message.text().startsWith("Failed to load resource:")) {
@@ -37,7 +47,12 @@ async function assertNoPageOverflow(page, label) {
   });
   page.on("dialog", async (dialog) => {
     dialogs.push(dialog.message());
-    await dialog.dismiss();
+    if (acceptNextDialog) {
+      acceptNextDialog = false;
+      await dialog.accept();
+    } else {
+      await dialog.dismiss();
+    }
   });
 
   await page.route("**/preferences", async (route) => {
@@ -100,6 +115,7 @@ async function assertNoPageOverflow(page, label) {
     await page.locator("#solverAllowedFromRecipe").click();
 
     let savedTargetPayload = null;
+    let acceptedOverwriteCount = 0;
     await page.route("**/nutrient-solutions/Browser_solver_setup*", async (route) => {
       await route.fulfill({
         status: 200,
@@ -109,7 +125,26 @@ async function assertNoPageOverflow(page, label) {
     });
     await page.route("**/nutrient-solutions", async (route) => {
       if (route.request().method() === "POST") {
-        savedTargetPayload = route.request().postDataJSON();
+        const requestPayload = route.request().postDataJSON();
+        if (savedTargetPayload && !requestPayload.overwrite) {
+          await route.fulfill({
+            status: 409,
+            contentType: "application/json",
+            body: JSON.stringify({
+              detail: {
+                code: "nutrient_solution_exists",
+                name: savedTargetPayload.name,
+                filename: "Browser_solver_setup.yml",
+                has_solver_setup: true,
+              },
+            }),
+          });
+          return;
+        }
+        const storedPayload = { ...requestPayload };
+        delete storedPayload.overwrite;
+        if (requestPayload.overwrite) acceptedOverwriteCount += 1;
+        savedTargetPayload = storedPayload;
         await route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -171,16 +206,29 @@ async function assertNoPageOverflow(page, label) {
       );
     }
 
+    dialogs.length = 0;
+    acceptNextDialog = true;
+    await page.locator("#saveProfile").click();
+    await waitForSmokeCondition(
+      page,
+      () => acceptedOverwriteCount === 1 && dialogs.length === 1,
+      () => `Confirmed profile overwrite did not resubmit safely: ${JSON.stringify({
+        acceptedOverwriteCount,
+        dialogs,
+      })}`,
+    );
+    dialogs.length = 0;
+
+    await page.locator("#solverFixedTable input").first().fill("0");
     await page.locator("#saveSolverSetup").uncheck();
     await page.locator("#saveProfile").click();
-    for (let attempt = 0; attempt < 20 && !dialogs.length; attempt += 1) {
-      await page.waitForTimeout(25);
-    }
+    await waitForSmokeCondition(page, () => dialogs.length > 0, "Expected stored-setup removal warning");
     if (dialogs.length !== 1 || !dialogs[0].toLowerCase().includes("setup")) {
       throw new Error(`Expected stored-setup removal warning, got: ${JSON.stringify(dialogs)}`);
     }
     dialogs.length = 0;
     await page.locator("#saveSolverSetup").check();
+    await page.locator("#solverFixedTable input").first().fill("2");
 
     const litersInput = page.locator("#configLiters");
     const previousVolume = Number(await litersInput.inputValue());

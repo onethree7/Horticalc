@@ -21,6 +21,7 @@ Horticalc has five runtime layers:
 | Solver | `src/horticalc/solver.py`, `src/horticalc/priority_solver.py`, `src/horticalc/solver_config.py` | Solves target profiles through mass NNLS, strict directional priority tiers, or the legacy compatibility model. |
 | Unit definitions | `src/horticalc/units.py` | Canonical volume and dose conversions. |
 | Data paths | `src/horticalc/paths.py` | AppRoot, shipped defaults, user overrides, logs, lockfile. |
+| Target profile contract | `src/horticalc/nutrient_profiles.py` | Canonical normalization and Solver-setup presence rules shared by API and YAML persistence. |
 | Persistence IO | `src/horticalc/data_io.py` | Loads and saves CSV, YAML, and JSON. |
 | API | `api/app.py` | JSON routes, YAML save support, and static frontend. |
 | UI | `frontend/index.html`, `frontend/app/main.js`, controller modules, `frontend/styles/` | Native ES-module composition, feature-owned state, and workflows. |

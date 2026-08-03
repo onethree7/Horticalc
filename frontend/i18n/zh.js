@@ -132,6 +132,8 @@ export default {
   "profile.solverSetupFixedWarning": "{count} 个启用的固定用量不会被保存。",
   "profile.confirmOmitFixedAmounts": "{count} 个启用的固定用量不会被保存。是否仅保存目标值？",
   "profile.confirmRemoveSolverSetup": "现有配置中的求解器设置将被删除。是否仅保存目标值？",
+  "profile.confirmOverwrite": "已存在名为“{name}”的配置。是否覆盖？",
+  "profile.confirmOverwriteCollision": "此名称会覆盖现有配置“{name}”。是否继续？",
   "profile.solverRecipeOutputHint": "肥料配方保存计算剂量，不保存求解器设置。",
   "profile.viewInCalculator": "在计算器中查看",
   "calculator.fertilizerComponents": "肥料组分",

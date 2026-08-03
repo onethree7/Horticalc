@@ -132,6 +132,8 @@ export default {
   "profile.solverSetupFixedWarning": "No se guardarán {count} cantidades fijas activas.",
   "profile.confirmOmitFixedAmounts": "No se guardarán {count} cantidades fijas activas. ¿Guardar solo los valores objetivo?",
   "profile.confirmRemoveSolverSetup": "Se eliminará la configuración del Solver del perfil existente. ¿Guardar solo los valores objetivo?",
+  "profile.confirmOverwrite": "Ya existe un perfil guardado llamado «{name}». ¿Sobrescribirlo?",
+  "profile.confirmOverwriteCollision": "Este nombre sobrescribiría el perfil existente «{name}». ¿Continuar?",
   "profile.solverRecipeOutputHint": "Una receta guarda las dosis calculadas, no la configuración del Solver.",
   "profile.viewInCalculator": "Ver en la calculadora",
   "calculator.fertilizerComponents": "Componentes de fertilizante",

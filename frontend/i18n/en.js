@@ -132,6 +132,8 @@ export default {
   "profile.solverSetupFixedWarning": "{count} active fixed amounts will not be saved.",
   "profile.confirmOmitFixedAmounts": "{count} active fixed amounts will not be saved. Save only the target values?",
   "profile.confirmRemoveSolverSetup": "The existing profile's Solver setup will be removed. Save only the target values?",
+  "profile.confirmOverwrite": "A saved profile named ‘{name}’ already exists. Overwrite it?",
+  "profile.confirmOverwriteCollision": "This name would overwrite the existing profile ‘{name}’. Continue?",
   "profile.solverRecipeOutputHint": "A fertilizer recipe stores calculated doses, not the Solver setup.",
   "profile.viewInCalculator": "View in calculator",
   "calculator.fertilizerComponents": "Fertilizer components",

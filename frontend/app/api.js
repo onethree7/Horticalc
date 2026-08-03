@@ -5,7 +5,11 @@ let preferences = {};
 async function responseJson(response, errorMessage) {
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(data.detail || errorMessage);
+    const detail = data.detail;
+    const error = new Error(typeof detail === "string" ? detail : errorMessage);
+    error.status = response.status;
+    error.detail = detail;
+    throw error;
   }
   return response.json();
 }

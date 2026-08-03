@@ -123,29 +123,36 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
         const includeSetup = saveSolverSetupInput.checked;
         if (!includeSetup) {
           const activeCount = actions.getActiveFixedAmountCount();
-          const existing = nutrientSolutions.find((profile) =>
-            String(profile.name || "").trim().toLocaleLowerCase()
-              === name.toLocaleLowerCase()
-          );
-          let removesStoredSetup = false;
-          if (existing) {
-            const stored = await api.fetchNutrientSolutionData(
-              existing.filename,
-              t("errors.loadNutrientSolution"),
-            );
-            removesStoredSetup = actions.hasNutrientSolutionSetup(stored);
+          if (activeCount > 0 && !window.confirm(t("profile.confirmOmitFixedAmounts", { count: activeCount }))) {
+            return;
           }
-          const confirmKey = removesStoredSetup
-            ? "profile.confirmRemoveSolverSetup"
-            : activeCount > 0
-              ? "profile.confirmOmitFixedAmounts"
-              : "";
-          if (confirmKey && !window.confirm(t(confirmKey, { count: activeCount }))) return;
         }
-        await api.saveNutrientSolutionData(
-          actions.buildNutrientSolution(name, includeSetup),
-          t("errors.saveNutrientSolutionFailed"),
-        );
+        const targetPayload = actions.buildNutrientSolution(name, includeSetup);
+        try {
+          await api.saveNutrientSolutionData(
+            targetPayload,
+            t("errors.saveNutrientSolutionFailed"),
+          );
+        } catch (error) {
+          const conflict = error?.status === 409
+            && error?.detail?.code === "nutrient_solution_exists"
+            ? error.detail
+            : null;
+          if (!conflict) throw error;
+
+          const existingName = String(conflict.name || conflict.filename || "").trim();
+          const nameCollision = existingName && existingName !== name;
+          const confirmKey = nameCollision
+            ? "profile.confirmOverwriteCollision"
+            : !includeSetup && conflict.has_solver_setup
+              ? "profile.confirmRemoveSolverSetup"
+              : "profile.confirmOverwrite";
+          if (!window.confirm(t(confirmKey, { name: existingName || name }))) return;
+          await api.saveNutrientSolutionData(
+            { ...targetPayload, overwrite: true },
+            t("errors.saveNutrientSolutionFailed"),
+          );
+        }
         nutrientSolutions = await api.fetchNutrientSolutions(t("errors.loadNutrientSolutions"));
       } else {
         await api.saveRecipeData(actions.buildCalculatorRecipe(name), t("errors.saveRecipeFailed"));

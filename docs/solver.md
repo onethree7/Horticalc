@@ -46,7 +46,9 @@ The output field `objective_elements` is the authoritative list.
 `target_priorities` contains the resolved directional priorities used by a
 hierarchical solve. `ignored_elements` is retained as a compatibility field
 and lists targets for which both directions are report-only. A solve is
-rejected when no objective remains.
+rejected when no objective remains. Before returning, every solver model uses
+the same result validation and rejects non-finite values or negative fertilizer
+doses.
 
 ## Nitrogen Modes
 

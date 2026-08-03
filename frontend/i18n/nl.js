@@ -132,6 +132,8 @@ export default {
   "profile.solverSetupFixedWarning": "{count} actieve vaste hoeveelheden worden niet opgeslagen.",
   "profile.confirmOmitFixedAmounts": "{count} actieve vaste hoeveelheden worden niet opgeslagen. Alleen de doelwaarden opslaan?",
   "profile.confirmRemoveSolverSetup": "De Solver-instelling van het bestaande profiel wordt verwijderd. Alleen de doelwaarden opslaan?",
+  "profile.confirmOverwrite": "Er bestaat al een opgeslagen profiel met de naam ‘{name}’. Overschrijven?",
+  "profile.confirmOverwriteCollision": "Deze naam zou het bestaande profiel ‘{name}’ overschrijven. Doorgaan?",
   "profile.solverRecipeOutputHint": "Een meststofrecept bewaart berekende doseringen, niet de Solver-instelling.",
   "profile.viewInCalculator": "In calculator bekijken",
   "calculator.fertilizerComponents": "Meststofcomponenten",

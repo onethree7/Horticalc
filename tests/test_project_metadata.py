@@ -98,7 +98,7 @@ def test_ci_resolves_release_constraints() -> None:
 
 
 def test_runtime_package_api_and_cli_versions_match(api_client: TestClient) -> None:
-    assert __version__ == "0.6.0"
+    assert __version__ == "0.6.1"
     assert version("horticalc") == __version__
     assert api_client.get("/openapi.json").json()["info"]["version"] == __version__
     result = subprocess.run(
@@ -112,7 +112,7 @@ def test_runtime_package_api_and_cli_versions_match(api_client: TestClient) -> N
 
 
 def test_release_tag_must_match_the_single_version_literal() -> None:
-    assert expected_release_tag() == "v0.6.0"
-    validate_release_tag("v0.6.0")
-    with pytest.raises(ValueError, match="must be exactly v0.6.0"):
+    assert expected_release_tag() == "v0.6.1"
+    validate_release_tag("v0.6.1")
+    with pytest.raises(ValueError, match="must be exactly v0.6.1"):
         validate_release_tag("v4.1")

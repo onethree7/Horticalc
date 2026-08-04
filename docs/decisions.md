@@ -108,7 +108,7 @@ Source: `src/horticalc/solver_config.py`, `src/horticalc/solver.py`.
 
 ## CI/Release
 
-- Release trigger: exact tag `v0.6.0` and manual workflow dispatch.
+- Release trigger: exact tag `v0.6.1` and manual workflow dispatch.
 - CI OSes: `ubuntu-22.04` and `windows-latest`.
 - CI Python: `3.11.9`.
 - Release permissions: `contents: write`.

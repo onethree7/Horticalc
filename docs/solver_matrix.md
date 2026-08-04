@@ -702,17 +702,20 @@ global configuration, its per-profile normalized RMS, and every signed error.
   analyzer.
 - `scripts/solver_matrix_cases.yml`: benchmark data and experiment grids.
 - `scripts/solver_matrix_analyze.py`: paired analyzer and report writer.
+- `scripts/solver_goal_model.py` and `scripts/solver_model_matrix.py`: historical
+  goal-model comparison and matrix runner.
 - `scripts/solver_preference.py`: conflict generation, labels, monotone model,
   and non-compensating shortlist ranking.
 - `scripts/solver_preference_barrage.py`: deduplicated shortlist barrage and
   holdout/bootstrap stability analysis.
 - `scripts/solver_preference_screen.py`: exhaustive stress-portfolio screen and
   multi-view shortlist construction.
-- `tests/test_solver_matrix.py`: runner/data-contract tests.
-- `tests/test_solver_matrix_exhaustive.py`: exhaustive enumeration, Pareto,
+- `tests/research/test_solver_matrix.py`: runner/data-contract tests.
+- `tests/research/test_solver_matrix_exhaustive.py`: exhaustive enumeration, Pareto,
   compact-storage, and resume tests.
-- `tests/test_solver_matrix_analyze.py`: analysis-contract tests.
-- `tests/test_solver_preference.py`: feature direction, monotonicity,
+- `tests/research/test_solver_matrix_analyze.py`: analysis-contract tests.
+- `tests/research/test_solver_goal_model.py`: historical goal-model and model-matrix tests.
+- `tests/research/test_solver_preference.py`: feature direction, monotonicity,
   non-compensation, compact barrage, resume, and holdout tests.
 - `logs/solver_matrix/...`: generated, ignored results.
 

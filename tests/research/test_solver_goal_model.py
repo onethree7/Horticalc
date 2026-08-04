@@ -11,6 +11,8 @@ import scripts.solver_goal_model as goal
 import scripts.solver_model_matrix as model_matrix
 from horticalc.data_io import load_fertilizers, load_molar_masses, load_water_profile_data
 
+pytestmark = pytest.mark.research
+
 
 def test_goal_lp_recovers_exact_nonnegative_solution() -> None:
     weights, stages = goal.solve_goal_weights(
@@ -64,7 +66,7 @@ def test_global_underfill_factor_reduces_underfill_without_element_weights() -> 
 
 
 def test_goal_solver_uses_corrected_golden_s_target_without_dominance() -> None:
-    root = Path(__file__).resolve().parents[1]
+    root = model_matrix.ROOT
     recipe = yaml.safe_load((root / "recipes" / "solve_golden.yml").read_text(encoding="utf-8"))
     recipe["solver_config"] = {
         "nitrogen_objective_mode": "n_total_only",
@@ -87,7 +89,7 @@ def test_goal_solver_uses_corrected_golden_s_target_without_dominance() -> None:
 
 
 def test_model_matrix_keeps_historical_34191_on_legacy_runtime() -> None:
-    root = Path(__file__).resolve().parents[1]
+    root = model_matrix.ROOT
     cases = yaml.safe_load((root / "scripts" / "solver_matrix_cases.yml").read_text(encoding="utf-8"))
     policy = next(item for item in model_matrix.model_policies(cases) if item.policy_id == "legacy_34191")
 

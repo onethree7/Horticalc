@@ -10,6 +10,8 @@ import yaml
 import scripts.solver_matrix as solver_matrix
 from horticalc.data_io import load_fertilizers
 
+pytestmark = pytest.mark.research
+
 
 def _cases() -> dict:
     return yaml.safe_load(solver_matrix.DEFAULT_CASES_PATH.read_text(encoding="utf-8"))

@@ -67,7 +67,7 @@ Global options for both modes:
 
 ## Run Tests
 
-Standard suite:
+Standard product suite:
 
 ```bash
 python scripts/test.py
@@ -75,20 +75,37 @@ python scripts/test.py
 
 The entrypoint creates the Python environment as needed, installs pinned Python
 and Node development tooling when missing, then runs Ruff formatting/linting,
-ESLint, Stylelint, Node unit tests, Playwright behavior tests, and pytest.
+ESLint, Stylelint, Node unit tests, Playwright behavior tests, and all product
+Pytest tests. Optional solver-research tests are excluded from this release
+gate.
+
+Run only the optional solver-research suite, or product and research together:
+
+```bash
+python scripts/test.py --suite research -q
+python scripts/test.py --suite all -q
+```
+
+The research suite runs Python formatting/linting and the marked research
+tests, but does not run frontend checks. The `all` suite runs every check and
+every test.
 
 Focused examples:
 
 ```bash
-python scripts/test.py tests/test_ec.py -q
-python scripts/test.py tests/test_solver_golden.py tests/test_solver_weighting.py -q
-python scripts/test.py tests/test_frontend_serving.py tests/test_frontend_module_architecture.py -q
+python scripts/test.py --pytest-only tests/test_ec.py -q
+python scripts/test.py --pytest-only tests/test_solver_golden.py tests/test_solver_weighting.py -q
+python scripts/test.py --pytest-only tests/test_frontend_serving.py tests/test_frontend_module_architecture.py -q
 ```
+
+`--pytest-only` prepares Python test dependencies but skips Ruff, npm, frontend
+lint, and Node unit tests. Remaining arguments are passed to Pytest. Combine it
+with `--suite research` to focus a research run.
 
 Run only the browser workflow smoke test:
 
 ```bash
-python scripts/test.py tests/test_frontend_browser_smoke.py -q
+python scripts/test.py --pytest-only tests/test_frontend_browser_smoke.py -q
 ```
 
 ## Release Build (PyInstaller)

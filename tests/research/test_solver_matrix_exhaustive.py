@@ -12,6 +12,8 @@ import pytest
 import scripts.solver_matrix as solver_matrix
 import scripts.solver_matrix_exhaustive as exhaustive
 
+pytestmark = pytest.mark.research
+
 
 def _cases() -> dict:
     return solver_matrix._read_yaml(solver_matrix.DEFAULT_CASES_PATH)

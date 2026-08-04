@@ -6,12 +6,15 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
 import scripts.solver_matrix as solver_matrix
 import scripts.solver_matrix_exhaustive as exhaustive
 import scripts.solver_preference as preference
 import scripts.solver_preference_barrage as barrage
 import scripts.solver_preference_screen as screen
+
+pytestmark = pytest.mark.research
 
 
 def _solution(

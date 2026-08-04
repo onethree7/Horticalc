@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 import scripts.solver_matrix as solver_matrix
 import scripts.solver_matrix_analyze as solver_matrix_analyze
+
+pytestmark = pytest.mark.research
 
 
 def _write_deep_fixture(run_dir: Path) -> None:

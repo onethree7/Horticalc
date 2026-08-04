@@ -9,9 +9,8 @@ def test_yaml_filename_normalizes_route_input() -> None:
     assert api_app._yaml_filename("My Recipe") == "My_Recipe.yml"
 
 
-def test_recipes_filters_solver_and_default() -> None:
-    client = TestClient(api_app.app)
-    response = client.get("/recipes")
+def test_recipes_filters_solver_and_default(api_client: TestClient) -> None:
+    response = api_client.get("/recipes")
 
     assert response.status_code == 200
 
@@ -21,8 +20,7 @@ def test_recipes_filters_solver_and_default() -> None:
     assert "golden.yml" in filenames
 
 
-def test_recipe_payload_persists_fertilizers_allowed() -> None:
-    client = TestClient(api_app.app)
+def test_recipe_payload_persists_fertilizers_allowed(api_client: TestClient) -> None:
     payload = {
         "name": "api_recipe_allowed_roundtrip",
         "liters": 10,
@@ -31,17 +29,16 @@ def test_recipe_payload_persists_fertilizers_allowed() -> None:
         "urea_as_nh4": False,
     }
 
-    save_response = client.post("/recipes", json=payload)
+    save_response = api_client.post("/recipes", json=payload)
     assert save_response.status_code == 200
 
-    get_response = client.get("/recipes/api_recipe_allowed_roundtrip")
+    get_response = api_client.get("/recipes/api_recipe_allowed_roundtrip")
     assert get_response.status_code == 200
     recipe = get_response.json()
     assert recipe.get("fertilizers_allowed") == ["Calcinit", "Hakaphos Rot"]
 
 
-def test_recipe_payload_persists_solver_config() -> None:
-    client = TestClient(api_app.app)
+def test_recipe_payload_persists_solver_config(api_client: TestClient) -> None:
     payload = {
         "name": "api_recipe_solver_config_roundtrip",
         "liters": 30,
@@ -60,26 +57,24 @@ def test_recipe_payload_persists_solver_config() -> None:
         },
     }
 
-    save_response = client.post("/recipes", json=payload)
+    save_response = api_client.post("/recipes", json=payload)
     assert save_response.status_code == 200
 
-    get_response = client.get("/recipes/api_recipe_solver_config_roundtrip")
+    get_response = api_client.get("/recipes/api_recipe_solver_config_roundtrip")
     assert get_response.status_code == 200
     recipe = get_response.json()
     assert recipe.get("solver_config") == payload["solver_config"]
 
 
-def test_solver_config_schema_matches_backend_definitions() -> None:
-    client = TestClient(api_app.app)
-    response = client.get("/schema/solver-config")
+def test_solver_config_schema_matches_backend_definitions(api_client: TestClient) -> None:
+    response = api_client.get("/schema/solver-config")
 
     assert response.status_code == 200
     assert response.json() == {"definitions": list(SOLVER_CONFIG_DEFINITIONS)}
 
 
-def test_recipe_save_rejects_invalid_solver_config() -> None:
-    client = TestClient(api_app.app)
-    response = client.post(
+def test_recipe_save_rejects_invalid_solver_config(api_client: TestClient) -> None:
+    response = api_client.post(
         "/recipes",
         json={
             "name": "invalid_solver_config",
@@ -91,9 +86,8 @@ def test_recipe_save_rejects_invalid_solver_config() -> None:
     assert response.json()["detail"] == "Invalid solver config value: relative_weighting"
 
 
-def test_recipe_save_rejects_duplicate_fertilizers_allowed() -> None:
-    client = TestClient(api_app.app)
-    response = client.post(
+def test_recipe_save_rejects_duplicate_fertilizers_allowed(api_client: TestClient) -> None:
+    response = api_client.post(
         "/recipes",
         json={
             "name": "invalid_duplicate_recipe",

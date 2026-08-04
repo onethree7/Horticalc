@@ -8,15 +8,17 @@ See [commands.md](commands.md#install-and-run-from-source) for the exact venv an
 
 ## Test Structure
 
-- Calculation and unit tests: `tests/test_ec.py`, `tests/test_core.py`, `tests/test_units.py`.
+- Calculation and unit tests: `tests/test_calculation_chemistry.py`,
+  `tests/test_ec.py`, `tests/test_recipe_regressions.py`,
+  `tests/test_units.py`, and `tests/test_water_profiles.py`.
 - Solver tests: `tests/test_solver_*.py`.
 - Frontend unit tests: `tests/frontend/*.test.mjs` using Node's built-in test runner.
 - Frontend browser behavior: `tests/test_frontend_browser_smoke.py` and `scripts/frontend_smoke.cjs`.
 - API tests: `tests/test_api_*.py`.
 - Packaging and launcher tests: `tests/test_portable_data_policy.py`, `tests/test_launcher_*.py`.
-- Solver matrix and analyzer tests: `tests/test_solver_matrix.py`,
-  `tests/test_solver_matrix_analyze.py`, `tests/test_solver_matrix_exhaustive.py`,
-  and `tests/test_solver_preference.py`.
+- Optional solver research tests: `tests/research/test_solver_goal_model.py`,
+  `tests/research/test_solver_matrix*.py`, and
+  `tests/research/test_solver_preference.py`.
 
 Run the standard suite and focused examples: see [commands.md](commands.md#run-tests).
 
@@ -37,7 +39,10 @@ npm dependency. Development tooling is pinned to Ruff `0.15.21`, ESLint
 `10.7.0`, Stylelint `17.14.0`, and `stylelint-config-standard` `40.0.0`.
 `python scripts/test.py` installs missing development tools and runs Python
 format/lint checks, frontend lint, Node unit tests, Playwright behavior tests,
-and pytest. Every lint command fails on warnings.
+and the product Pytest suite. Use `--suite research` for the optional
+solver-research tests, `--suite all` for both suites, and `--pytest-only` for a
+focused Pytest run without lint or frontend checks. Every lint command fails on
+warnings.
 
 Set `HORTICALC_BROWSER_PATH` when Chrome/Chromium is installed outside the standard Windows or Linux locations. Set `HORTICALC_TEST_URL` only when running `node scripts/frontend_smoke.cjs` against an already-running development server.
 

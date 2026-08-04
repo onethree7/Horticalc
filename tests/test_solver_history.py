@@ -96,16 +96,17 @@ def test_setting_pin_rejects_unknown_history_entry(tmp_path: Path) -> None:
     assert not set_solver_history_pinned(history_path, "missing", True, 2)
 
 
-def test_solver_history_api_records_success_and_exposes_routes(monkeypatch, tmp_path: Path) -> None:
+def test_solver_history_api_records_success_and_exposes_routes(
+    api_client: TestClient, monkeypatch, tmp_path: Path
+) -> None:
     api_app._ensure_initialized()
     layout = api_app._portable_layout()
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
     monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", replace(layout, root=tmp_path, user=tmp_path / "user"))
-    client = TestClient(api_app.app)
-    assert client.put("/preferences", json={"solver_history_limit": 1000}).status_code == 200
+    assert api_client.put("/preferences", json={"solver_history_limit": 1000}).status_code == 200
 
-    failed = client.post("/solve", json={"targets": {"INVALID": 1}})
-    successful = client.post(
+    failed = api_client.post("/solve", json={"targets": {"INVALID": 1}})
+    successful = api_client.post(
         "/solve",
         json={
             "liters": 10,
@@ -118,25 +119,27 @@ def test_solver_history_api_records_success_and_exposes_routes(monkeypatch, tmp_
 
     assert failed.status_code == 400
     assert successful.status_code == 200
-    listing = client.get("/solver-history")
+    listing = api_client.get("/solver-history")
     assert listing.status_code == 200
     assert listing.json()["limit"] == 1000
     assert len(listing.json()["entries"]) == 1
     assert listing.json()["entries"][0]["pinned"] is False
 
     entry_id = listing.json()["entries"][0]["id"]
-    detail = client.get(f"/solver-history/{entry_id}")
+    detail = api_client.get(f"/solver-history/{entry_id}")
     assert detail.status_code == 200
     assert detail.json()["setup"]["water_profile"]["mg_per_l"] == {"Ca": 5.0}
     assert detail.json()["result"] == successful.json()
     assert detail.json()["calculation"]["ec"]
     assert detail.json()["pinned"] is False
 
-    assert client.delete("/solver-history").status_code == 200
-    assert client.get("/solver-history").json()["entries"] == []
+    assert api_client.delete("/solver-history").status_code == 200
+    assert api_client.get("/solver-history").json()["entries"] == []
 
 
-def test_solver_history_api_pins_and_preserves_entry_on_clear(monkeypatch, tmp_path: Path) -> None:
+def test_solver_history_api_pins_and_preserves_entry_on_clear(
+    api_client: TestClient, monkeypatch, tmp_path: Path
+) -> None:
     api_app._ensure_initialized()
     layout = api_app._portable_layout()
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
@@ -144,19 +147,17 @@ def test_solver_history_api_pins_and_preserves_entry_on_clear(monkeypatch, tmp_p
     history_path = api_app._solver_history_path()
     append_solver_history(history_path, _entry("keep", "2026-01-01T00:00:00+00:00"), 1000)
     append_solver_history(history_path, _entry("remove", "2026-01-02T00:00:00+00:00"), 1000)
-    client = TestClient(api_app.app)
-
-    pinned = client.put("/solver-history/keep", json={"pinned": True})
+    pinned = api_client.put("/solver-history/keep", json={"pinned": True})
 
     assert pinned.status_code == 200
     assert pinned.json() == {"status": "ok", "pinned": True}
-    assert client.put("/solver-history/missing", json={"pinned": True}).status_code == 404
-    assert client.get("/solver-history/keep").json()["pinned"] is True
-    assert client.delete("/solver-history").status_code == 200
-    assert [entry["id"] for entry in client.get("/solver-history").json()["entries"]] == ["keep"]
+    assert api_client.put("/solver-history/missing", json={"pinned": True}).status_code == 404
+    assert api_client.get("/solver-history/keep").json()["pinned"] is True
+    assert api_client.delete("/solver-history").status_code == 200
+    assert [entry["id"] for entry in api_client.get("/solver-history").json()["entries"]] == ["keep"]
 
 
-def test_history_limit_preference_trims_immediately(monkeypatch, tmp_path: Path) -> None:
+def test_history_limit_preference_trims_immediately(api_client: TestClient, monkeypatch, tmp_path: Path) -> None:
     api_app._ensure_initialized()
     layout = api_app._portable_layout()
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
@@ -165,15 +166,14 @@ def test_history_limit_preference_trims_immediately(monkeypatch, tmp_path: Path)
     append_solver_history(history_path, _entry("first", "2026-01-01T00:00:00+00:00"), 1000)
     append_solver_history(history_path, _entry("second", "2026-01-02T00:00:00+00:00"), 1000)
 
-    client = TestClient(api_app.app)
-    assert client.put("/preferences", json={"solver_history_limit": 1}).status_code == 200
+    assert api_client.put("/preferences", json={"solver_history_limit": 1}).status_code == 200
     assert [entry["id"] for entry in load_solver_history(history_path)] == ["second"]
-    assert client.put("/preferences", json={"solver_history_limit": 0}).status_code == 200
+    assert api_client.put("/preferences", json={"solver_history_limit": 0}).status_code == 200
     assert not history_path.exists()
-    assert client.put("/preferences", json={"solver_history_limit": 10001}).status_code == 422
+    assert api_client.put("/preferences", json={"solver_history_limit": 10001}).status_code == 422
 
 
-def test_history_write_failure_does_not_fail_successful_solve(monkeypatch) -> None:
+def test_history_write_failure_does_not_fail_successful_solve(api_client: TestClient, monkeypatch) -> None:
     api_app._ensure_initialized()
 
     def fail_write(*_args, **_kwargs):
@@ -181,7 +181,7 @@ def test_history_write_failure_does_not_fail_successful_solve(monkeypatch) -> No
 
     monkeypatch.setattr(api_app, "_effective_solver_history_limit", lambda *_args, **_kwargs: 1000)
     monkeypatch.setattr(api_app, "append_solver_history", fail_write)
-    response = TestClient(api_app.app).post(
+    response = api_client.post(
         "/solve",
         json={
             "targets": {"N_total": 20},

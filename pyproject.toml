@@ -19,7 +19,7 @@ dependencies = [
 dev = [
   "httpx2>=2.0.0",
   "pytest>=8",
-  "ruff==0.15.21",
+  "ruff==0.16.1",
   "tomli>=2; python_version < \"3.11\"",
 ]
 

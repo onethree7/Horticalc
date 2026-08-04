@@ -1,7 +1,33 @@
 import pytest
 
 from horticalc.data_io import Fertilizer, load_molar_masses
-from horticalc.solver import solve_recipe_data
+from horticalc.solver import SolveResult, _validate_solve_result, solve_recipe_data
+
+
+def _solve_result(*, grams: float = 1.0, achieved: float = 100.0) -> SolveResult:
+    return SolveResult(
+        liters=10.0,
+        solver_model="nnls_tuning",
+        fertilizers=[{"name": "K test", "grams": grams}],
+        objective_elements=["K"],
+        ignored_elements=[],
+        target_priorities={},
+        priority_stages=[],
+        targets_mg_l={"K": 100.0},
+        achieved_elements_mg_l={"K": achieved},
+        errors_mg_l={"K": achieved - 100.0},
+        errors_percent={"K": achieved - 100.0},
+    )
+
+
+def test_shared_solver_result_validation_rejects_non_finite_values() -> None:
+    with pytest.raises(ValueError, match=r"NNLS \+ tuning solver produced a non-finite result"):
+        _validate_solve_result(_solve_result(achieved=float("nan")))
+
+
+def test_shared_solver_result_validation_rejects_negative_doses() -> None:
+    with pytest.raises(ValueError, match=r"NNLS \+ tuning solver produced a negative fertilizer dose"):
+        _validate_solve_result(_solve_result(grams=-0.1))
 
 
 def test_solve_recipe_data_rejects_invalid_target_key() -> None:
@@ -136,3 +162,22 @@ def test_solve_recipe_data_can_solve_hco3_from_direct_hco3_composition() -> None
     assert result.objective_elements == ["HCO3"]
     assert result.fertilizers[0]["name"] == "HCO3 test"
     assert result.fertilizers[0]["grams"] > 0
+
+
+def test_water_profile_overshoot_remains_visible_in_errors() -> None:
+    molar_masses = load_molar_masses()
+    ferts = {
+        "K-only": Fertilizer(name="K-only", liquid=False, weight_factor=1.0, comp={"K2O": 1.0}),
+    }
+    recipe = {
+        "liters": 1.0,
+        "targets": {"Ca": 100.0},
+        "fertilizers_allowed": ["K-only"],
+    }
+    water_profile_data = {"mg_per_l": {"Ca": 200.0}}
+
+    result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses, water_profile_data=water_profile_data)
+
+    assert result.fertilizers == []
+    assert result.errors_mg_l["Ca"] > 0.0
+    assert result.errors_percent["Ca"] > 0.0

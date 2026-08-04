@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
+from uuid import uuid4
 
 import yaml
 from fastapi import FastAPI, HTTPException, Request
@@ -35,6 +38,7 @@ from horticalc.data_io import (
     save_user_preferences,
     save_water_profile,
 )
+from horticalc.nutrient_profiles import normalize_nutrient_solution_data, nutrient_solution_has_setup
 from horticalc.paths import (
     PortableLayout,
     app_root,
@@ -44,9 +48,21 @@ from horticalc.paths import (
     shipped_nutrient_solutions_dir,
     shipped_recipes_dir,
     shipped_water_profiles_dir,
+    user_solver_history_path,
 )
 from horticalc.solver import solve_recipe_data
-from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS, validate_solver_config
+from horticalc.solver_config import SOLVER_CONFIG_DEFINITIONS, resolve_solver_config, validate_solver_config
+from horticalc.solver_history import (
+    DEFAULT_SOLVER_HISTORY_LIMIT,
+    MAX_SOLVER_HISTORY_LIMIT,
+    SOLVER_HISTORY_SCHEMA_VERSION,
+    append_solver_history,
+    clear_solver_history,
+    set_solver_history_pinned,
+    solver_history_entry,
+    solver_history_summaries,
+    trim_solver_history,
+)
 from horticalc.units import (
     CANONICAL_LIQUID_DOSE_UNIT,
     CANONICAL_SOLID_DOSE_UNIT,
@@ -110,6 +126,13 @@ class PreferencesPayload(BaseModel):
     liquid_dose_unit: Optional[str] = None
     solver_config: Optional[Dict[str, Any]] = None
     last_water_profile: Optional[str] = None
+    solver_history_limit: Optional[int] = Field(default=None, ge=0, le=MAX_SOLVER_HISTORY_LIMIT)
+    favorite_recipes: List[str] = Field(default_factory=list)
+    favorite_nutrient_solutions: List[str] = Field(default_factory=list)
+
+
+class SolverHistoryPinPayload(BaseModel):
+    pinned: bool
 
 
 class RecipeRequest(BaseModel):
@@ -163,8 +186,12 @@ class SolveFertilizerEntry(BaseModel):
 
 class SolveResponse(BaseModel):
     liters: float
+    solver_model: str
     fertilizers: List[SolveFertilizerEntry]
     objective_elements: List[str]
+    ignored_elements: List[str]
+    target_priorities: Dict[str, Dict[str, int]]
+    priority_stages: List[Dict[str, int | float]]
     targets_mg_per_l: Dict[str, float]
     achieved_elements_mg_per_l: Dict[str, float]
     errors_mg_per_l: Dict[str, float]
@@ -182,6 +209,14 @@ class NutrientSolutionPayload(BaseModel):
     name: str
     source: Optional[str] = ""
     targets_mg_per_l: Dict[str, float] = Field(default_factory=dict)
+    liters: Optional[FiniteFloat] = Field(default=None, gt=0)
+    water_profile: Optional[str] = None
+    osmosis_percent: Optional[FiniteFloat] = Field(default=None, ge=0, le=100)
+    fertilizers_allowed: Optional[List[str]] = None
+    fixed_grams: Optional[Dict[str, FiniteFloat]] = None
+    urea_as_nh4: Optional[bool] = None
+    solver_config: Optional[Dict[str, Any]] = None
+    overwrite: bool = False
 
 
 class RecipePayload(BaseModel):
@@ -216,7 +251,12 @@ def _validated_request_model(model_type: type[BaseModel], payload: dict) -> Base
     try:
         return model_type.model_validate(payload)
     except ValidationError as exc:
-        raise HTTPException(status_code=422, detail=exc.errors(include_url=False)) from exc
+        errors = exc.errors(include_url=False)
+        for error in errors:
+            invalid_input = error.get("input")
+            if isinstance(invalid_input, float) and not math.isfinite(invalid_input):
+                error["input"] = str(invalid_input)
+        raise HTTPException(status_code=422, detail=errors) from exc
 
 
 def _model_dump(model: BaseModel) -> dict:
@@ -321,6 +361,14 @@ def _validated_unique_names(values: List[str], *, field_name: str) -> List[str]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+def _validated_yaml_filenames(values: List[str], *, field_name: str) -> List[str]:
+    filenames = _validated_unique_names(values, field_name=field_name)
+    for filename in filenames:
+        if not filename or Path(filename).name != filename or _yaml_filename(filename) != filename:
+            raise HTTPException(status_code=400, detail=f"Invalid {field_name} filename: {filename}")
+    return filenames
+
+
 def _portable_layout() -> PortableLayout:
     _ensure_initialized()
     if PORTABLE_LAYOUT is None:
@@ -376,8 +424,30 @@ THEME_OPTIONS = {
     "gch-classic",
     "vt-green",
     "blue-matrix",
+    "tokyo-night",
+    "solarized-light",
+    "dracula",
+    "gruvbox-dark",
+    "catppuccin-mocha",
+    "monokai-classic",
+    "windows-95",
+    "amber-crt",
 }
 LOCALE_OPTIONS = {"de", "en", "nl", "es", "zh"}
+
+
+def _solver_history_path() -> Path:
+    return user_solver_history_path(_portable_layout().root)
+
+
+def _effective_solver_history_limit(preferences_data: dict[str, Any] | None = None) -> int:
+    values = preferences_data if preferences_data is not None else load_user_preferences()
+    value = values.get("solver_history_limit", DEFAULT_SOLVER_HISTORY_LIMIT)
+    if isinstance(value, bool) or not isinstance(value, int):
+        return DEFAULT_SOLVER_HISTORY_LIMIT
+    if value < 0 or value > MAX_SOLVER_HISTORY_LIMIT:
+        return DEFAULT_SOLVER_HISTORY_LIMIT
+    return value
 
 
 @app.get("/preferences")
@@ -410,10 +480,57 @@ def put_preferences(payload: PreferencesPayload) -> dict[str, Any]:
             payload.solver_config,
             allow_advanced=False,
         )
+    if "solver_history_limit" in updates:
+        updates["solver_history_limit"] = (
+            DEFAULT_SOLVER_HISTORY_LIMIT if payload.solver_history_limit is None else int(payload.solver_history_limit)
+        )
+    for field_name in ("favorite_recipes", "favorite_nutrient_solutions"):
+        if field_name in updates:
+            updates[field_name] = _validated_yaml_filenames(
+                updates[field_name],
+                field_name=field_name,
+            )
     preferences = load_user_preferences()
     preferences.update(updates)
     save_user_preferences(preferences)
+    if "solver_history_limit" in updates:
+        trim_solver_history(_solver_history_path(), _effective_solver_history_limit(preferences))
     return preferences
+
+
+@app.get("/solver-history")
+def solver_history() -> dict[str, Any]:
+    return {
+        "entries": solver_history_summaries(_solver_history_path()),
+        "limit": _effective_solver_history_limit(),
+    }
+
+
+@app.get("/solver-history/{entry_id}")
+def solver_history_detail(entry_id: str) -> dict[str, Any]:
+    entry = solver_history_entry(_solver_history_path(), entry_id)
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Solver history entry not found")
+    return entry
+
+
+@app.put("/solver-history/{entry_id}")
+def put_solver_history_entry(entry_id: str, payload: SolverHistoryPinPayload) -> dict[str, Any]:
+    updated = set_solver_history_pinned(
+        _solver_history_path(),
+        entry_id,
+        payload.pinned,
+        _effective_solver_history_limit(),
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Solver history entry not found")
+    return {"status": "ok", "pinned": payload.pinned}
+
+
+@app.delete("/solver-history")
+def delete_solver_history() -> dict[str, str]:
+    clear_solver_history(_solver_history_path())
+    return {"status": "ok"}
 
 
 @app.get("/fertilizers")
@@ -552,24 +669,51 @@ async def save_nutrient_solution_profile(request: Request) -> dict:
     solution = _validated_request_model(NutrientSolutionPayload, payload)
     name = _required_name(solution.name, "Nutrient Solution name is required")
 
-    targets_mg_per_l = _validated_float_mapping(
-        solution.targets_mg_per_l,
-        ALLOWED_TARGET_KEYS,
-        "Invalid target key",
-    )
+    solution_data = solution.model_dump(exclude_unset=True)
+    solution_data.pop("overwrite", None)
+    solution_data["name"] = name
+    try:
+        normalized = normalize_nutrient_solution_data(solution_data)
+    except ValueError as exc:
+        detail = str(exc)
+        target_value_prefix = "targets_mg_per_l."
+        if detail.startswith(target_value_prefix):
+            target_key = detail.removeprefix(target_value_prefix).split(" ", 1)[0]
+            detail = f"Invalid value for {target_key}"
+        raise HTTPException(status_code=400, detail=detail) from exc
 
-    nutrient_solutions_dir = _portable_layout().nutrient_solutions
+    layout = _portable_layout()
+    nutrient_solutions_dir = layout.nutrient_solutions
     solution_path = _saved_yaml_path(
         nutrient_solutions_dir,
         name,
         "Nutrient Solution name results in empty filename",
     )
-    save_nutrient_solution(
-        solution_path,
-        name=name,
-        source=solution.source or "",
-        targets_mg_per_l=targets_mg_per_l,
+    existing_path = resolve_layered_yaml_path(
+        solution_path.name,
+        layout.nutrient_solutions,
+        shipped_nutrient_solutions_dir(layout.root),
     )
+    if existing_path.exists() and not solution.overwrite:
+        existing_name = existing_path.stem
+        existing_has_setup = False
+        try:
+            existing = load_nutrient_solution_data(existing_path)
+            existing_name = existing["name"]
+            existing_has_setup = nutrient_solution_has_setup(existing)
+        except (AttributeError, OSError, TypeError, ValueError, yaml.YAMLError) as exc:
+            logger.warning("Unable to inspect existing nutrient solution %s: %s", existing_path, exc)
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "nutrient_solution_exists",
+                "name": existing_name,
+                "filename": solution_path.name,
+                "has_solver_setup": existing_has_setup,
+            },
+        )
+
+    save_nutrient_solution(solution_path, **normalized)
     return {"status": "ok", "filename": solution_path.name}
 
 
@@ -730,7 +874,103 @@ def solve(payload: SolveRequest) -> SolveResponse:
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    return SolveResponse(**result.to_dict())
+    result_data = result.to_dict()
+    try:
+        _record_solver_history(recipe, result_data, water_profile_data)
+    except Exception:
+        logger.exception("Unable to record successful solver run")
+
+    return SolveResponse(**result_data)
+
+
+def _resolved_history_water_profile(water_profile_data: dict[str, Any] | None) -> dict[str, Any]:
+    if water_profile_data is not None:
+        return {
+            "mg_per_l": dict(water_profile_data.get("mg_per_l") or {}),
+            "osmosis_percent": float(water_profile_data.get("osmosis_percent", 0)),
+        }
+    layout = _portable_layout()
+    default_path = resolve_layered_yaml_path(
+        "default.yml",
+        layout.water_profiles,
+        shipped_water_profiles_dir(layout.root),
+    )
+    profile = load_water_profile_data(default_path)
+    return {
+        "mg_per_l": dict(profile.get("mg_per_l") or {}),
+        "osmosis_percent": float(profile.get("osmosis_percent", 0)),
+    }
+
+
+def _history_calculation_snapshot(
+    result_data: dict[str, Any],
+    water_profile: dict[str, Any],
+    *,
+    urea_as_nh4: bool,
+) -> dict[str, Any]:
+    calculation = compute_solution(
+        {
+            "liters": result_data["liters"],
+            "fertilizers": result_data.get("fertilizers") or [],
+            "urea_as_nh4": urea_as_nh4,
+        },
+        FERTILIZERS,
+        MOLAR_MASSES,
+        water_mg_l=dict(water_profile.get("mg_per_l") or {}),
+        osmosis_percent=float(water_profile.get("osmosis_percent", 0)),
+    ).to_dict()
+    return {
+        "npk_metrics": calculation.get("npk_metrics") or {},
+        "ec": calculation.get("ec") or {},
+        "elements_mg_per_l": calculation.get("elements_mg_per_l") or {},
+    }
+
+
+def _record_solver_history(
+    recipe: dict[str, Any],
+    result_data: dict[str, Any],
+    water_profile_data: dict[str, Any] | None,
+) -> None:
+    if os.environ.get("HORTICALC_TEST_DISABLE_SOLVER_HISTORY") == "1":
+        return
+    limit = _effective_solver_history_limit()
+    if limit == 0:
+        return
+    water_profile = _resolved_history_water_profile(water_profile_data)
+    try:
+        calculation = _history_calculation_snapshot(
+            result_data,
+            water_profile,
+            urea_as_nh4=bool(recipe.get("urea_as_nh4")),
+        )
+    except Exception:
+        logger.exception("Unable to build printable calculation snapshot for solver history")
+        calculation = {}
+
+    fertilizer_kinds = {}
+    for fertilizer in result_data.get("fertilizers") or []:
+        name = str(fertilizer.get("name") or "")
+        definition = FERTILIZERS.get(name)
+        fertilizer_kinds[name] = "liquid" if definition is not None and definition.liquid else "solid"
+
+    entry = {
+        "schema_version": SOLVER_HISTORY_SCHEMA_VERSION,
+        "id": str(uuid4()),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "setup": {
+            "liters": float(recipe.get("liters", result_data.get("liters", 10))),
+            "targets": dict(recipe.get("targets") or {}),
+            "water_profile": water_profile,
+            "fertilizers_allowed": list(recipe.get("fertilizers_allowed") or []),
+            "fixed_grams": dict(recipe.get("fixed_grams") or {}),
+            "urea_as_nh4": bool(recipe.get("urea_as_nh4")),
+            "solver_config": resolve_solver_config(recipe.get("solver_config")),
+        },
+        "result": result_data,
+        "fertilizer_kinds": fertilizer_kinds,
+        "calculation": calculation,
+    }
+    append_solver_history(_solver_history_path(), entry, limit)
 
 
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

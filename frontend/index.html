@@ -92,6 +92,14 @@
                   <option value="gch-classic" data-i18n="theme.gchClassic">g.ch Classic</option>
                   <option value="vt-green" data-i18n="theme.vtGreen">VT Green</option>
                   <option value="blue-matrix" data-i18n="theme.blueMatrix">Blue Matrix</option>
+                  <option value="tokyo-night" data-i18n="theme.tokyoNight">Tokyo Night</option>
+                  <option value="solarized-light" data-i18n="theme.solarizedLight">Solarized Light</option>
+                  <option value="dracula" data-i18n="theme.dracula">Dracula</option>
+                  <option value="gruvbox-dark" data-i18n="theme.gruvboxDark">Gruvbox Dark</option>
+                  <option value="catppuccin-mocha" data-i18n="theme.catppuccinMocha">Catppuccin Mocha</option>
+                  <option value="monokai-classic" data-i18n="theme.monokaiClassic">Monokai Classic</option>
+                  <option value="windows-95" data-i18n="theme.windows95">Windows 95</option>
+                  <option value="amber-crt" data-i18n="theme.amberCrt">Amber CRT</option>
                 </select>
               </label>
               <label class="rail-theme-control" for="languageSelect">
@@ -131,6 +139,12 @@
                   <option value="imperial_fluid_ounce">Imp fl oz</option>
                 </select>
               </label>
+              <label class="rail-theme-control" for="solverHistoryLimit">
+                <span data-i18n="history.limitLabel">Solver history limit</span>
+                <input id="solverHistoryLimit" type="number" min="0" max="10000" step="1" value="1000" />
+              </label>
+              <button id="clearSolverHistory" class="btn btn--outline" type="button" data-i18n="history.clear">Clear history</button>
+              <span id="solverHistorySettingsStatus" class="inline-hint" aria-live="polite"></span>
             </div>
           </details>
         </section>
@@ -194,6 +208,16 @@
             </ol>
           </details>
         </section>
+        <section class="rail-card rail-history" aria-label="Solver history" data-i18n-aria-label="history.title" data-testid="solver-history-card">
+          <details id="solverHistoryCard" open>
+            <summary>
+              <span data-i18n="history.title">Solver history</span>
+              <span id="solverHistoryCount" class="rail-history-count">0</span>
+            </summary>
+            <div id="solverHistoryList" class="rail-history-list" role="list"></div>
+            <p id="solverHistoryEmpty" class="rail-history-empty" data-i18n="history.empty">No solver runs saved yet.</p>
+          </details>
+        </section>
         <aside class="live-bar" aria-label="Live results" data-i18n-aria-label="aria.liveResults" data-testid="live-bar">
           <div class="live-bar-heading">
             <span data-i18n="live.title">Live results</span>
@@ -253,6 +277,24 @@
           </div>
         </aside>
       </aside>
+
+      <dialog id="solverHistoryDialog" class="solver-history-dialog" aria-labelledby="solverHistoryDialogTitle">
+        <div class="solver-history-dialog-heading">
+          <div>
+            <h2 id="solverHistoryDialogTitle" data-i18n="history.detailTitle">Solver run</h2>
+            <p id="solverHistoryDialogMeta" class="hint"></p>
+          </div>
+          <form method="dialog">
+            <button class="btn btn--outline btn--icon" value="close" type="submit" data-i18n-aria-label="history.close">×</button>
+          </form>
+        </div>
+        <pre id="solverHistoryDialogOutput" class="solver-history-output"></pre>
+        <div class="actions result-actions">
+          <button id="copySolverHistoryEntry" class="btn btn--outline" type="button" data-i18n="common.copyClipboard">Copy to clipboard</button>
+          <button id="restoreSolverHistoryEntry" class="btn btn--solver-primary" type="button" data-i18n="history.restore">Restore setup</button>
+          <span id="solverHistoryDialogStatus" class="inline-hint" aria-live="polite"></span>
+        </div>
+      </dialog>
 
       <section class="workspace" data-testid="workspace-scroll-frame">
       <section class="block water-section is-hidden" id="waterSection" data-panel-anchor="water" data-testid="water-view">
@@ -318,6 +360,7 @@
             <label for="profileSelect" data-i18n="common.profileSelect">Select profile</label>
             <div class="water-control-row">
               <select id="profileSelect"></select>
+              <button id="favoriteProfile" class="btn btn--outline btn--icon profile-favorite" type="button" aria-pressed="false" disabled>☆</button>
               <button id="loadProfile" class="btn btn--outline" type="button" data-i18n="common.load">Load</button>
               <button id="resetProfile" class="btn btn--outline" type="button" data-i18n="common.resetDefault">Reset default</button>
             </div>
@@ -328,11 +371,20 @@
               <input id="profileName" type="text" placeholder="e.g. default" data-i18n-placeholder="common.defaultNamePlaceholder" />
               <button id="saveProfile" class="btn btn--outline" type="button" data-i18n="common.save">Save</button>
             </div>
+            <div class="profile-setup-option is-hidden" id="solverSetupSaveOption">
+              <label class="toggle" for="saveSolverSetup">
+                <input id="saveSolverSetup" type="checkbox" />
+                <span data-i18n="profile.saveSolverSetup">Save Solver setup</span>
+              </label>
+              <span class="inline-hint" data-i18n="profile.saveSolverSetupHint">Fertilizer selection, fixed amounts, batch size, water, and Solver settings.</span>
+              <span class="inline-hint profile-setup-warning is-hidden" id="solverSetupSaveWarning" aria-live="polite"></span>
+            </div>
           </div>
         </div>
         <div class="actions is-hidden" id="solverProfileActions">
           <button id="saveSolverAsRecipe" class="btn btn--outline" type="button" data-i18n="profile.saveSolverAsRecipe">Save as fertilizer recipe</button>
           <button id="applySolverToCalculator" class="btn btn--outline" type="button" data-i18n="profile.viewInCalculator">View in calculator</button>
+          <span class="inline-hint" data-i18n="profile.solverRecipeOutputHint">A fertilizer recipe stores calculated doses, not the Solver setup.</span>
         </div>
       </section>
 
@@ -440,6 +492,17 @@
             <button id="solveBtn" class="btn btn--solver-primary" type="button" data-i18n="solver.solve">Run solver</button>
           </div>
           <p class="hint" data-i18n="solver.hint">Set target values, allow fertilizers, and check the result directly in the calculator.</p>
+          <div class="solver-model-bar">
+            <label>
+              <span data-i18n="solver.modelLabel">Solver model</span>
+              <select id="solverConfigModel">
+                <option value="mass_nnls" data-i18n="solver.model.massNnls">Mass balance (mg/L², experimental)</option>
+                <option value="hierarchical" data-i18n="solver.model.hierarchical">Prioritized targets (experimental)</option>
+                <option value="nnls_tuning" data-i18n="solver.model.nnlsTuning">NNLS + tuning (standard)</option>
+              </select>
+            </label>
+            <p class="hint" id="solverMassModelHint" data-i18n="solver.modelMassHint">Experimental. Mass balance minimizes the sum of squared deviations in mg/L. It always includes N-total and sulfur.</p>
+          </div>
           <div class="solver-workbench">
             <div class="solver-results solver-comparison-grid">
               <div class="solver-panel solver-panel--targets">
@@ -448,6 +511,7 @@
                   <button id="solverTargetScaleDown" class="btn btn--outline btn--icon icon-button" type="button" data-i18n-aria-label="aria.scaleDown" data-i18n-title="aria.scaleDown">-</button>
                   <button id="solverTargetScaleUp" class="btn btn--outline btn--icon icon-button" type="button" data-i18n-aria-label="aria.scaleUp" data-i18n-title="aria.scaleUp">+</button>
                   <span class="inline-hint"><span data-i18n="calculator.scale">Scaling</span> <span id="solverTargetScaleValue">1.00x</span></span>
+                  <span class="inline-hint is-hidden" id="solverPriorityLegend" data-i18n="solver.priority.legend">Priority 1 is solved first. Lower levels may not worsen a completed higher level. 0 only reports the result.</span>
                 </div>
                 <div class="table-wrap solver-target-wrap">
                   <table class="grid grid--form" id="solverTargetsTable">
@@ -455,6 +519,8 @@
                       <tr>
                         <th data-i18n="common.element">Element</th>
                         <th data-i18n="common.target">Target</th>
+                        <th class="solver-priority-heading" data-i18n="solver.priority.under">Too little</th>
+                        <th class="solver-priority-heading" data-i18n="solver.priority.over">Too much</th>
                       </tr>
                     </thead>
                     <tbody></tbody>
@@ -463,7 +529,10 @@
               </div>
 
               <div class="solver-panel solver-panel--target-results">
-                <h3 data-i18n="solver.resultsTitle">Solver results</h3>
+                <div class="solver-panel-heading">
+                  <h3 data-i18n="solver.resultsTitle">Solver results</h3>
+                  <span class="inline-hint" id="solverModelUsed" aria-live="polite"></span>
+                </div>
                 <div class="actions inline-actions solver-results-spacer" aria-hidden="true"></div>
                 <div class="table-wrap">
                   <div class="solver-results-empty" id="solverTargetsResultsEmpty">

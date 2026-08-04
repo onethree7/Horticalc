@@ -26,6 +26,7 @@ def test_objective_includes_n_total_with_forms() -> None:
         "targets": {"N_total": 10.0, "N_NO3": 10.0},
         "fertilizers_allowed": ["NO3-only"],
         "solver_config": {
+            "solver_model": "nnls_tuning",
             "relative_weighting": True,
             "nitrogen_objective_mode": "as_targets",
             "n_total_governor_enabled": False,
@@ -67,7 +68,7 @@ def test_nitrogen_objective_mode_n_total_only_excludes_forms() -> None:
         "liters": 1.0,
         "targets": {"N_total": 10.0, "N_NO3": 10.0, "N_NH4": 0.0, "N_UREA": 0.0},
         "fertilizers_allowed": ["NO3-only"],
-        "solver_config": {"nitrogen_objective_mode": "n_total_only"},
+        "solver_config": {"solver_model": "nnls_tuning", "nitrogen_objective_mode": "n_total_only"},
     }
 
     result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
@@ -87,7 +88,7 @@ def test_nitrogen_objective_mode_n_forms_only_excludes_total_and_keeps_zero_form
         "liters": 1.0,
         "targets": {"N_total": 10.0, "N_NO3": 10.0, "N_NH4": 0.0, "N_UREA": 0.0},
         "fertilizers_allowed": ["NO3-only"],
-        "solver_config": {"nitrogen_objective_mode": "n_forms_only"},
+        "solver_config": {"solver_model": "nnls_tuning", "nitrogen_objective_mode": "n_forms_only"},
     }
 
     result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
@@ -107,7 +108,7 @@ def test_nitrogen_objective_mode_rejects_unknown_value() -> None:
         "liters": 1.0,
         "targets": {"N_total": 10.0},
         "fertilizers_allowed": ["NO3-only"],
-        "solver_config": {"nitrogen_objective_mode": "chaos_mode"},
+        "solver_config": {"solver_model": "nnls_tuning", "nitrogen_objective_mode": "chaos_mode"},
     }
 
     try:
@@ -118,7 +119,7 @@ def test_nitrogen_objective_mode_rejects_unknown_value() -> None:
         raise AssertionError("Expected invalid nitrogen_objective_mode to fail")
 
 
-def test_s_target_is_ignored_by_default() -> None:
+def test_s_target_is_ignored_by_default_in_nnls_tuning_model() -> None:
     molar_masses = load_molar_masses()
     ferts = {
         "SO4-only": Fertilizer(name="SO4-only", liquid=False, weight_factor=1.0, comp={"SO4": 1.0}),
@@ -128,7 +129,7 @@ def test_s_target_is_ignored_by_default() -> None:
         "liters": 1.0,
         "targets": {"S": 10.0, "K": 10.0},
         "fertilizers_allowed": ["SO4-only", "K-only"],
-        "solver_config": {},
+        "solver_config": {"solver_model": "nnls_tuning"},
     }
 
     result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
@@ -146,7 +147,7 @@ def test_s_target_can_be_enabled_as_solver_objective() -> None:
         "liters": 1.0,
         "targets": {"S": 10.0},
         "fertilizers_allowed": ["SO4-only"],
-        "solver_config": {"s_objective_enabled": True},
+        "solver_config": {"solver_model": "nnls_tuning", "s_objective_enabled": True},
     }
 
     result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)

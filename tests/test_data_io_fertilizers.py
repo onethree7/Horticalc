@@ -55,7 +55,13 @@ def test_save_fertilizers_removes_legacy_number_column(tmp_path: Path) -> None:
         reader = csv.DictReader(f)
         rows = list(reader)
 
-    assert reader.fieldnames == ["Düngername", "Liquid", "Gewicht", "NH4", "SolverMaxDosePerL"]
+    assert reader.fieldnames == [
+        "Düngername",
+        "Liquid",
+        "Gewicht",
+        "NH4",
+        "SolverMaxDosePerL",
+    ]
     assert rows[0]["Liquid"] == "0"
     assert rows[0]["NH4"] == "0.12"
 

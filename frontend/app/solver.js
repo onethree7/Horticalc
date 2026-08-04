@@ -7,32 +7,33 @@ import {
 } from "./constants.js";
 import { appendDoseInput, qs } from "./dom.js";
 import {
-  buildAlignedRows,
   decimalInputValue,
   formatNumber,
   normalizeDecimalInputElement,
   parseDecimalInput,
   roundScaledValue,
 } from "./formatting.js";
-import { applyScaledValues, bindScaleButtons } from "./scaling.js";
+import { applyScaledValues, bindScaleButtons, scaleAmountsByVolume } from "./scaling.js";
 import {
   applySolverConfig,
   buildSolverConfigPayload,
   normalizeSolverConfigDefinitions,
 } from "./solver_config.js";
 import {
+  activeFixedAmountCount,
   buildSolvePayload as createSolvePayload,
-  formatClipboardIonLabel,
   solverResultDisplayKeys,
 } from "./solver_payload.js";
 import { renderSolverTables } from "./solver_rendering.js";
+import { buildSolverPrintableText } from "./solver_printable.js";
 import { storageGet, storageSet } from "./storage.js";
 import { createLatestRequestGate } from "../request_gate.js";
 
 export function createSolverController({
   api, i18n, notifications, units, water, getSelectedFertilizers,
-  onApplyResult, isActive,
+  onApplyResult, onFixedAmountsChange = () => {}, onSolved = () => {}, isActive,
 }) {
+const solverTargetsTableEl = qs("#solverTargetsTable");
 const solverTargetsTable = qs("#solverTargetsTable tbody");
 const solverAllowedFertilizersSelect = qs("#solverAllowedFertilizers");
 const solverAllowedSearchInput = qs("#solverAllowedSearch");
@@ -48,9 +49,12 @@ const solverFertilizersTable = qs("#solverFertilizersTable tbody");
 const solverTargetsResultsTableEl = qs("#solverTargetsResultsTable");
 const solverTargetsResultsTable = qs("#solverTargetsResultsTable tbody");
 const solverTargetsResultsEmpty = qs("#solverTargetsResultsEmpty");
+const solverModelUsed = qs("#solverModelUsed");
+const solverMassModelHint = qs("#solverMassModelHint");
 const solverTargetScaleDownButton = qs("#solverTargetScaleDown");
 const solverTargetScaleUpButton = qs("#solverTargetScaleUp");
 const solverTargetScaleValue = qs("#solverTargetScaleValue");
+const solverPriorityLegend = qs("#solverPriorityLegend");
 const solveButton = qs("#solveBtn");
 const copySolverResultsButton = qs("#copySolverResults");
 const solverAutoApplyInput = qs("#solverAutoApply");
@@ -60,6 +64,7 @@ const applySolverToCalculatorButton = qs("#applySolverToCalculator");
 const solverUreaToggle = qs("#solverUreaToggle");
 const solverConfigResetDefaultsButton = qs("#solverConfigResetDefaults");
 const solverConfigControls = {
+  solver_model: qs("#solverConfigModel"),
   relative_weighting: qs("#solverConfigRelativeWeighting"),
   nitrogen_objective_mode: qs("#solverConfigNitrogenObjectiveMode"),
   overshoot_penalty: qs("#solverConfigOvershootPenalty"),
@@ -81,6 +86,7 @@ const solverTargetDefinitions = [
 ].map((key) => ({ key, label: key }));
 const solverTargetValues = Object.fromEntries(solverTargetDefinitions.map(({ key }) => [key, 0]));
 const solverTargetBaseValues = { ...solverTargetValues };
+const solverTargetPriorities = {};
 const solverAllowedFertilizers = [];
 const solverFixedGrams = {};
 const solveRequests = createLatestRequestGate();
@@ -97,6 +103,96 @@ let solverAllowedHideInactive = false;
 let searchTimer;
 let mounted = false;
 
+const MASS_MODEL = "mass_nnls";
+const HIERARCHICAL_MODEL = "hierarchical";
+const NNLS_TUNING_MODEL = "nnls_tuning";
+const REPORT_ONLY_TARGETS = new Set(["Na", "Cl"]);
+const DEFAULT_TARGET_PRIORITY = 3;
+const TARGET_PRIORITY_LEVELS = [1, 2, 3, 4, 0];
+
+function normalizedPriority(value, fallback = DEFAULT_TARGET_PRIORITY) {
+  const priority = Number(value);
+  return Number.isInteger(priority) && priority >= 0 && priority <= 4 ? priority : fallback;
+}
+
+function setTargetPriorities(priorities = {}, ignoredElements = []) {
+  const ignored = new Set(Array.isArray(ignoredElements) ? ignoredElements : []);
+  solverTargetDefinitions.forEach(({ key }) => {
+    const reportOnly = REPORT_ONLY_TARGETS.has(key) || ignored.has(key);
+    const configured = priorities?.[key] || {};
+    solverTargetPriorities[key] = {
+      under: reportOnly ? 0 : normalizedPriority(configured.under),
+      over: reportOnly ? 0 : normalizedPriority(configured.over),
+    };
+  });
+}
+
+function serializedTargetPriorities() {
+  return Object.fromEntries(solverTargetDefinitions.flatMap(({ key }) => {
+    if (REPORT_ONLY_TARGETS.has(key)) return [];
+    const priorities = solverTargetPriorities[key] || {
+      under: DEFAULT_TARGET_PRIORITY,
+      over: DEFAULT_TARGET_PRIORITY,
+    };
+    if (priorities.under === DEFAULT_TARGET_PRIORITY && priorities.over === DEFAULT_TARGET_PRIORITY) return [];
+    return [[key, { ...priorities }]];
+  }));
+}
+
+function buildCurrentSolverConfig() {
+  return {
+    ...buildSolverConfigPayload(solverConfigDefinitions, solverConfigControls),
+    target_priorities: serializedTargetPriorities(),
+  };
+}
+
+function persistCurrentSolverConfig() {
+  api.persistPreferences({ solver_config: buildCurrentSolverConfig() });
+}
+
+function solverModelLabel(model) {
+  if (model === HIERARCHICAL_MODEL) return t("solver.model.hierarchical");
+  return model === NNLS_TUNING_MODEL ? t("solver.model.nnlsTuning") : t("solver.model.massNnls");
+}
+
+function targetPrioritySummary(data, key) {
+  if (data?.solver_model !== HIERARCHICAL_MODEL) return "";
+  const configured = data?.target_priorities?.[key];
+  if (!configured) return "";
+  const under = normalizedPriority(configured.under, 0);
+  const over = normalizedPriority(configured.over, 0);
+  if (under === 0 && over === 0) return t("solver.priority.reportOnlyResult");
+  return t("solver.priority.resultSummary", {
+    under: under || "–",
+    over: over || "–",
+  });
+}
+
+function syncSolverModelControls() {
+  const model = solverConfigControls.solver_model?.value || MASS_MODEL;
+  const tuningEnabled = model === NNLS_TUNING_MODEL;
+  Object.entries(solverConfigControls).forEach(([key, input]) => {
+    if (input && key !== "solver_model") input.disabled = !tuningEnabled;
+  });
+  if (solverMassModelHint) {
+    const hintKey = model === HIERARCHICAL_MODEL
+      ? "solver.modelHierarchicalHint"
+      : model === NNLS_TUNING_MODEL
+        ? "solver.modelNnlsTuningHint"
+        : "solver.modelMassHint";
+    solverMassModelHint.dataset.i18n = hintKey;
+    solverMassModelHint.textContent = t(hintKey);
+  }
+  solverPriorityLegend?.classList.toggle("is-hidden", model !== HIERARCHICAL_MODEL);
+}
+
+function applyConfig(config = {}) {
+  setTargetPriorities(config.target_priorities, config.ignored_elements);
+  applySolverConfig(solverConfigDefinitions, solverConfigControls, config);
+  syncSolverModelControls();
+  renderSolverTargetsTable();
+  renderSolverResults(null);
+}
 
 function updateSolverTargetScaleDisplay() {
   if (solverTargetScaleValue) solverTargetScaleValue.textContent = `${solverTargetScaleFactor.toFixed(2)}x`;
@@ -122,11 +218,16 @@ function buildSolvePayload() {
     allowedFertilizers: solverAllowedFertilizers,
     fixedGrams: solverFixedGrams,
     ureaAsNh4: solverUreaToggle.checked,
-    solverConfig: buildSolverConfigPayload(solverConfigDefinitions, solverConfigControls),
+    solverConfig: buildCurrentSolverConfig(),
   });
 }
 
 function renderSolverTargetsTable() {
+  const priorityEnabled = solverConfigControls.solver_model?.value === HIERARCHICAL_MODEL;
+  solverTargetsTableEl?.classList.toggle("solver-priorities-active", priorityEnabled);
+  solverTargetsTableEl
+    ?.closest(".solver-comparison-grid")
+    ?.classList.toggle("solver-comparison-grid--priorities", priorityEnabled);
   solverTargetsTable.innerHTML = "";
   solverTargetDefinitions.forEach((field) => {
     const row = document.createElement("tr");
@@ -153,7 +254,48 @@ function renderSolverTargetsTable() {
     });
     valueCell.appendChild(input);
 
-    row.append(labelCell, valueCell);
+    const reportOnly = REPORT_ONLY_TARGETS.has(field.key);
+    const priorities = solverTargetPriorities[field.key] || {
+      under: reportOnly ? 0 : DEFAULT_TARGET_PRIORITY,
+      over: reportOnly ? 0 : DEFAULT_TARGET_PRIORITY,
+    };
+    const createPriorityCell = (direction) => {
+      const cell = document.createElement("td");
+      cell.className = "solver-priority-cell";
+      const select = document.createElement("select");
+      select.className = "solver-priority-select";
+      TARGET_PRIORITY_LEVELS.forEach((priority) => {
+        const option = document.createElement("option");
+        option.value = String(priority);
+        option.textContent = priority === 0
+          ? t("solver.priority.reportOnly")
+          : t(`solver.priority.level${priority}`);
+        select.appendChild(option);
+      });
+      select.value = String(priorities[direction]);
+      select.disabled = reportOnly || !priorityEnabled;
+      select.setAttribute(
+        "aria-label",
+        t(`solver.priority.${direction}Aria`, { element: field.label }),
+      );
+      select.title = reportOnly
+        ? t("solver.reportOnlyHint")
+        : priorityEnabled
+          ? t(`solver.priority.${direction}Hint`)
+          : t("solver.priority.selectHierarchicalHint");
+      select.addEventListener("change", () => {
+        solverTargetPriorities[field.key][direction] = normalizedPriority(select.value);
+        const current = solverTargetPriorities[field.key];
+        row.classList.toggle("solver-target-report-only", current.under === 0 && current.over === 0);
+        renderSolverResults(null);
+        persistCurrentSolverConfig();
+      });
+      cell.appendChild(select);
+      return cell;
+    };
+    row.classList.toggle("solver-target-report-only", priorities.under === 0 && priorities.over === 0);
+
+    row.append(labelCell, valueCell, createPriorityCell("under"), createPriorityCell("over"));
     solverTargetsTable.appendChild(row);
   });
 }
@@ -292,7 +434,7 @@ function renderSolverAllowedOptions() {
 }
 
 function activeSolverOverrideCount() {
-  return Object.values(solverFixedGrams).filter((value) => Number(value) > 0).length;
+  return activeFixedAmountCount(solverFixedGrams);
 }
 
 function syncSolverOverridePanel({ forceOpen = false } = {}) {
@@ -303,6 +445,7 @@ function syncSolverOverridePanel({ forceOpen = false } = {}) {
   if (solverOverridesDetails && (forceOpen || activeCount > 0)) {
     solverOverridesDetails.open = true;
   }
+  onFixedAmountsChange(activeCount);
 }
 
 function renderSolverFixedTable() {
@@ -349,6 +492,11 @@ function renderSolverResults(data) {
   updateSolverResultActions();
   solverTargetsResultsTableEl?.classList.toggle("is-hidden", !data);
   solverTargetsResultsEmpty?.classList.toggle("is-hidden", Boolean(data));
+  if (solverModelUsed) {
+    solverModelUsed.textContent = data?.solver_model
+      ? `${t("solver.modelLabel")}: ${solverModelLabel(data.solver_model)}`
+      : "";
+  }
   renderSolverTables({
     data,
     fertilizersTable: solverFertilizersTable,
@@ -362,6 +510,7 @@ function renderSolverResults(data) {
       N_NO3: t("solver.nNo3"),
       N_NH4: t("solver.nNh4"),
       N_UREA: t("solver.nUrea"),
+      prioritySummary: (key) => targetPrioritySummary(data, key),
     },
     formatNutrient: (value) => formatNumber(value, nutrientFormatter),
   });
@@ -388,93 +537,23 @@ function persistSolverAutoApplyPreference() {
 
 function buildSolverClipboardText() {
   const fertilizers = Array.isArray(lastSolveResult?.fertilizers) ? lastSolveResult.fertilizers : [];
-  const lines = [t("solver.clipboardTitle")];
-  lines.push(
-    ...buildAlignedRows(null, [
-      [
-        t("solver.clipboardBatchVolume", { unit: units.getVolumeUnitDefinition().symbol }),
-        units.formatVolumeValue(units.litersToDisplayVolume(units.liters)),
-      ],
-      [t("solver.clipboardOsmosis"), formatNumber(water.osmosisPercent)],
-    ], [1])
-  );
-  lines.push("");
-  lines.push(
-    ...buildAlignedRows(
-      [t("common.fertilizer"), t("common.amount"), t("common.unit")],
-      fertilizers.map((fert) => [
-        fert.name || "",
-        units.formatDoseDisplay(Number(fert.grams), fert.name),
-        units.doseUnitDefinition(fert.name).symbol,
-      ]),
-      [1]
-    )
-  );
-
   const calculateData = {
     liters: units.liters,
     fertilizers,
+    urea_as_nh4: solverUreaToggle.checked,
     water_mg_l: water.buildWaterPayload(),
     osmosis_percent: water.osmosisPercent,
   };
 
-  return api.calculate(calculateData, t("errors.calculateFailed")).then((data) => {
-    const npkMetrics = data?.npk_metrics || {};
-    const ecValues = data?.ec?.ec_mS_per_cm || {};
-    const ionValues = data?.elements_mg_per_l || {};
-
-    lines.push("");
-    lines.push(t("solver.clipboardNpk"));
-    lines.push(
-      ...buildAlignedRows(null, [
-        [t("live.npkTotal"), npkMetrics.npk_all_pct || "-"],
-        [t("live.npkPNorm"), npkMetrics.npk_p_norm || "-"],
-        [t("live.npkRatio"), npkMetrics.npk_npk_pct || "-"],
-      ], [1])
-    );
-
-    lines.push("");
-    lines.push(t("live.ec"));
-    lines.push(
-      ...buildAlignedRows(null, [
-        [t("common.ec") + " 25°C", formatNumber(Number(ecValues["25.0"]))],
-        [t("common.ec") + " 18°C", formatNumber(Number(ecValues["18.0"]))],
-      ], [1])
-    );
-
-    lines.push("");
-    lines.push(t("solver.clipboardTargets"));
-    const targets = lastSolveResult?.targets_mg_per_l || {};
-    const achieved = lastSolveResult?.achieved_elements_mg_per_l || {};
-    const errors = lastSolveResult?.errors_mg_per_l || {};
-    const solverRows = solverResultDisplayKeys(lastSolveResult, summaryColumnOrder).map((key) => {
-      const targetValue = Number(targets[key] ?? 0);
-      const achievedValue = Number(achieved[key] ?? 0);
-      const errorValue = Number.isFinite(errors[key])
-        ? Number(errors[key])
-        : achievedValue - targetValue;
-      return [
-        formatClipboardIonLabel(key),
-        targetValue > 0 ? formatNumber(targetValue, nutrientFormatter) : "-",
-        formatNumber(achievedValue, nutrientFormatter),
-        formatNumber(errorValue, nutrientFormatter),
-      ];
-    });
-    lines.push(
-      ...buildAlignedRows([t("common.element"), t("common.target"), t("common.achieved"), t("common.delta")], solverRows, [1, 2, 3])
-    );
-
-    lines.push("");
-    lines.push(t("solver.clipboardIons"));
-    const ionRows = summaryColumnOrder.map((column) => {
-      const key = column.element;
-      const value = Number(ionValues[key]);
-      return [formatClipboardIonLabel(key), formatNumber(value, nutrientFormatter)];
-    });
-    lines.push(...buildAlignedRows(null, ionRows, [1]));
-
-    return lines.join("\n");
-  });
+  return api.calculate(calculateData, t("errors.calculateFailed")).then((calculation) =>
+    buildSolverPrintableText({
+      result: lastSolveResult,
+      calculation,
+      liters: units.liters,
+      osmosisPercent: water.osmosisPercent,
+      t,
+      units,
+    }));
 }
 
 async function copySolverResultsToClipboard() {
@@ -507,7 +586,12 @@ function applyNutrientSolution(solution) {
     solverTargetValues[field.key] = value;
   });
   updateSolverTargetScaleDisplay();
-  renderSolverTargetsTable();
+  if (solution && Object.prototype.hasOwnProperty.call(solution, "solver_config")) {
+    applyConfig({ ...buildCurrentSolverConfig(), ...solution.solver_config });
+  } else {
+    renderSolverTargetsTable();
+  }
+  renderSolverResults(null);
 }
 
 function resetSolverTargets() {
@@ -539,6 +623,28 @@ function pruneSolverFixedGrams() {
       delete solverFixedGrams[key];
     }
   });
+}
+
+function setSolverFixedGrams(values = {}) {
+  Object.keys(solverFixedGrams).forEach((key) => delete solverFixedGrams[key]);
+  Object.entries(values).forEach(([name, value]) => {
+    const numeric = Number(value);
+    if (solverAllowedFertilizers.includes(name) && Number.isFinite(numeric) && numeric > 0) {
+      solverFixedGrams[name] = numeric;
+    }
+  });
+  renderSolverFixedTable();
+  renderSolverResults(null);
+}
+
+function setSolverUreaAsNh4(value) {
+  solverUreaToggle.checked = Boolean(value);
+  renderSolverResults(null);
+}
+
+function missingFertilizers(names = []) {
+  const available = new Set(fertilizerOptions.map((fertilizer) => fertilizer.name));
+  return names.filter((name) => !available.has(name));
 }
 
 function updateSolverAllowedFertilizers(names, mode = "merge", { rerenderPicker = true } = {}) {
@@ -620,10 +726,10 @@ function setAllowedContext(context) {
 }
 
 function scaleFixedAmounts(previousLiters, nextLiters) {
-  const factor = nextLiters / previousLiters;
-  Object.keys(solverFixedGrams).forEach((key) => {
-    solverFixedGrams[key] = roundScaledValue((Number(solverFixedGrams[key]) || 0) * factor);
-  });
+  Object.assign(
+    solverFixedGrams,
+    scaleAmountsByVolume(solverFixedGrams, previousLiters, nextLiters),
+  );
   renderSolverFixedTable();
 }
 
@@ -632,19 +738,28 @@ function bindConfigEvents() {
     const input = solverConfigControls[definition.key];
     if (!input || input.dataset.solverBound === "true") return;
     input.dataset.solverBound = "true";
-    const eventName = definition.type === "boolean" || definition.key === "nitrogen_objective_mode"
+    const eventName = definition.type === "boolean"
+      || definition.type === "string"
+      || definition.key === "nitrogen_objective_mode"
       ? "change"
       : "input";
     input.addEventListener(eventName, () => {
       if (definition.type !== "boolean"
+        && definition.type !== "string"
         && definition.key !== "nitrogen_objective_mode"
         && parseDecimalInput(input.value) === null) return;
+      if (definition.key === "solver_model") {
+        syncSolverModelControls();
+        renderSolverTargetsTable();
+      }
       renderSolverResults(null);
       api.persistPreferences({
-        solver_config: buildSolverConfigPayload(solverConfigDefinitions, solverConfigControls),
+        solver_config: buildCurrentSolverConfig(),
       });
     });
-    if (definition.type !== "boolean" && definition.key !== "nitrogen_objective_mode") {
+    if (definition.type !== "boolean"
+      && definition.type !== "string"
+      && definition.key !== "nitrogen_objective_mode") {
       input.addEventListener("change", () => {
         normalizeDecimalInputElement(input, parseDecimalInput(input.value));
       });
@@ -658,7 +773,9 @@ function mount({ configDefinitions = [], config = {} } = {}) {
     FALLBACK_SOLVER_CONFIG_DEFINITIONS,
     (key) => Boolean(solverConfigControls[key]),
   );
+  setTargetPriorities(config.target_priorities, config.ignored_elements);
   applySolverConfig(solverConfigDefinitions, solverConfigControls, config);
+  syncSolverModelControls();
   bindConfigEvents();
   if (mounted) return;
   mounted = true;
@@ -688,7 +805,10 @@ function mount({ configDefinitions = [], config = {} } = {}) {
   solverAllowedClearButton?.addEventListener("click", () => updateSolverAllowedFertilizers([], "replace"));
   solverAutoApplyInput?.addEventListener("change", persistSolverAutoApplyPreference);
   solverConfigResetDefaultsButton?.addEventListener("click", () => {
+    setTargetPriorities();
     applySolverConfig(solverConfigDefinitions, solverConfigControls);
+    syncSolverModelControls();
+    renderSolverTargetsTable();
     renderSolverResults(null);
     api.persistPreferences({ solver_config: {} });
     notifications.setSolverApplyStatus(t("solver.configResetDone"));
@@ -704,6 +824,7 @@ function mount({ configDefinitions = [], config = {} } = {}) {
       const data = await solveRecipe();
       if (!solveRequests.isCurrent(version)) return;
       renderSolverResults(data);
+      onSolved(data);
       if (solverAutoApplyEnabled()) onApplyResult({ switchToCalculator: false });
     } catch (error) {
       if (solveRequests.isCurrent(version)) notifications.reportError(error, t("errors.solveFailed"));
@@ -732,14 +853,17 @@ function refreshLocalized() {
 
 return {
   activate,
-  applyConfig: applySolverConfig,
+  applyConfig,
   applyNutrientSolution,
-  buildConfigPayload: () => buildSolverConfigPayload(solverConfigDefinitions, solverConfigControls),
+  buildConfigPayload: buildCurrentSolverConfig,
   deactivate,
   get allowedFertilizers() { return [...solverAllowedFertilizers]; },
+  get fixedGrams() { return { ...solverFixedGrams }; },
   get lastResult() { return lastSolveResult; },
   get targets() { return { ...solverTargetValues }; },
   get ureaAsNh4() { return solverUreaToggle.checked; },
+  get activeFixedAmountCount() { return activeSolverOverrideCount(); },
+  missingFertilizers,
   mount,
   refreshDoseUnits() { renderSolverFixedTable(); if (lastSolveResult) renderSolverResults(lastSolveResult); },
   refreshLocalized,
@@ -749,6 +873,8 @@ return {
   scaleFixedAmounts,
   setAllowedContext,
   setAllowedFertilizers: updateSolverAllowedFertilizers,
+  setFixedGrams: setSolverFixedGrams,
   setFertilizers,
+  setUreaAsNh4: setSolverUreaAsNh4,
 };
 }

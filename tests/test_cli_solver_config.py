@@ -19,6 +19,7 @@ from horticalc.solver_config import (
 def test_solver_config_definitions_use_data_backed_defaults() -> None:
     defaults = {definition["key"]: definition["default"] for definition in SOLVER_CONFIG_DEFINITIONS}
 
+    assert defaults["solver_model"] == "nnls_tuning"
     assert defaults["nitrogen_objective_mode"] == "n_total_only"
     assert defaults["relative_weighting"] is False
     assert defaults["singleton_supplier_enabled"] is False
@@ -82,6 +83,8 @@ def test_solve_cli_passes_solver_config_overrides(monkeypatch, capsys, tmp_path)
             "n_forms_only",
             "--solver-config",
             'n_form_priority_weights={"N_NO3": 3.0}',
+            "--solver-config",
+            'ignored_elements=["Cu","B"]',
         ]
     )
 
@@ -95,6 +98,7 @@ def test_solve_cli_passes_solver_config_overrides(monkeypatch, capsys, tmp_path)
         "n_total_governor_weight": 0.05,
         "nitrogen_objective_mode": "n_forms_only",
         "n_form_priority_weights": {"N_NO3": 3.0},
+        "ignored_elements": ["Cu", "B"],
     }
 
 
@@ -142,6 +146,11 @@ def test_solver_config_validation_preserves_valid_partial_values() -> None:
     config = {
         "relative_weighting": True,
         "overshoot_penalty": 1,
+        "ignored_elements": ["Cu", "B"],
+        "target_priorities": {
+            "N_total": {"under": 1, "over": 2},
+            "Cu": {"over": 0},
+        },
         "n_form_priority_weights": {"N_NO3": 3.0},
     }
 
@@ -149,6 +158,8 @@ def test_solver_config_validation_preserves_valid_partial_values() -> None:
     resolved = resolve_solver_config(config)
     assert resolved["relative_weighting"] is True
     assert resolved["overshoot_penalty"] == 1
+    assert resolved["ignored_elements"] == ["Cu", "B"]
+    assert resolved["target_priorities"] == config["target_priorities"]
     assert resolved["n_form_priority_weights"] == {"N_NO3": 3.0}
     assert set(resolved) == set(SOLVER_CONFIG_DEFAULTS)
 
@@ -164,7 +175,17 @@ def test_solver_config_validation_preserves_valid_partial_values() -> None:
             f"Invalid solver config value: irls_max_outer_iter must be <= {MAX_IRLS_MAX_OUTER_ITER}",
         ),
         ({"overshoot_penalty": float("nan")}, "Invalid solver config value"),
+        ({"solver_model": "legacy"}, "Invalid solver config value"),
         ({"nitrogen_objective_mode": "chaos_mode"}, "Invalid solver config value"),
+        ({"ignored_elements": "Cu"}, "Invalid solver config value"),
+        ({"ignored_elements": ["Cu", "Cu"]}, "Invalid solver config value"),
+        ({"ignored_elements": ["UNKNOWN"]}, "Invalid solver config value"),
+        ({"target_priorities": []}, "Invalid solver config value"),
+        ({"target_priorities": {"UNKNOWN": {"under": 1}}}, "Invalid target_priorities key"),
+        ({"target_priorities": {"N_total": {}}}, "Invalid target_priorities value"),
+        ({"target_priorities": {"N_total": {"sideways": 1}}}, "Invalid target_priorities direction"),
+        ({"target_priorities": {"N_total": {"under": 5}}}, "Invalid target_priorities value"),
+        ({"target_priorities": {"N_total": {"under": 1.5}}}, "Invalid target_priorities value"),
         (
             {"singleton_underfill_max_iter": MAX_SINGLETON_UNDERFILL_MAX_ITER + 1},
             "Invalid solver config value: singleton_underfill_max_iter must be <=",

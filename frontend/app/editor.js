@@ -165,11 +165,12 @@ function setFertilizerEditorSort(key) {
   renderFertilizerEditor();
 }
 
-function fertilizerEditorHeader(label, key, labelKey = null) {
+function fertilizerEditorHeader(label, key, labelKey = null, title = "") {
   const active = fertilizerEditorSort.key === key;
   return {
     label,
     labelKey,
+    title,
     onClick: () => setFertilizerEditorSort(key),
     sortDirection: active ? `${fertilizerEditorSort.direction}ending` : "none",
   };
@@ -254,7 +255,12 @@ function renderFertilizerEditor() {
     fertilizerEditorHeader("Liquid", "liquid", "common.liquid"),
     fertilizerEditorHeader("Density / factor", "weight_factor", "editor.densityFactor"),
     ...fertilizerEditorCompKeys.map((key) => fertilizerEditorHeader(key, `comp:${key}`)),
-    fertilizerEditorHeader("Solver max / L", "solver_max_dose_per_l", "editor.solverMaxDosePerL"),
+    fertilizerEditorHeader(
+      "Solver max / L",
+      "solver_max_dose_per_l",
+      "editor.solverMaxDosePerL",
+      t("editor.solverMaxDoseHint")
+    ),
   ];
   const table = createTable({
     id: "fertilizerEditorTable",
@@ -375,6 +381,7 @@ function renderFertilizerEditor() {
     solverMaxInput.dataset.rowIndex = index;
     solverMaxInput.dataset.field = "solver_max_dose_per_l";
     solverMaxInput.dataset.colIndex = colIndex;
+    solverMaxInput.title = t("editor.solverMaxDoseHint");
     solverMaxInput.addEventListener("input", (event) => {
       row.solver_max_dose_per_l = parseDecimalInput(event.target.value);
     });

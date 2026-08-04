@@ -40,6 +40,7 @@ def test_frontend_workflows_execute_without_browser_errors() -> None:
 
     port = _free_port()
     url = f"http://127.0.0.1:{port}"
+    server_environment = {**os.environ, "HORTICALC_TEST_DISABLE_SOLVER_HISTORY": "1"}
     server = subprocess.Popen(
         [
             os.fspath(Path(os.sys.executable)),
@@ -52,6 +53,7 @@ def test_frontend_workflows_execute_without_browser_errors() -> None:
             str(port),
         ],
         cwd=ROOT,
+        env=server_environment,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )

@@ -16,5 +16,10 @@ coverage.xml
 .DS_Store
 /user/
 /logs/
+/solutions/
 /_repomix/
 /_docs_backup/
+
+# Local recipe schedules
+/recipes/[a][t][h][e][n][a]_blended_*.yml
+/recipes/[a][t][h][e][n][a]_pro_*.yml

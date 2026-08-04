@@ -3,47 +3,58 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-import api.app as api_app
 from horticalc import paths
 from horticalc.data_io import load_user_preferences, save_user_preferences
 
 
-def test_theme_preference_persists_in_user_directory(monkeypatch, tmp_path) -> None:
+@pytest.mark.parametrize(
+    "theme",
+    [
+        "tokyo-night",
+        "solarized-light",
+        "dracula",
+        "gruvbox-dark",
+        "catppuccin-mocha",
+        "monokai-classic",
+        "windows-95",
+        "amber-crt",
+    ],
+)
+def test_theme_preference_persists_in_user_directory(api_client: TestClient, monkeypatch, tmp_path, theme: str) -> None:
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
-    client = TestClient(api_app.app)
 
-    response = client.put("/preferences", json={"theme": "soil"})
+    response = api_client.put("/preferences", json={"theme": theme})
 
     assert response.status_code == 200
-    assert client.get("/preferences").json() == {"theme": "soil"}
+    assert api_client.get("/preferences").json() == {"theme": theme}
     assert paths.user_preferences_path(tmp_path).exists()
 
 
-def test_theme_preference_rejects_unknown_theme(monkeypatch, tmp_path) -> None:
+def test_theme_preference_rejects_unknown_theme(api_client: TestClient, monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
-    response = TestClient(api_app.app).put("/preferences", json={"theme": "surprise-me"})
+    response = api_client.put("/preferences", json={"theme": "surprise-me"})
 
     assert response.status_code == 400
 
 
-def test_volume_unit_preference_persists_and_rejects_ambiguous_unit(monkeypatch, tmp_path) -> None:
+def test_volume_unit_preference_persists_and_rejects_ambiguous_unit(
+    api_client: TestClient, monkeypatch, tmp_path
+) -> None:
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
-    client = TestClient(api_app.app)
 
-    response = client.put("/preferences", json={"volume_unit": "us_gallon"})
+    response = api_client.put("/preferences", json={"volume_unit": "us_gallon"})
 
     assert response.status_code == 200
     assert response.json()["volume_unit"] == "us_gallon"
-    rejected = client.put("/preferences", json={"volume_unit": "gallon"})
+    rejected = api_client.put("/preferences", json={"volume_unit": "gallon"})
     assert rejected.status_code == 400
     assert rejected.json()["detail"] == "Unknown volume unit"
 
 
-def test_dose_unit_preferences_persist_and_validate_dimension(monkeypatch, tmp_path) -> None:
+def test_dose_unit_preferences_persist_and_validate_dimension(api_client: TestClient, monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
-    client = TestClient(api_app.app)
 
-    response = client.put(
+    response = api_client.put(
         "/preferences",
         json={"solid_dose_unit": "ounce", "liquid_dose_unit": "us_fluid_ounce"},
     )
@@ -51,22 +62,29 @@ def test_dose_unit_preferences_persist_and_validate_dimension(monkeypatch, tmp_p
     assert response.status_code == 200
     assert response.json()["solid_dose_unit"] == "ounce"
     assert response.json()["liquid_dose_unit"] == "us_fluid_ounce"
-    assert client.put("/preferences", json={"solid_dose_unit": "milliliter"}).status_code == 400
-    assert client.put("/preferences", json={"liquid_dose_unit": "gram"}).status_code == 400
+    assert api_client.put("/preferences", json={"solid_dose_unit": "milliliter"}).status_code == 400
+    assert api_client.put("/preferences", json={"liquid_dose_unit": "gram"}).status_code == 400
 
 
-def test_preferences_merge_typed_workspace_defaults(monkeypatch, tmp_path) -> None:
+def test_preferences_merge_typed_workspace_defaults(api_client: TestClient, monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
-    client = TestClient(api_app.app)
-    assert client.put("/preferences", json={"theme": "soil"}).status_code == 200
+    assert api_client.put("/preferences", json={"theme": "soil"}).status_code == 200
 
-    response = client.put(
+    response = api_client.put(
         "/preferences",
         json={
             "locale": "es",
             "default_liters": 100,
             "last_water_profile": "tap.yml",
-            "solver_config": {"relative_weighting": True, "overshoot_penalty": 1.2},
+            "solver_config": {
+                "solver_model": "hierarchical",
+                "relative_weighting": True,
+                "overshoot_penalty": 1.2,
+                "target_priorities": {
+                    "N_total": {"under": 1, "over": 1},
+                    "Ca": {"under": 2, "over": 3},
+                },
+            },
         },
     )
 
@@ -76,37 +94,43 @@ def test_preferences_merge_typed_workspace_defaults(monkeypatch, tmp_path) -> No
         "locale": "es",
         "default_liters": 100.0,
         "last_water_profile": "tap.yml",
-        "solver_config": {"relative_weighting": True, "overshoot_penalty": 1.2},
+        "solver_config": {
+            "solver_model": "hierarchical",
+            "relative_weighting": True,
+            "overshoot_penalty": 1.2,
+            "target_priorities": {
+                "N_total": {"under": 1, "over": 1},
+                "Ca": {"under": 2, "over": 3},
+            },
+        },
     }
-    assert client.get("/preferences").json() == response.json()
+    assert api_client.get("/preferences").json() == response.json()
 
 
-def test_locale_preference_rejects_unknown_locale(monkeypatch, tmp_path) -> None:
+def test_locale_preference_rejects_unknown_locale(api_client: TestClient, monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
 
-    response = TestClient(api_app.app).put("/preferences", json={"locale": "fr"})
+    response = api_client.put("/preferences", json={"locale": "fr"})
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Unknown locale"
 
 
-def test_preferences_reject_unknown_solver_key_and_profile_path(monkeypatch, tmp_path) -> None:
+def test_preferences_reject_unknown_solver_key_and_profile_path(api_client: TestClient, monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
-    client = TestClient(api_app.app)
 
-    assert client.put("/preferences", json={"solver_config": {"mystery": True}}).status_code == 400
-    assert client.put("/preferences", json={"last_water_profile": "../tap.yml"}).status_code == 400
+    assert api_client.put("/preferences", json={"solver_config": {"mystery": True}}).status_code == 400
+    assert api_client.put("/preferences", json={"last_water_profile": "../tap.yml"}).status_code == 400
 
 
-def test_preferences_reject_advanced_solver_config(monkeypatch, tmp_path) -> None:
+def test_preferences_reject_advanced_solver_config(api_client: TestClient, monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
-    client = TestClient(api_app.app)
 
-    advanced = client.put(
+    advanced = api_client.put(
         "/preferences",
         json={"solver_config": {"n_form_priority_weights": {"N_NO3": 3.0}}},
     )
-    rejected = client.put(
+    rejected = api_client.put(
         "/preferences",
         json={"solver_config": {"relative_weighting": "false"}},
     )
@@ -117,22 +141,40 @@ def test_preferences_reject_advanced_solver_config(monkeypatch, tmp_path) -> Non
     assert rejected.json()["detail"] == "Invalid solver config value: relative_weighting"
 
 
-def test_preferences_can_reset_solver_config_to_defaults(monkeypatch, tmp_path) -> None:
+def test_preferences_can_reset_solver_config_to_defaults(api_client: TestClient, monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
-    client = TestClient(api_app.app)
     assert (
-        client.put(
+        api_client.put(
             "/preferences",
             json={"solver_config": {"relative_weighting": True}},
         ).status_code
         == 200
     )
 
-    response = client.put("/preferences", json={"solver_config": {}})
+    response = api_client.put("/preferences", json={"solver_config": {}})
 
     assert response.status_code == 200
     assert response.json()["solver_config"] == {}
-    assert client.get("/preferences").json()["solver_config"] == {}
+    assert api_client.get("/preferences").json()["solver_config"] == {}
+
+
+def test_profile_favorites_persist_and_validate_filenames(api_client: TestClient, monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+
+    response = api_client.put(
+        "/preferences",
+        json={
+            "favorite_recipes": ["Feed_A.yml", "Feed_B.yml"],
+            "favorite_nutrient_solutions": ["Target_A.yml"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["favorite_recipes"] == ["Feed_A.yml", "Feed_B.yml"]
+    assert response.json()["favorite_nutrient_solutions"] == ["Target_A.yml"]
+    assert api_client.put("/preferences", json={"favorite_recipes": ["Feed_A.yml", "Feed_A.yml"]}).status_code == 400
+    assert api_client.put("/preferences", json={"favorite_recipes": ["../Feed_A.yml"]}).status_code == 400
+    assert api_client.put("/preferences", json={"favorite_recipes": ["Feed A.yml"]}).status_code == 400
 
 
 @pytest.mark.parametrize("content", ["{broken", "[]", '{"value": NaN}'])

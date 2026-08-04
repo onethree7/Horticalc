@@ -8,6 +8,9 @@ Use **Plan -> Edit -> Verify** for every change.
 
 - Keep changes scoped to the requested behavior.
 - Prefer existing utilities and patterns over new dependencies.
+- Do not preserve obsolete internal identifiers through runtime aliases,
+  fallbacks, or backward-detection shims. Replace them completely and migrate
+  affected local persisted files in place when necessary.
 - Check for nested `AGENTS.md` before editing inside a subdirectory.
 - Do not change runtime behavior while doing documentation work unless the task
   explicitly asks for code changes.

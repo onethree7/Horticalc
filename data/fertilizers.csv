@@ -115,8 +115,8 @@ Harnstoffphosphat 17-44-0,0,1.0,0.03825,0.13175,0.44,0.0,0.0,0.0,0.0,0.0,0.0,0.0
 hesi hydro blüte incomplete,1,1.1,0.0,0.03,0.039,0.051,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,nur für NPK werte
 hesi hydro wuchs incomplete,1,1.1,0.0,0.03,0.019,0.036,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,nur für NPK werte INCOMPLETE WEIL HESI LEUTE...
 hesi pk1314,1,1.1,0.0,0.0,0.09,0.072,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,
-HuminTech AMINO POWER Plus Liquid,1,1.2,0.02,0.06,0.0,0.0,0.0,0.0,0.0,0.0,0.002,0.001,0.0001,0.0001,0.0005,0.0001,0.0,0.0,0.0,0.0,0.0,Aminosäure und Spurenelemente,
-HuminTech Fulvital Plus Liquid,1,1.2,0.0,0.0,0.0,0.0,0.0,0.0315,0.0,0.0389,0.012,0.006,0.004,0.008,0.0,0.0,0.0,0.0,0.0,0.0,0.0,Fulvosäuren und Spurenelemente,
+HuminTech AMINO POWER Plus Liquid,1,1.2,0.02,0.06,0.0,0.0,0.0,0.0,0.0,0.0,0.002,0.001,0.0001,0.0001,0.0005,0.0001,0.0,0.0,0.0,0.0,0.0,Aminosäure und Spurenelemente,0
+HuminTech Fulvital Plus Liquid,1,1.2,0.0,0.0,0.0,0.0,0.0,0.0315,0.0,0.0389,0.012,0.006,0.004,0.008,0.0,0.0,0.0,0.0,0.0,0.0,0.0,Fulvosäuren und Spurenelemente,0
 ICL Nova PeKacid 0-60-20,0,1,0,0,0.6,0.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,Quelle: https://www.duengerexperte.de/de/ICL-Duenger-PeKazid-0-60-20.html | NPK label: 0-60-20 | RAW extras: N_total: Gesamtstickstoff (N)=0%
 "K+S EPSO Bortop Bittersalz+Bor 12,6-",0,1.0,0.0,0.0,0.0,0.0,0.0,0.126,0.0,0.2996,0.0,0.0,0.0,0.0,0.04,0.0,0.0,0.0,0.0,0.0,0.0,"Weiches Wasser,Magnesium mit Schwefel+Bor"
 K+S EPSO Combitop Bittersalz+Spuren 13-41,0,1.0,0.0,0.0,0.0,0.0,0.0,0.13,0.0,0.4074,0.0,0.04,0.0,0.01,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"Weiches Wasser,Magnesium mit Schwefel+Spuren"

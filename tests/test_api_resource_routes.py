@@ -5,8 +5,8 @@ import api.app as api_app
 from horticalc import paths
 
 
-def test_unit_schema_exposes_canonical_volume_and_explicit_gallons() -> None:
-    response = TestClient(api_app.app).get("/schema/units")
+def test_unit_schema_exposes_canonical_volume_and_explicit_gallons(api_client: TestClient) -> None:
+    response = api_client.get("/schema/units")
 
     assert response.status_code == 200
     payload = response.json()
@@ -22,22 +22,20 @@ def test_unit_schema_exposes_canonical_volume_and_explicit_gallons() -> None:
     assert liquid_units["us_fluid_ounce"]["milliliters_per_unit"] == pytest.approx(29.5735295625)
 
 
-def test_portable_layout_resource_routes() -> None:
-    client = TestClient(api_app.app)
-
+def test_portable_layout_resource_routes(api_client: TestClient) -> None:
     responses = {
-        "water profiles": client.get("/water-profiles"),
-        "default water profile": client.get("/water-profiles/default"),
-        "nutrient solutions": client.get("/nutrient-solutions"),
-        "nutrient solution": client.get("/nutrient-solutions/Cooper_NFT_1979"),
-        "default recipe": client.get("/recipes/default"),
-        "recipe": client.get("/recipes/golden"),
+        "water profiles": api_client.get("/water-profiles"),
+        "default water profile": api_client.get("/water-profiles/default"),
+        "nutrient solutions": api_client.get("/nutrient-solutions"),
+        "nutrient solution": api_client.get("/nutrient-solutions/Cooper_NFT_1979"),
+        "default recipe": api_client.get("/recipes/default"),
+        "recipe": api_client.get("/recipes/golden"),
     }
 
     assert {name: response.status_code for name, response in responses.items()} == dict.fromkeys(responses, 200)
 
 
-def test_resource_routes_layer_user_yaml_over_shipped_defaults(monkeypatch, tmp_path) -> None:
+def test_resource_routes_layer_user_yaml_over_shipped_defaults(api_client: TestClient, monkeypatch, tmp_path) -> None:
     shipped_water = tmp_path / "data" / "water_profiles"
     shipped_targets = tmp_path / "data" / "nutrient_solutions"
     shipped_recipes = tmp_path / "recipes"
@@ -80,13 +78,222 @@ def test_resource_routes_layer_user_yaml_over_shipped_defaults(monkeypatch, tmp_
     )
 
     monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
-    client = TestClient(api_app.app)
-
-    assert client.get("/water-profiles").json() == [{"name": "User tap", "filename": "tap.yml"}]
-    assert {entry["filename"] for entry in client.get("/nutrient-solutions").json()} == {
+    assert api_client.get("/water-profiles").json() == [{"name": "User tap", "filename": "tap.yml"}]
+    assert {entry["filename"] for entry in api_client.get("/nutrient-solutions").json()} == {
         "custom.yml",
         "target.yml",
     }
-    assert client.get("/water-profiles/tap").json()["mg_per_l"] == {"Ca": 42.0}
-    assert client.get("/recipes/golden").json()["name"] == "User golden"
-    assert client.get("/recipes/default").json()["name"] == "Shipped default"
+    assert api_client.get("/water-profiles/tap").json()["mg_per_l"] == {"Ca": 42.0}
+    assert api_client.get("/recipes/golden").json()["name"] == "User golden"
+    assert api_client.get("/recipes/default").json()["name"] == "Shipped default"
+
+
+def test_nutrient_solution_round_trips_directional_solver_priorities(
+    api_client: TestClient, monkeypatch, tmp_path
+) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+    payload = {
+        "name": "Prioritized target",
+        "source": "Test",
+        "targets_mg_per_l": {"N_total": 160, "Ca": 120},
+        "solver_config": {
+            "solver_model": "hierarchical",
+            "target_priorities": {
+                "N_total": {"under": 1, "over": 1},
+                "Ca": {"under": 2, "over": 4},
+            },
+        },
+    }
+
+    save_response = api_client.post("/nutrient-solutions", json=payload)
+
+    assert save_response.status_code == 200
+    loaded = api_client.get("/nutrient-solutions/Prioritized_target")
+    assert loaded.status_code == 200
+    assert loaded.json() == payload
+
+
+def test_nutrient_solution_persists_complete_solver_setup(api_client: TestClient, monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+    payload = {
+        "name": "Fixed micronutrients",
+        "source": "Horticalc UI",
+        "targets_mg_per_l": {"N_total": 100, "P": 10},
+        "liters": 10,
+        "water_profile": "default",
+        "osmosis_percent": 20,
+        "fertilizers_allowed": [
+            "Compo Fetrilon Combi 1",
+            "ICL Nova PeKacid 0-60-20",
+        ],
+        "fixed_grams": {
+            "Compo Fetrilon Combi 1": 2,
+            "ICL Nova PeKacid 0-60-20": 6,
+        },
+        "urea_as_nh4": False,
+        "solver_config": {"solver_model": "mass_nnls"},
+    }
+
+    save_response = api_client.post("/nutrient-solutions", json=payload)
+
+    assert save_response.status_code == 200
+    loaded = api_client.get("/nutrient-solutions/Fixed_micronutrients")
+    assert loaded.status_code == 200
+    assert loaded.json() == payload
+
+
+def test_nutrient_solution_without_setup_omits_setup_fields(api_client: TestClient, monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+    payload = {
+        "name": "Targets only",
+        "source": "Horticalc UI",
+        "targets_mg_per_l": {"K": 180},
+    }
+
+    assert api_client.post("/nutrient-solutions", json=payload).status_code == 200
+    loaded = api_client.get("/nutrient-solutions/Targets_only")
+
+    assert loaded.status_code == 200
+    assert loaded.json() == payload
+
+
+def test_nutrient_solution_requires_explicit_overwrite_and_preserves_existing_setup(
+    api_client: TestClient, monkeypatch, tmp_path
+) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+    setup_payload = {
+        "name": "Protected target",
+        "source": "",
+        "targets_mg_per_l": {"K": 180},
+        "liters": 10,
+        "water_profile": "default",
+        "osmosis_percent": 0,
+        "fertilizers_allowed": ["A"],
+        "fixed_grams": {"A": 2},
+        "urea_as_nh4": False,
+        "solver_config": {},
+    }
+    target_only_payload = {
+        "name": "Protected target",
+        "source": "",
+        "targets_mg_per_l": {"K": 200},
+    }
+
+    assert api_client.post("/nutrient-solutions", json=setup_payload).status_code == 200
+    conflict = api_client.post("/nutrient-solutions", json=target_only_payload)
+
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"] == {
+        "code": "nutrient_solution_exists",
+        "name": "Protected target",
+        "filename": "Protected_target.yml",
+        "has_solver_setup": True,
+    }
+    assert api_client.get("/nutrient-solutions/Protected_target").json() == setup_payload
+
+    overwritten = api_client.post(
+        "/nutrient-solutions",
+        json={**target_only_payload, "overwrite": True},
+    )
+
+    assert overwritten.status_code == 200
+    assert api_client.get("/nutrient-solutions/Protected_target").json() == target_only_payload
+
+
+def test_nutrient_solution_filename_collision_cannot_silently_replace_another_profile(
+    api_client: TestClient, monkeypatch, tmp_path
+) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+    original = {
+        "name": "Collision/A",
+        "source": "",
+        "targets_mg_per_l": {"K": 180},
+        "solver_config": {},
+    }
+
+    assert api_client.post("/nutrient-solutions", json=original).status_code == 200
+    conflict = api_client.post(
+        "/nutrient-solutions",
+        json={"name": "Collision?A", "targets_mg_per_l": {"K": 200}},
+    )
+
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"] == {
+        "code": "nutrient_solution_exists",
+        "name": "Collision/A",
+        "filename": "Collision_A.yml",
+        "has_solver_setup": True,
+    }
+    assert api_client.get("/nutrient-solutions/Collision_A").json() == original
+
+
+def test_nutrient_solution_rejects_fixed_amount_outside_allowed_list(
+    api_client: TestClient,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+
+    response = api_client.post(
+        "/nutrient-solutions",
+        json={
+            "name": "Invalid fixed amount",
+            "targets_mg_per_l": {"K": 180},
+            "fertilizers_allowed": ["Allowed"],
+            "fixed_grams": {"Other": 2},
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "fixed_grams not in fertilizers_allowed: ['Other']"
+
+
+def test_nutrient_solution_rejects_duplicate_allowed_fertilizers(
+    api_client: TestClient,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+
+    response = api_client.post(
+        "/nutrient-solutions",
+        json={
+            "name": "Duplicate fertilizers",
+            "targets_mg_per_l": {"K": 180},
+            "fertilizers_allowed": ["Repeated", "Repeated"],
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == ("fertilizers_allowed must not contain duplicates: ['Repeated']")
+
+
+def test_nutrient_solution_rejects_empty_water_profile(api_client: TestClient, monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+
+    response = api_client.post(
+        "/nutrient-solutions",
+        json={"name": "Invalid water", "water_profile": "   "},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "water_profile must be a non-empty string"
+
+
+def test_nutrient_solution_rejects_invalid_directional_priority(api_client: TestClient, monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
+
+    response = api_client.post(
+        "/nutrient-solutions",
+        json={
+            "name": "Invalid priority",
+            "targets_mg_per_l": {"N_total": 160},
+            "solver_config": {
+                "solver_model": "hierarchical",
+                "target_priorities": {"N_total": {"under": 9}},
+            },
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid target_priorities value: N_total.under"

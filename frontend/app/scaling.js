@@ -21,6 +21,14 @@ export function applyScaledValues(definitions, nextFactor, getBaseValue, setValu
   return scaled.factor;
 }
 
+export function scaleAmountsByVolume(values, previousLiters, nextLiters) {
+  const factor = nextLiters / previousLiters;
+  return Object.fromEntries(Object.entries(values).map(([key, value]) => [
+    key,
+    roundScaledValue((Number(value) || 0) * factor),
+  ]));
+}
+
 export function bindScaleButtons(downButton, upButton, currentFactor, applyFactor, step = 0.05) {
   downButton?.addEventListener("click", () => applyFactor(currentFactor() - step));
   upButton?.addEventListener("click", () => applyFactor(currentFactor() + step));

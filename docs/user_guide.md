@@ -21,6 +21,9 @@ Load, edit, save, and mix water profiles with reverse-osmosis water. The osmosis
 
 ### Calculator
 
+The star beside the profile selector marks the current recipe as a favorite.
+Favorite recipes appear first without changing their stored YAML.
+
 1. Select a water profile or enter water values.
 2. Select fertilizers and doses.
 3. Click **Calculate**.
@@ -32,11 +35,26 @@ CSV columns, or API fields.
 
 ### Solver
 
+The same star independently favorites Solver target profiles. In the Sidebar,
+the star on a Solver-history row pins that exact run above normal history and
+protects it from the history limit and the normal clear action. Unpin it to
+return it to ordinary retention.
+
 1. Load a target profile or enter target values.
 2. Select the fertilizers the solver may use.
 3. Add fixed doses if a fertilizer amount must remain unchanged.
 4. Click **Calculate**.
 5. Review target, achieved, and difference values. The `objective_elements` list shows what was actually optimized. Apply the result to the calculator or copy it.
+
+When saving the target profile, enable **Save Solver setup** to retain the
+batch volume, water profile and osmosis share, allowed fertilizers, fixed
+amounts, urea mode, and Solver settings. Without this option, the profile keeps
+only its nutrient targets. Horticalc warns before active fixed amounts or an
+existing stored setup are omitted. **Save as fertilizer recipe** stores the
+calculated doses for mixing; it does not store which doses were fixed Solver
+inputs. Horticalc also asks before replacing any existing target profile. The
+check uses the actual stored filename, so different entered names cannot
+silently overwrite one another after filename cleanup.
 
 Sulfur targets are report-only by default; enable the sulfur objective in the advanced solver settings if sulfur should affect the fit.
 
@@ -49,6 +67,8 @@ The **Configuration** card in `frontend/index.html` controls:
 - liquid dose unit,
 - visual theme,
 - language.
+
+The theme selector includes the original Horticalc variants plus Solarized Light, Dracula, Gruvbox Dark, Catppuccin Mocha, Monokai Classic, Windows 95, and Amber CRT. Windows 95 and Amber CRT are full visual skins. All themes preserve the same layout and interactions.
 
 These are stored in `user/preferences.json` because the launcher's browser profiles are temporary. Theme, language, and display-unit choices are presentation-only; recipe, API, and solver inputs remain canonical. Source: `api/app.py`, `src/horticalc/data_io.py`, and `frontend/app/settings.js`.
 

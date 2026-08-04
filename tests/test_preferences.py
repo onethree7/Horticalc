@@ -19,7 +19,7 @@ from horticalc.data_io import load_user_preferences, save_user_preferences
         "monokai-classic",
         "windows-95",
         "commodore-64",
-        "game-boy-dmg",
+        "nord",
         "amber-crt",
     ],
 )

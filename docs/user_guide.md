@@ -60,7 +60,7 @@ The **Configuration** card in `frontend/index.html` controls:
 - visual theme,
 - language.
 
-The theme selector includes the original Horticalc variants plus Solarized Light, Dracula, Gruvbox Dark, Catppuccin Mocha, Monokai Classic, Windows 95, Commodore 64, Game Boy DMG, and Amber CRT. The last four are full visual skins, while preserving the same layout and interactions.
+The theme selector includes the original Horticalc variants plus Solarized Light, Dracula, Gruvbox Dark, Catppuccin Mocha, Monokai Classic, Windows 95, Commodore 64, Nord / Arctic Workstation, and Amber CRT. Windows 95, Commodore 64, and Amber CRT are full visual skins; Nord is a restrained, high-readability editor palette. All preserve the same layout and interactions.
 
 These are stored in `user/preferences.json` because the launcher's browser profiles are temporary. Theme, language, and display-unit choices are presentation-only; recipe, API, and solver inputs remain canonical. Source: `api/app.py`, `src/horticalc/data_io.py`, and `frontend/app/settings.js`.
 

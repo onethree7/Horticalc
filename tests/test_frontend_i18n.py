@@ -41,7 +41,7 @@ def test_i18n_catalogs_cover_the_supported_themes_and_solver_labels() -> None:
         "theme.monokaiClassic",
         "theme.windows95",
         "theme.commodore64",
-        "theme.gameBoyDmg",
+        "theme.nord",
         "theme.amberCrt",
         "solver.config.relativeWeighting",
         "solver.config.overshootPenalty",

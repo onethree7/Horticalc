@@ -43,7 +43,7 @@ export const THEME_OPTIONS = new Set([
   "monokai-classic",
   "windows-95",
   "commodore-64",
-  "game-boy-dmg",
+  "nord",
   "amber-crt",
 ]);
 

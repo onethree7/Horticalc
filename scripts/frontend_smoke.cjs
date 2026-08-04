@@ -164,7 +164,7 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
       "horticalc-dark", "horticalc-light", "high-contrast", "soil",
       "gch-classic", "vt-green", "blue-matrix", "tokyo-night",
       "solarized-light", "dracula", "gruvbox-dark", "catppuccin-mocha",
-      "monokai-classic", "windows-95", "commodore-64", "game-boy-dmg", "amber-crt",
+      "monokai-classic", "windows-95", "commodore-64", "nord", "amber-crt",
     ];
     const newThemePalettes = {
       "solarized-light": { panel: "#fdf6e3", text: "#073642", solver: "#6c71c4" },
@@ -174,7 +174,7 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
       "monokai-classic": { panel: "#272822", text: "#f8f8f2", solver: "#ae81ff" },
       "windows-95": { panel: "#c0c0c0", text: "#000", solver: "#800080" },
       "commodore-64": { panel: "#40318d", text: "#c8c1ff", solver: "#c181d2" },
-      "game-boy-dmg": { panel: "#9bbc0f", text: "#0f380f", solver: "#306230" },
+      nord: { panel: "#2e3440", text: "#eceff4", solver: "#b48ead" },
       "amber-crt": { panel: "#0b0700", text: "#ffc247", solver: "#ff8f1f" },
     };
     for (const theme of themes) {

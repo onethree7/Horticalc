@@ -417,7 +417,7 @@ THEME_OPTIONS = {
     "monokai-classic",
     "windows-95",
     "commodore-64",
-    "game-boy-dmg",
+    "nord",
     "amber-crt",
 }
 LOCALE_OPTIONS = {"de", "en", "nl", "es", "zh"}

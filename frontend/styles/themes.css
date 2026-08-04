@@ -764,7 +764,7 @@
   [data-theme="monokai-classic"],
   [data-theme="windows-95"],
   [data-theme="commodore-64"],
-  [data-theme="game-boy-dmg"],
+  [data-theme="nord"],
   [data-theme="amber-crt"]
 ) {
   --app-body-bg:
@@ -1066,97 +1066,23 @@
   --app-button-hover: #70a4b2;
 }
 
-.app-body[data-theme="game-boy-dmg"] {
-  --app-color-scheme: light;
-  --app-font-family: inter, "Segoe UI", system-ui, sans-serif;
-  --radius-1: 0;
-  --radius-2: 0;
-  --app-radius-card: 0;
-  --app-radius-panel: 0;
-  --app-radius-shell: 0;
-  --app-bg: #0f380f;
-  --app-panel: #9bbc0f;
-  --app-panel-soft: #8bac0f;
-  --app-border: #306230;
-  --app-text: #0f380f;
-  --app-muted: #0f380f;
-  --app-green: #0f380f;
-  --app-teal: #306230;
-  --app-amber: #306230;
-  --app-red: #0f380f;
-  --app-solver: #306230;
-  --app-solver-glow: #0f380f;
-  --app-body-bg: #0f380f;
-  --app-shell-bg: #306230;
-  --app-shell-border: #0f380f;
-  --app-shell-shadow: 8px 8px 0 #0f380f;
-  --app-rail-bg: #306230;
-  --app-rail-shadow: inset 0 0 0 2px #306230;
-  --app-card-bg: #9bbc0f;
-  --app-config-bg: #9bbc0f;
-  --app-workflow-bg: #9bbc0f;
-  --app-brand-bg: #306230;
-  --app-brand-accent: #9bbc0f;
-  --app-logo-accent: #0f380f;
-  --app-brand-title: #9bbc0f;
-  --app-brand-subtitle: #9bbc0f;
-  --app-workspace-block-bg: #9bbc0f;
-  --app-subpanel-bg: #8bac0f;
-  --app-table-wrap-bg: #8bac0f;
-  --app-table-head-bg: #306230;
-  --app-table-head-text: #9bbc0f;
-  --app-table-card-bg: #8bac0f;
-  --app-table-card-border: #306230;
-  --app-table-badge-bg: #9bbc0f;
-  --app-table-badge-border: #306230;
-  --app-table-row-odd: #9bbc0f;
-  --app-table-row-even: #8bac0f;
-  --app-fert-editor-row-odd-bg: #9bbc0f;
-  --app-fert-editor-row-even-bg: #8bac0f;
-  --app-table-row-hover: #306230;
-  --app-input-bg: #9bbc0f;
-  --app-input-border: #306230;
-  --app-helper-bg: #8bac0f;
-  --app-helper-text: #0f380f;
-  --app-button-bg: #306230;
-  --app-button-hover: #0f380f;
-  --app-button-text: #9bbc0f;
-  --app-button-outline-border: #306230;
-  --app-button-outline-text: #0f380f;
-  --app-button-outline-hover: #8bac0f;
-  --app-focus: #0f380f;
-  --app-heading-text: #0f380f;
-  --app-heading-icon-bg: #8bac0f;
-  --app-workflow-step-bg: #9bbc0f;
-  --app-workflow-step-hover: #8bac0f;
-  --app-workflow-step-border: #306230;
-  --app-workflow-step-active-border: #0f380f;
-  --app-workflow-active-bg: #0f380f;
-  --app-workflow-active-text: #9bbc0f;
-  --app-solver-step-bg: #8bac0f;
-  --app-solver-step-active-bg: #0f380f;
-  --app-live-bg: #8bac0f;
-  --app-live-tile-bg: #9bbc0f;
-  --app-live-primary: #0f380f;
-  --app-live-secondary: #306230;
-  --app-live-ratio: #0f380f;
-  --app-live-warning: #306230;
-  --app-segmented-bg: #9bbc0f;
-  --app-segmented-border: #306230;
-  --app-segmented-text: #306230;
-  --app-segmented-active-bg: #0f380f;
-  --app-segmented-active-border: #0f380f;
-  --app-segmented-active-text: #9bbc0f;
-  --app-fert-editor-head-bg: #306230;
-  --app-fert-editor-input-bg: #9bbc0f;
-  --app-scrollbar-thumb: #0f380f;
-  --app-scrollbar-track: #306230;
-  --app-surface-shadow: inset 0 0 0 2px #306230;
-  --app-workspace-shadow: inset 0 0 0 2px #306230, 4px 4px 0 #0f380f;
-  --app-control-shadow: 2px 2px 0 #0f380f;
-  --app-input-shadow: inset 2px 2px 0 #306230;
-  --app-overlay-bg: none;
-  --app-overlay-opacity: 0;
+.app-body[data-theme="nord"] {
+  --app-bg: #242933;
+  --app-panel: #2e3440;
+  --app-panel-soft: #3b4252;
+  --app-border: #4c566a;
+  --app-text: #eceff4;
+  --app-muted: #d8dee9;
+  --app-green: #a3be8c;
+  --app-teal: #88c0d0;
+  --app-amber: #ebcb8b;
+  --app-red: #bf616a;
+  --app-solver: #b48ead;
+  --app-solver-glow: #81a1c1;
+  --app-button-bg: #5e81ac;
+  --app-button-hover: #81a1c1;
+  --app-shell-shadow: 0 24px 58px rgb(15 19 27 / 44%), var(--app-surface-shadow);
+  --app-rail-shadow: 0 12px 30px rgb(15 19 27 / 32%), var(--app-surface-shadow);
 }
 
 .app-body[data-theme="amber-crt"] {

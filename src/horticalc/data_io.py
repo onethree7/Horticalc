@@ -16,6 +16,7 @@ from typing import Any, Callable, Dict
 import yaml
 
 from . import paths
+from .nutrient_profiles import normalize_nutrient_solution_data
 from .validation import finite_float as _finite_float
 from .validation import non_negative_float as _non_negative_float
 from .validation import percentage_float as _percentage_float
@@ -220,7 +221,6 @@ def _load_fertilizer_csv(
                 )
                 if solver_max < 0.0:
                     raise ValueError(f"{csv_path}: {FERTILIZER_SOLVER_MAX_FIELD} for {name} must be >= 0")
-
             comp: Dict[str, float] = {}
             for k, v in row.items():
                 if _is_base_fertilizer_field(k):
@@ -550,18 +550,11 @@ def load_recipe(path: Path) -> dict:
 
 
 def load_nutrient_solution_data(path: Path) -> dict:
-    data = _load_yaml(path)
-    raw_targets = data.get("targets_mg_per_l")
-    targets = _float_mapping(
-        {} if raw_targets is None else raw_targets,
-        f"{path}: targets_mg_per_l",
-        _non_negative_float,
+    return normalize_nutrient_solution_data(
+        _load_yaml(path),
+        location=str(path),
+        fallback_name=path.stem,
     )
-    return {
-        "name": data.get("name") or path.stem,
-        "source": data.get("source") or "",
-        "targets_mg_per_l": targets,
-    }
 
 
 def save_nutrient_solution(
@@ -569,16 +562,34 @@ def save_nutrient_solution(
     name: str,
     source: str,
     targets_mg_per_l: Dict[str, float],
+    liters: float | None = None,
+    water_profile: str | None = None,
+    osmosis_percent: float | None = None,
+    fertilizers_allowed: list[str] | None = None,
+    fixed_grams: Dict[str, float] | None = None,
+    urea_as_nh4: bool | None = None,
+    solver_config: Dict[str, object] | None = None,
 ) -> None:
-    payload = {
+    raw_payload = {
         "name": name,
         "source": source,
-        "targets_mg_per_l": _float_mapping(
-            targets_mg_per_l,
-            f"{path}: targets_mg_per_l",
-            _non_negative_float,
-        ),
+        "targets_mg_per_l": targets_mg_per_l,
     }
+    if liters is not None:
+        raw_payload["liters"] = liters
+    if water_profile is not None:
+        raw_payload["water_profile"] = water_profile
+    if osmosis_percent is not None:
+        raw_payload["osmosis_percent"] = osmosis_percent
+    if fertilizers_allowed is not None:
+        raw_payload["fertilizers_allowed"] = fertilizers_allowed
+    if fixed_grams is not None:
+        raw_payload["fixed_grams"] = fixed_grams
+    if urea_as_nh4 is not None:
+        raw_payload["urea_as_nh4"] = urea_as_nh4
+    if solver_config is not None:
+        raw_payload["solver_config"] = solver_config
+    payload = normalize_nutrient_solution_data(raw_payload, location=str(path))
     _save_yaml(path, payload)
 
 

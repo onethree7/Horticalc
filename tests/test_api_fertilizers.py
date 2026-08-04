@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import pytest
+from fastapi.testclient import TestClient
 
 import api.app as api_app
+from horticalc.core import COMP_COLS
 from horticalc.data_io import Fertilizer
 
 
@@ -77,3 +79,28 @@ def test_fertilizer_save_rejects_non_positive_weight(monkeypatch, weight: float)
 
     assert error.value.status_code == 400
     assert error.value.detail == "Invalid weight value"
+
+
+def test_fertilizer_schema_keeps_nitrogen_form_order(api_client: TestClient) -> None:
+    response = api_client.get("/schema/fertilizer-comp-keys")
+
+    assert response.status_code == 200
+    keys = response.json()["keys"]
+    assert keys == COMP_COLS
+    assert keys.index("NO3") < keys.index("NH4") < keys.index("UREA")
+
+
+def test_fertilizer_api_uses_liquid_boolean_schema(api_client: TestClient) -> None:
+    response = api_client.get("/fertilizers")
+
+    assert response.status_code == 200
+    assert response.json()
+    assert all(isinstance(entry["liquid"], bool) for entry in response.json())
+    assert all("form" not in entry for entry in response.json())
+    assert set(api_app.FertilizerPayload.model_fields) == {
+        "name",
+        "liquid",
+        "weight_factor",
+        "comp",
+        "solver_max_dose_per_l",
+    }

@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 import scripts.solver_matrix as solver_matrix
 import scripts.solver_matrix_analyze as solver_matrix_analyze
+
+pytestmark = pytest.mark.research
 
 
 def _write_deep_fixture(run_dir: Path) -> None:
@@ -28,15 +32,16 @@ def test_analyze_run_extracts_paired_setting_and_omission_effects(tmp_path: Path
     analysis = solver_matrix_analyze.analyze_run(tmp_path, top_limit=5)
 
     assert analysis["schema_version"] == 2
-    assert analysis["counts"]["status"] == {"ok": 28}
+    assert analysis["counts"]["status"] == {"ok": 38}
     assert analysis["baseline_by_profile"]["Hoagland_Arnon_1950_Solution1_Nitrate"]["score"] > 0
     assert "boolean_factorial" in analysis["setting_effects"]
     assert "relative_weighting" in analysis["setting_effects"]["boolean_factorial"]
-    assert len(analysis["mass_barrage_portfolios"]) == 25
-    assert len(analysis["fertilizer_omission_impact"]) == 19
+    assert len(analysis["mass_barrage_portfolios"]) == 33
+    assert len(analysis["diagnostic_portfolios"]) == 2
+    assert len(analysis["fertilizer_omission_impact"]) == 22
     omitted = {row["fertilizer"] for row in analysis["fertilizer_omission_impact"]}
-    assert "HuminTech AMINO POWER Plus Liquid" in omitted
-    assert "HuminTech Fulvital Plus Liquid" in omitted
+    assert "HuminTech AMINO POWER Plus Liquid" not in omitted
+    assert "HuminTech Fulvital Plus Liquid" not in omitted
 
 
 def test_write_markdown_report_is_self_explanatory(tmp_path: Path) -> None:
@@ -53,4 +58,5 @@ def test_write_markdown_report_is_self_explanatory(tmp_path: Path) -> None:
     assert "Controlled Setting Effects" in text
     assert "Nutrient-Portfolio Mass Barrage" in text
     assert "Leave-One-Out Fertilizer Impact" in text
+    assert "Diagnostic Honeypot Portfolios" in text
     assert "Unresolved requested profiles" not in text

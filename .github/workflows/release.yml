@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v0.6.0"
+      - "v0.6.1"
 
 permissions:
   contents: write
@@ -236,7 +236,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload release assets
-        if: github.ref == 'refs/tags/v0.6.0'
+        if: github.ref == 'refs/tags/v0.6.1'
         uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
         with:
           files: |

@@ -27,11 +27,22 @@ function appendTargetRows(tableBody, data, displayKeys, labels, formatNutrient) 
   const errors = data.errors_mg_per_l || {};
   const errorsPercent = data.errors_percent || {};
   const objectiveKeys = new Set(data.objective_elements || []);
+  const reportOnlyKeys = new Set(data.ignored_elements || []);
 
   displayKeys.forEach((key) => {
     const row = document.createElement("tr");
     const keyCell = document.createElement("td");
-    keyCell.textContent = labels[key] || key;
+    const keyLabel = document.createElement("span");
+    keyLabel.textContent = labels[key] || key;
+    keyCell.appendChild(keyLabel);
+    const prioritySummary = labels.prioritySummary?.(key);
+    if (prioritySummary) {
+      const priorityBadge = document.createElement("small");
+      priorityBadge.className = "solver-result-priority";
+      priorityBadge.textContent = prioritySummary;
+      keyCell.appendChild(priorityBadge);
+    }
+    if (reportOnlyKeys.has(key)) row.classList.add("solver-result-report-only");
     const nitrogenExtra = key !== "N_total" && NITROGEN_KEYS.includes(key);
     if (nitrogenExtra) keyCell.classList.add("solver-n-extra");
 

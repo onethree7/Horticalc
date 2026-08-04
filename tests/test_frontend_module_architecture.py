@@ -4,7 +4,7 @@ import re
 
 from tests.frontend_assets import frontend_app_sources, read_frontend_file
 
-FEATURES = {"calculator", "editor", "profiles", "settings", "shell", "solver", "water"}
+FEATURES = {"calculator", "editor", "history", "profiles", "settings", "shell", "solver", "water"}
 
 
 def _imports(source: str) -> set[str]:

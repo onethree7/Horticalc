@@ -5,7 +5,11 @@ let preferences = {};
 async function responseJson(response, errorMessage) {
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(data.detail || errorMessage);
+    const detail = data.detail;
+    const error = new Error(typeof detail === "string" ? detail : errorMessage);
+    error.status = response.status;
+    error.detail = detail;
+    throw error;
   }
   return response.json();
 }
@@ -31,6 +35,10 @@ export async function putJson(url, payload, errorMessage, { keepalive = false } 
     keepalive,
   });
   return responseJson(response, errorMessage);
+}
+
+export async function deleteJson(url, errorMessage) {
+  return responseJson(await fetch(url, { method: "DELETE" }), errorMessage);
 }
 
 export function loadPreferences() {
@@ -78,6 +86,12 @@ export const saveNutrientSolutionData = (payload, message) =>
   postJson("/nutrient-solutions", payload, message);
 export const calculate = (payload, message) => postJson("/calculate", payload, message);
 export const solve = (payload, message) => postJson("/solve", payload, message);
+export const fetchSolverHistory = (message) => getJson("/solver-history", message);
+export const fetchSolverHistoryEntry = (entryId, message) =>
+  getJson(`/solver-history/${encodeURIComponent(entryId)}`, message);
+export const setSolverHistoryPinned = (entryId, pinned, message) =>
+  putJson(`/solver-history/${encodeURIComponent(entryId)}`, { pinned }, message);
+export const clearSolverHistory = (message) => deleteJson("/solver-history", message);
 
 export async function fetchFertilizerCompKeys(message) {
   const data = await getJson("/schema/fertilizer-comp-keys", message);

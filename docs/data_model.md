@@ -17,6 +17,7 @@ Runtime user overrides:
 - `user/fertilizers_overrides.csv`
 - `user/fertilizers_disabled.txt`
 - `user/preferences.json`
+- `user/solver_history.jsonl`
 - `user/water_profiles/*.yml`
 - `user/nutrient_solutions/*.yml`
 - `user/recipes/*.yml`
@@ -28,6 +29,24 @@ Water profiles, nutrient solutions, and recipes are read from shipped defaults w
 API list routes omit malformed or unreadable user YAML files and log a warning.
 Water and target mappings must contain finite, non-negative numbers; API save
 routes reject negatives, `NaN`, and infinity.
+
+## Solver History JSONL
+
+`src/horticalc/solver_history.py` owns `user/solver_history.jsonl`. Each line
+is a schema-versioned object containing a UUID, UTC timestamp, canonical Solver
+setup, unchanged `SolveResult` mapping, fertilizer solid/liquid kinds, optional
+Boolean `pinned` metadata, and the
+EC/NPK/element projection needed by the printable UI output. The setup embeds
+the actual water values and osmosis share rather than depending on a mutable
+water-profile filename.
+
+Entries are stored oldest first. Summaries return pinned entries first and
+newest first within the pinned and unpinned groups. Existing entries without
+`pinned` are unpinned. The effective retention default is `1000`, bounded to
+`0..10000`, and applies only to unpinned entries. Reducing it removes the oldest
+unpinned entries immediately; `0` retains only pins and disables new normal
+entries. The clear operation also retains pins. Writes are serialized and
+atomic. Malformed lines are logged and skipped so valid history remains readable.
 
 ## Fertilizers CSV
 
@@ -45,9 +64,10 @@ Optional solver metadata:
   liter. Empty means unlimited; `0` excludes the product from variable Solver
   dosing. Explicit recipe `fixed_grams` overrides this maximum.
 
-The shipped `data/fertilizers.csv` currently leaves this field empty for every
-product, so the shipped catalog defines no dose limits. A user override can
-still set the optional field explicitly.
+The shipped `data/fertilizers.csv` sets `SolverMaxDosePerL` to `0` for
+HuminTech AMINO POWER and Fulvital, so the Solver uses those additives only at
+an explicit fixed dose. Every other shipped product leaves the field empty.
+A user override can change or remove a product limit explicitly.
 
 All other numeric columns are interpreted as composition fractions. A value of
 `0.14` means 14 percent by mass. `NR` or `Nr.` is accepted only for legacy CSV
@@ -71,7 +91,7 @@ number greater than zero; invalid values are rejected instead of being silently
 converted during persistence.
 `SolverMaxDosePerL` uses the same canonical dose convention as Solver results:
 g/L for solids and mL/L for liquids. It limits product dose, not nutrient
-mg/L. The fertilizer editor exposes it as its final column.
+mg/L. The fertilizer editor exposes this field directly.
 
 ### Dose Units, Mass, And Liquid Fertilizers
 
@@ -133,6 +153,10 @@ The calculator uses `fertilizers`. The solver uses `targets`,
 `fertilizers_allowed`, `fixed_grams`, and `solver_config`.
 `fertilizers_allowed` stores exact fertilizer names and must not repeat the
 same name within one recipe.
+`solver_config.target_priorities` may map target keys to integer `under` and
+`over` priorities in `0..4`. `ignored_elements` remains a duplicate-free
+compatibility input; the hierarchical model treats each listed key as
+priority `0` in both directions.
 `liters` defaults to `10` only when omitted or null; an explicit zero, negative,
 or non-finite value is invalid. Fertilizer `grams` values are finite and
 non-negative.
@@ -148,9 +172,47 @@ targets_mg_per_l:
   N_total: 140
   P: 30
   K: 180
+solver_config:
+  solver_model: hierarchical
+  target_priorities:
+    N_total: {under: 1, over: 1}
+    Ca: {under: 2, over: 3}
 ```
 
-Targets are element mg/L. Accepted keys live in `ALLOWED_TARGET_KEYS` in `src/horticalc/solver.py`. Oxide aliases such as `K2O` and `P2O5` are fertilizer composition keys, not target keys. `S` is elemental sulfur; `SO4` is not a target key. `load_nutrient_solution_data()` returns only `name`, `source`, and `targets_mg_per_l`.
+Targets are element mg/L. Accepted keys live in `ALLOWED_TARGET_KEYS` in
+`src/horticalc/chemistry.py`. Oxide aliases such as `K2O` and `P2O5` are
+fertilizer composition keys, not target keys. `S` is elemental sulfur; `SO4`
+is not a target key. `solver_config` is optional and uses the same validated
+contract as a recipe. `load_nutrient_solution_data()` returns `name`, `source`,
+and `targets_mg_per_l`, plus every optional Solver-setup field present in the
+YAML.
+
+Target profiles saved with **Save Solver setup** may additionally contain the
+current Solver inputs:
+
+```yaml
+liters: 10
+water_profile: default
+osmosis_percent: 0
+fertilizers_allowed:
+  - Compo Fetrilon Combi 1
+  - ICL Nova PeKacid 0-60-20
+fixed_grams:
+  Compo Fetrilon Combi 1: 2
+  ICL Nova PeKacid 0-60-20: 6
+urea_as_nh4: false
+solver_config:
+  solver_model: mass_nnls
+```
+
+These fields are optional as a group in the GUI and remain individually
+optional for older files and API clients. `liters` is positive,
+`osmosis_percent` is within `0..100`, allowed fertilizer names are unique,
+and every finite non-negative `fixed_grams` entry must also occur in
+`fertilizers_allowed`. Fixed amounts are canonical batch totals and scale
+proportionally when the GUI batch volume changes. Both API payloads and YAML
+files use the normalizer in `src/horticalc/nutrient_profiles.py`; persistence
+is owned by `src/horticalc/data_io.py`.
 
 ## Calculation Output
 
@@ -190,11 +252,25 @@ The current ion set in `src/horticalc/core.py` is `NH4+`, `K+`, `Ca2+`, `Mg2+`, 
 `SolveResult.to_dict()` in `src/horticalc/solver.py` produces:
 
 1. `liters`
-2. `fertilizers`
-3. `objective_elements`
-4. `targets_mg_per_l`
-5. `achieved_elements_mg_per_l`
-6. `errors_mg_per_l`
-7. `errors_percent`
+2. `solver_model`
+3. `fertilizers`
+4. `objective_elements`
+5. `ignored_elements`
+6. `target_priorities`
+7. `priority_stages`
+8. `targets_mg_per_l`
+9. `achieved_elements_mg_per_l`
+10. `errors_mg_per_l`
+11. `errors_percent`
 
-`objective_elements` is the authoritative list of what the solver optimized. The solver matrix benchmark scores this list.
+`solver_model` identifies the actual runtime path (`mass_nnls`, `hierarchical`,
+or `nnls_tuning`).
+`objective_elements` is the authoritative list of what
+the solver optimized. The solver matrix benchmark scores this list.
+`target_priorities` contains the resolved directional tiers used by a
+hierarchical solve and is empty for the other models. `priority_stages`
+contains the retained maximum and total `mg/L` residual for each populated
+tier. `ignored_elements` remains a compatibility view of targets with both
+directions at priority `0`. Report-only target and achieved values remain
+available for display and audit; error mappings contain objective residuals
+only.

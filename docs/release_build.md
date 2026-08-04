@@ -69,7 +69,7 @@ from `horticalc.__version__` unless the environment variable is explicit.
 `.github/workflows/release.yml` runs on:
 
 - manual workflow dispatch
-- the exact release tag `v0.6.0`
+- the exact release tag `v0.6.1`
 
 Matrix:
 
@@ -79,7 +79,7 @@ Matrix:
 
 `scripts/check_release_version.py` rejects a tag that does not exactly match
 `v` plus `horticalc.__version__`. Manual workflow builds retain short-commit
-artifact names. Tagged builds use `v0.6.0`.
+artifact names. Tagged builds use `v0.6.1`.
 
 ## Release Verification
 

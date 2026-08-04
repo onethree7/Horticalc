@@ -35,6 +35,14 @@ export const THEME_OPTIONS = new Set([
   "gch-classic",
   "vt-green",
   "blue-matrix",
+  "tokyo-night",
+  "solarized-light",
+  "dracula",
+  "gruvbox-dark",
+  "catppuccin-mocha",
+  "monokai-classic",
+  "windows-95",
+  "amber-crt",
 ]);
 
 export const LAST_SOLUTION_CALCULATED_KEY = "last_solution_calculated";
@@ -89,6 +97,12 @@ export const SUMMARY_COLUMN_ORDER = [
 ];
 
 export const FALLBACK_SOLVER_CONFIG_DEFINITIONS = [
+  {
+    key: "solver_model",
+    type: "string",
+    defaultValue: "nnls_tuning",
+    choices: ["mass_nnls", "hierarchical", "nnls_tuning"],
+  },
   { key: "relative_weighting", type: "boolean", defaultValue: false },
   { key: "nitrogen_objective_mode", type: "string", defaultValue: "n_total_only" },
   { key: "overshoot_penalty", type: "number", defaultValue: 1, minimum: 0 },

@@ -29,6 +29,7 @@
 
   .rail-brand,
   .rail-workflow,
+  .rail-history,
   .live-bar {
     grid-column: 1 / -1;
   }
@@ -57,6 +58,11 @@
   .solver-comparison-grid,
   .solver-lower-grid {
     grid-template-columns: 1fr;
+  }
+
+  .solver-model-bar {
+    grid-template-columns: 1fr;
+    align-items: start;
   }
 
   .solver-picker-actions {

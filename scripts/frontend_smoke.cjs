@@ -189,6 +189,7 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
 
     await page.locator("[data-shell-view='editor']").click();
     await page.locator("#fertilizerEditorMode:not(.is-hidden)").waitFor();
+    await page.locator("#fertilizerEditorTable thead th:last-child[title]:not([title=''])").waitFor();
     await page.locator("#fertEditorAddRow").click();
     await page.locator("#fertEditorDeleteRow").click();
 

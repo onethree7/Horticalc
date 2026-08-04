@@ -229,7 +229,7 @@ export default {
   "editor.fertilizerName": "Meststofnaam",
   "editor.densityFactor": "Dichtheid [g/mL] / factor",
   "editor.solverMaxDosePerL": "Solvermaximum / L",
-  "editor.solverMaxDoseHint": "Leeg betekent onbeperkt. 0 staat alleen handmatig vastgelegde hoeveelheden toe.",
+  "editor.solverMaxDoseHint": "Maximale hoeveelheid per liter die de Solver automatisch mag doseren. Leeg betekent onbeperkt; 0 staat alleen handmatig vastgelegde hoeveelheden toe.",
   "editor.nameRequired": "Voer een meststofnaam in.",
   "editor.uniqueNames": "Meststofnamen moeten uniek zijn.",
   "editor.resizeNameColumn": "Breedte van meststofnaamkolom aanpassen",

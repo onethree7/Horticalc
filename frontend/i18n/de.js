@@ -229,7 +229,7 @@ export default {
   "editor.fertilizerName": "Düngername",
   "editor.densityFactor": "Dichte [g/mL] / Faktor",
   "editor.solverMaxDosePerL": "Solver-Maximum / L",
-  "editor.solverMaxDoseHint": "Leer bedeutet unbegrenzt. 0 erlaubt nur manuell festgelegte Mengen.",
+  "editor.solverMaxDoseHint": "Maximale Menge pro Liter, die der Solver automatisch dosieren darf. Leer bedeutet unbegrenzt; 0 erlaubt nur manuell festgelegte Mengen.",
   "editor.nameRequired": "Bitte einen Düngernamen angeben.",
   "editor.uniqueNames": "Düngernamen müssen eindeutig sein.",
   "editor.resizeNameColumn": "Düngername-Spalte breiter oder schmaler ziehen",

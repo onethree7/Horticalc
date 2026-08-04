@@ -63,6 +63,9 @@ export function createTable({ id, className, colgroupClasses, headerCells }) {
     if (cell.colSpan) {
       th.colSpan = cell.colSpan;
     }
+    if (cell.title) {
+      th.title = cell.title;
+    }
     headerRow.appendChild(th);
   });
   thead.appendChild(headerRow);

@@ -229,7 +229,7 @@ export default {
   "editor.fertilizerName": "肥料名称",
   "editor.densityFactor": "密度 [g/mL] / 系数",
   "editor.solverMaxDosePerL": "求解器最大值 / L",
-  "editor.solverMaxDoseHint": "留空表示无限制。0 表示仅允许手动设定的固定用量。",
+  "editor.solverMaxDoseHint": "求解器可自动投加的每升最大用量。留空表示无限制；0 表示仅允许手动设定的固定用量。",
   "editor.nameRequired": "请输入肥料名称。",
   "editor.uniqueNames": "肥料名称必须唯一。",
   "editor.resizeNameColumn": "调整肥料名称列宽",

@@ -229,7 +229,7 @@ export default {
   "editor.fertilizerName": "Fertilizer name",
   "editor.densityFactor": "Density [g/mL] / factor",
   "editor.solverMaxDosePerL": "Solver max / L",
-  "editor.solverMaxDoseHint": "Blank means unlimited. 0 allows manually fixed amounts only.",
+  "editor.solverMaxDoseHint": "Maximum amount per liter that the Solver may dose automatically. Blank means unlimited; 0 allows manually fixed amounts only.",
   "editor.nameRequired": "Please enter a fertilizer name.",
   "editor.uniqueNames": "Fertilizer names must be unique.",
   "editor.resizeNameColumn": "Resize fertilizer name column",

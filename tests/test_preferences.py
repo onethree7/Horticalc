@@ -18,8 +18,6 @@ from horticalc.data_io import load_user_preferences, save_user_preferences
         "catppuccin-mocha",
         "monokai-classic",
         "windows-95",
-        "commodore-64",
-        "nord",
         "amber-crt",
     ],
 )

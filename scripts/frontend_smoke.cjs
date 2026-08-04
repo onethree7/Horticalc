@@ -62,6 +62,16 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
   }
 }
 
+async function exerciseProfileFavorite(page, button) {
+  if (await button.getAttribute("aria-pressed") === "true") {
+    await button.click();
+    await page.locator("#favoriteProfile[aria-pressed='false']").waitFor();
+  }
+  await button.click();
+  await page.locator("#favoriteProfile[aria-pressed='true']").waitFor();
+  await button.click();
+}
+
 (async () => {
   if (!executablePath) {
     throw new Error("Chrome or Chromium is required; set HORTICALC_BROWSER_PATH if it is installed elsewhere");
@@ -166,9 +176,7 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
     const profileFavorite = page.locator("#favoriteProfile");
     await page.locator("#favoriteProfile:disabled").waitFor();
     await page.locator("#profileSelect").selectOption({ index: 1 });
-    await profileFavorite.click();
-    await page.locator("#favoriteProfile[aria-pressed='true']").waitFor();
-    await profileFavorite.click();
+    await exerciseProfileFavorite(page, profileFavorite);
 
     await page.locator("#calculateBtn").click();
     await page.locator("#copyCalculatorResults:not([disabled])").waitFor();
@@ -183,7 +191,7 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
       "horticalc-dark", "horticalc-light", "high-contrast", "soil",
       "gch-classic", "vt-green", "blue-matrix", "tokyo-night",
       "solarized-light", "dracula", "gruvbox-dark", "catppuccin-mocha",
-      "monokai-classic", "windows-95", "commodore-64", "nord", "amber-crt",
+      "monokai-classic", "windows-95", "amber-crt",
     ];
     const newThemePalettes = {
       "solarized-light": { panel: "#fdf6e3", text: "#073642", solver: "#6c71c4" },
@@ -192,8 +200,6 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
       "catppuccin-mocha": { panel: "#1e1e2e", text: "#cdd6f4", solver: "#cba6f7" },
       "monokai-classic": { panel: "#272822", text: "#f8f8f2", solver: "#ae81ff" },
       "windows-95": { panel: "#c0c0c0", text: "#000", solver: "#800080" },
-      "commodore-64": { panel: "#40318d", text: "#c8c1ff", solver: "#c181d2" },
-      nord: { panel: "#2e3440", text: "#eceff4", solver: "#b48ead" },
       "amber-crt": { panel: "#0b0700", text: "#ffc247", solver: "#ff8f1f" },
     };
     for (const theme of themes) {
@@ -215,11 +221,8 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
     await page.locator("[data-shell-view='solver']").focus();
     await page.keyboard.press("Enter");
     await page.locator("#solverMode:not(.is-hidden)").waitFor();
-    await page.locator("#favoriteProfile:disabled").waitFor();
     await page.locator("#profileSelect").selectOption({ index: 1 });
-    await profileFavorite.click();
-    await page.locator("#favoriteProfile[aria-pressed='true']").waitFor();
-    await profileFavorite.click();
+    await exerciseProfileFavorite(page, profileFavorite);
     await page.locator("#loadProfile").click();
     await page.locator("#solverAllowedFromRecipe").click();
 

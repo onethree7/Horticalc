@@ -42,8 +42,6 @@ export const THEME_OPTIONS = new Set([
   "catppuccin-mocha",
   "monokai-classic",
   "windows-95",
-  "commodore-64",
-  "nord",
   "amber-crt",
 ]);
 

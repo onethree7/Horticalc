@@ -431,8 +431,6 @@ THEME_OPTIONS = {
     "catppuccin-mocha",
     "monokai-classic",
     "windows-95",
-    "commodore-64",
-    "nord",
     "amber-crt",
 }
 LOCALE_OPTIONS = {"de", "en", "nl", "es", "zh"}

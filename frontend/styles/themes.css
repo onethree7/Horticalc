@@ -763,8 +763,6 @@
   [data-theme="catppuccin-mocha"],
   [data-theme="monokai-classic"],
   [data-theme="windows-95"],
-  [data-theme="commodore-64"],
-  [data-theme="nord"],
   [data-theme="amber-crt"]
 ) {
   --app-body-bg:
@@ -1029,60 +1027,6 @@
   --app-workspace-shadow: inset 2px 2px #fff, inset -2px -2px #404040;
   --app-control-shadow: inset 1px 1px #fff, inset -2px -2px #404040;
   --app-input-shadow: inset 1px 1px #404040, inset -1px -1px #fff;
-}
-
-.app-body[data-theme="commodore-64"] {
-  --app-font-family: "Cascadia Mono", consolas, "Courier New", monospace;
-  --radius-1: 1px;
-  --radius-2: 2px;
-  --app-radius-card: 2px;
-  --app-radius-panel: 2px;
-  --app-radius-shell: 2px;
-  --app-bg: #352879;
-  --app-panel: #40318d;
-  --app-panel-soft: #5146a0;
-  --app-border: #6c5eb5;
-  --app-text: #c8c1ff;
-  --app-muted: #aaa4e8;
-  --app-green: #9ad284;
-  --app-teal: #70a4b2;
-  --app-amber: #b8c76f;
-  --app-red: #d07a71;
-  --app-solver: #c181d2;
-  --app-solver-glow: #8ecbd8;
-  --app-body-bg: #352879;
-  --app-shell-bg: #40318d;
-  --app-shell-border: #c8c1ff;
-  --app-shell-shadow: 0 0 0 4px #6c5eb5, 12px 12px 0 rgb(0 0 0 / 30%);
-  --app-rail-bg: #352879;
-  --app-rail-shadow: inset 0 0 0 2px #6c5eb5;
-  --app-surface-shadow: inset 0 0 0 1px rgb(200 193 255 / 24%);
-  --app-workspace-shadow: inset 0 0 0 2px #6c5eb5;
-  --app-control-shadow: 2px 2px 0 #1b1444;
-  --app-input-shadow: inset 2px 2px 0 #1b1444;
-  --app-overlay-bg: none;
-  --app-overlay-opacity: 0;
-  --app-button-bg: #6c5eb5;
-  --app-button-hover: #70a4b2;
-}
-
-.app-body[data-theme="nord"] {
-  --app-bg: #242933;
-  --app-panel: #2e3440;
-  --app-panel-soft: #3b4252;
-  --app-border: #4c566a;
-  --app-text: #eceff4;
-  --app-muted: #d8dee9;
-  --app-green: #a3be8c;
-  --app-teal: #88c0d0;
-  --app-amber: #ebcb8b;
-  --app-red: #bf616a;
-  --app-solver: #b48ead;
-  --app-solver-glow: #81a1c1;
-  --app-button-bg: #5e81ac;
-  --app-button-hover: #81a1c1;
-  --app-shell-shadow: 0 24px 58px rgb(15 19 27 / 44%), var(--app-surface-shadow);
-  --app-rail-shadow: 0 12px 30px rgb(15 19 27 / 32%), var(--app-surface-shadow);
 }
 
 .app-body[data-theme="amber-crt"] {

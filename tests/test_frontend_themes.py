@@ -29,15 +29,5 @@ def test_theme_contract_is_synchronized_and_token_only() -> None:
 def test_retro_screen_effects_favor_readability() -> None:
     css = frontend_path("styles/themes.css").read_text(encoding="utf-8")
 
-    commodore = _theme_block(css, "commodore-64")
-    assert "--app-overlay-bg: none;" in commodore
-    assert "--app-overlay-opacity: 0;" in commodore
-
     amber = _theme_block(css, "amber-crt")
     assert "--app-overlay-opacity: 0.042;" in amber
-
-    nord = _theme_block(css, "nord")
-    assert "--app-panel: #2e3440;" in nord
-    assert "--app-text: #eceff4;" in nord
-    assert "--app-teal: #88c0d0;" in nord
-    assert "--app-solver: #b48ead;" in nord

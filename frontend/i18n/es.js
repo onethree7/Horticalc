@@ -288,8 +288,6 @@ export default {
   "theme.catppuccinMocha": "Catppuccin Mocha",
   "theme.monokaiClassic": "Monokai Classic",
   "theme.windows95": "Windows 95",
-  "theme.commodore64": "Commodore 64",
-  "theme.nord": "Nord / Arctic Workstation",
   "theme.amberCrt": "Amber CRT",
   "solver.config.relativeWeighting": "Relative weighting",
   "solver.config.overshootPenalty": "Overshoot penalty",

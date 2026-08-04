@@ -363,6 +363,7 @@ async function init() {
   solver.mount({ configDefinitions: resources.solverConfigDefinitions, config: preferences.solver_config || {} });
   editor.setData(resources.fertilizers, resources.fertilizerKeys);
   editor.mount();
+  profiles.setFavorites(preferences);
   profiles.setProfiles({ recipeProfiles: resources.recipes, solutions: resources.solutions });
   profiles.mount();
   shell.mount();

@@ -423,13 +423,40 @@ html {
   scrollbar-color: var(--app-scrollbar-thumb) var(--app-scrollbar-track);
 }
 
+.rail-history-row {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  align-items: stretch;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.rail-history-pin {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--app-muted);
+  cursor: pointer;
+  font: inherit;
+}
+
+.rail-history-pin[aria-pressed="true"] {
+  color: var(--app-amber);
+}
+
+.rail-history-pin:hover,
+.rail-history-pin:focus-visible {
+  outline: 1px solid var(--app-amber);
+  outline-offset: -1px;
+  background: var(--app-input-bg);
+}
+
 .rail-history-entry {
   width: 100%;
   min-width: 0;
   padding: 0.42rem var(--space-2);
   overflow: hidden;
   border: 0;
-  border-bottom: 1px solid var(--app-border);
+  border-bottom: 0;
   background: transparent;
   color: var(--app-text);
   cursor: pointer;

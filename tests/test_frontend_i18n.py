@@ -66,6 +66,11 @@ def test_i18n_catalogs_cover_the_supported_themes_and_solver_labels() -> None:
         "solver.priority.resultSummary",
         "solver.reportOnlyHint",
         "editor.solverMaxDoseHint",
+        "profile.addFavorite",
+        "profile.removeFavorite",
+        "history.pin",
+        "history.unpin",
+        "errors.pinSolverHistory",
     }
 
     for locale in LOCALES:

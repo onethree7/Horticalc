@@ -58,6 +58,7 @@ from horticalc.solver_history import (
     SOLVER_HISTORY_SCHEMA_VERSION,
     append_solver_history,
     clear_solver_history,
+    set_solver_history_pinned,
     solver_history_entry,
     solver_history_summaries,
     trim_solver_history,
@@ -126,6 +127,12 @@ class PreferencesPayload(BaseModel):
     solver_config: Optional[Dict[str, Any]] = None
     last_water_profile: Optional[str] = None
     solver_history_limit: Optional[int] = Field(default=None, ge=0, le=MAX_SOLVER_HISTORY_LIMIT)
+    favorite_recipes: List[str] = Field(default_factory=list)
+    favorite_nutrient_solutions: List[str] = Field(default_factory=list)
+
+
+class SolverHistoryPinPayload(BaseModel):
+    pinned: bool
 
 
 class RecipeRequest(BaseModel):
@@ -354,6 +361,14 @@ def _validated_unique_names(values: List[str], *, field_name: str) -> List[str]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+def _validated_yaml_filenames(values: List[str], *, field_name: str) -> List[str]:
+    filenames = _validated_unique_names(values, field_name=field_name)
+    for filename in filenames:
+        if not filename or Path(filename).name != filename or _yaml_filename(filename) != filename:
+            raise HTTPException(status_code=400, detail=f"Invalid {field_name} filename: {filename}")
+    return filenames
+
+
 def _portable_layout() -> PortableLayout:
     _ensure_initialized()
     if PORTABLE_LAYOUT is None:
@@ -471,6 +486,12 @@ def put_preferences(payload: PreferencesPayload) -> dict[str, Any]:
         updates["solver_history_limit"] = (
             DEFAULT_SOLVER_HISTORY_LIMIT if payload.solver_history_limit is None else int(payload.solver_history_limit)
         )
+    for field_name in ("favorite_recipes", "favorite_nutrient_solutions"):
+        if field_name in updates:
+            updates[field_name] = _validated_yaml_filenames(
+                updates[field_name],
+                field_name=field_name,
+            )
     preferences = load_user_preferences()
     preferences.update(updates)
     save_user_preferences(preferences)
@@ -493,6 +514,19 @@ def solver_history_detail(entry_id: str) -> dict[str, Any]:
     if entry is None:
         raise HTTPException(status_code=404, detail="Solver history entry not found")
     return entry
+
+
+@app.put("/solver-history/{entry_id}")
+def put_solver_history_entry(entry_id: str, payload: SolverHistoryPinPayload) -> dict[str, Any]:
+    updated = set_solver_history_pinned(
+        _solver_history_path(),
+        entry_id,
+        payload.pinned,
+        _effective_solver_history_limit(),
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Solver history entry not found")
+    return {"status": "ok", "pinned": payload.pinned}
 
 
 @app.delete("/solver-history")

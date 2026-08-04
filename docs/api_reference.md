@@ -30,7 +30,7 @@ rejected by `src/horticalc/paths.py`.
 | `GET` | `/preferences` | Return persisted UI preferences. |
 | `PUT` | `/preferences` | Validate and merge one or more UI preferences. |
 
-Accepted fields are `theme`, `locale`, positive `default_liters`, `volume_unit`, `solid_dose_unit`, `liquid_dose_unit`, `solver_config`, `last_water_profile`, and integer `solver_history_limit` (`0..10000`, effective default `1000`). `theme` accepts the IDs defined by `THEME_OPTIONS` in `api/app.py`: the eight original themes plus `solarized-light`, `dracula`, `gruvbox-dark`, `catppuccin-mocha`, `monokai-classic`, `windows-95`, `commodore-64`, `nord`, and `amber-crt`. `locale` accepts `de`, `en`, `nl`, `es`, or `zh`. `volume_unit` accepts `liter`, `us_gallon`, `imperial_gallon`, or `cubic_meter`. `solid_dose_unit` accepts `gram`, `kilogram`, `ounce`, or `pound`. `liquid_dose_unit` accepts `milliliter`, `liter`, `us_fluid_ounce`, or `imperial_fluid_ounce`. These are GUI-only; API and recipe `grams` stay canonical. `solver_config` in preferences is restricted to UI-visible keys; advanced keys marked `ui: false` are only accepted in recipes and `/solve`. Lowering `solver_history_limit` trims oldest entries immediately; `0` removes the history and disables new entries.
+Accepted fields are `theme`, `locale`, positive `default_liters`, `volume_unit`, `solid_dose_unit`, `liquid_dose_unit`, `solver_config`, `last_water_profile`, integer `solver_history_limit` (`0..10000`, effective default `1000`), and the `favorite_recipes` / `favorite_nutrient_solutions` filename lists. Favorite filenames must be unique, safe canonical `.yml` basenames; omission means no favorites. `theme` accepts the IDs defined by `THEME_OPTIONS` in `api/app.py`: the eight original themes plus `solarized-light`, `dracula`, `gruvbox-dark`, `catppuccin-mocha`, `monokai-classic`, `windows-95`, `commodore-64`, `nord`, and `amber-crt`. `locale` accepts `de`, `en`, `nl`, `es`, or `zh`. `volume_unit` accepts `liter`, `us_gallon`, `imperial_gallon`, or `cubic_meter`. `solid_dose_unit` accepts `gram`, `kilogram`, `ounce`, or `pound`. `liquid_dose_unit` accepts `milliliter`, `liter`, `us_fluid_ounce`, or `imperial_fluid_ounce`. These are GUI-only; API and recipe `grams` stay canonical. `solver_config` in preferences is restricted to UI-visible keys; advanced keys marked `ui: false` are only accepted in recipes and `/solve`. Lowering `solver_history_limit` trims oldest unpinned entries immediately; `0` removes unpinned history and disables new entries while retaining pins.
 
 Preferences are stored in `user/preferences.json` so they survive the launcher's temporary browser profiles. Partial payloads merge with existing preferences. Sending `{"solver_config": {}}` removes saved solver overrides.
 
@@ -38,12 +38,14 @@ Preferences are stored in `user/preferences.json` so they survive the launcher's
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/solver-history` | Return newest-first summary metadata and the effective retention limit. |
-| `GET` | `/solver-history/{entry_id}` | Return one complete canonical Solver snapshot. |
-| `DELETE` | `/solver-history` | Delete every saved Solver snapshot. |
+| `GET` | `/solver-history` | Return pinned-first summary metadata and the effective unpinned retention limit. |
+| `GET` | `/solver-history/{entry_id}` | Return one complete canonical Solver snapshot including `pinned`. |
+| `PUT` | `/solver-history/{entry_id}` | Atomically set `{ "pinned": true|false }`; unknown IDs return `404`. |
+| `DELETE` | `/solver-history` | Delete every unpinned Solver snapshot while retaining pins. |
 
 Successful `/solve` requests append history automatically. History persistence
 failures are logged and do not replace a valid Solver response with an error.
+New entries start unpinned. Pins do not consume the configured history limit.
 
 ## Fertilizers
 

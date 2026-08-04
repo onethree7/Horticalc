@@ -89,6 +89,8 @@ export const solve = (payload, message) => postJson("/solve", payload, message);
 export const fetchSolverHistory = (message) => getJson("/solver-history", message);
 export const fetchSolverHistoryEntry = (entryId, message) =>
   getJson(`/solver-history/${encodeURIComponent(entryId)}`, message);
+export const setSolverHistoryPinned = (entryId, pinned, message) =>
+  putJson(`/solver-history/${encodeURIComponent(entryId)}`, { pinned }, message);
 export const clearSolverHistory = (message) => deleteJson("/solver-history", message);
 
 export async function fetchFertilizerCompKeys(message) {

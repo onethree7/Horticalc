@@ -34,16 +34,19 @@ routes reject negatives, `NaN`, and infinity.
 
 `src/horticalc/solver_history.py` owns `user/solver_history.jsonl`. Each line
 is a schema-versioned object containing a UUID, UTC timestamp, canonical Solver
-setup, unchanged `SolveResult` mapping, fertilizer solid/liquid kinds, and the
+setup, unchanged `SolveResult` mapping, fertilizer solid/liquid kinds, optional
+Boolean `pinned` metadata, and the
 EC/NPK/element projection needed by the printable UI output. The setup embeds
 the actual water values and osmosis share rather than depending on a mutable
 water-profile filename.
 
-Entries are stored oldest first and returned newest first. The effective
-retention default is `1000`, bounded to `0..10000`; reducing it removes oldest
-entries immediately and `0` removes the file. Writes are serialized and
-atomic. Malformed lines are logged and skipped so valid history remains
-readable.
+Entries are stored oldest first. Summaries return pinned entries first and
+newest first within the pinned and unpinned groups. Existing entries without
+`pinned` are unpinned. The effective retention default is `1000`, bounded to
+`0..10000`, and applies only to unpinned entries. Reducing it removes the oldest
+unpinned entries immediately; `0` retains only pins and disables new normal
+entries. The clear operation also retains pins. Writes are serialized and
+atomic. Malformed lines are logged and skipped so valid history remains readable.
 
 ## Fertilizers CSV
 

@@ -42,7 +42,9 @@ The workflow menu has four user-facing areas:
 - **Solver**: enter targets, select allowed fertilizers, and solve for doses.
 
 The collapsible **Solver history** Sidebar card is not a fifth workflow. It
-shows compact newest-first rows in its own scroll area. Hover or keyboard focus
+shows pinned rows first and then compact newest-first rows in its own scroll area. A
+separate star button pins a run without opening its detail; pinned runs are
+excluded from retention and survive the normal clear action. Hover or keyboard focus
 opens a short, non-scrollable and non-interactive preview without an additional
 native tooltip; click opens the full scrollable dialog on desktop and touch
 layouts. Detail records load lazily and are cached in the current page.
@@ -50,6 +52,11 @@ Copy and preview use the same formatter as current Solver clipboard output.
 Restoring preflights fertilizer names, then replaces liters, embedded water,
 osmosis, targets, allowed fertilizers, fixed doses, urea mode, and Solver
 configuration. It clears the current result and does not run the Solver.
+
+Recipe and Solver-target selectors share a small favorite button. Favorites
+are stored independently for both profile kinds, prefixed with a star in the
+native select, and sorted ahead of otherwise unchanged list order. Favoriting
+does not modify the underlying recipe or target YAML.
 
 The Solver model selector is visible above the workbench rather than hidden in
 the advanced section. `NNLS + tuning (standard)` is the production default
@@ -100,7 +107,7 @@ names from silently colliding after filename sanitization. Source:
 
 ## Preferences, Language, Themes, Units
 
-The `Configuration` card in `frontend/index.html` contains the global batch volume input, volume unit selector, solid dose unit selector, liquid dose unit selector, theme selector, language selector, Solver-history limit, and confirmed clear action. The history limit is `0..10000`, defaults to `1000`, and `0` disables and removes history after confirmation. Theme options are defined in `api/app.py` (`THEME_OPTIONS`) and styled through semantic tokens in `frontend/styles/themes.css`. In addition to the original themes, the selector offers Solarized Light, Dracula, Gruvbox Dark, Catppuccin Mocha, Monokai Classic, Windows 95, Commodore 64, Nord / Arctic Workstation, and Amber CRT. The retro skins also alter shared typography, corner, depth, and screen-effect tokens; they do not own component selectors. C64 omits scanlines for legibility, while Amber CRT keeps a deliberately faint scanline layer. Nord uses the Polar Night, Snow Storm, Frost, and Aurora color families without glow effects. Disabled controls, hints, and inactive Solver rows use theme-aware contrast tokens. Locale options are `de`, `en`, `nl`, `es`, `zh` (`LOCALE_OPTIONS` in `api/app.py`).
+The `Configuration` card in `frontend/index.html` contains the global batch volume input, volume unit selector, solid dose unit selector, liquid dose unit selector, theme selector, language selector, Solver-history limit, and confirmed clear action. The history limit is `0..10000`, defaults to `1000`, counts only unpinned runs, and `0` disables normal logging while retaining pins. The clear action likewise removes only unpinned runs. Theme options are defined in `api/app.py` (`THEME_OPTIONS`) and styled through semantic tokens in `frontend/styles/themes.css`. In addition to the original themes, the selector offers Solarized Light, Dracula, Gruvbox Dark, Catppuccin Mocha, Monokai Classic, Windows 95, Commodore 64, Nord / Arctic Workstation, and Amber CRT. The retro skins also alter shared typography, corner, depth, and screen-effect tokens; they do not own component selectors. C64 omits scanlines for legibility, while Amber CRT keeps a deliberately faint scanline layer. Nord uses the Polar Night, Snow Storm, Frost, and Aurora color families without glow effects. Disabled controls, hints, and inactive Solver rows use theme-aware contrast tokens. Locale options are `de`, `en`, `nl`, `es`, `zh` (`LOCALE_OPTIONS` in `api/app.py`).
 
 `frontend/app/api.js` fetches unit definitions from `/schema/units`. `frontend/app/units.js` keeps working values in canonical liters and g-for-solids/mL-for-liquids. `frontend/app/settings.js` applies the selected theme to `document.body.dataset.theme`. The selected language is stored in `localStorage` and `user/preferences.json` so it overrides browser detection on later loads. Data contracts such as API route names, JSON keys, CSV fields, element symbols, solver config keys, and units remain literal and are not translated.
 
@@ -115,7 +122,7 @@ The UI stores small workflow state in `localStorage`:
 - solver auto-apply preference,
 - selected frontend language.
 
-`user/preferences.json` stores theme, default batch liters, volume and dose display units, solver defaults, Solver-history retention, and last directly loaded water profile. Full Solver history lives in portable `user/solver_history.jsonl`, not `localStorage`. Solver config is not restored from saved solution snapshots.
+`user/preferences.json` stores theme, default batch liters, volume and dose display units, solver defaults, Solver-history retention, recipe and target-profile favorites, and last directly loaded water profile. Full Solver history and its pin metadata live in portable `user/solver_history.jsonl`, not `localStorage`. Solver config is not restored from saved solution snapshots.
 
 ## API Calls From The Frontend
 

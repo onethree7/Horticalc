@@ -62,7 +62,10 @@ AppRoot/
 
 Solver history is independent of browser storage. The API reads compact
 summaries at startup and full entries on demand; the frontend formats stored
-canonical values using the currently selected locale and display units.
+canonical values using the currently selected locale and display units. Pin
+metadata stays with each JSONL entry so retention and clearing remain atomic.
+Recipe and target-profile favorite filenames use `user/preferences.json` and
+never modify layered shipped YAML resources.
 
 The launcher lock records the backend owner's PID. Each Chromium app window gets a session file under `user/launcher_sessions/`. The backend owner waits until all live sessions end, plus a short grace period, before stopping. Concurrent launchers wait for the winning owner's health endpoint. System-browser fallback keeps the server running until the launcher is stopped because tab closure cannot be observed reliably. Stale browser profiles are removed after a seven-day grace period.
 

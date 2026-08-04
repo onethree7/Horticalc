@@ -166,6 +166,26 @@ def test_preferences_can_reset_solver_config_to_defaults(monkeypatch, tmp_path) 
     assert client.get("/preferences").json()["solver_config"] == {}
 
 
+def test_profile_favorites_persist_and_validate_filenames(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+    client = TestClient(api_app.app)
+
+    response = client.put(
+        "/preferences",
+        json={
+            "favorite_recipes": ["Feed_A.yml", "Feed_B.yml"],
+            "favorite_nutrient_solutions": ["Target_A.yml"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["favorite_recipes"] == ["Feed_A.yml", "Feed_B.yml"]
+    assert response.json()["favorite_nutrient_solutions"] == ["Target_A.yml"]
+    assert client.put("/preferences", json={"favorite_recipes": ["Feed_A.yml", "Feed_A.yml"]}).status_code == 400
+    assert client.put("/preferences", json={"favorite_recipes": ["../Feed_A.yml"]}).status_code == 400
+    assert client.put("/preferences", json={"favorite_recipes": ["Feed A.yml"]}).status_code == 400
+
+
 @pytest.mark.parametrize("content", ["{broken", "[]", '{"value": NaN}'])
 def test_invalid_preferences_are_logged_and_ignored(
     monkeypatch,

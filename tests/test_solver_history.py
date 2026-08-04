@@ -13,6 +13,7 @@ from horticalc.solver_history import (
     append_solver_history,
     clear_solver_history,
     load_solver_history,
+    set_solver_history_pinned,
     solver_history_entry,
     solver_history_summaries,
     trim_solver_history,
@@ -63,6 +64,38 @@ def test_history_skips_corrupt_lines_and_trims_to_zero(tmp_path: Path, caplog) -
     assert not history_path.exists()
 
 
+def test_pinned_history_is_sorted_first_and_excluded_from_retention(tmp_path: Path) -> None:
+    history_path = tmp_path / "solver_history.jsonl"
+    append_solver_history(history_path, _entry("first", "2026-01-01T00:00:00+00:00"), 2)
+    append_solver_history(history_path, _entry("second", "2026-01-02T00:00:00+00:00"), 2)
+    assert set_solver_history_pinned(history_path, "first", True, 2)
+
+    append_solver_history(history_path, _entry("third", "2026-01-03T00:00:00+00:00"), 2)
+
+    assert [entry["id"] for entry in load_solver_history(history_path)] == ["first", "second", "third"]
+    summaries = solver_history_summaries(history_path)
+    assert [entry["id"] for entry in summaries] == ["first", "third", "second"]
+    assert summaries[0]["pinned"] is True
+    assert all(entry["pinned"] is False for entry in summaries[1:])
+
+    assert trim_solver_history(history_path, 1) == 2
+    assert [entry["id"] for entry in load_solver_history(history_path)] == ["first", "third"]
+    assert clear_solver_history(history_path) == 1
+    assert [entry["id"] for entry in load_solver_history(history_path)] == ["first"]
+    assert trim_solver_history(history_path, 0) == 1
+    append_solver_history(history_path, _entry("ignored", "2026-01-04T00:00:00+00:00"), 0)
+    assert [entry["id"] for entry in load_solver_history(history_path)] == ["first"]
+    assert set_solver_history_pinned(history_path, "first", False, 0)
+    assert not history_path.exists()
+
+
+def test_setting_pin_rejects_unknown_history_entry(tmp_path: Path) -> None:
+    history_path = tmp_path / "solver_history.jsonl"
+    append_solver_history(history_path, _entry("known", "2026-01-01T00:00:00+00:00"), 2)
+
+    assert not set_solver_history_pinned(history_path, "missing", True, 2)
+
+
 def test_solver_history_api_records_success_and_exposes_routes(monkeypatch, tmp_path: Path) -> None:
     api_app._ensure_initialized()
     layout = api_app._portable_layout()
@@ -89,6 +122,7 @@ def test_solver_history_api_records_success_and_exposes_routes(monkeypatch, tmp_
     assert listing.status_code == 200
     assert listing.json()["limit"] == 1000
     assert len(listing.json()["entries"]) == 1
+    assert listing.json()["entries"][0]["pinned"] is False
 
     entry_id = listing.json()["entries"][0]["id"]
     detail = client.get(f"/solver-history/{entry_id}")
@@ -96,9 +130,30 @@ def test_solver_history_api_records_success_and_exposes_routes(monkeypatch, tmp_
     assert detail.json()["setup"]["water_profile"]["mg_per_l"] == {"Ca": 5.0}
     assert detail.json()["result"] == successful.json()
     assert detail.json()["calculation"]["ec"]
+    assert detail.json()["pinned"] is False
 
     assert client.delete("/solver-history").status_code == 200
     assert client.get("/solver-history").json()["entries"] == []
+
+
+def test_solver_history_api_pins_and_preserves_entry_on_clear(monkeypatch, tmp_path: Path) -> None:
+    api_app._ensure_initialized()
+    layout = api_app._portable_layout()
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+    monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", replace(layout, root=tmp_path, user=tmp_path / "user"))
+    history_path = api_app._solver_history_path()
+    append_solver_history(history_path, _entry("keep", "2026-01-01T00:00:00+00:00"), 1000)
+    append_solver_history(history_path, _entry("remove", "2026-01-02T00:00:00+00:00"), 1000)
+    client = TestClient(api_app.app)
+
+    pinned = client.put("/solver-history/keep", json={"pinned": True})
+
+    assert pinned.status_code == 200
+    assert pinned.json() == {"status": "ok", "pinned": True}
+    assert client.put("/solver-history/missing", json={"pinned": True}).status_code == 404
+    assert client.get("/solver-history/keep").json()["pinned"] is True
+    assert client.delete("/solver-history").status_code == 200
+    assert [entry["id"] for entry in client.get("/solver-history").json()["entries"]] == ["keep"]
 
 
 def test_history_limit_preference_trims_immediately(monkeypatch, tmp_path: Path) -> None:

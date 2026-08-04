@@ -52,6 +52,10 @@ Source: `src/horticalc/launcher.py`.
 - Successful API Solver runs are stored as versioned canonical snapshots in
   `user/solver_history.jsonl`; the default retention is `1000` and recording
   errors never invalidate a successful solve.
+- Recipe and target-profile favorites are filename lists in
+  `user/preferences.json`; they only affect profile ordering. Solver-history
+  stars are stored on JSONL entries because pins survive trimming, limit `0`,
+  and normal clearing. The retention limit counts only unpinned runs.
 
 Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`, `src/horticalc/solver_history.py`.
 
@@ -62,7 +66,7 @@ Source: `src/horticalc/paths.py`, `src/horticalc/data_io.py`, `src/horticalc/sol
 - The frontend is a static Vanilla JS app with one native ES-module entrypoint, controller-owned feature state, and no production bundler.
 - Batch volume is canonical liters in the core, API, CLI, and recipe files; the GUI can display L, US gal, Imp gal, or m³.
 - The fertilizer dose contract remains `grams`: grams for solids, mL for liquids, with `weight_factor` as liquid density.
-- `user/preferences.json` stores theme, default batch liters, volume and dose display units, UI-visible solver defaults, Solver-history retention, and the last directly loaded water profile.
+- `user/preferences.json` stores theme, default batch liters, volume and dose display units, UI-visible solver defaults, Solver-history retention, recipe and target-profile favorites, and the last directly loaded water profile.
 - Solver history is a collapsible Sidebar utility rather than a fifth workflow.
   Historical output follows current locale and display units; restoration
   loads inputs and deliberately requires a new solve.

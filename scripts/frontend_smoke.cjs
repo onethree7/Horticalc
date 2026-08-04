@@ -103,8 +103,19 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
     if (request.method() === "DELETE") {
-      smokeHistory.length = 0;
+      smokeHistory.splice(0, smokeHistory.length, ...smokeHistory.filter((entry) => entry.pinned));
       await route.fulfill({ status: 200, contentType: "application/json", body: '{"status":"ok"}' });
+      return;
+    }
+    if (request.method() === "PUT") {
+      const entryId = decodeURIComponent(pathname.split("/").pop());
+      const entry = smokeHistory.find(({ id }) => id === entryId);
+      if (entry) entry.pinned = Boolean(request.postDataJSON().pinned);
+      await route.fulfill({
+        status: entry ? 200 : 404,
+        contentType: "application/json",
+        body: JSON.stringify(entry ? { status: "ok", pinned: entry.pinned } : { detail: "not found" }),
+      });
       return;
     }
     if (pathname === "/solver-history") {
@@ -113,9 +124,10 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
         contentType: "application/json",
         body: JSON.stringify({
           limit: 1000,
-          entries: smokeHistory.map((entry) => ({
+          entries: [...smokeHistory].sort((left, right) => Number(right.pinned) - Number(left.pinned)).map((entry) => ({
             id: entry.id,
             created_at: entry.created_at,
+            pinned: Boolean(entry.pinned),
             liters: entry.result.liters,
             solver_model: entry.result.solver_model,
             targets_mg_per_l: {
@@ -150,6 +162,13 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
     }
     await page.locator("#calculatorMode:not(.is-hidden)").waitFor();
     await assertNoPageOverflow(page, "desktop calculator");
+
+    const profileFavorite = page.locator("#favoriteProfile");
+    await page.locator("#favoriteProfile:disabled").waitFor();
+    await page.locator("#profileSelect").selectOption({ index: 1 });
+    await profileFavorite.click();
+    await page.locator("#favoriteProfile[aria-pressed='true']").waitFor();
+    await profileFavorite.click();
 
     await page.locator("#calculateBtn").click();
     await page.locator("#copyCalculatorResults:not([disabled])").waitFor();
@@ -196,7 +215,11 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
     await page.locator("[data-shell-view='solver']").focus();
     await page.keyboard.press("Enter");
     await page.locator("#solverMode:not(.is-hidden)").waitFor();
+    await page.locator("#favoriteProfile:disabled").waitFor();
     await page.locator("#profileSelect").selectOption({ index: 1 });
+    await profileFavorite.click();
+    await page.locator("#favoriteProfile[aria-pressed='true']").waitFor();
+    await profileFavorite.click();
     await page.locator("#loadProfile").click();
     await page.locator("#solverAllowedFromRecipe").click();
 
@@ -348,6 +371,7 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
         result: responsePayload,
         fertilizer_kinds: Object.fromEntries(responsePayload.fertilizers.map(({ name }) => [name, "solid"])),
         calculation: {},
+        pinned: false,
       });
       if (requestNumber === 1) await new Promise((resolve) => setTimeout(resolve, 500));
       await route.fulfill({ response, json: responsePayload });
@@ -371,6 +395,9 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
     await page.locator("#calculatorMode:not(.is-hidden)").waitFor();
     await page.locator("[data-shell-view='solver']").click();
     await page.locator("#solverMode:not(.is-hidden)").waitFor();
+    const firstHistoryRow = page.locator("#solverHistoryList .rail-history-row").first();
+    await firstHistoryRow.locator(".rail-history-pin").click();
+    await firstHistoryRow.locator(".rail-history-pin[aria-pressed='true']").waitFor();
     const historyEntry = page.locator("#solverHistoryList .rail-history-entry").first();
     await historyEntry.waitFor();
     await assertHistoryPreviewLayout(page, historyEntry);
@@ -389,6 +416,13 @@ async function waitForSmokeCondition(page, predicate, errorMessage) {
     if (!(await page.locator("#copySolverResults").isDisabled())) {
       throw new Error("Restoring solver history unexpectedly retained a solved result");
     }
+    dialogs.length = 0;
+    acceptNextDialog = true;
+  await page.locator(".rail-settings").evaluate((element) => { element.open = true; });
+  await page.locator("#clearSolverHistory").click();
+  await page.locator("#solverHistoryCount", { hasText: /^1$/ }).waitFor();
+  await page.locator("#solverHistoryList .rail-history-pin[aria-pressed='true']").waitFor();
+    dialogs.length = 0;
     await page.locator("[data-shell-view='fertilizers']").click();
     await page.waitForTimeout(250);
     if (errors.length) throw new Error(`Browser errors:\n${errors.join("\n")}`);

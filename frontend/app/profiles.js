@@ -1,10 +1,18 @@
 import { qs } from "./dom.js";
 import { createLatestRequestGate } from "../request_gate.js";
 
+export function sortFavoriteProfiles(profiles = [], favorites = []) {
+  const favoriteSet = new Set(favorites);
+  return [...profiles].sort((left, right) =>
+    Number(favoriteSet.has(right.filename)) - Number(favoriteSet.has(left.filename))
+  );
+}
+
 export function createProfilesController({ api, i18n, notifications, actions }) {
   const sectionTitle = qs("#profileSectionTitle");
   const sectionHint = qs("#profileSectionHint");
   const select = qs("#profileSelect");
+  const favoriteButton = qs("#favoriteProfile");
   const loadButton = qs("#loadProfile");
   const resetButton = qs("#resetProfile");
   const nameInput = qs("#profileName");
@@ -19,8 +27,25 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
   let mode = "calculator";
   let recipes = [];
   let nutrientSolutions = [];
+  let favoriteRecipes = new Set();
+  let favoriteNutrientSolutions = new Set();
   let mounted = false;
   const t = (key, params) => i18n.t(key, params);
+
+  function activeFavorites() {
+    return mode === "solver" ? favoriteNutrientSolutions : favoriteRecipes;
+  }
+
+  function refreshFavoriteButton() {
+    const selected = select.value;
+    const favorite = Boolean(selected) && activeFavorites().has(selected);
+    const label = t(favorite ? "profile.removeFavorite" : "profile.addFavorite");
+    favoriteButton.disabled = !selected;
+    favoriteButton.textContent = favorite ? "★" : "☆";
+    favoriteButton.setAttribute("aria-pressed", String(favorite));
+    favoriteButton.setAttribute("aria-label", label);
+    favoriteButton.title = label;
+  }
 
   function refreshSetupWarning() {
     const activeCount = actions.getActiveFixedAmountCount();
@@ -38,15 +63,33 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
 
   function renderOptions() {
     const profiles = mode === "solver" ? nutrientSolutions : recipes;
+    const favorites = activeFavorites();
+    const selected = select.value;
     const empty = document.createElement("option");
     empty.value = "";
     empty.textContent = t("common.selectEmpty");
-    select.replaceChildren(empty, ...profiles.map((profile) => {
+    select.replaceChildren(empty, ...sortFavoriteProfiles(profiles, favorites).map((profile) => {
       const option = document.createElement("option");
       option.value = profile.filename;
-      option.textContent = profile.name || profile.filename;
+      const label = profile.name || profile.filename;
+      option.textContent = favorites.has(profile.filename) ? `★ ${label}` : label;
       return option;
     }));
+    select.value = selected;
+    refreshFavoriteButton();
+  }
+
+  async function toggleFavorite() {
+    const filename = select.value;
+    if (!filename) return;
+    const favorites = activeFavorites();
+    if (favorites.has(filename)) favorites.delete(filename);
+    else favorites.add(filename);
+    const preferenceKey = mode === "solver" ? "favorite_nutrient_solutions" : "favorite_recipes";
+    renderOptions();
+    select.value = filename;
+    refreshFavoriteButton();
+    await api.persistPreferences({ [preferenceKey]: [...favorites] });
   }
 
   function setMode(nextMode) {
@@ -189,6 +232,8 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
     loadButton.addEventListener("click", loadSelected);
     resetButton.addEventListener("click", reset);
     saveButton.addEventListener("click", save);
+    select.addEventListener("change", refreshFavoriteButton);
+    favoriteButton.addEventListener("click", toggleFavorite);
     saveSolverSetupInput.addEventListener("change", refreshSetupWarning);
     saveSolverAsRecipeButton.addEventListener("click", saveSolverRecipe);
     applySolverButton.addEventListener("click", () => actions.applySolverResult({ switchToCalculator: true }));
@@ -203,6 +248,15 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
     setProfiles({ recipeProfiles = [], solutions = [] } = {}) {
       recipes = recipeProfiles;
       nutrientSolutions = solutions;
+      renderOptions();
+    },
+    setFavorites(preferences = {}) {
+      favoriteRecipes = new Set(Array.isArray(preferences.favorite_recipes) ? preferences.favorite_recipes : []);
+      favoriteNutrientSolutions = new Set(
+        Array.isArray(preferences.favorite_nutrient_solutions)
+          ? preferences.favorite_nutrient_solutions
+          : []
+      );
       renderOptions();
     },
   };

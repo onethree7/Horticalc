@@ -160,18 +160,45 @@ export function createHistoryController({ api, i18n, notifications, units, onRes
   function renderEntries() {
     const locale = i18n.getLocale();
     list.replaceChildren(...entries.map((entry) => {
+      const row = document.createElement("div");
+      row.className = "rail-history-row";
+      row.setAttribute("role", "listitem");
+
+      const pinButton = document.createElement("button");
+      pinButton.type = "button";
+      pinButton.className = "rail-history-pin";
+      pinButton.textContent = entry.pinned ? "★" : "☆";
+      pinButton.setAttribute("aria-pressed", String(Boolean(entry.pinned)));
+      const pinLabel = t(entry.pinned ? "history.unpin" : "history.pin");
+      pinButton.setAttribute("aria-label", pinLabel);
+      pinButton.title = pinLabel;
+      pinButton.addEventListener("click", async () => {
+        pinButton.disabled = true;
+        try {
+          await api.setSolverHistoryPinned(
+            entry.id,
+            !entry.pinned,
+            t("errors.pinSolverHistory"),
+          );
+          await refresh();
+        } catch (error) {
+          pinButton.disabled = false;
+          notifications.reportError(error, t("errors.pinSolverHistory"));
+        }
+      });
+
       const button = document.createElement("button");
       button.type = "button";
       button.className = "rail-history-entry";
       button.dataset.historyId = entry.id;
-      button.setAttribute("role", "listitem");
       button.textContent = formatSolverHistorySummary(entry, { locale, units });
       button.addEventListener("pointerenter", () => showPreview(button, entry.id));
       button.addEventListener("pointerleave", () => hidePreview(entry.id));
       button.addEventListener("focus", () => showPreview(button, entry.id));
       button.addEventListener("blur", () => hidePreview(entry.id));
       button.addEventListener("click", () => openDetail(entry));
-      return button;
+      row.append(pinButton, button);
+      return row;
     }));
     count.textContent = String(entries.length);
     renderEmpty();

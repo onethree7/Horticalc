@@ -21,6 +21,9 @@ Load, edit, save, and mix water profiles with reverse-osmosis water. The osmosis
 
 ### Calculator
 
+The star beside the profile selector marks the current recipe as a favorite.
+Favorite recipes appear first without changing their stored YAML.
+
 1. Select a water profile or enter water values.
 2. Select fertilizers and doses.
 3. Click **Calculate**.
@@ -31,6 +34,11 @@ language setting changes interface text but not recipe keys, element symbols,
 CSV columns, or API fields.
 
 ### Solver
+
+The same star independently favorites Solver target profiles. In the Sidebar,
+the star on a Solver-history row pins that exact run above normal history and
+protects it from the history limit and the normal clear action. Unpin it to
+return it to ordinary retention.
 
 1. Load a target profile or enter target values.
 2. Select the fertilizers the solver may use.

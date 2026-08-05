@@ -26,6 +26,8 @@ Runtime user overrides:
 
 Water profiles, nutrient solutions, and recipes are read from shipped defaults with `user/` files layered on top by filename. Runtime edits are written only to `user/`; shipped files remain unchanged. Startup removes byte-identical copies and known untouched legacy nutrient-solution copies so existing installations migrate to the overlay model.
 
+The shipped calculator recipes are transparent reference calculations, not crop recommendations. `default.yml` is empty. Every non-default reference recipe uses `osmosis_percent: 100` and 1 g/L of each listed product, so its fertilizer-form concentrations follow directly from the declared catalog fractions. Solver and regression fixtures live outside `recipes/` and are never listed as user recipes.
+
 API list routes omit malformed or unreadable user YAML files and log a warning.
 Water and target mappings must contain finite, non-negative numbers; API save
 routes reject negatives, `NaN`, and infinity.
@@ -265,8 +267,7 @@ The current ion set in `src/horticalc/core.py` is `NH4+`, `K+`, `Ca2+`, `Mg2+`, 
 
 `solver_model` identifies the actual runtime path (`mass_nnls`, `hierarchical`,
 or `nnls_tuning`).
-`objective_elements` is the authoritative list of what
-the solver optimized. The solver matrix benchmark scores this list.
+`objective_elements` is the authoritative list of what the solver optimized.
 `target_priorities` contains the resolved directional tiers used by a
 hierarchical solve and is empty for the other models. `priority_stages`
 contains the retained maximum and total `mg/L` residual for each populated

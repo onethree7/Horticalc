@@ -15,8 +15,10 @@ directly inside the archive.
 
 Your data
 ---------
-Shipped defaults live in data/ and recipes/. Your edits and new profiles are
-stored as overrides in user/. Back up user/ to preserve your work.
+Shipped defaults live in data/ and recipes/. Shipped calculator recipes are
+zero-water reference calculations, not crop feed recommendations. Your edits
+and new profiles are stored as overrides in user/. Back up user/ to preserve
+your work.
 
 To reset Horticalc, close the app and rename user/ to user-backup/. The next
 launch creates a fresh user folder. Restoring user-backup/ restores your saved

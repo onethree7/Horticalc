@@ -301,6 +301,20 @@ def _build_matrix(
     return matrix
 
 
+def _build_n_total_overshoot_weights(
+    objective_keys: List[str],
+    scales: np.ndarray,
+    base_priority: np.ndarray,
+    governor_weight: float,
+) -> np.ndarray:
+    weights = np.zeros(len(objective_keys), dtype=float)
+    for idx, key in enumerate(objective_keys):
+        if key == "N_total":
+            scale = max(scales[idx], 1e-12)
+            weights[idx] = (base_priority[idx] / scale) * max(0.0, float(governor_weight))
+    return weights
+
+
 def _solve_weights(
     A: np.ndarray,
     b: np.ndarray,
@@ -341,11 +355,12 @@ def _solve_weights(
     )
     overshoot_only_weights = None
     if n_total_governor_enabled:
-        overshoot_only_weights = np.zeros(len(objective_keys), dtype=float)
-        for idx, key in enumerate(objective_keys):
-            if key == "N_total":
-                scale = max(scales[idx], 1e-12)
-                overshoot_only_weights[idx] = (base_priority[idx] / scale) * max(0.0, float(n_total_governor_weight))
+        overshoot_only_weights = _build_n_total_overshoot_weights(
+            objective_keys,
+            scales,
+            base_priority,
+            n_total_governor_weight,
+        )
     return _nnls_weighted_irls(
         A_var,
         b,

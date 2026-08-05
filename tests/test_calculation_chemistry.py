@@ -83,8 +83,11 @@ def test_nh4_is_cation_and_trace_elements_stay_out_of_ions() -> None:
 
     result = compute_solution(recipe, ferts, molar_masses, water_mg_l={})
 
-    assert "NH4+" in result.fertilizer_ions_meq_l
-    assert result.fertilizer_ions_meq_l["NH4+"] >= 0.0
+    expected_n_nh4_mg_l = 5.0 / 10.0 * 1000.0 * 0.029
+    expected_nh4_mmol_l = expected_n_nh4_mg_l / molar_masses["N"]
+    assert result.fertilizer_elements_mg_l["N_NH4"] == pytest.approx(expected_n_nh4_mg_l, abs=1e-12)
+    assert result.fertilizer_ions_mmol_l["NH4+"] == pytest.approx(expected_nh4_mmol_l, abs=1e-12)
+    assert result.fertilizer_ions_meq_l["NH4+"] == pytest.approx(expected_nh4_mmol_l, abs=1e-12)
     for trace_label in ("Fe", "Mn", "Cu", "Zn", "B", "Mo"):
         assert trace_label not in result.fertilizer_ions_meq_l
 
@@ -113,7 +116,7 @@ def test_phosphorus_is_represented_as_h2po4() -> None:
 def test_urea_as_nh4_rebalances_nitrogen_forms() -> None:
     ferts = load_fertilizers()
     molar_masses = load_molar_masses()
-    recipe = load_recipe(repo_root() / "recipes" / "urea_n_mix.yml")
+    recipe = load_recipe(repo_root() / "recipes" / "reference_agrolution_313_1g_per_l.yml")
     water_profile_name = recipe.get("water_profile", "default")
     water_profile = load_water_profile_data(repo_root() / "data" / "water_profiles" / f"{water_profile_name}.yml")
     water_mg_l = water_profile.get("mg_per_l", {})
@@ -127,11 +130,16 @@ def test_urea_as_nh4_rebalances_nitrogen_forms() -> None:
     elements_false = results[False].elements_mg_l
     elements_true = results[True].elements_mg_l
 
-    assert elements_false["N_total"] == pytest.approx(elements_true["N_total"], abs=1e-6)
-    assert elements_false["N_NO3"] == pytest.approx(elements_true["N_NO3"], abs=1e-6)
-    assert elements_true["N_NH4"] > elements_false["N_NH4"]
-    assert elements_false["N_UREA"] > elements_true["N_UREA"]
-    assert elements_true["N_UREA"] <= 1e-6
+    assert {key: elements_false[key] for key in ("N_total", "N_NO3", "N_NH4", "N_UREA")} == pytest.approx(
+        {"N_total": 140.0, "N_NO3": 117.0, "N_NH4": 0.0, "N_UREA": 23.0},
+        rel=0,
+        abs=1e-12,
+    )
+    assert {key: elements_true[key] for key in ("N_total", "N_NO3", "N_NH4", "N_UREA")} == pytest.approx(
+        {"N_total": 140.0, "N_NO3": 117.0, "N_NH4": 23.0, "N_UREA": 0.0},
+        rel=0,
+        abs=1e-12,
+    )
 
 
 def test_npk_metrics_include_element_mg_l_ion_ratios() -> None:

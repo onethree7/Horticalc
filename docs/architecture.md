@@ -75,5 +75,4 @@ The launcher lock records the backend owner's PID. Each Chromium app window gets
 - The API owns request validation and persistence.
 - The UI owns presentation, local browser state, and workflow navigation.
 - `frontend/app/main.js` is the UI composition root. Feature controllers depend only on injected transport/services and shared pure helpers; `frontend/app/api.js` has no DOM dependency.
-- The solver matrix is a research tool, not product runtime.
 - Packaged releases use PyInstaller onedir.

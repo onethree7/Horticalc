@@ -120,7 +120,7 @@ write and is not stored in YAML.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/recipes/default` | Load the user override or shipped default recipe. |
-| `GET` | `/recipes` | List layered shipped/user recipes except `default.yml` and `solve_*.yml`. |
+| `GET` | `/recipes` | List layered shipped/user recipes except the startup-only `default.yml`. |
 | `GET` | `/recipes/{recipe_name}` | Load a recipe. |
 | `POST`/`PUT` | `/recipes` | Save a recipe. |
 

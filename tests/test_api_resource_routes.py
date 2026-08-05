@@ -29,7 +29,7 @@ def test_portable_layout_resource_routes(api_client: TestClient) -> None:
         "nutrient solutions": api_client.get("/nutrient-solutions"),
         "nutrient solution": api_client.get("/nutrient-solutions/Cooper_NFT_1979"),
         "default recipe": api_client.get("/recipes/default"),
-        "recipe": api_client.get("/recipes/golden"),
+        "recipe": api_client.get("/recipes/reference_calcinit_1g_per_l"),
     }
 
     assert {name: response.status_code for name, response in responses.items()} == dict.fromkeys(responses, 200)

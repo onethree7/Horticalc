@@ -77,7 +77,7 @@ Switching a display unit changes the shown number without changing the physical 
 ## Persistence Notes
 
 - Saved fertilizers, water profiles, nutrient-solution targets, and recipes are written to `user/`.
-- Shipped defaults in `data/` and `recipes/` are layered underneath user overrides.
+- Shipped defaults in `data/` and `recipes/` are layered underneath user overrides. The shipped calculator recipes are zero-water 1 g/L reference calculations rather than crop feed recommendations; the startup default contains no fertilizer.
 - Back up `user/` to preserve profiles and settings.
 
 For command-line workflows, see [cli_reference.md](cli_reference.md) and [commands.md](commands.md).

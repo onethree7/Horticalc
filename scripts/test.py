@@ -11,7 +11,6 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VENV_PYTHON = REPO_ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-SUITES = ("product", "research", "all")
 
 
 def run(command: list[str]) -> None:
@@ -20,7 +19,6 @@ def run(command: list[str]) -> None:
 
 def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--suite", choices=SUITES, default="product")
     parser.add_argument("--pytest-only", action="store_true")
     return parser.parse_known_args(argv)
 
@@ -67,35 +65,10 @@ def run_frontend_checks(npm: str) -> None:
     run([npm, "run", "test:unit"])
 
 
-def apply_suite_marker(pytest_args: list[str], suite: str) -> list[str]:
-    suite_expression = {"product": "not research", "research": "research", "all": None}[suite]
-    if suite_expression is None:
-        return pytest_args
-
-    remaining: list[str] = []
-    existing_expression: str | None = None
-    index = 0
-    while index < len(pytest_args):
-        argument = pytest_args[index]
-        if argument == "-m":
-            if index + 1 >= len(pytest_args):
-                raise ValueError("pytest -m requires an expression")
-            existing_expression = pytest_args[index + 1]
-            index += 2
-            continue
-        remaining.append(argument)
-        index += 1
-
-    marker_expression = suite_expression
-    if existing_expression:
-        marker_expression = f"({suite_expression}) and ({existing_expression})"
-    return [*remaining, "-m", marker_expression]
-
-
 def main(argv: list[str] | None = None) -> int:
     runner_args, pytest_args = parse_args(sys.argv[1:] if argv is None else argv)
     run_checks = not runner_args.pytest_only
-    run_frontend = run_checks and runner_args.suite in {"product", "all"}
+    run_frontend = run_checks
 
     ensure_python_dependencies(needs_ruff=run_checks)
     npm: str | None = None
@@ -111,11 +84,6 @@ def main(argv: list[str] | None = None) -> int:
         run_frontend_checks(npm)
 
     pytest_args = pytest_args or ["-q"]
-    try:
-        pytest_args = apply_suite_marker(pytest_args, runner_args.suite)
-    except ValueError as exc:
-        print(f"[Horticalc] {exc}")
-        return 2
     return subprocess.run(
         [str(VENV_PYTHON), "-m", "pytest", *pytest_args],
         cwd=REPO_ROOT,

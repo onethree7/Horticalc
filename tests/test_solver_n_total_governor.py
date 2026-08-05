@@ -1,19 +1,19 @@
-from pathlib import Path
+import numpy as np
+import pytest
 
 from horticalc.data_io import Fertilizer, load_molar_masses
-from horticalc.solver import solve_recipe, solve_recipe_data
+from horticalc.solver import _build_n_total_overshoot_weights, solve_recipe_data
 
 
-def test_n_total_governor_prioritizes_n_total_target() -> None:
-    recipe_path = Path(__file__).resolve().parents[1] / "recipes" / "solve_n_total_governor.yml"
-    result = solve_recipe(recipe_path)
+def test_n_total_governor_builds_the_exact_overshoot_weight_vector() -> None:
+    weights = _build_n_total_overshoot_weights(
+        ["N_total", "N_NO3"],
+        np.array([50.0, 100.0]),
+        np.array([1.0, 3.0]),
+        0.05,
+    )
 
-    targets = result.targets_mg_l
-    achieved = result.achieved_elements_mg_l
-
-    n_total_target = targets["N_total"]
-    assert achieved["N_total"] <= n_total_target * 1.1
-    assert achieved["N_total"] >= achieved["N_NO3"]
+    assert weights.tolist() == [0.001, 0.0]
 
 
 def test_objective_includes_n_total_with_forms() -> None:
@@ -153,8 +153,9 @@ def test_s_target_can_be_enabled_as_solver_objective() -> None:
     result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
 
     assert "S" in result.objective_elements
-    assert result.fertilizers[0]["name"] == "SO4-only"
-    assert result.fertilizers[0]["grams"] > 0
+    expected_grams = 10.0 / (1000.0 * molar_masses["S"] / molar_masses["SO4"])
+    assert result.fertilizers == [{"name": "SO4-only", "grams": pytest.approx(expected_grams, abs=1e-10)}]
+    assert result.achieved_elements_mg_l["S"] == pytest.approx(10.0, abs=1e-10)
 
 
 def test_so4_is_not_an_allowed_solver_target() -> None:

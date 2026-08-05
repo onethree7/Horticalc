@@ -38,4 +38,3 @@ One-page map of the documentation. If a doc is added or removed, update this pag
 ## Operations
 
 - [Release build](release_build.md)
-- [Solver matrix](solver_matrix.md)

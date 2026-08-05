@@ -737,7 +737,7 @@ def recipes() -> List[dict]:
     return _named_yaml_entries(
         (shipped_recipes_dir(layout.root), layout.recipes),
         load_recipe,
-        skip=lambda path: path.stem.startswith("solve_") or path.name == "default.yml",
+        skip=lambda path: path.name == "default.yml",
     )
 
 

@@ -83,7 +83,6 @@ Source: `api/app.py`, `frontend/`, `src/horticalc/data_io.py`.
   **NNLS + tuning (standard)**. `mass_nnls` and `hierarchical` are explicitly
   experimental. Obsolete model identifiers are migrated in stored files, not
   accepted as runtime aliases.
-  Experimental molar goal policies remain research-only.
 - Experimental `mass_nnls` minimizes unweighted squared elemental residuals in canonical
   `mg/L`, uses `N_total` when present, and includes a non-zero `S` target.
 - A fertilizer `SolverMaxDosePerL` of `0` prevents variable Solver dosing while
@@ -102,7 +101,6 @@ Source: `api/app.py`, `frontend/`, `src/horticalc/data_io.py`.
 - Report-only target keys: `Na`, `Cl`. In `nnls_tuning`, `S` is report-only unless
   `s_objective_enabled` is true; `mass_nnls` and `hierarchical` include every
   non-zero S target unless it is report-only.
-- Solver matrix scoring follows `result.objective_elements`.
 
 Source: `src/horticalc/solver_config.py`, `src/horticalc/solver.py`.
 

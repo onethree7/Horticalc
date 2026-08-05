@@ -177,6 +177,7 @@ async function exerciseProfileFavorite(page, button) {
     await page.locator("#favoriteProfile:disabled").waitFor();
     await page.locator("#profileSelect").selectOption({ index: 1 });
     await exerciseProfileFavorite(page, profileFavorite);
+    await page.locator("#loadProfile").click();
 
     await page.locator("#calculateBtn").click();
     await page.locator("#copyCalculatorResults:not([disabled])").waitFor();

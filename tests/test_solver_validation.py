@@ -1,7 +1,13 @@
 import pytest
 
 from horticalc.data_io import Fertilizer, load_molar_masses
-from horticalc.solver import SolveResult, _validate_solve_result, solve_recipe_data
+from horticalc.solver import (
+    SOLVER_OUTPUT_DOSE_EPSILON,
+    SolveResult,
+    _build_solution_payload,
+    _validate_solve_result,
+    solve_recipe_data,
+)
 
 
 def _solve_result(*, grams: float = 1.0, achieved: float = 100.0) -> SolveResult:
@@ -28,6 +34,29 @@ def test_shared_solver_result_validation_rejects_non_finite_values() -> None:
 def test_shared_solver_result_validation_rejects_negative_doses() -> None:
     with pytest.raises(ValueError, match=r"NNLS \+ tuning solver produced a negative fertilizer dose"):
         _validate_solve_result(_solve_result(grams=-0.1))
+
+
+def test_solver_output_omits_numerical_dose_residue() -> None:
+    fertilizers = [
+        Fertilizer("Below epsilon", False, 1.0, {}),
+        Fertilizer("At epsilon", False, 1.0, {}),
+        Fertilizer("Above epsilon", False, 1.0, {}),
+    ]
+
+    output, recipe = _build_solution_payload(
+        weights=[
+            SOLVER_OUTPUT_DOSE_EPSILON / 10.0,
+            SOLVER_OUTPUT_DOSE_EPSILON,
+            SOLVER_OUTPUT_DOSE_EPSILON * 10.0,
+        ],
+        allowed=fertilizers,
+        liters=10.0,
+        recipe={},
+    )
+
+    expected = [{"name": "Above epsilon", "grams": SOLVER_OUTPUT_DOSE_EPSILON * 10.0}]
+    assert output == expected
+    assert recipe["fertilizers"] == expected
 
 
 def test_solve_recipe_data_rejects_invalid_target_key() -> None:

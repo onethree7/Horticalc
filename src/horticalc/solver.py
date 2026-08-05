@@ -40,6 +40,7 @@ from .validation import non_negative_float, percentage_float, positive_float, un
 ALWAYS_IGNORED_TARGETS = {"NA", "CL"}
 S_TARGETS = {"S"}
 DEFAULT_SOLVER_CONFIG = dict(SOLVER_CONFIG_DEFAULTS)
+SOLVER_OUTPUT_DOSE_EPSILON = 1e-10
 
 
 @dataclass
@@ -574,7 +575,7 @@ def _build_solution_payload(
     ferts_out: list[dict[str, float | str]] = []
     for idx, fert in enumerate(allowed):
         grams = float(weights[idx])
-        if grams > 0:
+        if grams > SOLVER_OUTPUT_DOSE_EPSILON:
             ferts_out.append({"name": fert.name, "grams": grams})
     recipe_payload = {
         "liters": liters,

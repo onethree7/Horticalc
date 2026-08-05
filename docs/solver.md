@@ -48,7 +48,9 @@ hierarchical solve. `ignored_elements` is retained as a compatibility field
 and lists targets for which both directions are report-only. A solve is
 rejected when no objective remains. Before returning, every solver model uses
 the same result validation and rejects non-finite values or negative fertilizer
-doses.
+doses. Solver output omits doses at or below `1e-10` canonical dose units
+(`0.0000000001` g for solids or mL for liquids) before recomputing achieved
+concentrations, so floating-point residue is not displayed, applied, or saved.
 
 ## Nitrogen Modes
 

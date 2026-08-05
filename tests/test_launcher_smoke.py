@@ -289,26 +289,35 @@ def test_webview_storage_stays_in_portable_user_directory(tmp_path) -> None:
     assert webview_storage_path(tmp_path) == tmp_path / "user" / "webview"
 
 
-def test_focus_window_restores_shows_and_activates_native_window() -> None:
+def test_focus_window_restores_linux_window_through_pywebview() -> None:
     calls = []
-    native = types.SimpleNamespace(Activate=lambda: calls.append("activate"))
     window = types.SimpleNamespace(
-        native=native,
         restore=lambda: calls.append("restore"),
         show=lambda: calls.append("show"),
     )
 
-    assert focus_window(window) is True
-    assert calls[:2] == ["restore", "show"]
-    if launcher.os.name == "nt":
-        assert calls == ["restore", "show", "activate"]
+    assert focus_window(window, "linux") is True
+    assert calls == ["restore"]
 
 
-def test_focus_window_succeeds_when_os_rejects_explicit_focus() -> None:
-    native = types.SimpleNamespace(Activate=lambda: (_ for _ in ()).throw(RuntimeError("denied")))
-    window = types.SimpleNamespace(native=native, restore=lambda: None, show=lambda: None)
+def test_focus_window_restores_and_shows_windows_window_through_pywebview() -> None:
+    calls = []
+    window = types.SimpleNamespace(
+        restore=lambda: calls.append("restore"),
+        show=lambda: calls.append("show"),
+    )
 
-    assert focus_window(window) is True
+    assert focus_window(window, "win32") is True
+    assert calls == ["restore", "show"]
+
+
+def test_focus_window_reports_pywebview_activation_failure() -> None:
+    window = types.SimpleNamespace(
+        restore=lambda: (_ for _ in ()).throw(RuntimeError("failed")),
+        show=lambda: None,
+    )
+
+    assert focus_window(window, "linux") is False
 
 
 def test_run_webview_uses_native_window_without_js_bridge(tmp_path, monkeypatch) -> None:

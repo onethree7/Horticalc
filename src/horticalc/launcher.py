@@ -53,7 +53,6 @@ class RendererDependencyError(RuntimeError):
 
 class WebviewWindow(Protocol):
     events: Any
-    native: Any
 
     def restore(self) -> None: ...
 
@@ -274,26 +273,15 @@ def ensure_renderer_available(platform: str | None = None) -> None:
     raise RendererDependencyError(renderer_error_message(platform))
 
 
-def focus_window(window: WebviewWindow) -> bool:
+def focus_window(window: WebviewWindow, platform: str | None = None) -> bool:
+    platform = sys.platform if platform is None else platform
     try:
         window.restore()
-        window.show()
+        if platform == "win32":
+            window.show()
     except Exception:
         logging.getLogger("horticalc.launcher").exception("Failed to restore the Horticalc window.")
         return False
-
-    native = getattr(window, "native", None)
-    if native is not None:
-        try:
-            if os.name == "nt" and hasattr(native, "Activate"):
-                native.Activate()
-            elif hasattr(native, "present"):
-                native.present()
-        except Exception:
-            logging.getLogger("horticalc.launcher").warning(
-                "The window was restored, but the OS denied an explicit focus request.",
-                exc_info=True,
-            )
     return True
 
 

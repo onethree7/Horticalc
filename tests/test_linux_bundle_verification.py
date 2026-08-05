@@ -67,3 +67,17 @@ def test_gui_smoke_selects_window_owned_by_launcher_pid(monkeypatch) -> None:
         "--name",
         "^Horticalc GUI$",
     ]
+
+
+def test_gui_smoke_reads_active_window_id(monkeypatch) -> None:
+    observed = {}
+
+    def run(command, **kwargs):
+        observed["command"] = command
+        observed["kwargs"] = kwargs
+        return type("Result", (), {"stdout": "9876\n"})()
+
+    monkeypatch.setattr(smoke_linux_gui.subprocess, "run", run)
+
+    assert smoke_linux_gui.active_window_id() == "9876"
+    assert observed["command"] == ["xdotool", "getactivewindow"]

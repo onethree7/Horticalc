@@ -53,6 +53,17 @@ def visible_window_id(process_pid: int) -> str | None:
     return ids[0] if ids else None
 
 
+def active_window_id() -> str | None:
+    result = subprocess.run(
+        ["xdotool", "getactivewindow"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    window_id = result.stdout.strip()
+    return window_id or None
+
+
 def run_gui_smoke(executable: Path, app_root: Path) -> None:
     executable = executable.resolve()
     app_root = app_root.resolve()
@@ -82,6 +93,12 @@ def run_gui_smoke(executable: Path, app_root: Path) -> None:
                 45,
                 f'the visible "{WINDOW_TITLE}" window owned by PID {process.pid}',
             )
+            subprocess.run(["xdotool", "windowminimize", window_id], check=True)
+            wait_until(
+                lambda: visible_window_id(process.pid) is None,
+                10,
+                "the primary window to become minimized",
+            )
 
             second_launch = subprocess.run(
                 [str(executable)],
@@ -106,7 +123,12 @@ def run_gui_smoke(executable: Path, app_root: Path) -> None:
             window_id = wait_until(
                 lambda: visible_window_id(process.pid),
                 10,
-                "the primary window after second-instance activation",
+                "the primary window to be restored by second-instance activation",
+            )
+            wait_until(
+                lambda: active_window_id() == window_id,
+                10,
+                "the restored primary window to receive focus",
             )
 
             subprocess.run(["xdotool", "windowclose", window_id], check=True)

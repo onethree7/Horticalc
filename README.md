@@ -1,7 +1,7 @@
 # Horticalc
 
 Horticalc is a local, open-source horticultural fertilizer calculator. It
-combines fertilizer composition, water values, batch size, and optional
+combines fertilizer composition, water composition, batch size, and optional
 reverse-osmosis mixing to calculate the nutrient profile of a solution, and its
 solver can work backwards from nutrient targets to suggest fertilizer doses.
 

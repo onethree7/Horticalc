@@ -14,7 +14,7 @@ Horticalc has five runtime layers:
 
 | Concern | Source files | Notes |
 | --- | --- | --- |
-| Recipe calculation | `src/horticalc/core.py` | Converts fertilizer doses and water values into solution output. |
+| Recipe calculation | `src/horticalc/core.py` | Converts fertilizer doses and water composition into solution output. |
 | EC | `src/horticalc/ec.py` | Computes ion-based EC at 18 C and 25 C. |
 | NPK and ratios | `src/horticalc/metrics.py` | Formats NPK strings and summary ratios. |
 | Sluijsmann | `src/horticalc/sluijsmann.py` | CaO-equivalent alkalinity/acidity metric. |

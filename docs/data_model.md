@@ -39,7 +39,7 @@ is a schema-versioned object containing a UUID, UTC timestamp, canonical Solver
 setup, unchanged `SolveResult` mapping, fertilizer solid/liquid kinds, optional
 Boolean `pinned` metadata, and the
 EC/NPK/element projection needed by the printable UI output. The setup embeds
-the actual water values and osmosis share rather than depending on a mutable
+the actual water composition and RO-water proportion rather than depending on a mutable
 water-profile filename.
 
 Entries are stored oldest first. Summaries return pinned entries first and
@@ -130,7 +130,7 @@ mg_per_l:
 Osmosis behavior:
 
 - `osmosis_percent` must be within `0..100`; out-of-range and non-finite values are rejected.
-- Mixed water values are multiplied by `1 - osmosis_percent / 100`.
+- Mixed water concentrations are multiplied by `1 - osmosis_percent / 100`.
 - RO water is modelled as `0 mg/L` for every input.
 
 ## Recipes

@@ -37,7 +37,7 @@ The frontend is a static Vanilla JS app in `frontend/`. It is served by FastAPI 
 The workflow menu has four user-facing areas:
 
 - **Fertilizer editor**: inspect, search, and edit fertilizer products and composition.
-- **Water values**: load, edit, save, and mix water profiles with reverse-osmosis water.
+- **Water analysis**: load, edit, save, and mix water profiles with reverse-osmosis water.
 - **Calculator**: build recipes manually, calculate, and inspect results.
 - **Solver**: enter targets, select allowed fertilizers, and solve for doses.
 
@@ -50,7 +50,7 @@ native tooltip; click opens the full scrollable dialog on desktop and touch
 layouts. Detail records load lazily and are cached in the current page.
 Copy and preview use the same formatter as current Solver clipboard output.
 Restoring preflights fertilizer names, then replaces liters, embedded water,
-osmosis, targets, allowed fertilizers, fixed doses, urea mode, and Solver
+RO-water proportion, targets, allowed fertilizers, fixed doses, urea mode, and Solver
 configuration. It clears the current result and does not run the Solver.
 
 Recipe and Solver-target selectors share a small favorite button. Favorites
@@ -91,7 +91,7 @@ The workflow menu is the single owner of visible area navigation. The large edit
 
 Target profiles normally store only nutrient targets. In Solver mode,
 **Save Solver setup** additionally stores the batch volume, selected water
-profile and osmosis share, allowed fertilizers, fixed amounts, urea mode, and
+profile and RO-water proportion, allowed fertilizers, fixed amounts, urea mode, and
 Solver configuration. Loading such a profile preflights its referenced water
 and fertilizer names, then replaces the complete saved setup. A missing
 dependency leaves the current state unchanged and produces an explicit error.

@@ -15,16 +15,16 @@ Horticalc can be used through a local browser GUI or the command line. Both use 
 
 Inspect, search, and edit fertilizer products and composition values in one continuous table. The final **Solver max / L** column optionally limits the dose the Solver may choose; leave it empty for no limit. Changes are saved to `user/fertilizers_overrides.csv` and `user/fertilizers_disabled.txt`. Source: `src/horticalc/data_io.py`.
 
-### Water Values
+### Water Analysis
 
-Load, edit, save, and mix water profiles with reverse-osmosis water. The osmosis share is the percentage of the batch that is RO water (modelled as 0 mg/L). Source: `src/horticalc/core.py` and `frontend/app/water.js`.
+Load, edit, save, and mix water profiles with reverse-osmosis water. The RO-water proportion is the percentage of the batch that is RO water (modelled as 0 mg/L). Source: `src/horticalc/core.py` and `frontend/app/water.js`.
 
 ### Calculator
 
 The star beside the profile selector marks the current recipe as a favorite.
 Favorite recipes appear first without changing their stored YAML.
 
-1. Select a water profile or enter water values.
+1. Select a water profile or enter water composition.
 2. Select fertilizers and doses.
 3. Click **Calculate**.
 4. Inspect element totals, oxides, ions, ion balance, fertilizer-only and water-only contributions, EC, NPK metrics, and Sluijsmann.
@@ -47,7 +47,7 @@ return it to ordinary retention.
 5. Review target, achieved, and difference values. The `objective_elements` list shows what was actually optimized. Apply the result to the calculator or copy it.
 
 When saving the target profile, enable **Save Solver setup** to retain the
-batch volume, water profile and osmosis share, allowed fertilizers, fixed
+batch volume, water profile and RO-water proportion, allowed fertilizers, fixed
 amounts, urea mode, and Solver settings. Without this option, the profile keeps
 only its nutrient targets. Horticalc warns before active fixed amounts or an
 existing stored setup are omitted. **Save as fertilizer recipe** stores the

@@ -58,7 +58,7 @@
           </span>
           <div>
             <h1>Horticalc</h1>
-            <span data-i18n="app.tagline">Hydroponic Solution Calculator and powerful Nutrient Solver.</span>
+            <span data-i18n="app.tagline">Hydroponic nutrient-solution calculator and nutrient solver.</span>
           </div>
         </div>
         <section class="rail-card rail-api-card api-config" aria-label="System status" data-i18n-aria-label="aria.system" data-testid="rail-api-controls">
@@ -160,7 +160,7 @@
               </span>
               <span class="workflow-step-copy">
                 <span class="workflow-step-title" data-i18n="workflow.editor">Fertilizer editor</span>
-                <span class="workflow-step-hint" data-i18n="workflow.editorHint">Maintain database</span>
+                <span class="workflow-step-hint" data-i18n="workflow.editorHint">Manage fertilizer database</span>
               </span>
               <span class="workflow-step-arrow" aria-hidden="true">›</span>
             </button>
@@ -170,8 +170,8 @@
                 <span class="workflow-step-number">2</span>
               </span>
               <span class="workflow-step-copy">
-                <span class="workflow-step-title" data-i18n="workflow.water">Water values</span>
-                <span class="workflow-step-hint" data-i18n="workflow.waterHint">Profiles and osmosis</span>
+                <span class="workflow-step-title" data-i18n="workflow.water">Water analysis</span>
+                <span class="workflow-step-hint" data-i18n="workflow.waterHint">Profiles and RO water</span>
               </span>
               <span class="workflow-step-arrow" aria-hidden="true">›</span>
             </button>
@@ -202,7 +202,7 @@
             <summary data-i18n="workflow.shortGuide">Quick workflow</summary>
             <ol class="rail-guide-list">
               <li><strong data-i18n="workflow.guide.editor">Create or load your own fertilizers in the fertilizer editor.</strong></li>
-              <li><strong data-i18n="workflow.guide.water">Configure your water values.</strong></li>
+              <li><strong data-i18n="workflow.guide.water">Configure your water analysis.</strong></li>
               <li><strong data-i18n="workflow.guide.calculator">Build recipes manually in the calculator.</strong></li>
               <li><strong data-i18n="workflow.guide.solver">Or let the solver solve them for you.</strong></li>
             </ol>
@@ -300,10 +300,10 @@
       <section class="block water-section is-hidden" id="waterSection" data-panel-anchor="water" data-testid="water-view">
         <div class="section-heading">
           <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-water"></use></svg></span>
-          <h2 data-i18n="water.title">Water values</h2>
+          <h2 data-i18n="water.title">Water analysis</h2>
         </div>
         <div class="water-content">
-          <p class="hint" data-i18n="water.hint">Save/load profiles locally and account for the osmosis share.</p>
+          <p class="hint" data-i18n="water.hint">Save/load water profiles locally and account for the RO-water proportion.</p>
           <div class="water-controls">
             <div class="water-control-group">
               <label for="waterProfileSelect" data-i18n="common.profileSelect">Select profile</label>
@@ -322,7 +322,7 @@
             </div>
             <div class="water-control-group water-settings">
               <div>
-                <label for="osmosisPercent" data-i18n="water.osmosisPercent">Osmosis share (%)</label>
+                <label for="osmosisPercent" data-i18n="water.osmosisPercent">RO-water proportion (%)</label>
                 <input id="osmosisPercent" type="text" inputmode="decimal" value="0" />
               </div>
               <label class="toggle">
@@ -428,7 +428,7 @@
                   <div class="table-card-title summary-table-title">
                     <div class="segmented" id="summaryViewToggle" role="tablist" aria-label="Result view" data-i18n-aria-label="aria.resultView">
                       <button class="segmented-btn" type="button" role="tab" data-summary-view="water">
-                        <span data-i18n="water.summaryTab">Water values</span>
+                        <span data-i18n="water.summaryTab">Water analysis</span>
                       </button>
                       <button class="segmented-btn" type="button" role="tab" data-summary-view="oxide">
                         <span data-i18n="calculator.oxideForms">Oxide forms</span>
@@ -487,7 +487,7 @@
           <div class="block-heading">
             <div class="section-heading">
               <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-solver"></use></svg></span>
-              <h2 data-i18n="solver.title">Target profile calculator</h2>
+              <h2 data-i18n="solver.title">Nutrient-target solver</h2>
             </div>
             <button id="solveBtn" class="btn btn--solver-primary" type="button" data-i18n="solver.solve">Run solver</button>
           </div>

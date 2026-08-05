@@ -59,8 +59,8 @@ export function createWaterController({ api, i18n, notifications, onChange }) {
     ["Fe", "waterField.Fe", "Iron as Fe"], ["Mn", "waterField.Mn", "Manganese as Mn"],
     ["Cu", "waterField.Cu", "Copper as Cu"], ["Zn", "waterField.Zn", "Zinc as Zn"],
     ["B", "waterField.B", "Boron as B"], ["Mo", "waterField.Mo", "Molybdenum as Mo"],
-    ["Cl", "waterField.Cl", "Chloride as Cl"], ["HCO3", "waterField.HCO3", "Carbonate alkalinity as HCO3"],
-    ["CO3", "waterField.CO3", "Carbonate as CO3"], ["CaCO3", "waterField.CaCO3", "Total carbonate hardness as CaCO3"],
+    ["Cl", "waterField.Cl", "Chloride as Cl"], ["HCO3", "waterField.HCO3", "Bicarbonate (as HCO3)"],
+    ["CO3", "waterField.CO3", "Carbonate as CO3"], ["CaCO3", "waterField.CaCO3", "Carbonate hardness (as CaCO3)"],
     ["KH", "waterField.KH", "Carbonate hardness as °KH"], ["SiO2", "waterField.SiO2", "Silicon as SiO2"],
   ].map(([key, labelKey, label]) => ({ key, labelKey, label }));
   const waterValues = Object.fromEntries(waterFieldDefinitions.map(({ key }) => [key, 0]));

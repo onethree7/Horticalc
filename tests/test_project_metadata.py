@@ -95,6 +95,7 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert "verify_linux_bundle.py" in linux_build
     assert "verify_linux_bundle.py" in release_workflow
     assert "smoke_linux_gui.py" in release_workflow
+    assert "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1" in release_workflow
     for supported_linux in ("ubuntu:22.04", "ubuntu:24.04", "debian:13", "fedora:44"):
         assert supported_linux in release_workflow
     assert "sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1" in release_workflow

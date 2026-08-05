@@ -113,9 +113,11 @@ Matrix:
 The Linux compatibility jobs first confirm the distro-specific missing-runtime
 message without WebKitGTK, then install the documented package and find a
 visible `Horticalc GUI` window with `xdotool`. Closing that window must stop the
-process and server and remove the lock. `scripts/packaging/verify_linux_bundle.py`
-also rejects bundled GTK/GLib/ICU/C++ system libraries, GI system data, and
-Qt/CEF/Chromium renderers.
+process and server and remove the lock. Before closing it, the smoke test starts
+the packaged executable a second time and verifies that the original process,
+server, lock owner, and single window remain active.
+`scripts/packaging/verify_linux_bundle.py` also rejects bundled
+GTK/GLib/ICU/C++ system libraries, GI system data, and Qt/CEF/Chromium renderers.
 
 `scripts/check_release_version.py` rejects a tag that does not exactly match
 `v` plus `horticalc.__version__`. Manual workflow builds retain short-commit

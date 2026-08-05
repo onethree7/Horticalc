@@ -82,6 +82,33 @@ def run_gui_smoke(executable: Path, app_root: Path) -> None:
                 45,
                 f'the visible "{WINDOW_TITLE}" window owned by PID {process.pid}',
             )
+
+            second_launch = subprocess.run(
+                [str(executable)],
+                cwd=app_root,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=20,
+            )
+            if second_launch.returncode != 0:
+                raise RuntimeError(
+                    "Second launch failed instead of activating the existing window:\n"
+                    f"{second_launch.stdout}{second_launch.stderr}"
+                )
+            if process.poll() is not None:
+                raise RuntimeError("Primary Horticalc process exited during second-instance activation")
+            current_lock = json.loads(lock_path.read_text(encoding="utf-8"))
+            if current_lock.get("pid") != process.pid:
+                raise RuntimeError("Second launch replaced the primary launcher lock")
+            if not health_ok(port):
+                raise RuntimeError("Second launch disrupted the primary local API")
+            window_id = wait_until(
+                lambda: visible_window_id(process.pid),
+                10,
+                "the primary window after second-instance activation",
+            )
+
             subprocess.run(["xdotool", "windowclose", window_id], check=True)
             process.wait(timeout=20)
             if process.returncode != 0:

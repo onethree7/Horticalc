@@ -38,7 +38,10 @@ Source: `scripts/packaging/horticalc.spec`, `scripts/packaging/build_windows.ps1
 - Logs: rotating `AppRoot/logs/launcher.log` files.
 - Desktop host: pinned pywebview `6.2.1`, used only as a native window around the local FastAPI origin.
 - Windows renderer: WebView2 (`edgechromium`) only; no MSHTML or external-browser fallback.
-- Linux renderer: GTK/WebKitGTK only; no bundled Qt, CEF, or Chromium.
+- Linux renderer: GTK/WebKitGTK only; no bundled Qt, CEF, or Chromium. GTK 3,
+  WebKitGTK 4.1, GLib, ICU, libstdc++, GI typelibs, and their native dependency
+  closure come from the target system as one coherent stack; PyGObject remains
+  bundled with the Python application.
 - Single instance: the lock carries a random activation token; a second launch activates the existing window.
 - Headless CI mode: `HORTICALC_NO_GUI=1`.
 - Source Python range: `>=3.10,<3.14`; pywebview 6.2.1's pinned Linux GTK binding does not support Python 3.14.
@@ -109,9 +112,12 @@ Source: `src/horticalc/solver_config.py`, `src/horticalc/solver.py`.
 ## CI/Release
 
 - Release trigger: exact tag `v0.6.1` and manual workflow dispatch.
-- CI OSes: `ubuntu-22.04` and `windows-latest`.
+- Build CI OSes: `ubuntu-22.04` and `windows-latest`.
+- Packaged Linux GUI CI: Ubuntu 22.04/24.04, Debian 13, and Fedora 44 under
+  Xvfb/Openbox; Linux Mint 22.3 is a required manual VM gate.
 - Test CI Python: `3.10` and `3.13`; release CI Python: `3.11.9`.
 - Release permissions: `contents: write`.
-- Packaged binary smoke test uses `HORTICALC_NO_GUI=1`.
+- Packaged headless smoke uses `HORTICALC_NO_GUI=1`; packaged Linux GUI smoke
+  verifies window discovery, native close, server shutdown, and lock cleanup.
 
 Source: `.github/workflows/release.yml`.

@@ -261,10 +261,144 @@ jobs:
             ${{ env.CHECKSUM_PATH }}
           if-no-files-found: error
 
+  linux-compatibility:
+    name: Linux GUI (${{ matrix.name }})
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    container:
+      image: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu 22.04
+            container: ubuntu:22.04
+            family: apt
+            install_command: sudo apt update && sudo apt install -y gir1.2-webkit2-4.1
+          - name: Ubuntu 24.04
+            container: ubuntu:24.04
+            family: apt
+            install_command: sudo apt update && sudo apt install -y gir1.2-webkit2-4.1
+          - name: Debian 13
+            container: debian:13
+            family: apt
+            install_command: sudo apt update && sudo apt install -y gir1.2-webkit2-4.1
+          - name: Fedora 44
+            container: fedora:44
+            family: dnf
+            install_command: sudo dnf install -y webkit2gtk4.1
+
+    steps:
+      - name: Install test harness without WebKitGTK
+        shell: bash
+        run: |
+          if [[ "${{ matrix.family }}" == "apt" ]]; then
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install --yes \
+              dbus-x11 \
+              gir1.2-gtk-3.0 \
+              openbox \
+              python3 \
+              xdotool \
+              xvfb
+          else
+            dnf install --assumeyes \
+              dbus-x11 \
+              gobject-introspection \
+              gtk3 \
+              openbox \
+              python3 \
+              xdotool \
+              xorg-x11-server-Xvfb
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: horticalc-*-linux
+          path: downloaded-artifact
+          merge-multiple: true
+
+      - name: Extract Linux artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          archive="$(find downloaded-artifact -maxdepth 1 -name 'horticalc-*-linux.tar.gz' -print -quit)"
+          test -n "$archive"
+          tar -xzf "$archive" -C dist
+          python3 scripts/packaging/verify_linux_bundle.py dist/horticalc
+
+      - name: Verify missing-runtime guidance
+        shell: bash
+        env:
+          EXPECTED_COMMAND: ${{ matrix.install_command }}
+        run: |
+          set +e
+          timeout 45s dist/horticalc/horticalc > missing-webkit.log 2>&1
+          status=$?
+          set -e
+          cat missing-webkit.log
+          if [[ "$status" -eq 0 || "$status" -eq 124 ]]; then
+            echo "Expected an immediate missing-WebKitGTK failure, got status $status" >&2
+            exit 1
+          fi
+          grep --fixed-strings "$EXPECTED_COMMAND" missing-webkit.log
+          test ! -e dist/horticalc/user/horticalc.lock.json
+          rm -rf dist/horticalc/user dist/horticalc/logs
+
+      - name: Install documented WebKitGTK runtime
+        shell: bash
+        run: |
+          if [[ "${{ matrix.family }}" == "apt" ]]; then
+            apt-get install --yes gir1.2-webkit2-4.1
+          else
+            dnf install --assumeyes webkit2gtk4.1
+          fi
+
+      - name: Smoke test native Linux GUI lifecycle
+        shell: bash
+        run: |
+          export DISPLAY=:99
+          export XDG_RUNTIME_DIR=/tmp/horticalc-runtime
+          mkdir -p "$XDG_RUNTIME_DIR"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          Xvfb "$DISPLAY" -screen 0 1280x800x24 > /tmp/xvfb.log 2>&1 &
+          xvfb_pid=$!
+          trap 'kill "$xvfb_pid" 2>/dev/null || true' EXIT
+          sleep 2
+          dbus-run-session -- bash -c '
+            openbox > /tmp/openbox.log 2>&1 &
+            python3 scripts/packaging/smoke_linux_gui.py \
+              dist/horticalc/horticalc dist/horticalc
+          '
+          test ! -e dist/horticalc/user/horticalc.lock.json
+
+  publish-release:
+    name: Publish release assets
+    if: github.ref == 'refs/tags/v0.6.1'
+    needs:
+      - build
+      - linux-compatibility
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download verified artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: release-assets
+          merge-multiple: true
+
       - name: Upload release assets
-        if: github.ref == 'refs/tags/v0.6.1'
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           files: |
-            ${{ env.ARCHIVE_PATH }}
-            ${{ env.CHECKSUM_PATH }}
+            release-assets/*.tar.gz
+            release-assets/*.tar.gz.sha256
+            release-assets/*.zip
+            release-assets/*.zip.sha256

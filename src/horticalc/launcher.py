@@ -42,7 +42,13 @@ WINDOW_HEIGHT = 900
 WINDOW_MIN_SIZE = (960, 640)
 WEBVIEW_STORAGE_DIR = "webview"
 WEBVIEW2_DOWNLOAD_URL = "https://developer.microsoft.com/microsoft-edge/webview2/"
-LINUX_WEBVIEW_PACKAGES = "python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.1"
+LINUX_APT_WEBVIEW_COMMAND = "sudo apt update && sudo apt install -y gir1.2-webkit2-4.1"
+LINUX_DNF_WEBVIEW_COMMAND = "sudo dnf install -y webkit2gtk4.1"
+SOURCE_WEBVIEW_INSTALL_COMMAND = "python -m pip install -e ."
+
+
+class RendererDependencyError(RuntimeError):
+    """A known, actionable desktop-runtime dependency is unavailable."""
 
 
 class WebviewWindow(Protocol):
@@ -185,7 +191,39 @@ def selected_renderer(platform: str | None = None) -> str:
     raise RuntimeError("Horticalc Desktop supports Windows 10/11 and Linux only.")
 
 
-def renderer_error_message(platform: str | None = None) -> str:
+def linux_distribution_ids(os_release_path: Path | str = "/etc/os-release") -> set[str]:
+    """Return normalized ID and ID_LIKE values without executing os-release."""
+
+    try:
+        lines = Path(os_release_path).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return set()
+
+    values: set[str] = set()
+    for line in lines:
+        key, separator, raw_value = line.partition("=")
+        if not separator or key not in {"ID", "ID_LIKE"}:
+            continue
+        value = raw_value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+            value = value[1:-1]
+        values.update(item.casefold() for item in value.split() if item)
+    return values
+
+
+def linux_webview_install_command(distribution_ids: set[str] | None = None) -> str | None:
+    distribution_ids = linux_distribution_ids() if distribution_ids is None else distribution_ids
+    if distribution_ids & {"debian", "ubuntu", "linuxmint"}:
+        return LINUX_APT_WEBVIEW_COMMAND
+    if distribution_ids & {"fedora", "rhel", "centos"}:
+        return LINUX_DNF_WEBVIEW_COMMAND
+    return None
+
+
+def renderer_error_message(
+    platform: str | None = None,
+    distribution_ids: set[str] | None = None,
+) -> str:
     platform = sys.platform if platform is None else platform
     if platform == "win32":
         return (
@@ -193,27 +231,47 @@ def renderer_error_message(platform: str | None = None) -> str:
             f"{WEBVIEW2_DOWNLOAD_URL} and start Horticalc again."
         )
     if platform.startswith("linux"):
-        return (
-            "Horticalc requires GTK 3 and WebKitGTK 4.1. On Ubuntu install them with: "
-            f"sudo apt install {LINUX_WEBVIEW_PACKAGES}"
-        )
+        command = linux_webview_install_command(distribution_ids)
+        requirement = "Horticalc requires the system GTK 3 and WebKitGTK 4.1 runtime."
+        if command:
+            return f"{requirement} Install it with: {command}"
+        return f"{requirement} Install your distribution's WebKitGTK 4.1 package and start Horticalc again."
     return "Horticalc Desktop supports Windows 10/11 and Linux only."
+
+
+def gui_initialization_error_message(log_file: Path) -> str:
+    return f"Horticalc could not initialize its native desktop window. See {log_file} for technical details."
 
 
 def ensure_renderer_available(platform: str | None = None) -> None:
     platform = sys.platform if platform is None else platform
-    try:
-        if platform == "win32":
+    if platform == "win32":
+        try:
             winforms = importlib.import_module("webview.platforms.winforms")
             if getattr(winforms, "renderer", None) != "edgechromium":
-                raise RuntimeError(renderer_error_message(platform))
-            return
-        if platform.startswith("linux"):
-            importlib.import_module("webview.platforms.gtk")
-            return
-    except (ImportError, ValueError) as exc:
-        raise RuntimeError(renderer_error_message(platform)) from exc
-    raise RuntimeError(renderer_error_message(platform))
+                raise RendererDependencyError(renderer_error_message(platform))
+        except (ImportError, ValueError) as exc:
+            raise RendererDependencyError(renderer_error_message(platform)) from exc
+        return
+    if platform.startswith("linux"):
+        try:
+            gi = importlib.import_module("gi")
+        except ImportError as exc:
+            raise RendererDependencyError(
+                "Horticalc's Python desktop dependencies are missing. Install this source checkout with: "
+                f"{SOURCE_WEBVIEW_INSTALL_COMMAND}"
+            ) from exc
+        try:
+            gi.require_version("Gtk", "3.0")
+            gi.require_version("WebKit2", "4.1")
+        except ValueError as exc:
+            raise RendererDependencyError(renderer_error_message(platform)) from exc
+
+        # Import errors here can be ABI/loader failures rather than missing packages.
+        # Let the caller report a neutral initialization failure with the traceback in the log.
+        importlib.import_module("webview.platforms.gtk")
+        return
+    raise RendererDependencyError(renderer_error_message(platform))
 
 
 def focus_window(window: WebviewWindow) -> bool:
@@ -239,8 +297,19 @@ def focus_window(window: WebviewWindow) -> bool:
     return True
 
 
+def load_webview() -> Any:
+    try:
+        return importlib.import_module("webview")
+    except ModuleNotFoundError as exc:
+        if exc.name != "webview":
+            raise
+        raise RendererDependencyError(
+            f"pywebview is not installed. Install this source checkout with: {SOURCE_WEBVIEW_INSTALL_COMMAND}"
+        ) from exc
+
+
 def run_webview(url: str, storage_path: Path, server: uvicorn.Server) -> None:
-    import webview
+    webview = load_webview()
 
     ensure_renderer_available()
     webview.settings["ALLOW_DOWNLOADS"] = False
@@ -339,9 +408,12 @@ def main() -> None:
         logger.info("Opening native desktop window with %s.", selected_renderer())
         try:
             run_webview(url, storage_path, server)
+        except RendererDependencyError as exc:
+            logger.exception("The native desktop runtime is unavailable.")
+            fail_fast(str(exc), log_file)
         except Exception:
             logger.exception("Failed to initialize the native desktop window.")
-            fail_fast(renderer_error_message(), log_file)
+            fail_fast(gui_initialization_error_message(log_file), log_file)
         logger.info("Desktop window closed; stopping local server.")
     except KeyboardInterrupt:
         logger.info("Shutdown requested.")

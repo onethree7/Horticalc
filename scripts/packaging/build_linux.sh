@@ -49,3 +49,5 @@ if [[ ! -f "$app_root/LICENSE" ]]; then
   echo "Expected packaged license not found: $app_root/LICENSE" >&2
   exit 1
 fi
+
+python "$repo_root/scripts/packaging/verify_linux_bundle.py" "$app_root"

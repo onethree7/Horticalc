@@ -26,7 +26,12 @@ server shutdown; there is no external-browser fallback.
 `pyproject.toml` owns runtime dependency declarations. `constraints-release.txt` pins the complete release build environment used by CI and local release builds.
 `pywebview` is pinned to `6.2.1`. The PyInstaller spec includes only the selected
 platform backend and excludes Qt, PySide, CEF, MSHTML, and backends for other
-operating systems.
+operating systems. On Linux, `Analysis.exclude_system_libraries()` removes the
+build host's C++ runtime, GLib, GTK, ICU, and related system libraries. The spec
+also removes PyInstaller's GTK/GI runtime hooks, system typelibs, pixbuf loaders,
+schemas, themes, and icons. This prevents a bundled Ubuntu GTK subset from being
+mixed with WebKitGTK from the target host. Python, Horticalc, PyGObject,
+NumPy/SciPy, and wheel-owned native libraries remain packaged.
 Source installations are constrained to Python 3.10 through 3.13 because the
 GTK dependency pinned by pywebview 6.2.1 does not support Python 3.14. Release
 artifacts continue to use Python 3.11.9.
@@ -35,10 +40,13 @@ artifacts continue to use Python 3.11.9.
 
 - Windows 10/11: system-installed Microsoft WebView2 Runtime. Horticalc forces
   `edgechromium` and does not fall back to MSHTML or an external browser.
-- Ubuntu 22.04: `python3-gi`, `python3-gi-cairo`, `gir1.2-gtk-3.0`, and
-  `gir1.2-webkit2-4.1`. CI installs the matching build headers before packaging.
-- Other Linux distributions: best effort with compatible GTK 3, PyGObject, and
-  WebKitGTK 4.1 packages.
+- Ubuntu 22.04/24.04, Debian 13, and Linux Mint 22.3:
+  `sudo apt update && sudo apt install -y gir1.2-webkit2-4.1`.
+- Fedora 44: `sudo dnf install -y webkit2gtk4.1`.
+- Ubuntu 22.04/24.04, Debian 13, and Fedora 44 are tested automatically. Linux
+  Mint 22.3 is a required manual VM gate. Other distributions are best effort.
+- Horticalc detects `/etc/os-release` to show the matching command when
+  WebKitGTK is absent. It never installs packages or invokes `sudo` itself.
 - Windows 7/8/8.1 and macOS: not supported by the desktop release.
 
 ## AppRoot Layout
@@ -97,13 +105,22 @@ from `horticalc.__version__` unless the environment variable is explicit.
 
 Matrix:
 
-- `ubuntu-22.04`
-- `windows-latest`
+- Build hosts: `ubuntu-22.04` and `windows-latest`.
+- Linux packaged-GUI compatibility: Ubuntu 22.04, Ubuntu 24.04, Debian 13, and
+  Fedora 44 containers under Xvfb/Openbox.
 - Python `3.11.9`
+
+The Linux compatibility jobs first confirm the distro-specific missing-runtime
+message without WebKitGTK, then install the documented package and find a
+visible `Horticalc GUI` window with `xdotool`. Closing that window must stop the
+process and server and remove the lock. `scripts/packaging/verify_linux_bundle.py`
+also rejects bundled GTK/GLib/ICU/C++ system libraries, GI system data, and
+Qt/CEF/Chromium renderers.
 
 `scripts/check_release_version.py` rejects a tag that does not exactly match
 `v` plus `horticalc.__version__`. Manual workflow builds retain short-commit
-artifact names. Tagged builds use `v0.6.1`.
+artifact names. Tagged builds use `v0.6.1`, and release assets are published
+only after every build and Linux compatibility job succeeds.
 
 ## Release Verification
 
@@ -133,12 +150,13 @@ explicitly to `AppRoot/user/webview/`.
 
 Standard tests, packaging smoke, and headless smoke are in [commands.md](commands.md#run-tests) and [commands.md](commands.md#release-build-pyinstaller).
 
-Before publishing a desktop release, run the packaged GUI on a clean Windows
-10 VM, a clean Windows 11 VM, and Ubuntu 22.04. On each platform verify first
-start, Calculator, Solver, clipboard, scrolling, persisted preferences, a second
-launch restoring the existing window, and window close removing the server and
-lock. On Windows also test with Chrome absent and before Edge has ever been
-opened. Test a missing WebView2 or WebKitGTK runtime separately and require the
+Before publishing a desktop release, run the packaged GUI on clean Windows 10
+and Windows 11 VMs and on Linux Mint 22.3. Automated packaged tests cover Ubuntu
+22.04/24.04, Debian 13, and Fedora 44. On each manual platform verify first start,
+Calculator, Solver, clipboard, scrolling, persisted preferences, a second launch
+restoring the existing window, and window close removing the server and lock.
+On Windows also test with Chrome absent and before Edge has ever been opened.
+Test a missing WebView2 or WebKitGTK runtime separately and require the
 documented error without an MSHTML, Qt, or external-browser fallback. Compare
-the printed artifact size with the previous equivalent build and investigate
-an increase above 25 percent.
+the printed artifact size with the previous equivalent build and investigate an
+increase above 25 percent.

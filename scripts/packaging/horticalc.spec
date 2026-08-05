@@ -75,6 +75,48 @@ a = Analysis(
     noarchive=False,
 )
 
+# Linux desktop libraries must be one coherent system stack. Bundling selected
+# Ubuntu GTK/GLib/C++ libraries while loading WebKitGTK from the target host
+# creates ABI conflicts on newer distributions.
+if sys.platform.startswith("linux"):
+    a.exclude_system_libraries()
+
+    system_gui_data_prefixes = (
+        "gi_typelibs/",
+        "gio_modules/",
+        "lib/gdk-pixbuf/",
+        "share/glib-2.0/",
+        "share/icons/",
+        "share/locale/",
+        "share/themes/",
+    )
+    forced_internal_runtime_hooks = {
+        "pyi_rth_gdkpixbuf.py",
+        "pyi_rth_gi.py",
+        "pyi_rth_gio.py",
+        "pyi_rth_glib.py",
+        "pyi_rth_gtk.py",
+    }
+
+    def normalized_destination(entry):
+        return str(entry[0]).replace("\\", "/").lstrip("./")
+
+    def is_system_gui_data(entry):
+        destination = normalized_destination(entry)
+        return any(
+            destination == prefix.rstrip("/") or destination.startswith(prefix)
+            for prefix in system_gui_data_prefixes
+        )
+
+    def is_forced_internal_runtime_hook(entry):
+        destination_name = Path(str(entry[0])).name
+        source_name = Path(str(entry[1])).name if len(entry) > 1 else ""
+        return destination_name in forced_internal_runtime_hooks or source_name in forced_internal_runtime_hooks
+
+    a.scripts = [entry for entry in a.scripts if not is_forced_internal_runtime_hook(entry)]
+    a.binaries = [entry for entry in a.binaries if not is_system_gui_data(entry)]
+    a.datas = [entry for entry in a.datas if not is_system_gui_data(entry)]
+
 pyz = PYZ(a.pure)
 
 exe = EXE(

@@ -11,10 +11,15 @@ import horticalc.single_instance as single_instance
 from horticalc.launcher import (
     LOG_BACKUP_COUNT,
     LOG_MAX_BYTES,
+    RendererDependencyError,
     _logging_config,
     ensure_renderer_available,
     fail_fast,
     focus_window,
+    gui_initialization_error_message,
+    linux_distribution_ids,
+    linux_webview_install_command,
+    load_webview,
     renderer_error_message,
     run_webview,
     selected_renderer,
@@ -200,7 +205,30 @@ def test_unsupported_desktop_platform_is_rejected() -> None:
 def test_renderer_errors_name_actionable_runtime_requirement() -> None:
     assert "WebView2 Runtime" in renderer_error_message("win32")
     assert launcher.WEBVIEW2_DOWNLOAD_URL in renderer_error_message("win32")
-    assert "gir1.2-webkit2-4.1" in renderer_error_message("linux")
+    assert "gir1.2-webkit2-4.1" in renderer_error_message("linux", {"debian"})
+    assert "webkit2gtk4.1" in renderer_error_message("linux", {"fedora"})
+
+
+def test_linux_distribution_detection_uses_id_and_id_like(tmp_path) -> None:
+    os_release = tmp_path / "os-release"
+    os_release.write_text('NAME="Test"\nID=linuxmint\nID_LIKE="ubuntu debian"\n', encoding="utf-8")
+
+    assert linux_distribution_ids(os_release) == {"linuxmint", "ubuntu", "debian"}
+    assert linux_distribution_ids(tmp_path / "missing") == set()
+
+
+@pytest.mark.parametrize(
+    ("distribution_ids", "command"),
+    [
+        ({"ubuntu"}, launcher.LINUX_APT_WEBVIEW_COMMAND),
+        ({"debian"}, launcher.LINUX_APT_WEBVIEW_COMMAND),
+        ({"linuxmint", "ubuntu"}, launcher.LINUX_APT_WEBVIEW_COMMAND),
+        ({"fedora"}, launcher.LINUX_DNF_WEBVIEW_COMMAND),
+        ({"arch"}, None),
+    ],
+)
+def test_linux_webview_command_matches_distribution(distribution_ids, command) -> None:
+    assert linux_webview_install_command(distribution_ids) == command
 
 
 def test_windows_renderer_preflight_rejects_mshtml(monkeypatch) -> None:
@@ -215,13 +243,46 @@ def test_windows_renderer_preflight_rejects_mshtml(monkeypatch) -> None:
 
 
 def test_linux_renderer_preflight_does_not_fall_back_to_qt(monkeypatch) -> None:
-    def missing_gtk(_name):
-        raise ImportError("GTK unavailable")
+    gi = types.SimpleNamespace(
+        require_version=lambda namespace, _version: (
+            (_ for _ in ()).throw(ValueError("namespace missing")) if namespace == "WebKit2" else None
+        )
+    )
+    monkeypatch.setattr(launcher.importlib, "import_module", lambda _name: gi)
 
-    monkeypatch.setattr(launcher.importlib, "import_module", missing_gtk)
-
-    with pytest.raises(RuntimeError, match="WebKitGTK 4.1"):
+    with pytest.raises(RendererDependencyError, match="WebKitGTK 4.1"):
         ensure_renderer_available("linux")
+
+
+def test_linux_renderer_abi_error_is_not_misreported_as_missing_package(monkeypatch) -> None:
+    gi = types.SimpleNamespace(require_version=lambda *_args: None)
+
+    def import_module(name):
+        if name == "gi":
+            return gi
+        raise ImportError("undefined symbol: g_once_init_enter_pointer")
+
+    monkeypatch.setattr(launcher.importlib, "import_module", import_module)
+
+    with pytest.raises(ImportError, match="undefined symbol"):
+        ensure_renderer_available("linux")
+
+
+def test_missing_pywebview_source_dependency_has_install_command(monkeypatch) -> None:
+    missing = ModuleNotFoundError("No module named 'webview'", name="webview")
+    monkeypatch.setattr(launcher.importlib, "import_module", lambda _name: (_ for _ in ()).throw(missing))
+
+    with pytest.raises(RendererDependencyError, match=r"python -m pip install -e \."):
+        load_webview()
+
+
+def test_unexpected_gui_failure_message_is_neutral(tmp_path) -> None:
+    message = gui_initialization_error_message(tmp_path / "launcher.log")
+
+    assert "could not initialize" in message
+    assert "launcher.log" in message
+    assert "WebKitGTK" not in message
+    assert "WebView2" not in message
 
 
 def test_webview_storage_stays_in_portable_user_directory(tmp_path) -> None:

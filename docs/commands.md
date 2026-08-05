@@ -22,10 +22,17 @@ py -m venv .venv
 .\.venv\Scripts\python.exe -m horticalc.launcher
 ```
 
-On Ubuntu install the GTK/WebKitGTK runtime before installing Horticalc:
+On Ubuntu, Debian, or Linux Mint install the GTK/WebKitGTK runtime before
+starting Horticalc:
 
 ```bash
-sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.1
+sudo apt update && sudo apt install -y gir1.2-webkit2-4.1
+```
+
+On Fedora:
+
+```bash
+sudo dnf install -y webkit2gtk4.1
 ```
 
 Set `HORTICALC_NO_GUI=1` to start the server without creating a desktop window.

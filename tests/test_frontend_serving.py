@@ -2,6 +2,11 @@ from fastapi.testclient import TestClient
 
 from tests.frontend_assets import frontend_app_sources, frontend_module_entry
 
+EXPECTED_CSP = (
+    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+    "connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+)
+
 
 def test_frontend_root_serves_single_module_entry(api_client: TestClient) -> None:
     response = api_client.get("/")
@@ -28,3 +33,16 @@ def test_health_endpoint_still_available(api_client: TestClient) -> None:
     response = api_client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_local_responses_have_desktop_security_headers(api_client: TestClient) -> None:
+    response = api_client.get("/")
+
+    assert response.headers["content-security-policy"] == EXPECTED_CSP
+    assert response.headers["referrer-policy"] == "no-referrer"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+
+
+def test_unexpected_host_header_is_rejected(api_client: TestClient) -> None:
+    assert api_client.get("/health", headers={"host": "example.invalid"}).status_code == 400

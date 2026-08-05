@@ -28,7 +28,7 @@ def ensure_python_dependencies(*, needs_ruff: bool) -> None:
         print(f"[Horticalc] Creating virtual environment at {VENV_PYTHON.parent.parent}")
         run([sys.executable, "-m", "venv", str(VENV_PYTHON.parent.parent)])
 
-    required_modules = ["httpx2", "pytest"]
+    required_modules = ["httpx2", "pytest", "webview"]
     if needs_ruff:
         required_modules.append("ruff")
     dependency_check = subprocess.run(

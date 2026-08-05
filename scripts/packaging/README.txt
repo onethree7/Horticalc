@@ -7,8 +7,11 @@ Windows: double-click Horticalc.exe.
 Linux: run ./horticalc.
 
 Horticalc starts a private local service on 127.0.0.1 and opens the interface
-in an Edge, Chrome, or Chromium app window. It does not expose the service to
-the local network.
+in its own native desktop window. It does not require or control an installed
+browser, and it does not expose the service to the local network.
+
+Windows 10/11 requires the Microsoft WebView2 Runtime. The Ubuntu 22.04 build
+requires GTK 3 and WebKitGTK 4.1. Windows 7, 8, and 8.1 are not supported.
 
 Keep the extracted folder writable. Do not run the app from Program Files or
 directly inside the archive.

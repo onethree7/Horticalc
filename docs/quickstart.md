@@ -10,7 +10,19 @@ Status: `operation-guide`.
    - Windows: `Horticalc.exe`
    - Linux: `./horticalc`
 
-The launcher starts a local server on `127.0.0.1`, waits for the health check, and opens the GUI in a browser.
+The launcher starts a local server on `127.0.0.1`, waits for the health check,
+and opens the GUI in a native Horticalc window. Windows 10/11 requires the
+[Microsoft WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
+The Ubuntu 22.04 release requires GTK 3 and WebKitGTK 4.1:
+
+```bash
+sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.1
+```
+
+Windows 7, 8, and 8.1 are not supported. Other Linux distributions are best
+effort and must provide compatible GTK 3, PyGObject, and WebKitGTK 4.1 packages.
+Source installs support Python 3.10 through 3.13; packaged releases carry their
+own Python runtime.
 
 ## Source Install
 

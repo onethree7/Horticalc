@@ -10,13 +10,15 @@ from typing import Any, Callable, Dict, List, Optional
 from uuid import uuid4
 
 import yaml
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Header, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, FiniteFloat, ValidationError
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from horticalc import __version__
+from horticalc.activation import ActivationUnavailable, InvalidActivationToken, request_activation
 from horticalc.chemistry import ALLOWED_TARGET_KEYS, ALLOWED_WATER_KEYS, COMP_COLS
 from horticalc.core import (
     augment_water_profile_with_elements,
@@ -86,6 +88,20 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Horticalc API", version=__version__, lifespan=lifespan)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost"])
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+        "connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+    )
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    return response
 
 
 @app.exception_handler(RequestValidationError)
@@ -392,6 +408,22 @@ def load_app_data() -> None:
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.post("/_launcher/activate", status_code=204, include_in_schema=False)
+def activate_launcher(
+    request: Request,
+    activation_token: str = Header(default="", alias="X-Horticalc-Activation"),
+) -> Response:
+    if request.client is None or request.client.host not in {"127.0.0.1", "::1", "testclient"}:
+        raise HTTPException(status_code=403, detail="Local activation only")
+    try:
+        request_activation(activation_token)
+    except InvalidActivationToken as exc:
+        raise HTTPException(status_code=403, detail="Invalid activation token") from exc
+    except ActivationUnavailable as exc:
+        raise HTTPException(status_code=503, detail="Desktop window is not ready") from exc
+    return Response(status_code=204)
 
 
 @app.get("/schema/fertilizer-comp-keys")

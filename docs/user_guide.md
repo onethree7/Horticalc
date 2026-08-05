@@ -2,7 +2,8 @@
 
 Status: `current-state`.
 
-Horticalc can be used through a local browser GUI or the command line. Both use the same calculation core in `src/horticalc/`.
+Horticalc can be used through its native desktop GUI or the command line. Both
+use the same calculation core in `src/horticalc/`.
 
 ## Choose An Interface
 
@@ -70,7 +71,10 @@ The **Configuration** card in `frontend/index.html` controls:
 
 The theme selector includes the original Horticalc variants plus Solarized Light, Dracula, Gruvbox Dark, Catppuccin Mocha, Monokai Classic, Windows 95, and Amber CRT. Windows 95 and Amber CRT are full visual skins. All themes preserve the same layout and interactions.
 
-These are stored in `user/preferences.json` because the launcher's browser profiles are temporary. Theme, language, and display-unit choices are presentation-only; recipe, API, and solver inputs remain canonical. Source: `api/app.py`, `src/horticalc/data_io.py`, and `frontend/app/settings.js`.
+These are stored in `user/preferences.json`; small frontend-only state persists
+under `user/webview/`. Theme, language, and display-unit choices are
+presentation-only; recipe, API, and solver inputs remain canonical. Source:
+`api/app.py`, `src/horticalc/data_io.py`, and `frontend/app/settings.js`.
 
 Switching a display unit changes the shown number without changing the physical batch or canonical dose. Loading a recipe can temporarily override its own liters and solver config without rewriting user defaults.
 

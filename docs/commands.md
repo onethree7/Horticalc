@@ -6,7 +6,7 @@ Single source of truth for all commands. The other docs link here instead of dup
 
 ## Install And Run From Source
 
-Linux/macOS (bash):
+Linux (bash):
 
 ```bash
 python3 -m venv .venv
@@ -22,7 +22,13 @@ py -m venv .venv
 .\.venv\Scripts\python.exe -m horticalc.launcher
 ```
 
-Set `HORTICALC_NO_BROWSER=1` to start the server without opening a browser.
+On Ubuntu install the GTK/WebKitGTK runtime before installing Horticalc:
+
+```bash
+sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.1
+```
+
+Set `HORTICALC_NO_GUI=1` to start the server without creating a desktop window.
 
 ## Run The API Server Directly
 

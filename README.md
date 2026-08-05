@@ -17,6 +17,11 @@ On Windows, replace `./.venv/bin/python` with `.\.venv\Scripts\python.exe`.
 
 Download the latest release archive from the [releases page](https://github.com/onethree7/Horticalc/releases), extract it to a writable folder, and run `Horticalc.exe` (Windows) or `./horticalc` (Linux).
 
+The desktop GUI supports Windows 10/11 with the Microsoft WebView2 Runtime and
+Ubuntu 22.04 with GTK 3/WebKitGTK 4.1. It runs in its own native window; an
+installed Edge, Chrome, or Chromium browser is not required.
+Source installs currently support Python 3.10 through 3.13.
+
 ## Documentation
 
 - [Quickstart](docs/quickstart.md)

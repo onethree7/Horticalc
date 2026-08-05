@@ -42,13 +42,13 @@ def isolated_solver_history(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> 
 
 @pytest.fixture
 def api_client(isolated_solver_history: None, isolated_api_layout: PortableLayout) -> Iterator[TestClient]:
-    client = TestClient(api_app.app)
+    client = TestClient(api_app.app, base_url="http://127.0.0.1")
     yield client
     client.close()
 
 
 @pytest.fixture
 def api_client_no_raise(isolated_solver_history: None, isolated_api_layout: PortableLayout) -> Iterator[TestClient]:
-    client = TestClient(api_app.app, raise_server_exceptions=False)
+    client = TestClient(api_app.app, base_url="http://127.0.0.1", raise_server_exceptions=False)
     yield client
     client.close()

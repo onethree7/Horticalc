@@ -33,7 +33,9 @@ def test_pyproject_declares_runtime_dependencies_used_by_entrypoints() -> None:
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     dependency_names = _dependency_names(pyproject["project"]["dependencies"])
 
-    assert {"fastapi", "pydantic", "uvicorn", "pyyaml", "numpy", "scipy"} <= dependency_names
+    assert {"fastapi", "pydantic", "uvicorn", "pyyaml", "numpy", "scipy", "pywebview"} <= dependency_names
+    assert sum(dependency.startswith("pywebview") for dependency in pyproject["project"]["dependencies"]) == 2
+    assert pyproject["project"]["requires-python"] == ">=3.10,<3.14"
     assert pyproject["project"]["license"] == "GPL-3.0-or-later"
     assert pyproject["project"]["license-files"] == ["LICENSE"]
 
@@ -74,6 +76,8 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert "Horticalc is an independent project" in readme
     assert "point-in-time snapshots" in readme
     assert "Those official documents always take precedence" in readme
+    assert "Microsoft WebView2 Runtime" in readme
+    assert "does not require or control an installed" in readme
     assert "scripts/packaging/README.txt" in windows_build
     assert "scripts/packaging/README.txt" in linux_build
     assert 'Join-Path $repoRoot "LICENSE"' in windows_build
@@ -84,6 +88,10 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert 'legacy_fertilizers.with_suffix(".csv.legacy-backup")' in release_workflow
     assert "csv.DictReader(handle)" in release_workflow
     assert "Clean smoke-test runtime state" in release_workflow
+    assert "HORTICALC_NO_GUI" in release_workflow
+    assert "HORTICALC_NO_BROWSER" not in release_workflow
+    assert "gir1.2-webkit2-4.1" in release_workflow
+    assert "Unexpected bundled renderer" in release_workflow
     cleanup_index = release_workflow.index("Clean smoke-test runtime state")
     assert cleanup_index < release_workflow.index("Package artifact (Linux)")
     assert cleanup_index < release_workflow.index("Package artifact (Windows)")
@@ -95,6 +103,17 @@ def test_ci_resolves_release_constraints() -> None:
     assert "Release dependency resolution" in workflow
     assert "PIP_CONSTRAINT: constraints-release.txt" in workflow
     assert "python -m pip install --dry-run . pyinstaller" in workflow
+    assert "gir1.2-webkit2-4.1" in workflow
+
+
+def test_pyinstaller_selects_one_native_webview_backend() -> None:
+    spec = (ROOT / "scripts" / "packaging" / "horticalc.spec").read_text(encoding="utf-8")
+
+    assert '"webview.platforms.edgechromium"' in spec
+    assert '"webview.platforms.gtk"' in spec
+    assert "support Windows and Linux only" in spec
+    for excluded in ("PyQt5", "PyQt6", "PySide2", "PySide6", "cefpython3", "webview.platforms.mshtml"):
+        assert f'"{excluded}"' in spec
 
 
 def test_runtime_package_api_and_cli_versions_match(api_client: TestClient) -> None:

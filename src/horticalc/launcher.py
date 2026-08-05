@@ -1,67 +1,57 @@
 from __future__ import annotations
 
 import atexit
-import json
+import importlib
 import logging
 import logging.config
 import os
-import re
-import shutil
+import secrets
 import socket
-import subprocess
 import sys
-import tempfile
 import threading
 import time
-import urllib.error
-import urllib.request
-import webbrowser
-from contextlib import suppress
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 import uvicorn
 
+from horticalc.activation import (
+    clear_activation_handler,
+    configure_activation_handler,
+    configure_activation_token,
+)
 from horticalc.paths import PORTABLE_WRITE_ERROR, app_root, ensure_portable_layout, logs_dir
+from horticalc.single_instance import (
+    HEALTH_TIMEOUT_SECONDS,
+    PORT_RANGE,
+    activate_existing_instance,
+    claim_lockfile,
+    health_ok,
+    lockfile_path,
+    remove_lockfile,
+    wait_for_existing_server,
+)
 
-PORT_RANGE = range(8000, 8101)
-HEALTH_ENDPOINT = "/health"
-HEALTH_TIMEOUT_SECONDS = 30.0
-LOCKFILE_NAME = "horticalc.lock.json"
 LOG_FILENAME = "launcher.log"
 LOG_MAX_BYTES = 2 * 1024 * 1024
 LOG_BACKUP_COUNT = 2
-NO_BROWSER_ENV = "HORTICALC_NO_BROWSER"
-KEEP_SERVER_ENV = "HORTICALC_KEEP_SERVER"
-FALLBACK_GRACE_SECONDS = 5.0
-LOCK_READ_GRACE_SECONDS = 0.5
-STALE_PROFILE_AGE_SECONDS = 7 * 24 * 60 * 60
-PROFILE_DIR_NAME = "browser_profiles"
-SESSION_DIR_NAME = "launcher_sessions"
-PROFILE_DIR_PATTERN = re.compile(r"^profile-(\d+)-(?:(\d+)-.+|\d+)$")
+NO_GUI_ENV = "HORTICALC_NO_GUI"
+WINDOW_TITLE = "Horticalc GUI"
+WINDOW_WIDTH = 1280
+WINDOW_HEIGHT = 900
+WINDOW_MIN_SIZE = (960, 640)
+WEBVIEW_STORAGE_DIR = "webview"
+WEBVIEW2_DOWNLOAD_URL = "https://developer.microsoft.com/microsoft-edge/webview2/"
+LINUX_WEBVIEW_PACKAGES = "python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.1"
 
-WINDOWS_BROWSER_CANDIDATES = (
-    "msedge.exe",
-    "chrome.exe",
-    "chromium.exe",
-)
-LINUX_BROWSER_CANDIDATES = (
-    "microsoft-edge",
-    "google-chrome",
-    "chromium",
-    "chromium-browser",
-)
-WINDOWS_BROWSER_LOCATIONS = (
-    ("PROGRAMFILES", "Microsoft", "Edge", "Application", "msedge.exe"),
-    ("PROGRAMFILES(X86)", "Microsoft", "Edge", "Application", "msedge.exe"),
-    ("LOCALAPPDATA", "Microsoft", "Edge", "Application", "msedge.exe"),
-    ("PROGRAMFILES", "Google", "Chrome", "Application", "chrome.exe"),
-    ("PROGRAMFILES(X86)", "Google", "Chrome", "Application", "chrome.exe"),
-    ("LOCALAPPDATA", "Google", "Chrome", "Application", "chrome.exe"),
-    ("PROGRAMFILES", "Chromium", "Application", "chrome.exe"),
-    ("PROGRAMFILES(X86)", "Chromium", "Application", "chrome.exe"),
-    ("LOCALAPPDATA", "Chromium", "Application", "chrome.exe"),
-)
+
+class WebviewWindow(Protocol):
+    events: Any
+    native: Any
+
+    def restore(self) -> None: ...
+
+    def show(self) -> None: ...
 
 
 def _env_flag(name: str) -> bool:
@@ -69,8 +59,8 @@ def _env_flag(name: str) -> bool:
     return value.strip().lower() in {"1", "true", "yes"}
 
 
-def lockfile_path(root: Path) -> Path:
-    return root / "user" / LOCKFILE_NAME
+def webview_storage_path(root: Path) -> Path:
+    return root / "user" / WEBVIEW_STORAGE_DIR
 
 
 def _logging_config(log_file: Path, *, packaged: bool | None = None) -> dict[str, Any]:
@@ -111,8 +101,7 @@ def _logging_config(log_file: Path, *, packaged: bool | None = None) -> dict[str
 
 def setup_logging(logs_path: Path) -> Path:
     log_file = logs_path / LOG_FILENAME
-    config = _logging_config(log_file)
-    logging.config.dictConfig(config)
+    logging.config.dictConfig(_logging_config(log_file))
     return log_file
 
 
@@ -126,10 +115,10 @@ def fail_fast(message: str, log_file: Path | None = None) -> None:
         try:
             import ctypes
 
-            ctypes.windll.user32.MessageBoxW(0, message, "Horticalc", 0x10)
+            ctypes.windll.user32.MessageBoxW(0, message, WINDOW_TITLE, 0x10)
         except Exception:
             logging.exception("Failed to display Windows message box.")
-    sys.exit(1)
+    raise SystemExit(1)
 
 
 def find_free_port() -> int | None:
@@ -141,129 +130,6 @@ def find_free_port() -> int | None:
             except OSError:
                 continue
             return port
-    return None
-
-
-def _health_url(port: int) -> str:
-    return f"http://127.0.0.1:{port}{HEALTH_ENDPOINT}"
-
-
-def health_ok(port: int) -> bool:
-    try:
-        with urllib.request.urlopen(_health_url(port), timeout=1) as response:
-            return 200 <= response.status < 300
-    except (urllib.error.URLError, ValueError):
-        return False
-
-
-def _write_json_stream(handle, payload: dict[str, Any]) -> None:
-    json.dump(payload, handle, indent=2)
-    handle.flush()
-    os.fsync(handle.fileno())
-
-
-def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temp_path: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            delete=False,
-            dir=path.parent,
-            prefix=f".{path.name}.tmp-",
-        ) as temp_file:
-            temp_path = Path(temp_file.name)
-            _write_json_stream(temp_file, payload)
-        os.replace(temp_path, path)
-    finally:
-        if temp_path is not None:
-            with suppress(OSError):
-                temp_path.unlink(missing_ok=True)
-
-
-def _lock_payload(port: int, pid: int | None = None) -> dict[str, Any]:
-    return {
-        "pid": pid or os.getpid(),
-        "port": port,
-        "started_at": time.time(),
-    }
-
-
-def read_lockfile(path: Path) -> dict[str, Any] | None:
-    if not path.exists():
-        return None
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return None
-    if not isinstance(payload, dict):
-        return None
-    port = payload.get("port")
-    pid = payload.get("pid")
-    if not isinstance(port, int) or port not in PORT_RANGE:
-        return None
-    if not isinstance(pid, int) or pid <= 0:
-        return None
-    return payload
-
-
-def write_lockfile(path: Path, port: int, pid: int | None = None) -> None:
-    _atomic_write_json(path, _lock_payload(port, pid))
-
-
-def claim_lockfile(path: Path, port: int, pid: int | None = None) -> bool:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
-    except FileExistsError:
-        return False
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            _write_json_stream(handle, _lock_payload(port, pid))
-    except BaseException:
-        path.unlink(missing_ok=True)
-        raise
-    return True
-
-
-def remove_lockfile(path: Path, expected_pid: int | None = None) -> None:
-    if expected_pid is not None:
-        payload = read_lockfile(path)
-        if payload is None or payload.get("pid") != expected_pid:
-            return
-    try:
-        path.unlink(missing_ok=True)
-    except OSError:
-        logging.exception("Failed to remove lockfile: %s", path)
-
-
-def wait_for_existing_server(
-    lock_path: Path,
-    timeout_seconds: float = HEALTH_TIMEOUT_SECONDS,
-    malformed_grace_seconds: float = LOCK_READ_GRACE_SECONDS,
-) -> int | None:
-    health_deadline = time.monotonic() + timeout_seconds
-    malformed_deadline = time.monotonic() + malformed_grace_seconds
-    while lock_path.exists():
-        payload = read_lockfile(lock_path)
-        if payload is None:
-            if time.monotonic() < malformed_deadline:
-                time.sleep(0.05)
-                continue
-            remove_lockfile(lock_path)
-            return None
-
-        port = payload["port"]
-        owner_pid = payload["pid"]
-        if health_ok(port):
-            return port
-        if not _pid_is_running(owner_pid):
-            remove_lockfile(lock_path, expected_pid=owner_pid)
-            return None
-        if time.monotonic() >= health_deadline:
-            raise RuntimeError(f"Existing Horticalc process {owner_pid} did not become healthy.")
-        time.sleep(0.1)
     return None
 
 
@@ -284,231 +150,6 @@ def wait_for_health(
     )
 
 
-def _which_first(candidates: tuple[str, ...]) -> Path | None:
-    for candidate in candidates:
-        found = shutil.which(candidate)
-        if found:
-            return Path(found)
-    return None
-
-
-def find_browser_executable() -> Path | None:
-    if os.name == "nt":
-        browser = _which_first(WINDOWS_BROWSER_CANDIDATES)
-        if browser:
-            return browser
-        for env_name, *parts in WINDOWS_BROWSER_LOCATIONS:
-            base = os.environ.get(env_name)
-            if not base:
-                continue
-            candidate = Path(base, *parts)
-            if candidate.exists():
-                return candidate
-        return None
-    return _which_first(LINUX_BROWSER_CANDIDATES)
-
-
-def _process_identity(pid: int) -> int | None:
-    if pid <= 0:
-        return None
-    if os.name == "nt":
-        try:
-            import ctypes
-            from ctypes import wintypes
-
-            process = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)
-            if not process:
-                return None
-            creation = wintypes.FILETIME()
-            exit_time = wintypes.FILETIME()
-            kernel = wintypes.FILETIME()
-            user = wintypes.FILETIME()
-            try:
-                if not ctypes.windll.kernel32.GetProcessTimes(
-                    process,
-                    ctypes.byref(creation),
-                    ctypes.byref(exit_time),
-                    ctypes.byref(kernel),
-                    ctypes.byref(user),
-                ):
-                    return None
-                return (creation.dwHighDateTime << 32) | creation.dwLowDateTime
-            finally:
-                ctypes.windll.kernel32.CloseHandle(process)
-        except (AttributeError, OSError):
-            return None
-    try:
-        return (Path("/proc") / str(pid)).stat().st_ctime_ns
-    except OSError:
-        return None
-
-
-def create_profile_dir(root: Path) -> Path:
-    profile_root = root / "user" / PROFILE_DIR_NAME
-    profile_root.mkdir(parents=True, exist_ok=True)
-    owner_pid = os.getpid()
-    identity = _process_identity(owner_pid) or 0
-    return Path(
-        tempfile.mkdtemp(
-            prefix=f"profile-{owner_pid}-{identity}-",
-            dir=profile_root,
-        )
-    )
-
-
-def launch_app_window(
-    url: str,
-    profile_dir: Path,
-    logger: logging.Logger,
-    browser: Path | None = None,
-) -> subprocess.Popen | None:
-    if not browser:
-        return None
-    args = [
-        str(browser),
-        f"--app={url}",
-        "--new-window",
-        f"--user-data-dir={profile_dir}",
-        "--no-first-run",
-        "--no-default-browser-check",
-    ]
-    creationflags = 0
-    if os.name == "nt":
-        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
-    try:
-        return subprocess.Popen(
-            args,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            creationflags=creationflags,
-        )
-    except OSError:
-        logger.exception("Failed to launch browser app window.")
-        return None
-
-
-def cleanup_profile_dir(profile_dir: Path) -> None:
-    shutil.rmtree(profile_dir, ignore_errors=True)
-
-
-def launcher_session_dir(root: Path) -> Path:
-    path = root / "user" / SESSION_DIR_NAME
-    path.mkdir(parents=True, exist_ok=True)
-    return path
-
-
-def create_launcher_session(root: Path, pid: int | None = None) -> Path:
-    owner_pid = pid or os.getpid()
-    path = launcher_session_dir(root) / f"session-{owner_pid}-{time.time_ns()}.json"
-    _atomic_write_json(
-        path,
-        {
-            "pid": owner_pid,
-            "process_identity": _process_identity(owner_pid),
-        },
-    )
-    return path
-
-
-def _pid_is_running(pid: int) -> bool:
-    if pid <= 0:
-        return False
-    if os.name == "nt":
-        try:
-            import ctypes
-
-            process = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)
-            if not process:
-                return False
-            ctypes.windll.kernel32.CloseHandle(process)
-            return True
-        except (AttributeError, OSError):
-            return False
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    except OSError:
-        return False
-    return True
-
-
-def active_launcher_sessions(root: Path) -> list[Path]:
-    active: list[Path] = []
-    for path in launcher_session_dir(root).glob("session-*.json"):
-        try:
-            payload = json.loads(path.read_text(encoding="utf-8"))
-            pid = payload.get("pid")
-            expected_identity = payload.get("process_identity")
-        except (OSError, json.JSONDecodeError):
-            pid = None
-            expected_identity = None
-        current_identity = _process_identity(pid) if isinstance(pid, int) else None
-        identity_matches = (
-            expected_identity is None or current_identity is None or expected_identity == current_identity
-        )
-        if isinstance(pid, int) and _pid_is_running(pid) and identity_matches:
-            active.append(path)
-        else:
-            path.unlink(missing_ok=True)
-    return active
-
-
-def cleanup_stale_profile_dirs(root: Path, now: float | None = None) -> None:
-    profile_root = root / "user" / PROFILE_DIR_NAME
-    if not profile_root.exists():
-        return
-    current_time = time.time() if now is None else now
-    for profile_dir in profile_root.glob("profile-*"):
-        match = PROFILE_DIR_PATTERN.match(profile_dir.name)
-        if not match or not profile_dir.is_dir():
-            continue
-        owner_pid = int(match.group(1))
-        expected_identity = int(match.group(2)) if match.group(2) else None
-        try:
-            old_enough = current_time - profile_dir.stat().st_mtime >= STALE_PROFILE_AGE_SECONDS
-        except OSError:
-            continue
-        current_identity = _process_identity(owner_pid)
-        owner_matches = _pid_is_running(owner_pid) and (
-            expected_identity is None or current_identity is None or expected_identity == current_identity
-        )
-        if old_enough and not owner_matches:
-            cleanup_profile_dir(profile_dir)
-
-
-def wait_for_launcher_sessions(root: Path, grace_seconds: float = FALLBACK_GRACE_SECONDS) -> None:
-    empty_since: float | None = None
-    while empty_since is None or time.monotonic() - empty_since < grace_seconds:
-        if active_launcher_sessions(root):
-            empty_since = None
-        elif empty_since is None:
-            empty_since = time.monotonic()
-        time.sleep(0.1)
-
-
-def wait_for_app_window(
-    url: str,
-    root: Path,
-    profile_dir: Path,
-    logger: logging.Logger,
-    browser: Path,
-) -> bool:
-    session_path = create_launcher_session(root)
-    browser_proc = launch_app_window(url, profile_dir, logger, browser)
-    if browser_proc is None:
-        remove_lockfile(session_path)
-        return False
-    try:
-        browser_proc.wait()
-    finally:
-        remove_lockfile(session_path)
-        cleanup_profile_dir(profile_dir)
-    return True
-
-
 def stop_server(
     server: uvicorn.Server,
     server_thread: threading.Thread,
@@ -516,7 +157,8 @@ def stop_server(
     timeout_seconds: float = 5.0,
 ) -> None:
     server.should_exit = True
-    server_thread.join(timeout=timeout_seconds)
+    if server_thread is not threading.current_thread():
+        server_thread.join(timeout=timeout_seconds)
     remove_lockfile(lock_path, expected_pid=os.getpid())
 
 
@@ -534,78 +176,137 @@ def require_server_health(
     fail_fast(error_message or "Server failed to start.", log_file)
 
 
-def wait_for_fallback_shutdown(
-    server_thread: threading.Thread,
-    logger: logging.Logger,
-    compatibility_flag_set: bool,
-) -> None:
-    if compatibility_flag_set:
-        logger.info("%s is set; fallback server remains running.", KEEP_SERVER_ENV)
-    else:
-        logger.info("System-browser fallback keeps the local server running.")
-    server_thread.join()
+def selected_renderer(platform: str | None = None) -> str:
+    platform = sys.platform if platform is None else platform
+    if platform == "win32":
+        return "edgechromium"
+    if platform.startswith("linux"):
+        return "gtk"
+    raise RuntimeError("Horticalc Desktop supports Windows 10/11 and Linux only.")
 
 
-def wait_for_existing_server_fallback(root: Path, logger: logging.Logger) -> None:
-    session_path = create_launcher_session(root)
-    logger.info("System-browser fallback keeps this launcher session active.")
+def renderer_error_message(platform: str | None = None) -> str:
+    platform = sys.platform if platform is None else platform
+    if platform == "win32":
+        return (
+            "Horticalc requires the Microsoft WebView2 Runtime. Install or repair it from "
+            f"{WEBVIEW2_DOWNLOAD_URL} and start Horticalc again."
+        )
+    if platform.startswith("linux"):
+        return (
+            "Horticalc requires GTK 3 and WebKitGTK 4.1. On Ubuntu install them with: "
+            f"sudo apt install {LINUX_WEBVIEW_PACKAGES}"
+        )
+    return "Horticalc Desktop supports Windows 10/11 and Linux only."
+
+
+def ensure_renderer_available(platform: str | None = None) -> None:
+    platform = sys.platform if platform is None else platform
     try:
-        while True:
-            time.sleep(3600)
-    finally:
-        remove_lockfile(session_path)
+        if platform == "win32":
+            winforms = importlib.import_module("webview.platforms.winforms")
+            if getattr(winforms, "renderer", None) != "edgechromium":
+                raise RuntimeError(renderer_error_message(platform))
+            return
+        if platform.startswith("linux"):
+            importlib.import_module("webview.platforms.gtk")
+            return
+    except (ImportError, ValueError) as exc:
+        raise RuntimeError(renderer_error_message(platform)) from exc
+    raise RuntimeError(renderer_error_message(platform))
+
+
+def focus_window(window: WebviewWindow) -> bool:
+    try:
+        window.restore()
+        window.show()
+    except Exception:
+        logging.getLogger("horticalc.launcher").exception("Failed to restore the Horticalc window.")
+        return False
+
+    native = getattr(window, "native", None)
+    if native is not None:
+        try:
+            if os.name == "nt" and hasattr(native, "Activate"):
+                native.Activate()
+            elif hasattr(native, "present"):
+                native.present()
+        except Exception:
+            logging.getLogger("horticalc.launcher").warning(
+                "The window was restored, but the OS denied an explicit focus request.",
+                exc_info=True,
+            )
+    return True
+
+
+def run_webview(url: str, storage_path: Path, server: uvicorn.Server) -> None:
+    import webview
+
+    ensure_renderer_available()
+    webview.settings["ALLOW_DOWNLOADS"] = False
+    webview.settings["ALLOW_FILE_URLS"] = False
+    webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = False
+    webview.settings["REMOTE_DEBUGGING_PORT"] = None
+
+    window = webview.create_window(
+        WINDOW_TITLE,
+        url=url,
+        js_api=None,
+        width=WINDOW_WIDTH,
+        height=WINDOW_HEIGHT,
+        min_size=WINDOW_MIN_SIZE,
+        resizable=True,
+        background_color="#08110d",
+        text_select=True,
+        zoomable=False,
+    )
+    configure_activation_handler(focus_window, window)
+    window.events.closed += lambda: setattr(server, "should_exit", True)
+    webview.start(
+        gui=selected_renderer(),
+        debug=False,
+        private_mode=False,
+        storage_path=str(storage_path),
+    )
 
 
 def main() -> None:
     root = app_root()
     try:
         ensure_portable_layout(root)
-        cleanup_stale_profile_dirs(root)
         logs_path = logs_dir(root)
     except RuntimeError as exc:
-        message = str(exc) or PORTABLE_WRITE_ERROR
-        fail_fast(message)
-        return
+        fail_fast(str(exc) or PORTABLE_WRITE_ERROR)
 
     log_file = setup_logging(logs_path)
     logger = logging.getLogger("horticalc.launcher")
     logger.info("AppRoot resolved to %s", root)
-    no_browser = _env_flag(NO_BROWSER_ENV)
-    keep_server = _env_flag(KEEP_SERVER_ENV)
+    no_gui = _env_flag(NO_GUI_ENV)
 
     from api.app import app
 
     lock_path = lockfile_path(root)
     while True:
         try:
-            existing_port = wait_for_existing_server(lock_path)
+            existing = wait_for_existing_server(lock_path)
         except RuntimeError as exc:
             fail_fast(str(exc), log_file)
-            return
-        if existing_port is not None:
-            url = f"http://127.0.0.1:{existing_port}/"
-            logger.info("Existing server detected on port %s.", existing_port)
-            if no_browser:
-                logger.info("%s is set; skipping browser launch.", NO_BROWSER_ENV)
+        if existing is not None:
+            logger.info("Existing server detected on port %s.", existing.port)
+            if no_gui:
+                logger.info("%s is set; leaving the existing server unchanged.", NO_GUI_ENV)
                 return
-            logger.info("Opening browser for existing server.")
-            browser = find_browser_executable()
-            if browser:
-                profile_dir = create_profile_dir(root)
-                if not wait_for_app_window(url, root, profile_dir, logger, browser):
-                    cleanup_profile_dir(profile_dir)
-                    webbrowser.open(url)
-                    wait_for_existing_server_fallback(root, logger)
-            else:
-                webbrowser.open(url)
-                wait_for_existing_server_fallback(root, logger)
-            return
+            if activate_existing_instance(existing):
+                logger.info("Activated the existing Horticalc window.")
+                return
+            fail_fast("Horticalc is running, but its window could not be activated.", log_file)
 
         port = find_free_port()
         if port is None:
             fail_fast("No free port found in the 8000-8100 range.", log_file)
-            return
-        if claim_lockfile(lock_path, port):
+        activation_token = secrets.token_urlsafe(32)
+        if claim_lockfile(lock_path, port, activation_token):
+            configure_activation_token(activation_token)
             break
         logger.info("Another launcher claimed the server lock; waiting for it.")
 
@@ -617,36 +318,36 @@ def main() -> None:
         access_log=not bool(getattr(sys, "frozen", False)),
     )
     server = uvicorn.Server(config)
-
-    atexit.register(remove_lockfile, lock_path, os.getpid())
     server_thread = threading.Thread(target=server.run, name="uvicorn-server", daemon=True)
     server_thread.start()
 
+    def cleanup() -> None:
+        clear_activation_handler()
+        stop_server(server, server_thread, lock_path)
+
+    atexit.register(cleanup)
     try:
-        if no_browser:
-            logger.info("%s is set; waiting for /health without launching a browser.", NO_BROWSER_ENV)
-            require_server_health(server, server_thread, lock_path, port, log_file)
+        require_server_health(server, server_thread, lock_path, port, log_file)
+        if no_gui:
+            logger.info("%s is set; running the local server without a desktop window.", NO_GUI_ENV)
             server_thread.join()
             return
 
-        require_server_health(server, server_thread, lock_path, port, log_file)
-
+        storage_path = webview_storage_path(root)
+        storage_path.mkdir(parents=True, exist_ok=True)
         url = f"http://127.0.0.1:{port}/"
-        browser = find_browser_executable()
-        profile_dir = create_profile_dir(root)
-        if browser is None or not wait_for_app_window(url, root, profile_dir, logger, browser):
-            cleanup_profile_dir(profile_dir)
-            logger.warning("No supported Chromium-based browser found; falling back to system default.")
-            webbrowser.open(url)
-            wait_for_fallback_shutdown(server_thread, logger, keep_server)
-            return
-
-        logger.info("App window closed; waiting for other launcher sessions.")
-        wait_for_launcher_sessions(root)
-        stop_server(server, server_thread, lock_path)
+        logger.info("Opening native desktop window with %s.", selected_renderer())
+        try:
+            run_webview(url, storage_path, server)
+        except Exception:
+            logger.exception("Failed to initialize the native desktop window.")
+            fail_fast(renderer_error_message(), log_file)
+        logger.info("Desktop window closed; stopping local server.")
     except KeyboardInterrupt:
         logger.info("Shutdown requested.")
-        stop_server(server, server_thread, lock_path)
+    finally:
+        cleanup()
+        atexit.unregister(cleanup)
 
 
 if __name__ == "__main__":

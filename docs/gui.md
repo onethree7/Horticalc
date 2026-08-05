@@ -2,7 +2,10 @@
 
 Status: `current-state`.
 
-The frontend is a static Vanilla JS app in `frontend/`. It is served by FastAPI from the same origin as the API.
+The frontend is a static Vanilla JS app in `frontend/`. It is served by FastAPI
+from the same origin as the API and displayed in a native pywebview window.
+pywebview is only the window host: the frontend does not use a Python-JavaScript
+bridge. WebView2 is selected on Windows and GTK/WebKitGTK on Linux.
 
 ## Files
 
@@ -113,7 +116,7 @@ The `Configuration` card in `frontend/index.html` contains the global batch volu
 
 Preferences supply startup defaults. An explicitly loaded recipe overrides its liters and any non-empty `solver_config` for the current working state without rewriting the user's defaults. A target profile restores optional Solver fields only when they are present; target-only profiles leave the current setup unchanged. A water profile loaded with the water-profile controls becomes the next startup profile; a water profile loaded indirectly from a recipe or target profile does not.
 
-## Browser State And `localStorage`
+## WebView State And `localStorage`
 
 The UI stores small workflow state in `localStorage`:
 
@@ -123,6 +126,10 @@ The UI stores small workflow state in `localStorage`:
 - selected frontend language.
 
 `user/preferences.json` stores theme, default batch liters, volume and dose display units, solver defaults, Solver-history retention, recipe and target-profile favorites, and last directly loaded water profile. Full Solver history and its pin metadata live in portable `user/solver_history.jsonl`, not `localStorage`. Solver config is not restored from saved solution snapshots.
+
+The WebView storage root is `user/webview/`. External links, downloads, file
+URLs, and remote debugging are disabled by the desktop host. API responses use
+a same-origin Content Security Policy and reject unexpected Host headers.
 
 ## API Calls From The Frontend
 

@@ -41,6 +41,21 @@ jobs:
         with:
           python-version: "3.11.9"
 
+      - name: Install Linux WebKitGTK build dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            build-essential \
+            gir1.2-gtk-3.0 \
+            gir1.2-webkit2-4.1 \
+            libcairo2-dev \
+            libgirepository1.0-dev \
+            pkg-config \
+            python3-dev \
+            python3-gi \
+            python3-gi-cairo
+
       - name: Install dependencies
         env:
           PIP_CONSTRAINT: constraints-release.txt
@@ -83,7 +98,7 @@ jobs:
         env:
           BIN_PATH: ${{ matrix.bin_path }}
           APP_ROOT: ${{ matrix.app_dir }}
-          HORTICALC_NO_BROWSER: "1"
+          HORTICALC_NO_GUI: "1"
         run: |
           python - <<'PY'
           import csv
@@ -111,7 +126,7 @@ jobs:
           )
 
           env = os.environ.copy()
-          env["HORTICALC_NO_BROWSER"] = "1"
+          env["HORTICALC_NO_GUI"] = "1"
 
           proc = subprocess.Popen([str(bin_path)], cwd=str(app_root), env=env)
           try:
@@ -138,6 +153,17 @@ jobs:
               for path in required_paths:
                   if not path.exists():
                       raise SystemExit(f"Missing expected path: {path}")
+
+              forbidden_renderers = ("pyqt", "pyside", "cefpython", "qtwebengine")
+              unexpected = [
+                  path for path in app_root.rglob("*")
+                  if any(name in path.name.lower() for name in forbidden_renderers)
+              ]
+              if unexpected:
+                  raise SystemExit(f"Unexpected bundled renderer: {unexpected[0]}")
+
+              artifact_bytes = sum(path.stat().st_size for path in app_root.rglob("*") if path.is_file())
+              print(f"Packaged application size: {artifact_bytes} bytes")
 
               logs_dir = app_root / "logs"
               deadline = time.time() + 30

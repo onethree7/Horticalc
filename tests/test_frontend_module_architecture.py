@@ -41,3 +41,9 @@ def test_removed_global_state_and_monolith_stay_removed() -> None:
     assert "window.HorticalcRequestGate" not in combined
     assert "window.HorticalcI18n" not in combined
     assert "window.HORTICALC_I18N" not in combined
+
+
+def test_frontend_avoids_object_has_own_for_older_webviews() -> None:
+    combined = "\n".join(read_frontend_file(path) for path in frontend_app_sources())
+
+    assert "Object.hasOwn(" not in combined

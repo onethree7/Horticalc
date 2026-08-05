@@ -32,14 +32,19 @@ When you change an API route, output key, solver default, file path, launcher be
 ## Frontend Test Requirement
 
 The production frontend uses native ES modules and has no bundler or runtime
-npm dependency. Development tooling is pinned to Ruff `0.15.21`, ESLint
+npm dependency. Development tooling is pinned to Ruff `0.16.1`, ESLint
 `10.7.0`, Stylelint `17.14.0`, and `stylelint-config-standard` `40.0.0`.
 `python scripts/test.py` installs missing development tools and runs Python
 format/lint checks, frontend lint, Node unit tests, Playwright behavior tests,
 and the Pytest suite. Use `--pytest-only` for a focused Pytest run without lint
 or frontend checks. Every lint command fails on warnings.
 
-Set `HORTICALC_BROWSER_PATH` when Chrome/Chromium is installed outside the standard Windows or Linux locations. Set `HORTICALC_TEST_URL` only when running `node scripts/frontend_smoke.cjs` against an already-running development server.
+For the Playwright test harness only, set `HORTICALC_BROWSER_PATH` when
+Chrome/Chromium is installed outside the standard test locations, or set
+`HORTICALC_TEST_URL` when running `node scripts/frontend_smoke.cjs` against an
+already-running development server. The runtime launcher never locates or
+starts Chrome/Chromium. Use
+`HORTICALC_NO_GUI=1` for headless launcher and packaged-binary smoke tests.
 
 ## Generated And Ignored Files
 

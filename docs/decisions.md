@@ -35,13 +35,15 @@ Source: `scripts/packaging/horticalc.spec`, `scripts/packaging/build_windows.ps1
 - Port policy: scan `8000..8100`.
 - Health endpoint: `/health`.
 - Lockfile: `AppRoot/user/horticalc.lock.json`.
-- App-window sessions: PID-backed files in `AppRoot/user/launcher_sessions/`.
 - Logs: rotating `AppRoot/logs/launcher.log` files.
-- Preferred browser: Edge, Chrome, or Chromium in app mode.
-- Browser fallback: system default browser; the local server remains running.
-- No-browser CI mode: `HORTICALC_NO_BROWSER=1`.
+- Desktop host: pinned pywebview `6.2.1`, used only as a native window around the local FastAPI origin.
+- Windows renderer: WebView2 (`edgechromium`) only; no MSHTML or external-browser fallback.
+- Linux renderer: GTK/WebKitGTK only; no bundled Qt, CEF, or Chromium.
+- Single instance: the lock carries a random activation token; a second launch activates the existing window.
+- Headless CI mode: `HORTICALC_NO_GUI=1`.
+- Source Python range: `>=3.10,<3.14`; pywebview 6.2.1's pinned Linux GTK binding does not support Python 3.14.
 
-Source: `src/horticalc/launcher.py`.
+Source: `src/horticalc/launcher.py`, `src/horticalc/single_instance.py`, `src/horticalc/activation.py`.
 
 ## Portable Data
 
@@ -108,8 +110,8 @@ Source: `src/horticalc/solver_config.py`, `src/horticalc/solver.py`.
 
 - Release trigger: exact tag `v0.6.1` and manual workflow dispatch.
 - CI OSes: `ubuntu-22.04` and `windows-latest`.
-- CI Python: `3.11.9`.
+- Test CI Python: `3.10` and `3.13`; release CI Python: `3.11.9`.
 - Release permissions: `contents: write`.
-- Packaged binary smoke test uses `HORTICALC_NO_BROWSER=1`.
+- Packaged binary smoke test uses `HORTICALC_NO_GUI=1`.
 
 Source: `.github/workflows/release.yml`.

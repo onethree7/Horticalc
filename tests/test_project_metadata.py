@@ -97,7 +97,7 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert "smoke_linux_gui.py" in release_workflow
     for supported_linux in ("ubuntu:22.04", "ubuntu:24.04", "debian:13", "fedora:44"):
         assert supported_linux in release_workflow
-    assert "sudo apt update && sudo apt install -y gir1.2-webkit2-4.1" in release_workflow
+    assert "sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1" in release_workflow
     assert "sudo dnf install -y webkit2gtk4.1" in release_workflow
     assert "needs:\n      - build\n      - linux-compatibility" in release_workflow
     cleanup_index = release_workflow.index("Clean smoke-test runtime state")
@@ -139,7 +139,7 @@ def test_linux_runtime_commands_do_not_drift_between_user_docs() -> None:
     )
     for path in paths:
         text = path.read_text(encoding="utf-8")
-        assert "sudo apt update && sudo apt install -y gir1.2-webkit2-4.1" in text
+        assert "sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1" in text
         assert "sudo dnf install -y webkit2gtk4.1" in text
 
 

@@ -14,7 +14,7 @@ Windows 10/11 requires the Microsoft WebView2 Runtime. The Linux x86_64 build
 requires the system GTK 3 and WebKitGTK 4.1 runtime. Install it before starting:
 
 Ubuntu, Debian, Linux Mint:
-sudo apt update && sudo apt install -y gir1.2-webkit2-4.1
+sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1
 
 Fedora:
 sudo dnf install -y webkit2gtk4.1

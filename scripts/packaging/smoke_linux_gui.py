@@ -34,9 +34,17 @@ def health_ok(port: int) -> bool:
         return False
 
 
-def visible_window_id() -> str | None:
+def visible_window_id(process_pid: int) -> str | None:
     result = subprocess.run(
-        ["xdotool", "search", "--onlyvisible", "--name", f"^{WINDOW_TITLE}$"],
+        [
+            "xdotool",
+            "search",
+            "--onlyvisible",
+            "--pid",
+            str(process_pid),
+            "--name",
+            f"^{WINDOW_TITLE}$",
+        ],
         check=False,
         capture_output=True,
         text=True,
@@ -69,7 +77,11 @@ def run_gui_smoke(executable: Path, app_root: Path) -> None:
             if not isinstance(port, int):
                 raise RuntimeError("Launcher lock does not contain an integer port")
             wait_until(lambda: health_ok(port), 30, "the local API health check")
-            window_id = wait_until(visible_window_id, 45, f'the visible "{WINDOW_TITLE}" window')
+            window_id = wait_until(
+                lambda: visible_window_id(process.pid),
+                45,
+                f'the visible "{WINDOW_TITLE}" window owned by PID {process.pid}',
+            )
             subprocess.run(["xdotool", "windowclose", window_id], check=True)
             process.wait(timeout=20)
             if process.returncode != 0:

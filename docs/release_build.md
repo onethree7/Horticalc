@@ -41,7 +41,7 @@ artifacts continue to use Python 3.11.9.
 - Windows 10/11: system-installed Microsoft WebView2 Runtime. Horticalc forces
   `edgechromium` and does not fall back to MSHTML or an external browser.
 - Ubuntu 22.04/24.04, Debian 13, and Linux Mint 22.3:
-  `sudo apt update && sudo apt install -y gir1.2-webkit2-4.1`.
+  `sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1`.
 - Fedora 44: `sudo dnf install -y webkit2gtk4.1`.
 - Ubuntu 22.04/24.04, Debian 13, and Fedora 44 are tested automatically. Linux
   Mint 22.3 is a required manual VM gate. Other distributions are best effort.

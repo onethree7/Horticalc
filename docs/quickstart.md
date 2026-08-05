@@ -17,7 +17,7 @@ The Linux x86_64 release requires the system GTK 3/WebKitGTK 4.1 runtime:
 
 ```bash
 # Ubuntu 22.04/24.04, Debian 13, or Linux Mint 22.3
-sudo apt update && sudo apt install -y gir1.2-webkit2-4.1
+sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1
 
 # Fedora 44
 sudo dnf install -y webkit2gtk4.1

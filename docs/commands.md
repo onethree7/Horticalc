@@ -26,7 +26,7 @@ On Ubuntu, Debian, or Linux Mint install the GTK/WebKitGTK runtime before
 starting Horticalc:
 
 ```bash
-sudo apt update && sudo apt install -y gir1.2-webkit2-4.1
+sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1
 ```
 
 On Fedora:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from scripts.packaging import smoke_linux_gui
 from scripts.packaging.verify_linux_bundle import inspect_linux_bundle, verify_linux_bundle
 
 
@@ -44,3 +45,25 @@ def test_linux_bundle_rejects_mixed_native_gui_runtime(tmp_path, relative) -> No
     assert relative in violations[0]
     with pytest.raises(RuntimeError, match="forbidden native runtime"):
         verify_linux_bundle(tmp_path)
+
+
+def test_gui_smoke_selects_window_owned_by_launcher_pid(monkeypatch) -> None:
+    observed = {}
+
+    def run(command, **kwargs):
+        observed["command"] = command
+        observed["kwargs"] = kwargs
+        return type("Result", (), {"stdout": "9876\n"})()
+
+    monkeypatch.setattr(smoke_linux_gui.subprocess, "run", run)
+
+    assert smoke_linux_gui.visible_window_id(4321) == "9876"
+    assert observed["command"] == [
+        "xdotool",
+        "search",
+        "--onlyvisible",
+        "--pid",
+        "4321",
+        "--name",
+        "^Horticalc GUI$",
+    ]

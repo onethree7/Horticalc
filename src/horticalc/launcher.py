@@ -42,7 +42,7 @@ WINDOW_HEIGHT = 900
 WINDOW_MIN_SIZE = (960, 640)
 WEBVIEW_STORAGE_DIR = "webview"
 WEBVIEW2_DOWNLOAD_URL = "https://developer.microsoft.com/microsoft-edge/webview2/"
-LINUX_APT_WEBVIEW_COMMAND = "sudo apt update && sudo apt install -y gir1.2-webkit2-4.1"
+LINUX_APT_WEBVIEW_COMMAND = "sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1"
 LINUX_DNF_WEBVIEW_COMMAND = "sudo dnf install -y webkit2gtk4.1"
 SOURCE_WEBVIEW_INSTALL_COMMAND = "python -m pip install -e ."
 

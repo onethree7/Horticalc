@@ -24,7 +24,7 @@ Install the Linux runtime before starting Horticalc:
 
 ```bash
 # Ubuntu, Debian, and Linux Mint
-sudo apt update && sudo apt install -y gir1.2-webkit2-4.1
+sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1
 
 # Fedora
 sudo dnf install -y webkit2gtk4.1

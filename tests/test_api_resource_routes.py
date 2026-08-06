@@ -79,13 +79,31 @@ def test_resource_routes_layer_user_yaml_over_shipped_defaults(api_client: TestC
 
     monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", paths.ensure_portable_layout(tmp_path))
     assert api_client.get("/water-profiles").json() == [{"name": "User tap", "filename": "tap.yml"}]
-    assert {entry["filename"] for entry in api_client.get("/nutrient-solutions").json()} == {
+    target_entries = {entry["filename"]: entry for entry in api_client.get("/nutrient-solutions").json()}
+    assert set(target_entries) == {
         "custom.yml",
         "target.yml",
     }
+    assert target_entries["custom.yml"]["deletable"] is True
+    assert target_entries["target.yml"]["deletable"] is False
     assert api_client.get("/water-profiles/tap").json()["mg_per_l"] == {"Ca": 42.0}
     assert api_client.get("/recipes/golden").json()["name"] == "User golden"
     assert api_client.get("/recipes/default").json()["name"] == "Shipped default"
+    recipe_entries = {entry["filename"]: entry for entry in api_client.get("/recipes").json()}
+    assert recipe_entries["golden.yml"]["deletable"] is True
+
+    assert api_client.delete("/nutrient-solutions/target").status_code == 404
+    deleted_target = api_client.delete("/nutrient-solutions/custom")
+    assert deleted_target.status_code == 200
+    assert deleted_target.json() == {"status": "ok", "filename": "custom.yml"}
+    assert api_client.get("/nutrient-solutions/custom").status_code == 404
+
+    deleted_recipe = api_client.delete("/recipes/golden")
+    assert deleted_recipe.status_code == 200
+    assert deleted_recipe.json() == {"status": "ok", "filename": "golden.yml"}
+    assert api_client.get("/recipes/golden").json()["name"] == "Shipped golden"
+    recipe_entries = {entry["filename"]: entry for entry in api_client.get("/recipes").json()}
+    assert recipe_entries["golden.yml"]["deletable"] is False
 
 
 def test_nutrient_solution_round_trips_directional_solver_priorities(

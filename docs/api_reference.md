@@ -108,6 +108,7 @@ Allowed water keys are defined in `src/horticalc/chemistry.py` and reused as `AL
 | `GET` | `/nutrient-solutions` | List target profiles. |
 | `GET` | `/nutrient-solutions/{solution_name}` | Load a target profile. |
 | `POST`/`PUT` | `/nutrient-solutions` | Save a target profile. |
+| `DELETE` | `/nutrient-solutions/{solution_name}` | Delete a user-saved target profile. |
 
 Allowed target keys are defined in `src/horticalc/chemistry.py` as
 `ALLOWED_TARGET_KEYS`. Save payloads always use `name`, `source`, and
@@ -126,6 +127,10 @@ whether it has Solver setup. Resubmit the same valid payload with
 `overwrite: true` only after explicit confirmation. `overwrite` controls the
 write and is not stored in YAML.
 
+List entries include `deletable`, which is true only for the effective profile
+stored under `user/nutrient_solutions/`. Deleting a user override reveals a
+same-named shipped profile; shipped profiles cannot be deleted through the API.
+
 ## Recipes
 
 | Method | Path | Purpose |
@@ -134,8 +139,11 @@ write and is not stored in YAML.
 | `GET` | `/recipes` | List layered shipped/user recipes except the startup-only `default.yml`. |
 | `GET` | `/recipes/{recipe_name}` | Load a recipe. |
 | `POST`/`PUT` | `/recipes` | Save a recipe. |
+| `DELETE` | `/recipes/{recipe_name}` | Delete a user-saved recipe. |
 
 Recipe payloads use `name`, `liters`, `fertilizers`, `fertilizers_allowed`, `urea_as_nh4`, `water_profile`, `osmosis_percent`, and `solver_config`. The calculator uses `fertilizers`; the solver uses `fertilizers_allowed`, `fixed_grams`, and `solver_config`.
+Recipe list entries use the same `deletable` and shipped-profile protection
+rules as nutrient-solution targets.
 
 ## Calculate
 

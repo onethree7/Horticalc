@@ -59,6 +59,10 @@ inputs. Horticalc also asks before replacing any existing target profile. The
 check uses the actual stored filename, so different entered names cannot
 silently overwrite one another after filename cleanup.
 
+Use **Delete** to remove the selected user-saved recipe or target profile after
+confirmation. The button remains disabled for shipped profiles. Deleting a
+user override of a shipped profile restores the shipped version.
+
 Sulfur targets are report-only by default; enable the sulfur objective in the advanced solver settings if sulfur should affect the fit.
 
 ## UI Preferences, Units, Language, And Persistence

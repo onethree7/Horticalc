@@ -25,6 +25,9 @@ Runtime user overrides:
 `ensure_portable_layout()` in `src/horticalc/paths.py` creates writable runtime folders. Fertilizers are loaded by `load_fertilizers()` in `src/horticalc/data_io.py` from the shipped catalog first, then user overrides are applied, and names listed in `user/fertilizers_disabled.txt` are removed. Legacy `user/fertilizers.csv` snapshots are migrated once: custom names move into `user/fertilizers_overrides.csv`, and the original is retained as a `.legacy-backup`. Pre-`Liquid` catalogs map `Form=Flüssig` to liquid.
 
 Water profiles, nutrient solutions, and recipes are read from shipped defaults with `user/` files layered on top by filename. Runtime edits are written only to `user/`; shipped files remain unchanged. Startup removes byte-identical copies and known untouched legacy nutrient-solution copies so existing installations migrate to the overlay model.
+Deleting a recipe or nutrient-solution target removes only its file under
+`user/`. If that file overrode a shipped resource with the same filename, the
+shipped resource becomes effective again.
 
 The shipped calculator recipes are transparent reference calculations, not crop recommendations. `default.yml` is empty. Every non-default reference recipe uses `osmosis_percent: 100` and 1 g/L of each listed product, so its fertilizer-form concentrations follow directly from the declared catalog fractions. Solver and regression fixtures live outside `recipes/` and are never listed as user recipes.
 

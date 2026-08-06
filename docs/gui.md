@@ -110,6 +110,10 @@ names from silently colliding after filename sanitization. Source:
 `frontend/app/profiles.js`, `frontend/app/main.js`, `frontend/app/api.js`, and
 `frontend/app/solver.js`.
 
+The profile Delete button is enabled only for user-saved recipes and target
+profiles. Deletion requires confirmation. Shipped profiles remain protected;
+deleting a same-named user override exposes the shipped profile again.
+
 ## Preferences, Language, Themes, Units
 
 The `Configuration` card in `frontend/index.html` contains the global batch volume input, volume unit selector, solid dose unit selector, liquid dose unit selector, theme selector, language selector, Solver-history limit, and confirmed clear action. The history limit is `0..10000`, defaults to `1000`, counts only unpinned runs, and `0` disables normal logging while retaining pins. The clear action likewise removes only unpinned runs. Theme options are defined in `api/app.py` (`THEME_OPTIONS`) and styled through semantic tokens in `frontend/styles/themes.css`. In addition to the original themes, the selector offers Solarized Light, Dracula, Gruvbox Dark, Catppuccin Mocha, Monokai Classic, Windows 95, and Amber CRT. The retro skins also alter shared typography, corner, depth, and screen-effect tokens; they do not own component selectors. Amber CRT keeps a deliberately faint scanline layer. Disabled controls, hints, and inactive Solver rows use theme-aware contrast tokens. Locale options are `de`, `en`, `nl`, `es`, `zh` (`LOCALE_OPTIONS` in `api/app.py`).

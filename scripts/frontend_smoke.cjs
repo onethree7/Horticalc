@@ -260,6 +260,7 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
     await page.keyboard.press("Enter");
     await page.locator("#solverMode:not(.is-hidden)").waitFor();
     await page.locator("#profileSelect").selectOption({ index: 1 });
+    await page.locator("#deleteProfile:disabled").waitFor();
     await exerciseProfileFavorite(page, profileFavorite);
     await page.locator("#loadProfile").click();
     await page.locator("#solverAllowedFromRecipe").click();
@@ -268,6 +269,15 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
     let savedTargetLoadCount = 0;
     let acceptedOverwriteCount = 0;
     await page.route("**/nutrient-solutions/Browser_solver_setup*", async (route) => {
+      if (route.request().method() === "DELETE") {
+        savedTargetPayload = null;
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ status: "ok", filename: "Browser_solver_setup.yml" }),
+        });
+        return;
+      }
       savedTargetLoadCount += 1;
       await route.fulfill({
         status: 200,
@@ -307,7 +317,11 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
       const response = await route.fetch();
       const profiles = await response.json();
       if (savedTargetPayload) {
-        profiles.push({ name: savedTargetPayload.name, filename: "Browser_solver_setup.yml" });
+        profiles.push({
+          name: savedTargetPayload.name,
+          filename: "Browser_solver_setup.yml",
+          deletable: true,
+        });
       }
       await route.fulfill({ response, json: profiles });
     });
@@ -378,6 +392,19 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
     if (!scaledFixedValues.some((value) => Math.abs(value - 4) <= 0.0001)) {
       throw new Error(`Fixed amount did not scale from 2 to 4: ${JSON.stringify(scaledFixedValues)}`);
     }
+
+    dialogs.length = 0;
+    acceptNextDialog = true;
+    await page.locator("#deleteProfile:not(:disabled)").click();
+    await waitForSmokeCondition(
+      page,
+      () => savedTargetPayload === null && dialogs.length === 1,
+      "Confirmed profile deletion did not remove the saved target",
+    );
+    await page.locator("#profileSelect option[value='Browser_solver_setup.yml']")
+      .waitFor({ state: "detached" });
+    await page.locator("#deleteProfile:disabled").waitFor();
+    dialogs.length = 0;
 
     let solveRequestCount = 0;
     await page.route("**/solve", async (route) => {

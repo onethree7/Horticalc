@@ -178,5 +178,5 @@ def test_resource_list_skips_invalid_yaml(api_client: TestClient, monkeypatch, t
     response = api_client.get("/recipes")
 
     assert response.status_code == 200
-    assert response.json() == [{"name": "Good", "filename": "good.yml"}]
+    assert response.json() == [{"name": "Good", "filename": "good.yml", "deletable": True}]
     assert "Skipping invalid YAML resource" in caplog.text

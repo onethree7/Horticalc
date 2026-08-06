@@ -1,9 +1,8 @@
-name: urea_n_mix
+name: Reference - Agrolution Special 313, 1 g/L
 liters: 10.0
 water_profile: default
+osmosis_percent: 100
 urea_as_nh4: false
 fertilizers:
 - name: Agrolution Special 313 14-7-14+14CaO+TE
-  grams: 9
-- name: Yara Tera CALCINIT
-  grams: 2
+  grams: 10.0

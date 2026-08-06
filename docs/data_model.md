@@ -25,6 +25,11 @@ Runtime user overrides:
 `ensure_portable_layout()` in `src/horticalc/paths.py` creates writable runtime folders. Fertilizers are loaded by `load_fertilizers()` in `src/horticalc/data_io.py` from the shipped catalog first, then user overrides are applied, and names listed in `user/fertilizers_disabled.txt` are removed. Legacy `user/fertilizers.csv` snapshots are migrated once: custom names move into `user/fertilizers_overrides.csv`, and the original is retained as a `.legacy-backup`. Pre-`Liquid` catalogs map `Form=Flüssig` to liquid.
 
 Water profiles, nutrient solutions, and recipes are read from shipped defaults with `user/` files layered on top by filename. Runtime edits are written only to `user/`; shipped files remain unchanged. Startup removes byte-identical copies and known untouched legacy nutrient-solution copies so existing installations migrate to the overlay model.
+Deleting a recipe or nutrient-solution target removes only its file under
+`user/`. If that file overrode a shipped resource with the same filename, the
+shipped resource becomes effective again.
+
+The shipped calculator recipes are transparent reference calculations, not crop recommendations. `default.yml` is empty. Every non-default reference recipe uses `osmosis_percent: 100` and 1 g/L of each listed product, so its fertilizer-form concentrations follow directly from the declared catalog fractions. Solver and regression fixtures live outside `recipes/` and are never listed as user recipes.
 
 API list routes omit malformed or unreadable user YAML files and log a warning.
 Water and target mappings must contain finite, non-negative numbers; API save
@@ -37,7 +42,7 @@ is a schema-versioned object containing a UUID, UTC timestamp, canonical Solver
 setup, unchanged `SolveResult` mapping, fertilizer solid/liquid kinds, optional
 Boolean `pinned` metadata, and the
 EC/NPK/element projection needed by the printable UI output. The setup embeds
-the actual water values and osmosis share rather than depending on a mutable
+the actual water composition and RO-water proportion rather than depending on a mutable
 water-profile filename.
 
 Entries are stored oldest first. Summaries return pinned entries first and
@@ -128,7 +133,7 @@ mg_per_l:
 Osmosis behavior:
 
 - `osmosis_percent` must be within `0..100`; out-of-range and non-finite values are rejected.
-- Mixed water values are multiplied by `1 - osmosis_percent / 100`.
+- Mixed water concentrations are multiplied by `1 - osmosis_percent / 100`.
 - RO water is modelled as `0 mg/L` for every input.
 
 ## Recipes
@@ -187,7 +192,7 @@ contract as a recipe. `load_nutrient_solution_data()` returns `name`, `source`,
 and `targets_mg_per_l`, plus every optional Solver-setup field present in the
 YAML.
 
-Target profiles saved with **Save Solver setup** may additionally contain the
+Target profiles saved with **Save/load Solver setup** may additionally contain the
 current Solver inputs:
 
 ```yaml
@@ -265,8 +270,7 @@ The current ion set in `src/horticalc/core.py` is `NH4+`, `K+`, `Ca2+`, `Mg2+`, 
 
 `solver_model` identifies the actual runtime path (`mass_nnls`, `hierarchical`,
 or `nnls_tuning`).
-`objective_elements` is the authoritative list of what
-the solver optimized. The solver matrix benchmark scores this list.
+`objective_elements` is the authoritative list of what the solver optimized.
 `target_priorities` contains the resolved directional tiers used by a
 hierarchical solve and is empty for the other models. `priority_stages`
 contains the retained maximum and total `mg/L` residual for each populated

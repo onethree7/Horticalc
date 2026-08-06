@@ -72,6 +72,43 @@ async function exerciseProfileFavorite(page, button) {
   await button.click();
 }
 
+async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGrams) {
+  await page.locator("#profileSelect").selectOption("Browser_solver_setup.yml");
+  await page.locator("#includeSolverSetup").uncheck();
+  await page.locator("#loadProfile").click();
+  await waitForSmokeCondition(
+    page,
+    () => getLoadCount() === 1,
+    "Target-only profile load did not complete",
+  );
+  if (await page.locator("#solverFixedTable input").count()) {
+    throw new Error("Target-only profile load unexpectedly restored the Solver setup");
+  }
+  if (await page.locator("#includeSolverSetup").isChecked()) {
+    throw new Error("Target-only profile load changed the setup checkbox");
+  }
+
+  await page.locator("#includeSolverSetup").check();
+  await page.locator("#loadProfile").click();
+  await page.waitForFunction(() => Array.from(
+    document.querySelectorAll("#solverFixedTable input"),
+    (input) => Number(input.value),
+  ).some((value) => value === 2));
+  if (getLoadCount() !== 2) {
+    throw new Error(`Setup profile load count was ${getLoadCount()}, expected 2`);
+  }
+  const restoredFixedValues = await page.locator("#solverFixedTable input")
+    .evaluateAll((inputs) => inputs.map((input) => input.value));
+  if (!restoredFixedValues.some((value) => Number(value) === 2)) {
+    throw new Error(
+      `Loading a target profile did not restore its fixed amount: ${JSON.stringify({
+        saved: savedFixedGrams,
+        restored: restoredFixedValues,
+      })}`,
+    );
+  }
+}
+
 (async () => {
   if (!executablePath) {
     throw new Error("Chrome or Chromium is required; set HORTICALC_BROWSER_PATH if it is installed elsewhere");
@@ -177,6 +214,7 @@ async function exerciseProfileFavorite(page, button) {
     await page.locator("#favoriteProfile:disabled").waitFor();
     await page.locator("#profileSelect").selectOption({ index: 1 });
     await exerciseProfileFavorite(page, profileFavorite);
+    await page.locator("#loadProfile").click();
 
     await page.locator("#calculateBtn").click();
     await page.locator("#copyCalculatorResults:not([disabled])").waitFor();
@@ -222,13 +260,25 @@ async function exerciseProfileFavorite(page, button) {
     await page.keyboard.press("Enter");
     await page.locator("#solverMode:not(.is-hidden)").waitFor();
     await page.locator("#profileSelect").selectOption({ index: 1 });
+    await page.locator("#deleteProfile:disabled").waitFor();
     await exerciseProfileFavorite(page, profileFavorite);
     await page.locator("#loadProfile").click();
     await page.locator("#solverAllowedFromRecipe").click();
 
     let savedTargetPayload = null;
+    let savedTargetLoadCount = 0;
     let acceptedOverwriteCount = 0;
     await page.route("**/nutrient-solutions/Browser_solver_setup*", async (route) => {
+      if (route.request().method() === "DELETE") {
+        savedTargetPayload = null;
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ status: "ok", filename: "Browser_solver_setup.yml" }),
+        });
+        return;
+      }
+      savedTargetLoadCount += 1;
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -267,7 +317,11 @@ async function exerciseProfileFavorite(page, button) {
       const response = await route.fetch();
       const profiles = await response.json();
       if (savedTargetPayload) {
-        profiles.push({ name: savedTargetPayload.name, filename: "Browser_solver_setup.yml" });
+        profiles.push({
+          name: savedTargetPayload.name,
+          filename: "Browser_solver_setup.yml",
+          deletable: true,
+        });
       }
       await route.fulfill({ response, json: profiles });
     });
@@ -275,7 +329,7 @@ async function exerciseProfileFavorite(page, button) {
     await page.locator("#solverOverrides").evaluate((element) => { element.open = true; });
     const firstFixedAmount = page.locator("#solverFixedTable input").first();
     await firstFixedAmount.fill("2");
-    await page.locator("#saveSolverSetup").uncheck();
+    await page.locator("#includeSolverSetup").uncheck();
     await page.locator("#solverSetupSaveWarning:not(.is-hidden)").waitFor();
     await page.locator("#profileName").fill("Browser solver setup");
     await page.locator("#saveProfile").click();
@@ -285,7 +339,7 @@ async function exerciseProfileFavorite(page, button) {
     dialogs.length = 0;
     if (savedTargetPayload) throw new Error("Dismissed target-only warning still saved the profile");
 
-    await page.locator("#saveSolverSetup").check();
+    await page.locator("#includeSolverSetup").check();
     await page.locator("#saveProfile").click();
     await page.locator("#profileSelect option", { hasText: "Browser solver setup" })
       .waitFor({ state: "attached" });
@@ -300,23 +354,11 @@ async function exerciseProfileFavorite(page, button) {
     if (await page.locator("#solverFixedTable input").count()) {
       throw new Error("Clearing allowed fertilizers did not clear the fixed-amount table");
     }
-    await page.locator("#profileSelect").selectOption("Browser_solver_setup.yml");
-    await page.locator("#loadProfile").click();
-    await page.waitForFunction(() => Array.from(
-      document.querySelectorAll("#solverFixedTable input"),
-      (input) => Number(input.value),
-    ).some((value) => value === 2));
-    await page.locator("#saveSolverSetup:checked").waitFor();
-    const restoredFixedValues = await page.locator("#solverFixedTable input")
-      .evaluateAll((inputs) => inputs.map((input) => input.value));
-    if (!restoredFixedValues.some((value) => Number(value) === 2)) {
-      throw new Error(
-        `Loading a target profile did not restore its fixed amount: ${JSON.stringify({
-          saved: savedTargetPayload.fixed_grams,
-          restored: restoredFixedValues,
-        })}`,
-      );
-    }
+    await exerciseTargetProfileLoadModes(
+      page,
+      () => savedTargetLoadCount,
+      savedTargetPayload.fixed_grams,
+    );
 
     dialogs.length = 0;
     acceptNextDialog = true;
@@ -332,14 +374,14 @@ async function exerciseProfileFavorite(page, button) {
     dialogs.length = 0;
 
     await page.locator("#solverFixedTable input").first().fill("0");
-    await page.locator("#saveSolverSetup").uncheck();
+    await page.locator("#includeSolverSetup").uncheck();
     await page.locator("#saveProfile").click();
     await waitForSmokeCondition(page, () => dialogs.length > 0, "Expected stored-setup removal warning");
     if (dialogs.length !== 1 || !dialogs[0].toLowerCase().includes("setup")) {
       throw new Error(`Expected stored-setup removal warning, got: ${JSON.stringify(dialogs)}`);
     }
     dialogs.length = 0;
-    await page.locator("#saveSolverSetup").check();
+    await page.locator("#includeSolverSetup").check();
     await page.locator("#solverFixedTable input").first().fill("2");
 
     const litersInput = page.locator("#configLiters");
@@ -350,6 +392,19 @@ async function exerciseProfileFavorite(page, button) {
     if (!scaledFixedValues.some((value) => Math.abs(value - 4) <= 0.0001)) {
       throw new Error(`Fixed amount did not scale from 2 to 4: ${JSON.stringify(scaledFixedValues)}`);
     }
+
+    dialogs.length = 0;
+    acceptNextDialog = true;
+    await page.locator("#deleteProfile:not(:disabled)").click();
+    await waitForSmokeCondition(
+      page,
+      () => savedTargetPayload === null && dialogs.length === 1,
+      "Confirmed profile deletion did not remove the saved target",
+    );
+    await page.locator("#profileSelect option[value='Browser_solver_setup.yml']")
+      .waitFor({ state: "detached" });
+    await page.locator("#deleteProfile:disabled").waitFor();
+    dialogs.length = 0;
 
     let solveRequestCount = 0;
     await page.route("**/solve", async (route) => {

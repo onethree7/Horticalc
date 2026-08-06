@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from horticalc.data_io import Fertilizer, load_molar_masses
 from horticalc.solver import _bounded_nnls, _nnls, _singleton_supplier_pass, solve_recipe_data
@@ -91,4 +92,4 @@ def test_singleton_underfill_cannot_exceed_solver_max() -> None:
         upper_bounds_full=np.array([2.0]),
     )
 
-    assert updated[0] <= 2.0
+    assert updated[0] == pytest.approx(2.0, abs=1e-12)

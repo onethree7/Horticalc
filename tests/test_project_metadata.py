@@ -33,7 +33,9 @@ def test_pyproject_declares_runtime_dependencies_used_by_entrypoints() -> None:
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     dependency_names = _dependency_names(pyproject["project"]["dependencies"])
 
-    assert {"fastapi", "pydantic", "uvicorn", "pyyaml", "numpy", "scipy"} <= dependency_names
+    assert {"fastapi", "pydantic", "uvicorn", "pyyaml", "numpy", "scipy", "pywebview"} <= dependency_names
+    assert sum(dependency.startswith("pywebview") for dependency in pyproject["project"]["dependencies"]) == 2
+    assert pyproject["project"]["requires-python"] == ">=3.10,<3.14"
     assert pyproject["project"]["license"] == "GPL-3.0-or-later"
     assert pyproject["project"]["license-files"] == ["LICENSE"]
 
@@ -74,6 +76,8 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert "Horticalc is an independent project" in readme
     assert "point-in-time snapshots" in readme
     assert "Those official documents always take precedence" in readme
+    assert "Microsoft WebView2 Runtime" in readme
+    assert "does not require or control an installed" in readme
     assert "scripts/packaging/README.txt" in windows_build
     assert "scripts/packaging/README.txt" in linux_build
     assert 'Join-Path $repoRoot "LICENSE"' in windows_build
@@ -84,6 +88,21 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert 'legacy_fertilizers.with_suffix(".csv.legacy-backup")' in release_workflow
     assert "csv.DictReader(handle)" in release_workflow
     assert "Clean smoke-test runtime state" in release_workflow
+    assert "HORTICALC_NO_GUI" in release_workflow
+    assert "HORTICALC_NO_BROWSER" not in release_workflow
+    assert "gir1.2-webkit2-4.1" in release_workflow
+    assert "Unexpected bundled renderer" in release_workflow
+    assert "verify_linux_bundle.py" in linux_build
+    assert "verify_linux_bundle.py" in release_workflow
+    assert "smoke_linux_gui.py" in release_workflow
+    assert "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1" in release_workflow
+    for supported_linux in ("ubuntu:22.04", "ubuntu:24.04", "debian:13", "fedora:44"):
+        assert supported_linux in release_workflow
+    assert "sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1" in release_workflow
+    assert "sudo dnf install -y webkit2gtk4.1" in release_workflow
+    assert "needs:\n      - build\n      - linux-compatibility" in release_workflow
+    assert "name: Horticalc 0.6.2" in release_workflow
+    assert "body_path: .github/release-notes/v0.6.2.md" in release_workflow
     cleanup_index = release_workflow.index("Clean smoke-test runtime state")
     assert cleanup_index < release_workflow.index("Package artifact (Linux)")
     assert cleanup_index < release_workflow.index("Package artifact (Windows)")
@@ -95,10 +114,40 @@ def test_ci_resolves_release_constraints() -> None:
     assert "Release dependency resolution" in workflow
     assert "PIP_CONSTRAINT: constraints-release.txt" in workflow
     assert "python -m pip install --dry-run . pyinstaller" in workflow
+    assert "gir1.2-webkit2-4.1" in workflow
+
+
+def test_pyinstaller_selects_one_native_webview_backend() -> None:
+    spec = (ROOT / "scripts" / "packaging" / "horticalc.spec").read_text(encoding="utf-8")
+
+    assert '"webview.platforms.edgechromium"' in spec
+    assert '"webview.platforms.gtk"' in spec
+    assert "support Windows and Linux only" in spec
+    assert "a.exclude_system_libraries()" in spec
+    for hook in ("pyi_rth_gtk.py", "pyi_rth_gdkpixbuf.py", "pyi_rth_gio.py", "pyi_rth_glib.py", "pyi_rth_gi.py"):
+        assert f'"{hook}"' in spec
+    for system_data in ("gi_typelibs/", "lib/gdk-pixbuf/", "share/glib-2.0/", "share/icons/"):
+        assert f'"{system_data}"' in spec
+    for excluded in ("PyQt5", "PyQt6", "PySide2", "PySide6", "cefpython3", "webview.platforms.mshtml"):
+        assert f'"{excluded}"' in spec
+
+
+def test_linux_runtime_commands_do_not_drift_between_user_docs() -> None:
+    paths = (
+        ROOT / "README.md",
+        ROOT / "scripts" / "packaging" / "README.txt",
+        ROOT / "docs" / "quickstart.md",
+        ROOT / "docs" / "commands.md",
+        ROOT / "docs" / "release_build.md",
+    )
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        assert "sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1" in text
+        assert "sudo dnf install -y webkit2gtk4.1" in text
 
 
 def test_runtime_package_api_and_cli_versions_match(api_client: TestClient) -> None:
-    assert __version__ == "0.6.1"
+    assert __version__ == "0.6.2"
     assert version("horticalc") == __version__
     assert api_client.get("/openapi.json").json()["info"]["version"] == __version__
     result = subprocess.run(
@@ -112,7 +161,24 @@ def test_runtime_package_api_and_cli_versions_match(api_client: TestClient) -> N
 
 
 def test_release_tag_must_match_the_single_version_literal() -> None:
-    assert expected_release_tag() == "v0.6.1"
-    validate_release_tag("v0.6.1")
-    with pytest.raises(ValueError, match="must be exactly v0.6.1"):
+    assert expected_release_tag() == "v0.6.2"
+    validate_release_tag("v0.6.2")
+    with pytest.raises(ValueError, match="must be exactly v0.6.2"):
         validate_release_tag("v4.1")
+
+
+def test_versioned_release_notes_cover_important_upgrade_information() -> None:
+    notes = (ROOT / ".github" / "release-notes" / "v0.6.2.md").read_text(encoding="utf-8")
+
+    for required_text in (
+        "Why the launcher changed",
+        "Windows 10 and Windows 11",
+        "Ubuntu 22.04",
+        "Debian 13",
+        "Fedora 44",
+        "HORTICALC_NO_GUI",
+        "gir1.2-webkit2-4.1",
+        "webkit2gtk4.1",
+        "Windows native GUI automation",
+    ):
+        assert required_text in notes

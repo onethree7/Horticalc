@@ -63,7 +63,7 @@ def main(argv: list[str] | None = None) -> None:
             description="Horticalc Solver – Solver Recipe to Nutrient Solution",
         )
         parser.add_argument("--version", action="version", version=__version__)
-        _add_common_arguments(parser, "Path to a Solver Recipe (YAML), e.g. recipes/solve_golden.yml")
+        _add_common_arguments(parser, "Path to a Solver Recipe (YAML)")
         add_solver_config_arguments(parser)
         args = parser.parse_args(args_list[1:])
         recipe_path, water_profile_path = _resolve_cli_paths(args, parser)
@@ -85,7 +85,10 @@ def main(argv: list[str] | None = None) -> None:
             description="Horticalc Nutrient Solution – Recipe to Solution Output",
         )
         parser.add_argument("--version", action="version", version=__version__)
-        _add_common_arguments(parser, "Path to a Recipe (YAML), e.g. recipes/golden.yml")
+        _add_common_arguments(
+            parser,
+            "Path to a Recipe (YAML), e.g. recipes/reference_calcinit_1g_per_l.yml",
+        )
         args = parser.parse_args(args_list)
         recipe_path, water_profile_path = _resolve_cli_paths(args, parser)
         try:

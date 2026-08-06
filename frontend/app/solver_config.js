@@ -10,7 +10,7 @@ function normalizeDefinition(definition) {
   return {
     key: String(source.key || ""),
     type: String(source.type || ""),
-    defaultValue: Object.hasOwn(source, "default") ? source.default : source.defaultValue,
+    defaultValue: Object.prototype.hasOwnProperty.call(source, "default") ? source.default : source.defaultValue,
     minimum: source.minimum,
     maximum: source.maximum,
     exclusiveMinimum: source.exclusive_minimum ?? source.exclusiveMinimum,
@@ -81,7 +81,7 @@ export function applySolverConfig(definitions, controls, config = {}) {
   definitions.forEach((definition) => {
     const input = controls[definition.key];
     if (!input) return;
-    const value = Object.hasOwn(sanitized, definition.key)
+    const value = Object.prototype.hasOwnProperty.call(sanitized, definition.key)
       ? sanitized[definition.key]
       : definition.defaultValue;
     if (definition.key === "nitrogen_objective_mode") {

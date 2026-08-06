@@ -79,11 +79,15 @@ export const fetchRecipes = (message) => getJson("/recipes", message);
 export const fetchRecipeData = (filename, message) =>
   getJson(`/recipes/${encodeURIComponent(filename)}`, message);
 export const saveRecipeData = (payload, message) => postJson("/recipes", payload, message);
+export const deleteRecipeData = (filename, message) =>
+  deleteJson(`/recipes/${encodeURIComponent(filename)}`, message);
 export const fetchNutrientSolutions = (message) => getJson("/nutrient-solutions", message);
 export const fetchNutrientSolutionData = (filename, message) =>
   getJson(`/nutrient-solutions/${encodeURIComponent(filename)}`, message);
 export const saveNutrientSolutionData = (payload, message) =>
   postJson("/nutrient-solutions", payload, message);
+export const deleteNutrientSolutionData = (filename, message) =>
+  deleteJson(`/nutrient-solutions/${encodeURIComponent(filename)}`, message);
 export const calculate = (payload, message) => postJson("/calculate", payload, message);
 export const solve = (payload, message) => postJson("/solve", payload, message);
 export const fetchSolverHistory = (message) => getJson("/solver-history", message);

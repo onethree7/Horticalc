@@ -40,6 +40,7 @@ from .validation import non_negative_float, percentage_float, positive_float, un
 ALWAYS_IGNORED_TARGETS = {"NA", "CL"}
 S_TARGETS = {"S"}
 DEFAULT_SOLVER_CONFIG = dict(SOLVER_CONFIG_DEFAULTS)
+SOLVER_OUTPUT_DOSE_EPSILON = 1e-10
 
 
 @dataclass
@@ -301,6 +302,20 @@ def _build_matrix(
     return matrix
 
 
+def _build_n_total_overshoot_weights(
+    objective_keys: List[str],
+    scales: np.ndarray,
+    base_priority: np.ndarray,
+    governor_weight: float,
+) -> np.ndarray:
+    weights = np.zeros(len(objective_keys), dtype=float)
+    for idx, key in enumerate(objective_keys):
+        if key == "N_total":
+            scale = max(scales[idx], 1e-12)
+            weights[idx] = (base_priority[idx] / scale) * max(0.0, float(governor_weight))
+    return weights
+
+
 def _solve_weights(
     A: np.ndarray,
     b: np.ndarray,
@@ -341,11 +356,12 @@ def _solve_weights(
     )
     overshoot_only_weights = None
     if n_total_governor_enabled:
-        overshoot_only_weights = np.zeros(len(objective_keys), dtype=float)
-        for idx, key in enumerate(objective_keys):
-            if key == "N_total":
-                scale = max(scales[idx], 1e-12)
-                overshoot_only_weights[idx] = (base_priority[idx] / scale) * max(0.0, float(n_total_governor_weight))
+        overshoot_only_weights = _build_n_total_overshoot_weights(
+            objective_keys,
+            scales,
+            base_priority,
+            n_total_governor_weight,
+        )
     return _nnls_weighted_irls(
         A_var,
         b,
@@ -559,7 +575,7 @@ def _build_solution_payload(
     ferts_out: list[dict[str, float | str]] = []
     for idx, fert in enumerate(allowed):
         grams = float(weights[idx])
-        if grams > 0:
+        if grams > SOLVER_OUTPUT_DOSE_EPSILON:
             ferts_out.append({"name": fert.name, "grams": grams})
     recipe_payload = {
         "liters": liters,

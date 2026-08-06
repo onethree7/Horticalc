@@ -15,7 +15,7 @@ Horticalc release archives are built by `.github/workflows/release.yml`.
 The release workflow:
 
 - builds platform archives with PyInstaller onedir packaging;
-- smoke-tests the packaged application with `HORTICALC_NO_BROWSER=1`;
+- smoke-tests the packaged application with `HORTICALC_NO_GUI=1`;
 - publishes a `.sha256` checksum file beside each release archive;
 - creates GitHub Artifact Attestations for each archive and checksum file.
 
@@ -32,7 +32,7 @@ section in [docs/release_build.md](docs/release_build.md).
 ## Antivirus False Positives
 
 Horticalc is an open-source local calculator packaged as a portable app. The
-launcher starts a FastAPI server bound to `127.0.0.1`, opens a local browser
+launcher starts a FastAPI server bound to `127.0.0.1`, opens a native pywebview
 window, and writes runtime data only below the extracted app folder. The runtime
 model is documented in `docs/release_build.md` and implemented in
 `src/horticalc/launcher.py` and `src/horticalc/paths.py`.

@@ -14,11 +14,12 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
   const select = qs("#profileSelect");
   const favoriteButton = qs("#favoriteProfile");
   const loadButton = qs("#loadProfile");
+  const deleteButton = qs("#deleteProfile");
   const resetButton = qs("#resetProfile");
   const nameInput = qs("#profileName");
   const saveButton = qs("#saveProfile");
-  const solverSetupOption = qs("#solverSetupSaveOption");
-  const saveSolverSetupInput = qs("#saveSolverSetup");
+  const solverSetupOption = qs("#solverSetupOption");
+  const includeSolverSetupInput = qs("#includeSolverSetup");
   const solverSetupWarning = qs("#solverSetupSaveWarning");
   const solverActions = qs("#solverProfileActions");
   const saveSolverAsRecipeButton = qs("#saveSolverAsRecipe");
@@ -36,7 +37,11 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
     return mode === "solver" ? favoriteNutrientSolutions : favoriteRecipes;
   }
 
-  function refreshFavoriteButton() {
+  function activeProfiles() {
+    return mode === "solver" ? nutrientSolutions : recipes;
+  }
+
+  function refreshSelectionActions() {
     const selected = select.value;
     const favorite = Boolean(selected) && activeFavorites().has(selected);
     const label = t(favorite ? "profile.removeFavorite" : "profile.addFavorite");
@@ -45,11 +50,14 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
     favoriteButton.setAttribute("aria-pressed", String(favorite));
     favoriteButton.setAttribute("aria-label", label);
     favoriteButton.title = label;
+    deleteButton.disabled = !activeProfiles().some((profile) =>
+      profile.filename === selected && profile.deletable
+    );
   }
 
   function refreshSetupWarning() {
     const activeCount = actions.getActiveFixedAmountCount();
-    const visible = mode === "solver" && !saveSolverSetupInput.checked && activeCount > 0;
+    const visible = mode === "solver" && !includeSolverSetupInput.checked && activeCount > 0;
     solverSetupWarning.classList.toggle("is-hidden", !visible);
     solverSetupWarning.textContent = visible
       ? t("profile.solverSetupFixedWarning", { count: activeCount })
@@ -57,12 +65,12 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
   }
 
   function setSetupIncluded(included) {
-    saveSolverSetupInput.checked = Boolean(included);
+    includeSolverSetupInput.checked = Boolean(included);
     refreshSetupWarning();
   }
 
   function renderOptions() {
-    const profiles = mode === "solver" ? nutrientSolutions : recipes;
+    const profiles = activeProfiles();
     const favorites = activeFavorites();
     const selected = select.value;
     const empty = document.createElement("option");
@@ -76,7 +84,7 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
       return option;
     }));
     select.value = selected;
-    refreshFavoriteButton();
+    refreshSelectionActions();
   }
 
   async function toggleFavorite() {
@@ -88,8 +96,52 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
     const preferenceKey = mode === "solver" ? "favorite_nutrient_solutions" : "favorite_recipes";
     renderOptions();
     select.value = filename;
-    refreshFavoriteButton();
+    refreshSelectionActions();
     await api.persistPreferences({ [preferenceKey]: [...favorites] });
+  }
+
+  async function deleteSelected() {
+    const filename = select.value;
+    const selectedProfile = activeProfiles().find((profile) => profile.filename === filename);
+    if (!selectedProfile?.deletable) return;
+    if (!window.confirm(t("profile.confirmDelete", { name: selectedProfile.name || filename }))) return;
+
+    const version = requests.reserve();
+    const activeMode = mode;
+    const deleteProfile = activeMode === "solver"
+      ? api.deleteNutrientSolutionData
+      : api.deleteRecipeData;
+    const fetchProfiles = activeMode === "solver"
+      ? api.fetchNutrientSolutions
+      : api.fetchRecipes;
+    const loadError = activeMode === "solver"
+      ? t("errors.loadNutrientSolutions")
+      : t("errors.loadRecipes");
+    try {
+      await deleteProfile(filename, t("errors.deleteProfileFailed"));
+      const updatedProfiles = await fetchProfiles(loadError);
+      if (!requests.isCurrent(version) || mode !== activeMode) return;
+
+      if (activeMode === "solver") nutrientSolutions = updatedProfiles;
+      else recipes = updatedProfiles;
+
+      const favorites = activeMode === "solver" ? favoriteNutrientSolutions : favoriteRecipes;
+      const profileStillExists = updatedProfiles.some((profile) => profile.filename === filename);
+      if (!profileStillExists && favorites.delete(filename)) {
+        const preferenceKey = activeMode === "solver"
+          ? "favorite_nutrient_solutions"
+          : "favorite_recipes";
+        await api.persistPreferences({ [preferenceKey]: [...favorites] });
+      }
+      if (!requests.isCurrent(version) || mode !== activeMode) return;
+      const replacement = updatedProfiles.find((profile) => profile.filename === filename);
+      nameInput.value = replacement?.name || "";
+      renderOptions();
+    } catch (error) {
+      if (requests.isCurrent(version) && mode === activeMode) {
+        notifications.reportError(error, t("errors.deleteProfileFailed"));
+      }
+    }
   }
 
   function setMode(nextMode) {
@@ -115,13 +167,16 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
     }
     const version = requests.reserve();
     const activeMode = mode;
+    const includeSolverSetup = includeSolverSetupInput.checked;
     try {
       if (activeMode === "solver") {
         const solution = await api.fetchNutrientSolutionData(select.value, t("errors.loadNutrientSolution"));
         if (!requests.isCurrent(version) || mode !== activeMode) return;
-        await actions.applyNutrientSolution(solution, () => requests.isCurrent(version));
+        await actions.applyNutrientSolution(solution, {
+          includeSetup: includeSolverSetup,
+          isCurrent: () => requests.isCurrent(version),
+        });
         if (!requests.isCurrent(version) || mode !== activeMode) return;
-        setSetupIncluded(actions.hasNutrientSolutionSetup(solution));
         nameInput.value = solution.name || "";
       } else {
         const recipe = await api.fetchRecipeData(select.value, t("errors.loadRecipe"));
@@ -163,7 +218,7 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
     }
     try {
       if (mode === "solver") {
-        const includeSetup = saveSolverSetupInput.checked;
+        const includeSetup = includeSolverSetupInput.checked;
         if (!includeSetup) {
           const activeCount = actions.getActiveFixedAmountCount();
           if (activeCount > 0 && !window.confirm(t("profile.confirmOmitFixedAmounts", { count: activeCount }))) {
@@ -230,11 +285,12 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
     if (mounted) return;
     mounted = true;
     loadButton.addEventListener("click", loadSelected);
+    deleteButton.addEventListener("click", deleteSelected);
     resetButton.addEventListener("click", reset);
     saveButton.addEventListener("click", save);
-    select.addEventListener("change", refreshFavoriteButton);
+    select.addEventListener("change", refreshSelectionActions);
     favoriteButton.addEventListener("click", toggleFavorite);
-    saveSolverSetupInput.addEventListener("change", refreshSetupWarning);
+    includeSolverSetupInput.addEventListener("change", refreshSetupWarning);
     saveSolverAsRecipeButton.addEventListener("click", saveSolverRecipe);
     applySolverButton.addEventListener("click", () => actions.applySolverResult({ switchToCalculator: true }));
     setMode("calculator");

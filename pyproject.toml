@@ -4,7 +4,7 @@ dynamic = ["version"]
 description = "Horticalc (molar-correct) – CSV/YAML Backend"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE"]
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.14"
 dependencies = [
   "PyYAML>=6.0",
   "fastapi>=0.136.3",
@@ -13,6 +13,8 @@ dependencies = [
   "numpy>=1.26.0",
   "scipy>=1.11",
   "tzdata>=2024.1; platform_system == \"Windows\"",
+  "pywebview==6.2.1; platform_system == \"Windows\"",
+  "pywebview[gtk]==6.2.1; platform_system == \"Linux\"",
 ]
 
 [project.optional-dependencies]
@@ -29,9 +31,6 @@ horticalc-launcher = "horticalc.launcher:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "."]
-markers = [
-  "research: optional tests for the removable solver research harness",
-]
 
 [tool.ruff]
 target-version = "py310"

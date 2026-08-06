@@ -21,10 +21,15 @@ Use these terms consistently in docs, UI labels, and API descriptions.
 | German | English | Dutch | Spanish | Simplified Chinese |
 | --- | --- | --- | --- | --- |
 | Dünger-Editor | Fertilizer editor | Meststoffen-editor | Editor de fertilizantes | 肥料编辑器 |
-| Wasserwerte | Water values | Waterwaarden | Valores del agua | 水质数值 |
+| Wasserwerte | Water analysis | Wateranalyse | Análisis del agua | 水质分析 |
 | Rechner | Calculator | Calculator | Calculadora | 计算器 |
 | Solver | Solver | Solver | Solver | Solver |
 | Zielprofil | Target profile | Doelprofiel | Perfil objetivo | 目标配置 |
+
+For water-analysis UI copy, use the domain terms **water analysis** for the
+section, **water composition** for the measured ion values, and **RO-water
+proportion** for the reverse-osmosis mixing percentage. Keep
+`water_profile` and `osmosis_percent` unchanged in API, YAML, and file names.
 
 Do not translate data contract names when they refer to actual files, payloads, or keys. Examples: `Düngername`, `fertilizers_allowed`, `N_total`, `NO3`, `mg/L`, `solver_config`.
 

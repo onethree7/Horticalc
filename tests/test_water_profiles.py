@@ -86,8 +86,10 @@ def test_co3_water_profile_converts_to_hco3_for_solution() -> None:
 
     result = compute_solution(recipe, {}, molar_masses, water_mg_l)
 
-    assert result.water_elements_mg_l.get("HCO3", 0.0) > 0.0
-    assert result.water_ions_mmol_l.get("HCO3-", 0.0) > 0.0
+    expected_hco3_mg_l = 120.0 * molar_masses["HCO3"] / molar_masses["CO3"]
+    expected_hco3_mmol_l = expected_hco3_mg_l / molar_masses["HCO3"]
+    assert result.water_elements_mg_l["HCO3"] == pytest.approx(expected_hco3_mg_l, rel=0, abs=1e-12)
+    assert result.water_ions_mmol_l["HCO3-"] == pytest.approx(expected_hco3_mmol_l, rel=0, abs=1e-12)
 
 
 def test_solve_recipe_data_includes_co3_derived_hco3() -> None:
@@ -104,4 +106,5 @@ def test_solve_recipe_data_includes_co3_derived_hco3() -> None:
 
     result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses, water_profile_data=water_profile_data)
 
-    assert result.achieved_elements_mg_l.get("HCO3", 0.0) > 0.0
+    expected_hco3_mg_l = 120.0 * molar_masses["HCO3"] / molar_masses["CO3"]
+    assert result.achieved_elements_mg_l["HCO3"] == pytest.approx(expected_hco3_mg_l, rel=0, abs=1e-12)

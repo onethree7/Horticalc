@@ -2,7 +2,10 @@
 
 Status: `current-state`.
 
-The frontend is a static Vanilla JS app in `frontend/`. It is served by FastAPI from the same origin as the API.
+The frontend is a static Vanilla JS app in `frontend/`. It is served by FastAPI
+from the same origin as the API and displayed in a native pywebview window.
+pywebview is only the window host: the frontend does not use a Python-JavaScript
+bridge. WebView2 is selected on Windows and GTK/WebKitGTK on Linux.
 
 ## Files
 
@@ -37,7 +40,7 @@ The frontend is a static Vanilla JS app in `frontend/`. It is served by FastAPI 
 The workflow menu has four user-facing areas:
 
 - **Fertilizer editor**: inspect, search, and edit fertilizer products and composition.
-- **Water values**: load, edit, save, and mix water profiles with reverse-osmosis water.
+- **Water analysis**: load, edit, save, and mix water profiles with reverse-osmosis water.
 - **Calculator**: build recipes manually, calculate, and inspect results.
 - **Solver**: enter targets, select allowed fertilizers, and solve for doses.
 
@@ -50,7 +53,7 @@ native tooltip; click opens the full scrollable dialog on desktop and touch
 layouts. Detail records load lazily and are cached in the current page.
 Copy and preview use the same formatter as current Solver clipboard output.
 Restoring preflights fertilizer names, then replaces liters, embedded water,
-osmosis, targets, allowed fertilizers, fixed doses, urea mode, and Solver
+RO-water proportion, targets, allowed fertilizers, fixed doses, urea mode, and Solver
 configuration. It clears the current result and does not run the Solver.
 
 Recipe and Solver-target selectors share a small favorite button. Favorites
@@ -90,13 +93,15 @@ in both directions and the next GUI persistence writes the canonical
 The workflow menu is the single owner of visible area navigation. The large editor and solver picker tables are mounted only while their workflow is active and removed from the DOM when another workflow is selected. Their JavaScript state remains intact.
 
 Target profiles normally store only nutrient targets. In Solver mode,
-**Save Solver setup** additionally stores the batch volume, selected water
-profile and osmosis share, allowed fertilizers, fixed amounts, urea mode, and
-Solver configuration. Loading such a profile preflights its referenced water
-and fertilizer names, then replaces the complete saved setup. A missing
+**Save/load Solver setup** additionally stores the batch volume, selected water
+profile and RO-water proportion, allowed fertilizers, fixed amounts, urea mode, and
+Solver configuration. When the option is enabled while loading such a profile,
+Horticalc preflights its referenced water and fertilizer names, then replaces
+the complete saved setup. When it is disabled, only the nutrient targets are
+loaded and the current Solver setup remains unchanged. A missing
 dependency leaves the current state unchanged and produces an explicit error.
 Profiles without setup change only the targets; profiles containing
-only `solver_config` continue to apply it. Active fixed amounts produce a
+only `solver_config` apply it only when the option is enabled. Active fixed amounts produce a
 visible warning and confirmation when the setup option is off. Saving as a
 fertilizer recipe remains an output operation and does not retain Solver
 constraints. Profile replacement is confirmed only after the API identifies
@@ -105,15 +110,19 @@ names from silently colliding after filename sanitization. Source:
 `frontend/app/profiles.js`, `frontend/app/main.js`, `frontend/app/api.js`, and
 `frontend/app/solver.js`.
 
+The profile Delete button is enabled only for user-saved recipes and target
+profiles. Deletion requires confirmation. Shipped profiles remain protected;
+deleting a same-named user override exposes the shipped profile again.
+
 ## Preferences, Language, Themes, Units
 
 The `Configuration` card in `frontend/index.html` contains the global batch volume input, volume unit selector, solid dose unit selector, liquid dose unit selector, theme selector, language selector, Solver-history limit, and confirmed clear action. The history limit is `0..10000`, defaults to `1000`, counts only unpinned runs, and `0` disables normal logging while retaining pins. The clear action likewise removes only unpinned runs. Theme options are defined in `api/app.py` (`THEME_OPTIONS`) and styled through semantic tokens in `frontend/styles/themes.css`. In addition to the original themes, the selector offers Solarized Light, Dracula, Gruvbox Dark, Catppuccin Mocha, Monokai Classic, Windows 95, and Amber CRT. The retro skins also alter shared typography, corner, depth, and screen-effect tokens; they do not own component selectors. Amber CRT keeps a deliberately faint scanline layer. Disabled controls, hints, and inactive Solver rows use theme-aware contrast tokens. Locale options are `de`, `en`, `nl`, `es`, `zh` (`LOCALE_OPTIONS` in `api/app.py`).
 
 `frontend/app/api.js` fetches unit definitions from `/schema/units`. `frontend/app/units.js` keeps working values in canonical liters and g-for-solids/mL-for-liquids. `frontend/app/settings.js` applies the selected theme to `document.body.dataset.theme`. The selected language is stored in `localStorage` and `user/preferences.json` so it overrides browser detection on later loads. Data contracts such as API route names, JSON keys, CSV fields, element symbols, solver config keys, and units remain literal and are not translated.
 
-Preferences supply startup defaults. An explicitly loaded recipe overrides its liters and any non-empty `solver_config` for the current working state without rewriting the user's defaults. A target profile restores optional Solver fields only when they are present; target-only profiles leave the current setup unchanged. A water profile loaded with the water-profile controls becomes the next startup profile; a water profile loaded indirectly from a recipe or target profile does not.
+Preferences supply startup defaults. An explicitly loaded recipe overrides its liters and any non-empty `solver_config` for the current working state without rewriting the user's defaults. A target profile restores optional Solver fields only when they are present and **Save/load Solver setup** is enabled; otherwise it changes only the targets. A water profile loaded with the water-profile controls becomes the next startup profile; a water profile loaded indirectly from a recipe or target profile does not.
 
-## Browser State And `localStorage`
+## WebView State And `localStorage`
 
 The UI stores small workflow state in `localStorage`:
 
@@ -123,6 +132,10 @@ The UI stores small workflow state in `localStorage`:
 - selected frontend language.
 
 `user/preferences.json` stores theme, default batch liters, volume and dose display units, solver defaults, Solver-history retention, recipe and target-profile favorites, and last directly loaded water profile. Full Solver history and its pin metadata live in portable `user/solver_history.jsonl`, not `localStorage`. Solver config is not restored from saved solution snapshots.
+
+The WebView storage root is `user/webview/`. External links, downloads, file
+URLs, and remote debugging are disabled by the desktop host. API responses use
+a same-origin Content Security Policy and reject unexpected Host headers.
 
 ## API Calls From The Frontend
 

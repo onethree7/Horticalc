@@ -9,15 +9,43 @@ def test_yaml_filename_normalizes_route_input() -> None:
     assert api_app._yaml_filename("My Recipe") == "My_Recipe.yml"
 
 
-def test_recipes_filters_solver_and_default(api_client: TestClient) -> None:
+def test_recipes_lists_only_shipped_reference_recipes(api_client: TestClient) -> None:
     response = api_client.get("/recipes")
 
     assert response.status_code == 200
 
     filenames = {entry["filename"] for entry in response.json()}
-    assert "default.yml" not in filenames
+    assert {
+        "reference_agrolution_313_1g_per_l.yml",
+        "reference_calcinit_1g_per_l.yml",
+        "reference_calcinit_epso_top_1g_per_l_each.yml",
+    } <= filenames
+    assert (
+        not {
+            "golden.yml",
+            "green_go_12_12_36.yml",
+            "mg_so4_focus.yml",
+            "silicate_k_boost.yml",
+            "trace_silicon_mix.yml",
+            "urea_n_mix.yml",
+        }
+        & filenames
+    )
     assert not any(name.startswith("solve_") for name in filenames)
-    assert "golden.yml" in filenames
+
+
+def test_solver_target_catalog_does_not_include_recipe_or_roundtrip_files(api_client: TestClient) -> None:
+    target_filenames = {entry["filename"] for entry in api_client.get("/nutrient-solutions").json()}
+
+    assert (
+        not {
+            "reference_agrolution_313_1g_per_l.yml",
+            "reference_calcinit_1g_per_l.yml",
+            "reference_calcinit_epso_top_1g_per_l_each.yml",
+        }
+        & target_filenames
+    )
+    assert not any("roundtrip" in name.casefold() for name in target_filenames)
 
 
 def test_recipe_payload_persists_fertilizers_allowed(api_client: TestClient) -> None:

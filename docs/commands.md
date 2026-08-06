@@ -6,7 +6,7 @@ Single source of truth for all commands. The other docs link here instead of dup
 
 ## Install And Run From Source
 
-Linux/macOS (bash):
+Linux (bash):
 
 ```bash
 python3 -m venv .venv
@@ -22,7 +22,20 @@ py -m venv .venv
 .\.venv\Scripts\python.exe -m horticalc.launcher
 ```
 
-Set `HORTICALC_NO_BROWSER=1` to start the server without opening a browser.
+On Ubuntu, Debian, or Linux Mint install the GTK/WebKitGTK runtime before
+starting Horticalc:
+
+```bash
+sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1
+```
+
+On Fedora:
+
+```bash
+sudo dnf install -y webkit2gtk4.1
+```
+
+Set `HORTICALC_NO_GUI=1` to start the server without creating a desktop window.
 
 ## Run The API Server Directly
 
@@ -43,18 +56,18 @@ python -m horticalc --version
 Calculate a recipe:
 
 ```bash
-python -m horticalc recipes/golden.yml --pretty
-python -m horticalc recipes/golden.yml --load-water 65936 --pretty
-python -m horticalc recipes/golden.yml --out user/exports/golden_output.json --pretty
+python -m horticalc recipes/reference_calcinit_1g_per_l.yml --pretty
+python -m horticalc recipes/reference_calcinit_epso_top_1g_per_l_each.yml --pretty
+python -m horticalc recipes/reference_agrolution_313_1g_per_l.yml --out user/exports/reference_output.json --pretty
 ```
 
 Solve a target recipe:
 
 ```bash
-python -m horticalc solve recipes/solve_golden.yml --pretty
-python -m horticalc solve recipes/solve_golden.yml --nitrogen-objective-mode n_forms_only --pretty
-python -m horticalc solve recipes/solve_golden.yml --solver-config relative_weighting=true
-python -m horticalc solve recipes/solve_golden.yml --solver-config solver_model=hierarchical --solver-config 'target_priorities={"N_total":{"under":1,"over":1},"Ca":{"under":2,"over":3}}'
+python -m horticalc solve user/recipes/<solver-recipe>.yml --pretty
+python -m horticalc solve user/recipes/<solver-recipe>.yml --nitrogen-objective-mode n_forms_only --pretty
+python -m horticalc solve user/recipes/<solver-recipe>.yml --solver-config relative_weighting=true
+python -m horticalc solve user/recipes/<solver-recipe>.yml --solver-config solver_model=hierarchical --solver-config 'target_priorities={"N_total":{"under":1,"over":1},"Ca":{"under":2,"over":3}}'
 ```
 
 Global options for both modes:
@@ -75,32 +88,19 @@ python scripts/test.py
 
 The entrypoint creates the Python environment as needed, installs pinned Python
 and Node development tooling when missing, then runs Ruff formatting/linting,
-ESLint, Stylelint, Node unit tests, Playwright behavior tests, and all product
-Pytest tests. Optional solver-research tests are excluded from this release
-gate.
-
-Run only the optional solver-research suite, or product and research together:
-
-```bash
-python scripts/test.py --suite research -q
-python scripts/test.py --suite all -q
-```
-
-The research suite runs Python formatting/linting and the marked research
-tests, but does not run frontend checks. The `all` suite runs every check and
-every test.
+ESLint, Stylelint, Node unit tests, Playwright behavior tests, and the complete
+Pytest suite.
 
 Focused examples:
 
 ```bash
 python scripts/test.py --pytest-only tests/test_ec.py -q
-python scripts/test.py --pytest-only tests/test_solver_golden.py tests/test_solver_weighting.py -q
+python scripts/test.py --pytest-only tests/test_calculation_chemistry.py tests/test_solver_weighting.py -q
 python scripts/test.py --pytest-only tests/test_frontend_serving.py tests/test_frontend_module_architecture.py -q
 ```
 
 `--pytest-only` prepares Python test dependencies but skips Ruff, npm, frontend
-lint, and Node unit tests. Remaining arguments are passed to Pytest. Combine it
-with `--suite research` to focus a research run.
+lint, and Node unit tests. Remaining arguments are passed to Pytest.
 
 Run only the browser workflow smoke test:
 
@@ -152,68 +152,6 @@ With the GitHub CLI:
 gh attestation verify horticalc-vX.Y.Z-windows.zip --repo onethree7/Horticalc
 gh attestation verify horticalc-vX.Y.Z-linux.tar.gz --repo onethree7/Horticalc
 ```
-
-## Solver Matrix Harness
-
-```bash
-python scripts/solver_matrix.py --preset quick --out-dir logs/solver_matrix/smoke
-python scripts/solver_matrix.py --preset matrix --out-dir logs/solver_matrix/settings_001
-python scripts/solver_matrix.py --preset matrix --primary-portfolio restricted_313_bittersalz_mkp --out-dir logs/solver_matrix/settings_restricted_313
-python scripts/solver_matrix.py --preset deep --max-runs 0 --out-dir logs/solver_matrix/deep_001
-python scripts/solver_matrix_analyze.py logs/solver_matrix/deep_001 --top 40
-python scripts/solver_matrix_exhaustive.py --workers 24 --queue-depth 10000 --out-dir logs/solver_matrix/exhaustive_001
-python scripts/solver_matrix_exhaustive.py --analyze-only --workers 24 --out-dir logs/solver_matrix/exhaustive_001
-python scripts/solver_model_matrix.py --out-dir logs/solver_matrix/mass_nnls_runtime_001
-python scripts/solver_preference.py pairs --count 120
-python scripts/solver_preference.py label
-python scripts/solver_preference.py train --feature-structure grouped
-python scripts/solver_preference.py pairs --model logs/solver_matrix/exhaustive_001/preference_model.json --append --count 40
-python scripts/solver_preference.py label
-python scripts/solver_preference.py train --feature-structure grouped
-python scripts/solver_preference.py rank --top 200
-python scripts/solver_preference_screen.py --workers 24 --queue-depth 10000 --out-dir logs/solver_matrix/preference_screen_001
-python scripts/solver_preference_barrage.py --ranking logs/solver_matrix/preference_screen_001/screening_ranking.json --top 50000 --workers 24 --queue-depth 10000 --out-dir logs/solver_matrix/preference_barrage_wide_001
-python scripts/solver_preference_barrage.py --ranking logs/solver_matrix/preference_screen_001/screening_ranking.json --top 50000 --out-dir logs/solver_matrix/preference_barrage_wide_001 --analyze-only --analysis-model logs/solver_matrix/exhaustive_001/preference_model_grouped.json --analysis-out logs/solver_matrix/preference_barrage_wide_001/barrage_ranking_grouped.json
-python scripts/solver_preference_barrage.py --top 200 --workers 24 --queue-depth 10000
-```
-
-`quick` runs the canonical baseline, `matrix` runs the controlled setting
-catalog, and `deep` adds named/leave-one-out nutrient-portfolio barrage rows.
-Generated CSV, JSONL, manifest, summary, analysis JSON, and Markdown files stay
-under the selected ignored output directory.
-
-The historical solver-model research command compares its then-production
-`mass_nnls` baseline, two tuned-NNLS controls,
-and deterministic research-only mg/L/mmol/L minimax policies across all
-selection and diagnostic portfolios plus the matched recipe roundtrips. It
-writes a compact gzip JSONL evidence stream and a JSON quality-gate/ranking
-summary. Exit code `0` means every numerical, Pareto, roundtrip, production
-mass-error, and failure gate passed; exit code `2` means the evidence must not
-be committed as an accepted result.
-
-The exhaustive command runs all conditionally effective setting interactions
-and writes a resumable, deduplicated SQLite database plus JSON summary and
-Pareto analysis. Repeating the same command resumes the database. Use
-`--max-configs N` for a smoke test and `--skip-analysis` when generation and
-Pareto analysis should run separately.
-
-The preference commands turn Pareto conflicts into persistent A/B labels,
-fit a monotone model, and rank configurations without allowing good elements
-to compensate for the single worst learned element penalty. After an initial
-model exists, `pairs --model ... --append` selects uncertain conflicts for
-active learning. The screen command evaluates every exhaustive configuration
-on three discriminating stress portfolios and creates a union shortlist from
-several non-equivalent ranking and holdout views. `--include-ranking` forms a
-lossless union with an earlier shortlist. Passing that shortlist to the barrage
-tests every selected setting on all 35 configured portfolios (33 selection and
-two diagnostic); `--extend-shortlist` reuses compatible stored solves when the
-shortlist only grows. Diagnostic Humin portfolios are reported but excluded
-from ranking, holdouts, deduplication, and bootstrap sampling. `--analysis-model`
-rescoring never reruns the solver. The smaller direct barrage command evaluates
-the primary top 200 plus the two historical references (at most 70,700 solves).
-Both report behavior-deduplicated profile/portfolio holdouts and bootstrap rank
-stability. All generated files remain under ignored `logs/solver_matrix/`
-paths by default.
 
 ## Docs Anti-Drift
 

@@ -35,13 +35,18 @@ Source: `scripts/packaging/horticalc.spec`, `scripts/packaging/build_windows.ps1
 - Port policy: scan `8000..8100`.
 - Health endpoint: `/health`.
 - Lockfile: `AppRoot/user/horticalc.lock.json`.
-- App-window sessions: PID-backed files in `AppRoot/user/launcher_sessions/`.
 - Logs: rotating `AppRoot/logs/launcher.log` files.
-- Preferred browser: Edge, Chrome, or Chromium in app mode.
-- Browser fallback: system default browser; the local server remains running.
-- No-browser CI mode: `HORTICALC_NO_BROWSER=1`.
+- Desktop host: pinned pywebview `6.2.1`, used only as a native window around the local FastAPI origin.
+- Windows renderer: WebView2 (`edgechromium`) only; no MSHTML or external-browser fallback.
+- Linux renderer: GTK/WebKitGTK only; no bundled Qt, CEF, or Chromium. GTK 3,
+  WebKitGTK 4.1, GLib, ICU, libstdc++, GI typelibs, and their native dependency
+  closure come from the target system as one coherent stack; PyGObject remains
+  bundled with the Python application.
+- Single instance: the lock carries a random activation token; a second launch activates the existing window.
+- Headless CI mode: `HORTICALC_NO_GUI=1`.
+- Source Python range: `>=3.10,<3.14`; pywebview 6.2.1's pinned Linux GTK binding does not support Python 3.14.
 
-Source: `src/horticalc/launcher.py`.
+Source: `src/horticalc/launcher.py`, `src/horticalc/single_instance.py`, `src/horticalc/activation.py`.
 
 ## Portable Data
 
@@ -83,7 +88,6 @@ Source: `api/app.py`, `frontend/`, `src/horticalc/data_io.py`.
   **NNLS + tuning (standard)**. `mass_nnls` and `hierarchical` are explicitly
   experimental. Obsolete model identifiers are migrated in stored files, not
   accepted as runtime aliases.
-  Experimental molar goal policies remain research-only.
 - Experimental `mass_nnls` minimizes unweighted squared elemental residuals in canonical
   `mg/L`, uses `N_total` when present, and includes a non-zero `S` target.
 - A fertilizer `SolverMaxDosePerL` of `0` prevents variable Solver dosing while
@@ -102,16 +106,18 @@ Source: `api/app.py`, `frontend/`, `src/horticalc/data_io.py`.
 - Report-only target keys: `Na`, `Cl`. In `nnls_tuning`, `S` is report-only unless
   `s_objective_enabled` is true; `mass_nnls` and `hierarchical` include every
   non-zero S target unless it is report-only.
-- Solver matrix scoring follows `result.objective_elements`.
 
 Source: `src/horticalc/solver_config.py`, `src/horticalc/solver.py`.
 
 ## CI/Release
 
-- Release trigger: exact tag `v0.6.1` and manual workflow dispatch.
-- CI OSes: `ubuntu-22.04` and `windows-latest`.
-- CI Python: `3.11.9`.
+- Release trigger: exact tag `v0.6.2` and manual workflow dispatch.
+- Build CI OSes: `ubuntu-22.04` and `windows-latest`.
+- Packaged Linux GUI CI: Ubuntu 22.04/24.04, Debian 13, and Fedora 44 under
+  Xvfb/Openbox; Linux Mint 22.3 is a required manual VM gate.
+- Test CI Python: `3.10` and `3.13`; release CI Python: `3.11.9`.
 - Release permissions: `contents: write`.
-- Packaged binary smoke test uses `HORTICALC_NO_BROWSER=1`.
+- Packaged headless smoke uses `HORTICALC_NO_GUI=1`; packaged Linux GUI smoke
+  verifies window discovery, native close, server shutdown, and lock cleanup.
 
 Source: `.github/workflows/release.yml`.

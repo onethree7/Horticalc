@@ -1,66 +1,72 @@
-import unittest
+import pytest
 
 from horticalc.data_io import load_molar_masses
 from horticalc.sluijsmann import compute_sluijsmann
 
 
-class SluijsmannTests(unittest.TestCase):
-    def setUp(self) -> None:
-        self.molar_masses = load_molar_masses()
-        self.oxides = {
-            "CaO": 227.8977,
-            "MgO": 105.3953,
-            "K2O": 137.1243,
-            "Na2O": 7.1893,
-            "P2O5": 63.0,
-            "SO4": 257.0333,
-            "Cl": 10.6667,
-        }
-        self.elements = {
-            "N_total": 157.1558,
-        }
+@pytest.mark.parametrize(("mode", "n"), [("arable", 1.0), ("grassland", 0.8)])
+def test_sluijsmann_matches_the_declared_formula(mode: str, n: float) -> None:
+    molar_masses = load_molar_masses()
+    liters = 10.0
+    oxides = {
+        "CaO": 100.0,
+        "MgO": 10.0,
+        "K2O": 20.0,
+        "Na2O": 5.0,
+        "P2O5": 10.0,
+        "SO4": 40.0,
+        "Cl": 2.0,
+    }
+    elements = {"N_total": 30.0}
 
-    def test_arable_mode(self) -> None:
-        result = compute_sluijsmann(
-            liters=10.0,
-            oxides_mg_l=self.oxides,
-            elements_mg_l=self.elements,
-            molar_masses=self.molar_masses,
-            config={"mode": "arable"},
-        )
-        self.assertAlmostEqual(result["E_mg_CaOeq_per_l"], 123.35015336867821, places=6)
-        self.assertAlmostEqual(result["E_g_CaOeq_for_batch"], 1.233501533686782, places=6)
-        self.assertAlmostEqual(result["n"], 1.0, places=6)
+    result = compute_sluijsmann(
+        liters=liters,
+        oxides_mg_l=oxides,
+        elements_mg_l=elements,
+        molar_masses=molar_masses,
+        config={"mode": mode},
+    )
 
-    def test_grassland_mode(self) -> None:
-        result = compute_sluijsmann(
-            liters=10.0,
-            oxides_mg_l=self.oxides,
-            elements_mg_l=self.elements,
-            molar_masses=self.molar_masses,
-            config={"mode": "grassland"},
-        )
-        self.assertAlmostEqual(result["E_mg_CaOeq_per_l"], 154.7813133686782, places=6)
-        self.assertAlmostEqual(result["E_g_CaOeq_for_batch"], 1.547813133686782, places=6)
-        self.assertAlmostEqual(result["n"], 0.8, places=6)
+    so3_mg_l = oxides["SO4"] * molar_masses["SO3"] / molar_masses["SO4"]
+    expected_terms = {
+        "+CaO": oxides["CaO"],
+        "+1.4*MgO": 1.4 * oxides["MgO"],
+        "+0.6*K2O": 0.6 * oxides["K2O"],
+        "+0.9*Na2O": 0.9 * oxides["Na2O"],
+        "-0.4*P2O5": -0.4 * oxides["P2O5"],
+        "-0.7*SO3": -0.7 * so3_mg_l,
+        "-0.8*Cl": -0.8 * oxides["Cl"],
+        "-n*N": -n * elements["N_total"],
+    }
+    expected_e_mg_l = sum(expected_terms.values())
 
-    def test_so3_conversion_uses_supplied_molar_masses(self) -> None:
-        cases = (
-            ({"SO4": 8.0}, {}, 4.0),
-            ({}, {"S": 3.0}, 6.0),
-        )
-
-        for oxides, elements, expected_so3 in cases:
-            with self.subTest(oxides=oxides, elements=elements):
-                result = compute_sluijsmann(
-                    liters=1.0,
-                    oxides_mg_l=oxides,
-                    elements_mg_l=elements,
-                    molar_masses={"SO3": 2.0, "SO4": 4.0, "S": 1.0},
-                )
-
-                self.assertEqual(result["inputs_mg_per_l"]["SO3"], expected_so3)
+    assert result["mode"] == mode
+    assert result["n"] == n
+    assert result["inputs_mg_per_l"]["SO3"] == pytest.approx(so3_mg_l, rel=0, abs=1e-12)
+    assert result["terms_mg_per_l"] == pytest.approx(expected_terms, rel=0, abs=1e-12)
+    assert result["E_mg_CaOeq_per_l"] == pytest.approx(expected_e_mg_l, rel=0, abs=1e-12)
+    assert result["E_kg_CaOeq_per_m3"] == pytest.approx(expected_e_mg_l / 1000.0, rel=0, abs=1e-12)
+    assert result["E_g_CaOeq_for_batch"] == pytest.approx(expected_e_mg_l * liters / 1000.0, rel=0, abs=1e-12)
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.mark.parametrize(
+    ("oxides", "elements", "molar_masses", "expected_so3"),
+    [
+        ({"SO4": 8.0}, {}, {"SO3": 2.0, "SO4": 4.0, "S": 1.0}, 4.0),
+        ({}, {"S": 3.0}, {"SO3": 2.0, "SO4": 4.0, "S": 1.0}, 6.0),
+    ],
+)
+def test_so3_conversion_uses_supplied_molar_masses(
+    oxides: dict[str, float],
+    elements: dict[str, float],
+    molar_masses: dict[str, float],
+    expected_so3: float,
+) -> None:
+    result = compute_sluijsmann(
+        liters=1.0,
+        oxides_mg_l=oxides,
+        elements_mg_l=elements,
+        molar_masses=molar_masses,
+    )
+
+    assert result["inputs_mg_per_l"]["SO3"] == expected_so3

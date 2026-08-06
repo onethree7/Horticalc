@@ -1,0 +1,8 @@
+name: Reference - Calcinit 1 g/L
+liters: 10.0
+water_profile: default
+osmosis_percent: 100
+urea_as_nh4: false
+fertilizers:
+- name: Yara Tera CALCINIT
+  grams: 10.0

@@ -2,7 +2,7 @@
 
 Status: `current-state`.
 
-The shipped catalogue in `data/nutrient_solutions/` contains target profiles. Each profile stores solver targets, a concise source, and at most one short conversion note. Original source tables are not duplicated.
+The shipped catalogue in `data/nutrient_solutions/` contains target profiles. Each profile stores solver targets, a concise source, and at most one short conversion note. Original source tables are not duplicated. Most profiles cite published sources; the explicitly accepted Bugbee and Saloner/Bernstein profiles retain `User provided dataset` as their provenance.
 
 ## Shipped Profile List
 

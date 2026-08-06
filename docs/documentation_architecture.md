@@ -17,7 +17,7 @@ This document is the charter for the Horticalc docs set. Every active doc must d
 - **For users**: [user_guide.md](user_guide.md), [cli_reference.md](cli_reference.md), [commands.md](commands.md), [unit_handling.md](unit_handling.md).
 - **For researchers**: [data_model.md](data_model.md), [solver.md](solver.md), [ec.md](ec.md), [nutrient_solution_profiles.md](nutrient_solution_profiles.md), [unit_handling.md](unit_handling.md).
 - **For contributors**: [development.md](development.md), [architecture.md](architecture.md), [api_reference.md](api_reference.md), [gui.md](gui.md), [terminology_style_guide.md](terminology_style_guide.md), [decisions.md](decisions.md).
-- **Operations**: [release_build.md](release_build.md), [solver_matrix.md](solver_matrix.md).
+- **Operations**: [release_build.md](release_build.md).
 
 ## Single-Source Rules
 

@@ -766,7 +766,7 @@ main {
   opacity: 0.65;
 }
 
-/* Give water values lower visual priority. */
+/* Give water-composition details lower visual priority. */
 .ec-value.muted {
   opacity: 0.75;
 }

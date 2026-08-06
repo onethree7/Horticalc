@@ -7,16 +7,31 @@ Windows: double-click Horticalc.exe.
 Linux: run ./horticalc.
 
 Horticalc starts a private local service on 127.0.0.1 and opens the interface
-in an Edge, Chrome, or Chromium app window. It does not expose the service to
-the local network.
+in its own native desktop window. It does not require or control an installed
+browser, and it does not expose the service to the local network.
+
+Windows 10/11 requires the Microsoft WebView2 Runtime. The Linux x86_64 build
+requires the system GTK 3 and WebKitGTK 4.1 runtime. Install it before starting:
+
+Ubuntu, Debian, Linux Mint:
+sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1
+
+Fedora:
+sudo dnf install -y webkit2gtk4.1
+
+Automated release tests cover Ubuntu 22.04/24.04, Debian 13, and Fedora 44.
+Linux Mint 22.3 is a required manual VM test. Windows 7, 8, and 8.1 are not
+supported.
 
 Keep the extracted folder writable. Do not run the app from Program Files or
 directly inside the archive.
 
 Your data
 ---------
-Shipped defaults live in data/ and recipes/. Your edits and new profiles are
-stored as overrides in user/. Back up user/ to preserve your work.
+Shipped defaults live in data/ and recipes/. Shipped calculator recipes are
+zero-water reference calculations, not crop feed recommendations. Your edits
+and new profiles are stored as overrides in user/. Back up user/ to preserve
+your work.
 
 To reset Horticalc, close the app and rename user/ to user-backup/. The next
 launch creates a fresh user folder. Restoring user-backup/ restores your saved

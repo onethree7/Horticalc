@@ -1,7 +1,13 @@
 import pytest
 
 from horticalc.data_io import Fertilizer, load_molar_masses
-from horticalc.solver import SolveResult, _validate_solve_result, solve_recipe_data
+from horticalc.solver import (
+    SOLVER_OUTPUT_DOSE_EPSILON,
+    SolveResult,
+    _build_solution_payload,
+    _validate_solve_result,
+    solve_recipe_data,
+)
 
 
 def _solve_result(*, grams: float = 1.0, achieved: float = 100.0) -> SolveResult:
@@ -28,6 +34,29 @@ def test_shared_solver_result_validation_rejects_non_finite_values() -> None:
 def test_shared_solver_result_validation_rejects_negative_doses() -> None:
     with pytest.raises(ValueError, match=r"NNLS \+ tuning solver produced a negative fertilizer dose"):
         _validate_solve_result(_solve_result(grams=-0.1))
+
+
+def test_solver_output_omits_numerical_dose_residue() -> None:
+    fertilizers = [
+        Fertilizer("Below epsilon", False, 1.0, {}),
+        Fertilizer("At epsilon", False, 1.0, {}),
+        Fertilizer("Above epsilon", False, 1.0, {}),
+    ]
+
+    output, recipe = _build_solution_payload(
+        weights=[
+            SOLVER_OUTPUT_DOSE_EPSILON / 10.0,
+            SOLVER_OUTPUT_DOSE_EPSILON,
+            SOLVER_OUTPUT_DOSE_EPSILON * 10.0,
+        ],
+        allowed=fertilizers,
+        liters=10.0,
+        recipe={},
+    )
+
+    expected = [{"name": "Above epsilon", "grams": SOLVER_OUTPUT_DOSE_EPSILON * 10.0}]
+    assert output == expected
+    assert recipe["fertilizers"] == expected
 
 
 def test_solve_recipe_data_rejects_invalid_target_key() -> None:
@@ -160,8 +189,8 @@ def test_solve_recipe_data_can_solve_hco3_from_direct_hco3_composition() -> None
     result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses)
 
     assert result.objective_elements == ["HCO3"]
-    assert result.fertilizers[0]["name"] == "HCO3 test"
-    assert result.fertilizers[0]["grams"] > 0
+    assert result.fertilizers == [{"name": "HCO3 test", "grams": pytest.approx(0.1, abs=1e-12)}]
+    assert result.achieved_elements_mg_l["HCO3"] == pytest.approx(100.0, abs=1e-10)
 
 
 def test_water_profile_overshoot_remains_visible_in_errors() -> None:
@@ -179,5 +208,5 @@ def test_water_profile_overshoot_remains_visible_in_errors() -> None:
     result = solve_recipe_data(recipe, ferts=ferts, mm=molar_masses, water_profile_data=water_profile_data)
 
     assert result.fertilizers == []
-    assert result.errors_mg_l["Ca"] > 0.0
-    assert result.errors_percent["Ca"] > 0.0
+    assert result.errors_mg_l["Ca"] == pytest.approx(100.0, abs=1e-12)
+    assert result.errors_percent["Ca"] == pytest.approx(100.0, abs=1e-12)

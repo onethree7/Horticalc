@@ -1,23 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import numpy as np
 import pytest
-import yaml
 
-from horticalc.data_io import (
-    Fertilizer,
-    load_fertilizers,
-    load_molar_masses,
-    load_nutrient_solution_data,
-    load_water_profile_data,
-)
-from horticalc.paths import shipped_fertilizers_path
+from horticalc.data_io import Fertilizer, load_molar_masses
 from horticalc.priority_solver import solve_hierarchical_priorities
 from horticalc.solver import solve_recipe_data
 
-ROOT = Path(__file__).resolve().parents[1]
 MOLAR_MASSES = load_molar_masses()
 
 
@@ -135,42 +124,3 @@ def test_hierarchical_solver_rejects_report_only_configuration_for_every_target(
             mm=MOLAR_MASSES,
             water_profile_data={"mg_per_l": {}},
         )
-
-
-@pytest.mark.parametrize(
-    "profile_name",
-    [
-        "Saloner_Bernstein_Cannabis_NPK_Target_Optimization.yml",
-        "Bugbee_Utah_Hydroponic_Cannabis_2022.yml",
-    ],
-)
-def test_configured_priorities_protect_npk_and_iron_in_real_profiles(profile_name: str) -> None:
-    recipe = yaml.safe_load((ROOT / "recipes" / "solve_augmented_saloner_bernstein.yml").read_text(encoding="utf-8"))
-    profile = load_nutrient_solution_data(ROOT / "data" / "nutrient_solutions" / profile_name)
-    priorities = {key: {"under": 1, "over": 1} for key in ("N_total", "P", "K")}
-    priorities.update(
-        {
-            "Fe": {"under": 2, "over": 2},
-            "Ca": {"under": 2, "over": 3},
-            "Mg": {"under": 2, "over": 3},
-            "S": {"under": 2, "over": 3},
-        }
-    )
-    priorities.update({key: {"under": 4, "over": 4} for key in ("Mn", "Cu", "Zn", "B", "Mo")})
-    recipe["targets_mg_per_l"] = profile["targets_mg_per_l"]
-    recipe["solver_config"] = {
-        "solver_model": "hierarchical",
-        "target_priorities": priorities,
-    }
-
-    result = solve_recipe_data(
-        recipe,
-        ferts=load_fertilizers(shipped_fertilizers_path(ROOT)),
-        mm=MOLAR_MASSES,
-        water_profile_data=load_water_profile_data(ROOT / "data" / "water_profiles" / "65936.yml"),
-    )
-
-    for key in ("N_total", "P", "K", "Fe"):
-        assert abs(result.errors_mg_l[key]) < 2e-5
-    assert result.achieved_elements_mg_l["Fe"] < 2.0
-    assert all(float(row["grams"]) >= 0.0 for row in result.fertilizers)

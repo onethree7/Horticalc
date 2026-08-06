@@ -48,7 +48,9 @@ hierarchical solve. `ignored_elements` is retained as a compatibility field
 and lists targets for which both directions are report-only. A solve is
 rejected when no objective remains. Before returning, every solver model uses
 the same result validation and rejects non-finite values or negative fertilizer
-doses.
+doses. Solver output omits doses at or below `1e-10` canonical dose units
+(`0.0000000001` g for solids or mL for liquids) before recomputing achieved
+concentrations, so floating-point residue is not displayed, applied, or saved.
 
 ## Nitrogen Modes
 
@@ -99,11 +101,6 @@ mapping for `N_NH4`, `N_NO3`, and `N_UREA` with finite, non-negative weights.
 It is accepted in recipes and direct solve inputs, but not in UI preferences.
 Iteration count `1` performs the initial pass. Refinements are disabled through
 their separate `*_enabled` flags, not by setting an iteration count to zero.
-
-Note: the 2026-05-31 historical solver-matrix report recommended
-`relative_weighting=true`, but the current implementation and tests default it
-to `false`. Do not change docs to the historical recommendation unless the code
-and tests change too.
 
 ## Optimization Model
 

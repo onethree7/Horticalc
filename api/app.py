@@ -10,13 +10,15 @@ from typing import Any, Callable, Dict, List, Optional
 from uuid import uuid4
 
 import yaml
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Header, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, FiniteFloat, ValidationError
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from horticalc import __version__
+from horticalc.activation import ActivationUnavailable, InvalidActivationToken, request_activation
 from horticalc.chemistry import ALLOWED_TARGET_KEYS, ALLOWED_WATER_KEYS, COMP_COLS
 from horticalc.core import (
     augment_water_profile_with_elements,
@@ -86,6 +88,20 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Horticalc API", version=__version__, lifespan=lifespan)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost"])
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+        "connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+    )
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    return response
 
 
 @app.exception_handler(RequestValidationError)
@@ -291,8 +307,10 @@ def _named_yaml_entries(
     directories: Path | tuple[Path, ...],
     loader: Callable[[Path], dict],
     skip: Callable[[Path], bool] | None = None,
+    deletable_directory: Path | None = None,
 ) -> List[dict]:
     resource_dirs = (directories,) if isinstance(directories, Path) else directories
+    deletable_root = deletable_directory.resolve() if deletable_directory is not None else None
     resources: dict[str, Path] = {}
     for directory in resource_dirs:
         if directory.exists():
@@ -306,13 +324,26 @@ def _named_yaml_entries(
         except (AttributeError, OSError, TypeError, ValueError, yaml.YAMLError) as exc:
             logger.warning("Skipping invalid YAML resource %s: %s", path, exc)
             continue
-        entries.append(
-            {
-                "name": data.get("name") or path.stem,
-                "filename": path.name,
-            }
-        )
+        entry: dict[str, Any] = {
+            "name": data.get("name") or path.stem,
+            "filename": path.name,
+        }
+        if deletable_root is not None:
+            entry["deletable"] = path.parent.resolve() == deletable_root
+        entries.append(entry)
     return entries
+
+
+def _delete_user_yaml_resource(directory: Path, name: str, not_found_detail: str) -> dict[str, str]:
+    resource_path = directory / _yaml_filename(name)
+    try:
+        resource_path.unlink()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=not_found_detail) from exc
+    except OSError as exc:
+        logger.exception("Unable to delete user YAML resource %s", resource_path)
+        raise HTTPException(status_code=500, detail="Unable to delete saved profile") from exc
+    return {"status": "ok", "filename": resource_path.name}
 
 
 def _validated_float_mapping(
@@ -392,6 +423,22 @@ def load_app_data() -> None:
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.post("/_launcher/activate", status_code=204, include_in_schema=False)
+def activate_launcher(
+    request: Request,
+    activation_token: str = Header(default="", alias="X-Horticalc-Activation"),
+) -> Response:
+    if request.client is None or request.client.host not in {"127.0.0.1", "::1", "testclient"}:
+        raise HTTPException(status_code=403, detail="Local activation only")
+    try:
+        request_activation(activation_token)
+    except InvalidActivationToken as exc:
+        raise HTTPException(status_code=403, detail="Invalid activation token") from exc
+    except ActivationUnavailable as exc:
+        raise HTTPException(status_code=503, detail="Desktop window is not ready") from exc
+    return Response(status_code=204)
 
 
 @app.get("/schema/fertilizer-comp-keys")
@@ -622,6 +669,7 @@ def nutrient_solutions() -> List[dict]:
     return _named_yaml_entries(
         (shipped_nutrient_solutions_dir(layout.root), layout.nutrient_solutions),
         load_nutrient_solution_data,
+        deletable_directory=layout.nutrient_solutions,
     )
 
 
@@ -636,6 +684,15 @@ def nutrient_solution(solution_name: str) -> dict:
     if not solution_path.exists():
         raise HTTPException(status_code=404, detail="Nutrient Solution not found")
     return load_nutrient_solution_data(solution_path)
+
+
+@app.delete("/nutrient-solutions/{solution_name}")
+def delete_nutrient_solution_profile(solution_name: str) -> dict[str, str]:
+    return _delete_user_yaml_resource(
+        _portable_layout().nutrient_solutions,
+        solution_name,
+        "Saved nutrient solution not found",
+    )
 
 
 @app.post("/water-profiles")
@@ -737,7 +794,8 @@ def recipes() -> List[dict]:
     return _named_yaml_entries(
         (shipped_recipes_dir(layout.root), layout.recipes),
         load_recipe,
-        skip=lambda path: path.stem.startswith("solve_") or path.name == "default.yml",
+        skip=lambda path: path.name == "default.yml",
+        deletable_directory=layout.recipes,
     )
 
 
@@ -752,6 +810,15 @@ def recipe(recipe_name: str) -> dict:
     if not recipe_path.exists():
         raise HTTPException(status_code=404, detail="Recipe not found")
     return load_recipe(recipe_path)
+
+
+@app.delete("/recipes/{recipe_name}")
+def delete_recipe_profile(recipe_name: str) -> dict[str, str]:
+    return _delete_user_yaml_resource(
+        _portable_layout().recipes,
+        recipe_name,
+        "Saved recipe not found",
+    )
 
 
 @app.post("/recipes")

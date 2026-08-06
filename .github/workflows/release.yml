@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v0.6.1"
+      - "v0.6.2"
 
 permissions:
   contents: write
@@ -40,6 +40,21 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11.9"
+
+      - name: Install Linux WebKitGTK build dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            build-essential \
+            gir1.2-gtk-3.0 \
+            gir1.2-webkit2-4.1 \
+            libcairo2-dev \
+            libgirepository1.0-dev \
+            pkg-config \
+            python3-dev \
+            python3-gi \
+            python3-gi-cairo
 
       - name: Install dependencies
         env:
@@ -83,7 +98,7 @@ jobs:
         env:
           BIN_PATH: ${{ matrix.bin_path }}
           APP_ROOT: ${{ matrix.app_dir }}
-          HORTICALC_NO_BROWSER: "1"
+          HORTICALC_NO_GUI: "1"
         run: |
           python - <<'PY'
           import csv
@@ -111,7 +126,7 @@ jobs:
           )
 
           env = os.environ.copy()
-          env["HORTICALC_NO_BROWSER"] = "1"
+          env["HORTICALC_NO_GUI"] = "1"
 
           proc = subprocess.Popen([str(bin_path)], cwd=str(app_root), env=env)
           try:
@@ -138,6 +153,17 @@ jobs:
               for path in required_paths:
                   if not path.exists():
                       raise SystemExit(f"Missing expected path: {path}")
+
+              forbidden_renderers = ("pyqt", "pyside", "cefpython", "qtwebengine")
+              unexpected = [
+                  path for path in app_root.rglob("*")
+                  if any(name in path.name.lower() for name in forbidden_renderers)
+              ]
+              if unexpected:
+                  raise SystemExit(f"Unexpected bundled renderer: {unexpected[0]}")
+
+              artifact_bytes = sum(path.stat().st_size for path in app_root.rglob("*") if path.is_file())
+              print(f"Packaged application size: {artifact_bytes} bytes")
 
               logs_dir = app_root / "logs"
               deadline = time.time() + 30
@@ -235,10 +261,152 @@ jobs:
             ${{ env.CHECKSUM_PATH }}
           if-no-files-found: error
 
+  linux-compatibility:
+    name: Linux GUI (${{ matrix.name }})
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    container:
+      image: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu 22.04
+            container: ubuntu:22.04
+            family: apt
+            install_command: sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1
+          - name: Ubuntu 24.04
+            container: ubuntu:24.04
+            family: apt
+            install_command: sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1
+          - name: Debian 13
+            container: debian:13
+            family: apt
+            install_command: sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1
+          - name: Fedora 44
+            container: fedora:44
+            family: dnf
+            install_command: sudo dnf install -y webkit2gtk4.1
+
+    steps:
+      - name: Install test harness without WebKitGTK
+        shell: bash
+        run: |
+          if [[ "${{ matrix.family }}" == "apt" ]]; then
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install --yes \
+              dbus-x11 \
+              gir1.2-gtk-3.0 \
+              libgirepository-1.0-1 \
+              openbox \
+              python3 \
+              xdotool \
+              xvfb
+          else
+            dnf install --assumeyes \
+              dbus-x11 \
+              gobject-introspection \
+              gtk3 \
+              openbox \
+              python3 \
+              xdotool \
+              xorg-x11-server-Xvfb
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: horticalc-*-linux
+          path: downloaded-artifact
+          merge-multiple: true
+
+      - name: Extract Linux artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          archive="$(find downloaded-artifact -maxdepth 1 -name 'horticalc-*-linux.tar.gz' -print -quit)"
+          test -n "$archive"
+          tar -xzf "$archive" -C dist
+          python3 scripts/packaging/verify_linux_bundle.py dist/horticalc
+
+      - name: Verify missing-runtime guidance
+        shell: bash
+        env:
+          EXPECTED_COMMAND: ${{ matrix.install_command }}
+        run: |
+          set +e
+          timeout 45s dist/horticalc/horticalc > missing-webkit.log 2>&1
+          status=$?
+          set -e
+          cat missing-webkit.log
+          if [[ "$status" -eq 0 || "$status" -eq 124 ]]; then
+            echo "Expected an immediate missing-WebKitGTK failure, got status $status" >&2
+            exit 1
+          fi
+          grep --fixed-strings "$EXPECTED_COMMAND" missing-webkit.log
+          test ! -e dist/horticalc/user/horticalc.lock.json
+          rm -rf dist/horticalc/user dist/horticalc/logs
+
+      - name: Install documented WebKitGTK runtime
+        shell: bash
+        run: |
+          if [[ "${{ matrix.family }}" == "apt" ]]; then
+            apt-get install --yes libgirepository-1.0-1 gir1.2-webkit2-4.1
+          else
+            dnf install --assumeyes webkit2gtk4.1
+          fi
+
+      - name: Smoke test native Linux GUI lifecycle
+        shell: bash
+        run: |
+          export DISPLAY=:99
+          export XDG_RUNTIME_DIR=/tmp/horticalc-runtime
+          mkdir -p "$XDG_RUNTIME_DIR"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          Xvfb "$DISPLAY" -screen 0 1280x800x24 > /tmp/xvfb.log 2>&1 &
+          xvfb_pid=$!
+          trap 'kill "$xvfb_pid" 2>/dev/null || true' EXIT
+          sleep 2
+          dbus-run-session -- bash -c '
+            openbox > /tmp/openbox.log 2>&1 &
+            python3 scripts/packaging/smoke_linux_gui.py \
+              dist/horticalc/horticalc dist/horticalc
+          '
+          test ! -e dist/horticalc/user/horticalc.lock.json
+
+  publish-release:
+    name: Publish release assets
+    if: github.ref == 'refs/tags/v0.6.2'
+    needs:
+      - build
+      - linux-compatibility
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout release notes
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download verified artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: release-assets
+          merge-multiple: true
+
       - name: Upload release assets
-        if: github.ref == 'refs/tags/v0.6.1'
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
+          name: Horticalc 0.6.2
+          body_path: .github/release-notes/v0.6.2.md
           files: |
-            ${{ env.ARCHIVE_PATH }}
-            ${{ env.CHECKSUM_PATH }}
+            release-assets/*.tar.gz
+            release-assets/*.tar.gz.sha256
+            release-assets/*.zip
+            release-assets/*.zip.sha256

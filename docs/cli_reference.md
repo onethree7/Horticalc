@@ -15,7 +15,7 @@ python -m horticalc recipes/<file>.yml
 ### Solve a target recipe
 
 ```bash
-python -m horticalc solve recipes/<file>.yml
+python -m horticalc solve user/recipes/<solver-recipe>.yml
 ```
 
 ## Global Options

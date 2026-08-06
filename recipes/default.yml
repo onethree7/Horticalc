@@ -1,6 +1,6 @@
 name: default
 liters: 10.0
 water_profile: default
-osmosis_percent: 100
+osmosis_percent: 0
 urea_as_nh4: false
 fertilizers: []

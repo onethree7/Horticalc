@@ -20,7 +20,7 @@ def _run(name: str) -> dict:
 
 def test_shipped_reference_recipes_use_zero_water_and_one_gram_per_liter() -> None:
     default = load_recipe(RECIPES / "default.yml")
-    assert default["osmosis_percent"] == 100
+    assert default["osmosis_percent"] == 0
     assert default["fertilizers"] == []
 
     for name in REFERENCE_RECIPE_NAMES:

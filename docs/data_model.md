@@ -189,7 +189,7 @@ contract as a recipe. `load_nutrient_solution_data()` returns `name`, `source`,
 and `targets_mg_per_l`, plus every optional Solver-setup field present in the
 YAML.
 
-Target profiles saved with **Save Solver setup** may additionally contain the
+Target profiles saved with **Save/load Solver setup** may additionally contain the
 current Solver inputs:
 
 ```yaml

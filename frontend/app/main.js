@@ -172,9 +172,15 @@ function hasOwn(object, field) {
   return Boolean(object) && Object.prototype.hasOwnProperty.call(object, field);
 }
 
-async function applyNutrientSolutionProfile(solution, isCurrent = () => true) {
-  const allowed = hasOwn(solution, "fertilizers_allowed")
-    ? solution.fertilizers_allowed || []
+async function applyNutrientSolutionProfile(
+  solution,
+  { includeSetup = true, isCurrent = () => true } = {},
+) {
+  const appliedSolution = includeSetup
+    ? solution
+    : { targets_mg_per_l: solution?.targets_mg_per_l || solution?.targets || {} };
+  const allowed = hasOwn(appliedSolution, "fertilizers_allowed")
+    ? appliedSolution.fertilizers_allowed || []
     : null;
   const missing = solver.missingFertilizers(allowed || []);
   if (missing.length) {
@@ -183,40 +189,40 @@ async function applyNutrientSolutionProfile(solution, isCurrent = () => true) {
 
   let profile = null;
   let filename = "";
-  if (hasOwn(solution, "water_profile")) {
-    filename = solution.water_profile.endsWith(".yml")
-      ? solution.water_profile
-      : `${solution.water_profile}.yml`;
+  if (hasOwn(appliedSolution, "water_profile")) {
+    filename = appliedSolution.water_profile.endsWith(".yml")
+      ? appliedSolution.water_profile
+      : `${appliedSolution.water_profile}.yml`;
     try {
-      profile = await water.loadProfile(solution.water_profile);
+      profile = await water.loadProfile(appliedSolution.water_profile);
     } catch (error) {
       throw new Error(
-        i18n.t("errors.solverSetupMissingWater", { name: solution.water_profile }),
+        i18n.t("errors.solverSetupMissingWater", { name: appliedSolution.water_profile }),
         { cause: error },
       );
     }
   }
   if (!isCurrent()) return false;
 
-  if (hasOwn(solution, "liters")) {
-    units.setLiters(solution.liters, {
+  if (hasOwn(appliedSolution, "liters")) {
+    units.setLiters(appliedSolution.liters, {
       scaleBatch: false,
       recalculate: false,
       invalidateSolver: false,
     });
   }
-  solver.applyNutrientSolution(solution);
+  solver.applyNutrientSolution(appliedSolution);
   if (allowed) solver.setAllowedFertilizers(allowed, "replace");
-  if (hasOwn(solution, "fixed_grams")) solver.setFixedGrams(solution.fixed_grams || {});
-  if (hasOwn(solution, "urea_as_nh4")) solver.setUreaAsNh4(solution.urea_as_nh4);
+  if (hasOwn(appliedSolution, "fixed_grams")) solver.setFixedGrams(appliedSolution.fixed_grams || {});
+  if (hasOwn(appliedSolution, "urea_as_nh4")) solver.setUreaAsNh4(appliedSolution.urea_as_nh4);
   if (profile) {
     water.setSelectedProfile(filename);
     water.applyProfile(profile);
   }
-  if (hasOwn(solution, "osmosis_percent")) {
-    water.setOsmosisPercent(solution.osmosis_percent);
+  if (hasOwn(appliedSolution, "osmosis_percent")) {
+    water.setOsmosisPercent(appliedSolution.osmosis_percent);
   }
-  if (nutrientSolutionHasSetup(solution)) calculator.scheduleRecalculate();
+  if (nutrientSolutionHasSetup(appliedSolution)) calculator.scheduleRecalculate();
   return true;
 }
 
@@ -250,7 +256,6 @@ profiles = createProfilesController({
     buildNutrientSolution: buildTargetProfile,
     buildSolverRecipe: (name) => calculator.buildRecipePayloadFromSolver(name),
     getActiveFixedAmountCount: () => solver.activeFixedAmountCount,
-    hasNutrientSolutionSetup: nutrientSolutionHasSetup,
     hasSolverResult: () => Boolean(solver.lastResult),
     resetSolverTargets: () => solver.resetTargets(),
   },

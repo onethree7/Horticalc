@@ -93,13 +93,15 @@ in both directions and the next GUI persistence writes the canonical
 The workflow menu is the single owner of visible area navigation. The large editor and solver picker tables are mounted only while their workflow is active and removed from the DOM when another workflow is selected. Their JavaScript state remains intact.
 
 Target profiles normally store only nutrient targets. In Solver mode,
-**Save Solver setup** additionally stores the batch volume, selected water
+**Save/load Solver setup** additionally stores the batch volume, selected water
 profile and RO-water proportion, allowed fertilizers, fixed amounts, urea mode, and
-Solver configuration. Loading such a profile preflights its referenced water
-and fertilizer names, then replaces the complete saved setup. A missing
+Solver configuration. When the option is enabled while loading such a profile,
+Horticalc preflights its referenced water and fertilizer names, then replaces
+the complete saved setup. When it is disabled, only the nutrient targets are
+loaded and the current Solver setup remains unchanged. A missing
 dependency leaves the current state unchanged and produces an explicit error.
 Profiles without setup change only the targets; profiles containing
-only `solver_config` continue to apply it. Active fixed amounts produce a
+only `solver_config` apply it only when the option is enabled. Active fixed amounts produce a
 visible warning and confirmation when the setup option is off. Saving as a
 fertilizer recipe remains an output operation and does not retain Solver
 constraints. Profile replacement is confirmed only after the API identifies
@@ -114,7 +116,7 @@ The `Configuration` card in `frontend/index.html` contains the global batch volu
 
 `frontend/app/api.js` fetches unit definitions from `/schema/units`. `frontend/app/units.js` keeps working values in canonical liters and g-for-solids/mL-for-liquids. `frontend/app/settings.js` applies the selected theme to `document.body.dataset.theme`. The selected language is stored in `localStorage` and `user/preferences.json` so it overrides browser detection on later loads. Data contracts such as API route names, JSON keys, CSV fields, element symbols, solver config keys, and units remain literal and are not translated.
 
-Preferences supply startup defaults. An explicitly loaded recipe overrides its liters and any non-empty `solver_config` for the current working state without rewriting the user's defaults. A target profile restores optional Solver fields only when they are present; target-only profiles leave the current setup unchanged. A water profile loaded with the water-profile controls becomes the next startup profile; a water profile loaded indirectly from a recipe or target profile does not.
+Preferences supply startup defaults. An explicitly loaded recipe overrides its liters and any non-empty `solver_config` for the current working state without rewriting the user's defaults. A target profile restores optional Solver fields only when they are present and **Save/load Solver setup** is enabled; otherwise it changes only the targets. A water profile loaded with the water-profile controls becomes the next startup profile; a water profile loaded indirectly from a recipe or target profile does not.
 
 ## WebView State And `localStorage`
 

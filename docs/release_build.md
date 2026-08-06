@@ -101,7 +101,7 @@ from `horticalc.__version__` unless the environment variable is explicit.
 `.github/workflows/release.yml` runs on:
 
 - manual workflow dispatch
-- the exact release tag `v0.6.1`
+- the exact release tag `v0.6.2`
 
 Matrix:
 
@@ -121,8 +121,10 @@ GTK/GLib/ICU/C++ system libraries, GI system data, and Qt/CEF/Chromium renderers
 
 `scripts/check_release_version.py` rejects a tag that does not exactly match
 `v` plus `horticalc.__version__`. Manual workflow builds retain short-commit
-artifact names. Tagged builds use `v0.6.1`, and release assets are published
-only after every build and Linux compatibility job succeeds.
+artifact names. Tagged builds use `v0.6.2`, and release assets are published
+only after every build and Linux compatibility job succeeds. The publish job
+uses `.github/release-notes/v0.6.2.md` as the versioned GitHub release body so
+the published description is reviewed with the code and packaging workflow.
 
 ## Release Verification
 

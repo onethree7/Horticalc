@@ -111,7 +111,7 @@ Source: `src/horticalc/solver_config.py`, `src/horticalc/solver.py`.
 
 ## CI/Release
 
-- Release trigger: exact tag `v0.6.1` and manual workflow dispatch.
+- Release trigger: exact tag `v0.6.2` and manual workflow dispatch.
 - Build CI OSes: `ubuntu-22.04` and `windows-latest`.
 - Packaged Linux GUI CI: Ubuntu 22.04/24.04, Debian 13, and Fedora 44 under
   Xvfb/Openbox; Linux Mint 22.3 is a required manual VM gate.

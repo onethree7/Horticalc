@@ -101,6 +101,8 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert "sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1" in release_workflow
     assert "sudo dnf install -y webkit2gtk4.1" in release_workflow
     assert "needs:\n      - build\n      - linux-compatibility" in release_workflow
+    assert "name: Horticalc 0.6.2" in release_workflow
+    assert "body_path: .github/release-notes/v0.6.2.md" in release_workflow
     cleanup_index = release_workflow.index("Clean smoke-test runtime state")
     assert cleanup_index < release_workflow.index("Package artifact (Linux)")
     assert cleanup_index < release_workflow.index("Package artifact (Windows)")
@@ -145,7 +147,7 @@ def test_linux_runtime_commands_do_not_drift_between_user_docs() -> None:
 
 
 def test_runtime_package_api_and_cli_versions_match(api_client: TestClient) -> None:
-    assert __version__ == "0.6.1"
+    assert __version__ == "0.6.2"
     assert version("horticalc") == __version__
     assert api_client.get("/openapi.json").json()["info"]["version"] == __version__
     result = subprocess.run(
@@ -159,7 +161,24 @@ def test_runtime_package_api_and_cli_versions_match(api_client: TestClient) -> N
 
 
 def test_release_tag_must_match_the_single_version_literal() -> None:
-    assert expected_release_tag() == "v0.6.1"
-    validate_release_tag("v0.6.1")
-    with pytest.raises(ValueError, match="must be exactly v0.6.1"):
+    assert expected_release_tag() == "v0.6.2"
+    validate_release_tag("v0.6.2")
+    with pytest.raises(ValueError, match="must be exactly v0.6.2"):
         validate_release_tag("v4.1")
+
+
+def test_versioned_release_notes_cover_important_upgrade_information() -> None:
+    notes = (ROOT / ".github" / "release-notes" / "v0.6.2.md").read_text(encoding="utf-8")
+
+    for required_text in (
+        "Why the launcher changed",
+        "Windows 10 and Windows 11",
+        "Ubuntu 22.04",
+        "Debian 13",
+        "Fedora 44",
+        "HORTICALC_NO_GUI",
+        "gir1.2-webkit2-4.1",
+        "webkit2gtk4.1",
+        "Windows native GUI automation",
+    ):
+        assert required_text in notes

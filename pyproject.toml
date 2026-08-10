@@ -55,7 +55,7 @@ where = ["src"]
 version = {attr = "horticalc.__version__"}
 
 [tool.setuptools.data-files]
-"frontend" = ["frontend/index.html", "frontend/request_gate.js"]
+"frontend" = ["frontend/index.html", "frontend/preferences.json", "frontend/request_gate.js"]
 "frontend/app" = ["frontend/app/*.js"]
 "frontend/i18n" = ["frontend/i18n/*.js"]
 "frontend/styles" = ["frontend/styles/*.css"]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import math
 import os
@@ -451,6 +452,11 @@ def solver_config_schema() -> dict:
     return {"definitions": list(SOLVER_CONFIG_DEFINITIONS)}
 
 
+@app.get("/schema/preferences")
+def preference_schema() -> dict[str, Any]:
+    return PREFERENCE_OPTIONS
+
+
 @app.get("/schema/units")
 def units_schema() -> dict:
     return {
@@ -463,24 +469,33 @@ def units_schema() -> dict:
     }
 
 
-THEME_OPTIONS = {
-    "horticalc-dark",
-    "horticalc-light",
-    "high-contrast",
-    "soil",
-    "gch-classic",
-    "vt-green",
-    "blue-matrix",
-    "tokyo-night",
-    "solarized-light",
-    "dracula",
-    "gruvbox-dark",
-    "catppuccin-mocha",
-    "monokai-classic",
-    "windows-95",
-    "amber-crt",
-}
-LOCALE_OPTIONS = {"de", "en", "nl", "es", "zh"}
+def _load_preference_options() -> dict[str, Any]:
+    try:
+        data = json.loads((FRONTEND_DIR / "preferences.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError("Unable to load frontend preference options") from exc
+    if not isinstance(data, dict):
+        raise RuntimeError("Frontend preference options must be an object")
+    themes = data.get("themes")
+    locales = data.get("locales")
+    default_theme = data.get("default_theme")
+    if (
+        not isinstance(default_theme, str)
+        or not isinstance(themes, list)
+        or not themes
+        or any(not isinstance(theme, str) for theme in themes)
+        or default_theme not in themes
+        or not isinstance(locales, list)
+        or not locales
+        or any(not isinstance(locale, str) for locale in locales)
+    ):
+        raise RuntimeError("Frontend preference options are invalid")
+    return {"default_theme": default_theme, "themes": themes, "locales": locales}
+
+
+PREFERENCE_OPTIONS = _load_preference_options()
+THEME_OPTIONS = frozenset(PREFERENCE_OPTIONS["themes"])
+LOCALE_OPTIONS = frozenset(PREFERENCE_OPTIONS["locales"])
 
 
 def _solver_history_path() -> Path:

@@ -14,6 +14,7 @@ def test_frontend_root_serves_single_module_entry(api_client: TestClient) -> Non
     assert "Horticalc GUI" in response.text
     assert response.text.count('type="module"') == 1
     assert frontend_module_entry() == "app/main.js"
+    assert 'src="app/main.js?v=3"' in response.text
     assert "app/state.js" not in response.text
     assert "app/app.js" not in response.text
 
@@ -27,6 +28,13 @@ def test_frontend_serves_every_es_module(api_client: TestClient) -> None:
         response = api_client.get(f"/{source}")
         assert response.status_code == 200, source
         assert response.text.strip(), source
+
+
+def test_frontend_main_busts_i18n_runtime_cache(api_client: TestClient) -> None:
+    response = api_client.get("/app/main.js?v=3")
+
+    assert response.status_code == 200
+    assert 'from "../i18n/runtime.js?v=3"' in response.text
 
 
 def test_health_endpoint_still_available(api_client: TestClient) -> None:

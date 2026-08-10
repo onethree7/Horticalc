@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 from fastapi.testclient import TestClient
 
 from horticalc import paths
 from horticalc.data_io import load_user_preferences, save_user_preferences
+from tests.frontend_assets import frontend_path
 
 
 @pytest.mark.parametrize(
@@ -35,6 +38,13 @@ def test_theme_preference_rejects_unknown_theme(api_client: TestClient, monkeypa
     response = api_client.put("/preferences", json={"theme": "surprise-me"})
 
     assert response.status_code == 400
+
+
+def test_preference_schema_matches_canonical_frontend_asset(api_client: TestClient) -> None:
+    response = api_client.get("/schema/preferences")
+
+    assert response.status_code == 200
+    assert response.json() == json.loads(frontend_path("preferences.json").read_text(encoding="utf-8"))
 
 
 def test_volume_unit_preference_persists_and_rejects_ambiguous_unit(

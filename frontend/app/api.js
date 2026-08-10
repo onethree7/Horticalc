@@ -107,6 +107,15 @@ export async function fetchSolverConfigDefinitions(message) {
   return data?.definitions || [];
 }
 
+export async function fetchPreferenceOptions(message) {
+  const data = await getJson("/schema/preferences", message);
+  return {
+    defaultTheme: data?.default_theme,
+    themes: Array.isArray(data?.themes) ? data.themes : [],
+    locales: Array.isArray(data?.locales) ? data.locales : [],
+  };
+}
+
 function normalizeDefinitions(entries, factorKey, canonicalKey, message) {
   if (!Array.isArray(entries) || !entries.length) throw new Error(message);
   const definitions = entries.filter((definition) => definition

@@ -130,6 +130,18 @@ function applyWaterHelpers(values) {
 
   return updatedKeys;
 }
+
+function handleWaterValueInput(key, rawValue, { updateCurrent = false, invalidate = true } = {}) {
+  if (invalidate) waterProfileRequests.invalidate();
+  const parsed = decimalInputValue(rawValue);
+  waterValues[key] = waterUnit === "mol_l" ? molToMg(key, parsed) : parsed;
+  const updatedKeys = applyWaterHelpers(waterValues, getMolarMass);
+  updatedKeys
+    .filter((updatedKey) => updateCurrent || updatedKey !== key)
+    .forEach((updatedKey) => updateWaterInputValue(updatedKey));
+  scheduleRecalculate();
+}
+
 function renderWaterTable() {
   waterTableBody.innerHTML = "";
   waterFieldDefinitions.forEach((field) => {
@@ -152,14 +164,7 @@ function renderWaterTable() {
       input.classList.add("is-helper");
     }
     input.addEventListener("input", (event) => {
-      waterProfileRequests.invalidate();
-      const parsed = decimalInputValue(event.target.value);
-      waterValues[field.key] = waterUnit === "mol_l" ? molToMg(field.key, parsed) : parsed;
-      const updatedKeys = applyWaterHelpers(waterValues, getMolarMass);
-      updatedKeys
-        .filter((key) => key !== field.key)
-        .forEach((key) => updateWaterInputValue(key));
-      scheduleRecalculate();
+      handleWaterValueInput(field.key, event.target.value);
     });
     input.addEventListener("change", () => {
       updateWaterInputValue(field.key);
@@ -169,11 +174,7 @@ function renderWaterTable() {
         return;
       }
       event.preventDefault();
-      const parsed = decimalInputValue(event.target.value);
-      waterValues[field.key] = waterUnit === "mol_l" ? molToMg(field.key, parsed) : parsed;
-      const updatedKeys = applyWaterHelpers(waterValues, getMolarMass);
-      updatedKeys.forEach((key) => updateWaterInputValue(key));
-      scheduleRecalculate();
+      handleWaterValueInput(field.key, event.target.value, { updateCurrent: true, invalidate: false });
     });
     valueCell.appendChild(input);
 

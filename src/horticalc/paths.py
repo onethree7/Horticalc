@@ -38,6 +38,7 @@ def repo_root() -> Path:
 
 REQUIRED_APP_ASSETS = (
     Path("frontend/index.html"),
+    Path("frontend/preferences.json"),
     Path("data/fertilizers.csv"),
     Path("recipes/default.yml"),
 )

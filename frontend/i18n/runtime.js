@@ -6,10 +6,15 @@ import zh from "./zh.js";
 
 export const DEFAULT_LOCALE = "en";
 export const LOCALE_STORAGE_KEY = "horticalc.locale";
-export const supportedLocales = ["de", "en", "nl", "es", "zh"];
-
 const catalogs = { de, en, es, nl, zh };
+export let supportedLocales = Object.keys(catalogs);
 const listeners = new Set();
+
+export function configureSupportedLocales(locales) {
+  if (!Array.isArray(locales)) return;
+  const configured = locales.filter((locale) => typeof locale === "string" && catalogs[locale]);
+  if (configured.length) supportedLocales = configured;
+}
 
 function isSupportedLocale(locale) {
   return supportedLocales.includes(locale) && catalogs[locale];

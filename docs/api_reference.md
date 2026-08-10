@@ -20,10 +20,14 @@ rejected by `src/horticalc/paths.py`.
 | `GET` | `/health` | `{"status": "ok"}` |
 | `GET` | `/schema/fertilizer-comp-keys` | Fertilizer composition keys from `COMP_COLS` in `src/horticalc/core.py`. |
 | `GET` | `/schema/solver-config` | Solver config definitions from `src/horticalc/solver_config.py`. |
+| `GET` | `/schema/preferences` | Theme and locale options loaded from `frontend/preferences.json`. |
 | `GET` | `/schema/units` | Volume and dose conversion metadata from `src/horticalc/units.py`. |
 | `GET` | `/molar-masses` | `data/molar_masses.yml`. |
 
 ## Preferences
+
+Theme and locale values accepted by `PUT /preferences` are defined once in
+`frontend/preferences.json` and returned by `GET /schema/preferences`.
 
 | Method | Path | Purpose |
 | --- | --- | --- |

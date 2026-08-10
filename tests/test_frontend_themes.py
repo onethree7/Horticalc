@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import json
 import re
 
-from api.app import THEME_OPTIONS
+from api.app import PREFERENCE_OPTIONS
 from tests.frontend_assets import frontend_path
 
 
@@ -16,11 +17,20 @@ def test_theme_contract_is_synchronized_and_token_only() -> None:
     constants = frontend_path("app/constants.js").read_text(encoding="utf-8")
     markup = frontend_path("index.html").read_text(encoding="utf-8")
     css = frontend_path("styles/themes.css").read_text(encoding="utf-8")
+    preferences = json.loads(frontend_path("preferences.json").read_text(encoding="utf-8"))
 
-    for theme in THEME_OPTIONS:
-        assert f'"{theme}"' in constants
-        assert f'value="{theme}"' in markup
+    assert preferences == {
+        "default_theme": PREFERENCE_OPTIONS["default_theme"],
+        "themes": PREFERENCE_OPTIONS["themes"],
+        "locales": PREFERENCE_OPTIONS["locales"],
+    }
+    for theme in preferences["themes"]:
+        assert constants.count(f'"{theme}"') == (1 if theme == preferences["default_theme"] else 0)
+        assert f'value="{theme}"' not in markup
         assert f'[data-theme="{theme}"]' in css or theme == "horticalc-dark"
+
+    assert 'id="themeSelect"' in markup
+    assert 'id="languageSelect"' in markup
 
     themed_component_selector = re.compile(r'\[data-theme="[^"]+"\]\s+[.#\[]')
     assert not themed_component_selector.search(css)

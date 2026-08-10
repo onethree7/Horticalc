@@ -2,6 +2,7 @@ import * as api from "./api.js";
 import * as i18n from "../i18n/runtime.js";
 import {
   DEFAULT_LITERS,
+  DEFAULT_THEME,
   FALLBACK_LIQUID_VOLUME_UNITS,
   FALLBACK_MASS_UNITS,
   FALLBACK_SOLVER_CONFIG_DEFINITIONS,
@@ -303,6 +304,7 @@ function resourceValue(result, fallback, message, errors) {
 
 async function loadStartupResources() {
   const results = await Promise.allSettled([
+    api.fetchPreferenceOptions(i18n.t("errors.loadPreferenceOptions")),
     api.fetchSolverConfigDefinitions(i18n.t("errors.loadSolverConfig")),
     api.fetchFertilizerCompKeys(i18n.t("errors.loadFertilizerSchema")),
     api.fetchFertilizers(i18n.t("errors.loadFertilizers")),
@@ -314,19 +316,24 @@ async function loadStartupResources() {
   ]);
   const errors = [];
   return {
+    preferenceOptions: resourceValue(results[0], {
+      defaultTheme: DEFAULT_THEME,
+      themes: [DEFAULT_THEME],
+      locales: i18n.supportedLocales,
+    }, i18n.t("errors.loadPreferenceOptions"), errors),
     solverConfigDefinitions: resourceValue(
-      results[0],
+      results[1],
       [...FALLBACK_SOLVER_CONFIG_DEFINITIONS],
       i18n.t("errors.loadSolverDefaults"),
       errors,
     ),
-    fertilizerKeys: resourceValue(results[1], [], i18n.t("errors.loadFertilizerSchema"), errors),
-    fertilizers: resourceValue(results[2], [], i18n.t("errors.loadFertilizers"), errors),
-    molarMasses: resourceValue(results[3], {}, i18n.t("errors.loadMolarMasses"), errors),
-    waterProfiles: resourceValue(results[4], [], i18n.t("errors.loadWaterProfiles"), errors),
-    recipes: resourceValue(results[5], [], i18n.t("errors.loadRecipes"), errors),
-    solutions: resourceValue(results[6], [], i18n.t("errors.loadNutrientSolutions"), errors),
-    unitDefinitions: resourceValue(results[7], {
+    fertilizerKeys: resourceValue(results[2], [], i18n.t("errors.loadFertilizerSchema"), errors),
+    fertilizers: resourceValue(results[3], [], i18n.t("errors.loadFertilizers"), errors),
+    molarMasses: resourceValue(results[4], {}, i18n.t("errors.loadMolarMasses"), errors),
+    waterProfiles: resourceValue(results[5], [], i18n.t("errors.loadWaterProfiles"), errors),
+    recipes: resourceValue(results[6], [], i18n.t("errors.loadRecipes"), errors),
+    solutions: resourceValue(results[7], [], i18n.t("errors.loadNutrientSolutions"), errors),
+    unitDefinitions: resourceValue(results[8], {
       volumeUnits: [...FALLBACK_VOLUME_UNITS],
       massUnits: [...FALLBACK_MASS_UNITS],
       liquidVolumeUnits: [...FALLBACK_LIQUID_VOLUME_UNITS],
@@ -359,7 +366,8 @@ async function init() {
   const [preferences, resources] = await Promise.all([api.loadPreferences(), loadStartupResources()]);
   resources.errors.forEach(({ error, message }) => notifications.reportError(error, message));
 
-  settings.mount(preferences, resources.unitDefinitions);
+  i18n.configureSupportedLocales(resources.preferenceOptions.locales);
+  settings.mount(preferences, resources.unitDefinitions, resources.preferenceOptions);
   water.setResources({ profiles: resources.waterProfiles, masses: resources.molarMasses });
   water.mount();
   calculator.mount();

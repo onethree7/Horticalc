@@ -257,6 +257,7 @@ export default {
   "errors.loadDefaultRecipe": "Error loading the default recipe",
   "errors.loadSolverConfig": "Error loading solver configuration",
   "errors.loadSolverDefaults": "Error loading solver defaults",
+  "errors.loadPreferenceOptions": "Error loading preference options",
   "errors.loadUnitSchema": "Error loading unit definitions",
   "errors.loadNutrientSolutions": "Error loading nutrient solutions",
   "errors.loadNutrientSolution": "Error loading the nutrient solution",

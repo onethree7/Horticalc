@@ -26,6 +26,14 @@ import {
 } from "./solver_payload.js";
 import { renderSolverTables } from "./solver_rendering.js";
 import { buildSolverPrintableText } from "./solver_printable.js";
+import {
+  DEFAULT_TARGET_PRIORITY,
+  HIERARCHICAL_MODEL,
+  NNLS_TUNING_MODEL,
+  normalizedPriority,
+  solverModelLabel,
+  targetPrioritySummary,
+} from "./solver_presentation.js";
 import { storageGet, storageSet } from "./storage.js";
 import { createLatestRequestGate } from "../request_gate.js";
 
@@ -104,16 +112,8 @@ let searchTimer;
 let mounted = false;
 
 const MASS_MODEL = "mass_nnls";
-const HIERARCHICAL_MODEL = "hierarchical";
-const NNLS_TUNING_MODEL = "nnls_tuning";
 const REPORT_ONLY_TARGETS = new Set(["Na", "Cl"]);
-const DEFAULT_TARGET_PRIORITY = 3;
 const TARGET_PRIORITY_LEVELS = [1, 2, 3, 4, 0];
-
-function normalizedPriority(value, fallback = DEFAULT_TARGET_PRIORITY) {
-  const priority = Number(value);
-  return Number.isInteger(priority) && priority >= 0 && priority <= 4 ? priority : fallback;
-}
 
 function setTargetPriorities(priorities = {}, ignoredElements = []) {
   const ignored = new Set(Array.isArray(ignoredElements) ? ignoredElements : []);
@@ -148,24 +148,6 @@ function buildCurrentSolverConfig() {
 
 function persistCurrentSolverConfig() {
   api.persistPreferences({ solver_config: buildCurrentSolverConfig() });
-}
-
-function solverModelLabel(model) {
-  if (model === HIERARCHICAL_MODEL) return t("solver.model.hierarchical");
-  return model === NNLS_TUNING_MODEL ? t("solver.model.nnlsTuning") : t("solver.model.massNnls");
-}
-
-function targetPrioritySummary(data, key) {
-  if (data?.solver_model !== HIERARCHICAL_MODEL) return "";
-  const configured = data?.target_priorities?.[key];
-  if (!configured) return "";
-  const under = normalizedPriority(configured.under, 0);
-  const over = normalizedPriority(configured.over, 0);
-  if (under === 0 && over === 0) return t("solver.priority.reportOnlyResult");
-  return t("solver.priority.resultSummary", {
-    under: under || "–",
-    over: over || "–",
-  });
 }
 
 function syncSolverModelControls() {
@@ -510,7 +492,7 @@ function renderSolverResults(data) {
       N_NO3: t("solver.nNo3"),
       N_NH4: t("solver.nNh4"),
       N_UREA: t("solver.nUrea"),
-      prioritySummary: (key) => targetPrioritySummary(data, key),
+      prioritySummary: (key) => targetPrioritySummary(data, key, t),
     },
     formatNutrient: (value) => formatNumber(value, nutrientFormatter),
   });

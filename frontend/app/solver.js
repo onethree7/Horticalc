@@ -476,7 +476,7 @@ function renderSolverResults(data) {
   solverTargetsResultsEmpty?.classList.toggle("is-hidden", Boolean(data));
   if (solverModelUsed) {
     solverModelUsed.textContent = data?.solver_model
-      ? `${t("solver.modelLabel")}: ${solverModelLabel(data.solver_model)}`
+      ? `${t("solver.modelLabel")}: ${solverModelLabel(data.solver_model, t)}`
       : "";
   }
   renderSolverTables({

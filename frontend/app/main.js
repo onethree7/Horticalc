@@ -1,5 +1,5 @@
 import * as api from "./api.js";
-import * as i18n from "../i18n/runtime.js";
+import * as i18n from "../i18n/runtime.js?v=3";
 import {
   DEFAULT_LITERS,
   DEFAULT_THEME,

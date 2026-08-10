@@ -48,7 +48,12 @@ def test_app_root_matches_repo_root_in_dev() -> None:
 def test_app_root_candidate_requires_frontend_data_and_recipe(tmp_path) -> None:
     empty_root = tmp_path / "empty"
     installed_root = tmp_path / "installed"
-    for relative in ("frontend/index.html", "data/fertilizers.csv", "recipes/default.yml"):
+    for relative in (
+        "frontend/index.html",
+        "frontend/preferences.json",
+        "data/fertilizers.csv",
+        "recipes/default.yml",
+    ):
         path = installed_root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("ok", encoding="utf-8")

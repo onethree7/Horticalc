@@ -27,23 +27,6 @@ export const FALLBACK_LIQUID_VOLUME_UNITS = [
 ];
 
 export const THEME_STORAGE_KEY = "horticalc.theme";
-export const THEME_OPTIONS = new Set([
-  DEFAULT_THEME,
-  "horticalc-light",
-  "high-contrast",
-  "soil",
-  "gch-classic",
-  "vt-green",
-  "blue-matrix",
-  "tokyo-night",
-  "solarized-light",
-  "dracula",
-  "gruvbox-dark",
-  "catppuccin-mocha",
-  "monokai-classic",
-  "windows-95",
-  "amber-crt",
-]);
 
 export const LAST_SOLUTION_CALCULATED_KEY = "last_solution_calculated";
 export const SUMMARY_VIEW_KEY = "horticalc.summary_view";

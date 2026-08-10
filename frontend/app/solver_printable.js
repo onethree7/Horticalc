@@ -1,32 +1,10 @@
 import { NUTRIENT_FORMATTER, SUMMARY_COLUMN_ORDER } from "./constants.js";
 import { buildAlignedRows, formatNumber } from "./formatting.js";
 import { formatClipboardIonLabel, solverResultDisplayKeys } from "./solver_payload.js";
+import { solverModelLabel, targetPrioritySummary } from "./solver_presentation.js";
 
-const HIERARCHICAL_MODEL = "hierarchical";
-const NNLS_TUNING_MODEL = "nnls_tuning";
-
-function normalizedPriority(value, fallback = 3) {
-  const priority = Number(value);
-  return Number.isInteger(priority) && priority >= 0 && priority <= 4 ? priority : fallback;
-}
-
-export function printableSolverModelLabel(model, t) {
-  if (model === HIERARCHICAL_MODEL) return t("solver.model.hierarchical");
-  return model === NNLS_TUNING_MODEL ? t("solver.model.nnlsTuning") : t("solver.model.massNnls");
-}
-
-export function printableTargetPrioritySummary(data, key, t) {
-  if (data?.solver_model !== HIERARCHICAL_MODEL) return "";
-  const configured = data?.target_priorities?.[key];
-  if (!configured) return "";
-  const under = normalizedPriority(configured.under, 0);
-  const over = normalizedPriority(configured.over, 0);
-  if (under === 0 && over === 0) return t("solver.priority.reportOnlyResult");
-  return t("solver.priority.resultSummary", {
-    under: under || "–",
-    over: over || "–",
-  });
-}
+export const printableSolverModelLabel = solverModelLabel;
+export const printableTargetPrioritySummary = targetPrioritySummary;
 
 export function buildSolverPrintableText({
   result,
@@ -48,7 +26,7 @@ export function buildSolverPrintableText({
           units.formatVolumeValue(units.litersToDisplayVolume(Number(liters) || 0)),
         ],
         [t("solver.clipboardOsmosis"), formatNumber(Number(osmosisPercent))],
-        [t("solver.modelLabel"), printableSolverModelLabel(result?.solver_model, t)],
+        [t("solver.modelLabel"), solverModelLabel(result?.solver_model, t)],
       ],
       [1],
     ),
@@ -113,7 +91,7 @@ export function buildSolverPrintableText({
       ? Number(errors[key])
       : achievedValue - targetValue;
     return [
-      [formatClipboardIonLabel(key), printableTargetPrioritySummary(result, key, t)]
+      [formatClipboardIonLabel(key), targetPrioritySummary(result, key, t)]
         .filter(Boolean)
         .join(" · "),
       targetValue > 0 ? formatNumber(targetValue, NUTRIENT_FORMATTER) : "-",

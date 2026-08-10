@@ -1,4 +1,4 @@
-import { DEFAULT_LITERS, DEFAULT_THEME, THEME_OPTIONS, THEME_STORAGE_KEY } from "./constants.js";
+import { DEFAULT_LITERS, DEFAULT_THEME, THEME_STORAGE_KEY } from "./constants.js";
 import { qs } from "./dom.js";
 import { storageGet, storageSet } from "./storage.js";
 
@@ -26,8 +26,37 @@ export function createSettingsController({
   const solverHistorySettingsStatus = qs("#solverHistorySettingsStatus");
   let mounted = false;
   let solverHistoryLimit = 1000;
+  let themeOptions = new Set([DEFAULT_THEME]);
+  let defaultTheme = DEFAULT_THEME;
 
-  const normalizeTheme = (theme) => THEME_OPTIONS.has(theme) ? theme : DEFAULT_THEME;
+  const normalizeTheme = (theme) => themeOptions.has(theme) ? theme : defaultTheme;
+
+  function themeTranslationKey(theme) {
+    return `theme.${theme.split("-").map((part, index) => index === 0 ? part : `${part[0].toUpperCase()}${part.slice(1)}`).join("")}`;
+  }
+
+  function renderPreferenceOptions(options = {}) {
+    const themes = Array.isArray(options.themes) && options.themes.length ? options.themes : [DEFAULT_THEME];
+    themeOptions = new Set(themes);
+    defaultTheme = themeOptions.has(options.defaultTheme) ? options.defaultTheme : themes[0];
+    themeSelect?.replaceChildren(...themes.map((theme) => {
+      const option = document.createElement("option");
+      option.value = theme;
+      option.dataset.i18n = themeTranslationKey(theme);
+      option.textContent = i18n.t(option.dataset.i18n);
+      return option;
+    }));
+    const locales = Array.isArray(options.locales) && options.locales.length
+      ? options.locales
+      : i18n.supportedLocales;
+    languageSelect?.replaceChildren(...locales.map((locale) => {
+      const option = document.createElement("option");
+      option.value = locale;
+      option.dataset.i18n = `language.${locale}`;
+      option.textContent = i18n.t(option.dataset.i18n);
+      return option;
+    }));
+  }
 
   function applyTheme(theme) {
     const nextTheme = normalizeTheme(theme);
@@ -138,7 +167,8 @@ export function createSettingsController({
     });
   }
 
-  function mount(preferences = {}, definitions = {}) {
+  function mount(preferences = {}, definitions = {}, preferenceOptions = {}) {
+    renderPreferenceOptions(preferenceOptions);
     units.configure(definitions);
     units.setVolumeUnit(preferences.volume_unit);
     units.setSolidDoseUnit(preferences.solid_dose_unit);

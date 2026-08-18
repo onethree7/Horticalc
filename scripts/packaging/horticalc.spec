@@ -62,6 +62,7 @@ hidden_imports.extend(
     collect_submodules("scipy._external.array_api_compat.numpy")
 )
 version_file = os.environ.get("HORTICALC_VERSION_FILE") if sys.platform == "win32" else None
+icon_path = project_root / "assets" / "horticalc.ico"
 
 
 a = Analysis(
@@ -136,6 +137,7 @@ exe = EXE(
     upx=False,
     console=show_console,
     version=version_file,
+    icon=str(icon_path) if sys.platform == "win32" else None,
 )
 
 coll = COLLECT(

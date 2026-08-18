@@ -22,6 +22,7 @@ $requiredPaths = @(
     (Join-Path $sourceDir "_internal/pythonnet/runtime/Python.Runtime.dll"),
     (Join-Path $sourceDir "frontend/index.html"),
     (Join-Path $sourceDir "LICENSE"),
+    (Join-Path $repoRoot "assets/horticalc.ico"),
     $installerScript
 )
 foreach ($path in $requiredPaths) {

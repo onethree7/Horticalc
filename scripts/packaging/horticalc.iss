@@ -34,6 +34,7 @@ WizardStyle=modern
 MinVersion=10.0
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+SetupIconFile={#SourceDir}\..\..\assets\horticalc.ico
 CloseApplications=yes
 RestartApplications=no
 UsePreviousAppDir=yes

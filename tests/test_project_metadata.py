@@ -161,6 +161,18 @@ def test_pyinstaller_selects_one_native_webview_backend() -> None:
         assert f'"{excluded}"' in spec
 
 
+def test_windows_packaging_uses_the_horticalc_leaf_icon() -> None:
+    spec = (ROOT / "scripts" / "packaging" / "horticalc.spec").read_text(encoding="utf-8")
+    installer = (ROOT / "scripts" / "packaging" / "horticalc.iss").read_text(encoding="utf-8")
+    installer_build = (ROOT / "scripts" / "packaging" / "build_windows_installer.ps1").read_text(encoding="utf-8")
+
+    assert (ROOT / "assets" / "horticalc.ico").is_file()
+    assert '"assets" / "horticalc.ico"' in spec
+    assert 'icon=str(icon_path) if sys.platform == "win32" else None' in spec
+    assert "SetupIconFile={#SourceDir}\\..\\..\\assets\\horticalc.ico" in installer
+    assert 'Join-Path $repoRoot "assets/horticalc.ico"' in installer_build
+
+
 def test_linux_runtime_commands_do_not_drift_between_user_docs() -> None:
     paths = (
         ROOT / "README.md",

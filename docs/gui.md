@@ -137,6 +137,14 @@ The WebView storage root is `user/webview/`. External links, downloads, file
 URLs, and remote debugging are disabled by the desktop host. API responses use
 a same-origin Content Security Policy and reject unexpected Host headers.
 
+For the native Rust cutover, `frontend/app/webview_state_bridge.js` and
+`frontend/app/bridge_release.js` are mounted by `frontend/app/main.js` after
+the settings rail is initialized. The resulting **Export native state** action
+downloads a validated `user/ui_state.json` envelope containing browser-only
+calculator, result-tab, Solver-selection, expansion, auto-apply, and locale
+state. This is a migration-only action; the Rust executable does not load or
+execute these modules.
+
 ## API Calls From The Frontend
 
 The UI calls:

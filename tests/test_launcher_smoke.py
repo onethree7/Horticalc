@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import types
 import urllib.error
+from pathlib import Path
 
 import pytest
 
@@ -11,8 +12,10 @@ import horticalc.single_instance as single_instance
 from horticalc.launcher import (
     LOG_BACKUP_COUNT,
     LOG_MAX_BYTES,
+    PORTABLE_MOTW_ERROR,
     RendererDependencyError,
     _logging_config,
+    blocked_python_runtime_path,
     ensure_renderer_available,
     fail_fast,
     focus_window,
@@ -20,7 +23,9 @@ from horticalc.launcher import (
     linux_distribution_ids,
     linux_webview_install_command,
     load_webview,
+    read_zone_identifier,
     renderer_error_message,
+    require_unblocked_portable_runtime,
     run_webview,
     selected_renderer,
     stop_server,
@@ -292,6 +297,89 @@ def test_unexpected_gui_failure_message_is_neutral(tmp_path) -> None:
 
 def test_webview_storage_stays_in_portable_user_directory(tmp_path) -> None:
     assert webview_storage_path(tmp_path) == tmp_path / "user" / "webview"
+
+
+@pytest.mark.parametrize(
+    ("zone_id", "blocked"),
+    [(0, False), (1, False), (2, False), (3, True), (4, True)],
+)
+def test_windows_packaged_runtime_blocks_only_untrusted_motw_zones(tmp_path, zone_id, blocked) -> None:
+    runtime_path = tmp_path / launcher.PYTHON_RUNTIME_RELATIVE_PATH
+    runtime_path.parent.mkdir(parents=True)
+    runtime_path.write_bytes(b"runtime")
+    Path(f"{runtime_path}:{launcher.MOTW_STREAM_NAME}").write_text(
+        f"[ZoneTransfer]\nZoneId={zone_id}\n", encoding="utf-8"
+    )
+
+    result = blocked_python_runtime_path(
+        platform="win32",
+        packaged=True,
+        no_gui=False,
+        runtime_root=tmp_path,
+    )
+
+    assert (result == runtime_path) is blocked
+
+
+def test_zone_identifier_missing_or_unreadable_is_not_blocked(tmp_path, monkeypatch) -> None:
+    runtime_path = tmp_path / "Python.Runtime.dll"
+    runtime_path.write_bytes(b"runtime")
+    assert read_zone_identifier(runtime_path) is None
+
+    def unreadable(*_args, **_kwargs):
+        raise PermissionError("denied")
+
+    monkeypatch.setattr(Path, "read_text", unreadable)
+    assert read_zone_identifier(runtime_path) is None
+
+
+@pytest.mark.parametrize(
+    ("platform", "packaged", "no_gui"),
+    [("linux", True, False), ("win32", False, False), ("win32", True, True)],
+)
+def test_motw_preflight_skips_non_gui_release_modes(tmp_path, platform, packaged, no_gui) -> None:
+    runtime_path = tmp_path / launcher.PYTHON_RUNTIME_RELATIVE_PATH
+    runtime_path.parent.mkdir(parents=True)
+    runtime_path.write_bytes(b"runtime")
+    Path(f"{runtime_path}:{launcher.MOTW_STREAM_NAME}").write_text("[ZoneTransfer]\nZoneId=3\n", encoding="utf-8")
+
+    assert (
+        blocked_python_runtime_path(
+            platform=platform,
+            packaged=packaged,
+            no_gui=no_gui,
+            runtime_root=tmp_path,
+        )
+        is None
+    )
+
+
+def test_motw_preflight_warns_and_exits_before_gui_start(tmp_path, monkeypatch) -> None:
+    runtime_path = tmp_path / launcher.PYTHON_RUNTIME_RELATIVE_PATH
+    runtime_path.parent.mkdir(parents=True)
+    runtime_path.write_bytes(b"runtime")
+    Path(f"{runtime_path}:{launcher.MOTW_STREAM_NAME}").write_text("[ZoneTransfer]\nZoneId=3\n", encoding="utf-8")
+    log_file = tmp_path / "launcher.log"
+    warnings = []
+
+    def fake_fail_fast(message, warning_log_file):
+        warnings.append((message, warning_log_file))
+        raise SystemExit(1)
+
+    monkeypatch.setattr(launcher, "fail_fast", fake_fail_fast)
+
+    with pytest.raises(SystemExit) as exc_info:
+        require_unblocked_portable_runtime(
+            log_file,
+            no_gui=False,
+            platform="win32",
+            packaged=True,
+            runtime_root=tmp_path,
+        )
+
+    assert exc_info.value.code == 1
+    assert warnings == [(PORTABLE_MOTW_ERROR, log_file)]
+    assert "Thank you, Microsoft." in PORTABLE_MOTW_ERROR
 
 
 def test_focus_window_restores_linux_window_through_pywebview() -> None:

@@ -47,7 +47,11 @@ Horticalc has five runtime layers:
 
 ## AppRoot And Portable Data Layout
 
-`app_root()` in `src/horticalc/paths.py` resolves to the repository root in development, the executable folder in PyInstaller releases, or the install prefix when the packaged assets are present.
+`app_root()` in `src/horticalc/paths.py` resolves to the repository root in
+development, the executable folder in PyInstaller releases, or the install
+prefix when the packaged assets are present. The Windows setup installs that
+same onedir layout under `%LocalAppData%\Programs\Horticalc`; the portable ZIP
+uses whichever writable folder receives the extraction.
 
 ```text
 AppRoot/

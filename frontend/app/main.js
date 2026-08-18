@@ -24,6 +24,7 @@ import {
 import { storageGet } from "./storage.js";
 import { createUnitService } from "./units.js";
 import { createWaterController } from "./water.js";
+import { installNativeStateExport } from "./bridge_release.js";
 
 const notifications = createNotifications(i18n);
 let calculator;
@@ -368,6 +369,10 @@ async function init() {
 
   i18n.configureSupportedLocales(resources.preferenceOptions.locales);
   settings.mount(preferences, resources.unitDefinitions, resources.preferenceOptions);
+  // One-shot migration affordance for the native Rust cutover. It is
+  // intentionally mounted only in the legacy frontend; the native runtime
+  // has no browser dependency.
+  installNativeStateExport({ label: "Export native state" });
   water.setResources({ profiles: resources.waterProfiles, masses: resources.molarMasses });
   water.mount();
   calculator.mount();

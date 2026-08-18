@@ -127,7 +127,25 @@ Windows:
 
 ```powershell
 .\scripts\packaging\build_windows.ps1
+.\scripts\packaging\build_windows_installer.ps1
 ```
+
+The second command requires Inno Setup 6. Set `ISCC_PATH` if `ISCC.exe` is not
+installed in its standard location. It consumes the existing
+`dist\Horticalc` onedir build and creates
+`horticalc-vX.Y.Z-windows-setup.exe` in the repository root.
+
+## Windows Portable ZIP Unblock
+
+Unblock the official Windows ZIP before extracting it:
+
+```powershell
+Unblock-File -LiteralPath .\horticalc-vX.Y.Z-windows.zip
+```
+
+Then extract the archive normally. If files were already extracted from the
+blocked ZIP, back up an existing `user/` folder, delete the extracted folder,
+and extract it again after running the command.
 
 ## Release Verification
 
@@ -138,6 +156,8 @@ Windows PowerShell:
 ```powershell
 Get-FileHash -Algorithm SHA256 .\horticalc-vX.Y.Z-windows.zip
 Get-Content .\horticalc-vX.Y.Z-windows.zip.sha256
+Get-FileHash -Algorithm SHA256 .\horticalc-vX.Y.Z-windows-setup.exe
+Get-Content .\horticalc-vX.Y.Z-windows-setup.exe.sha256
 ```
 
 Linux:
@@ -150,6 +170,7 @@ With the GitHub CLI:
 
 ```bash
 gh attestation verify horticalc-vX.Y.Z-windows.zip --repo onethree7/Horticalc
+gh attestation verify horticalc-vX.Y.Z-windows-setup.exe --repo onethree7/Horticalc
 gh attestation verify horticalc-vX.Y.Z-linux.tar.gz --repo onethree7/Horticalc
 ```
 

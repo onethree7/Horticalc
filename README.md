@@ -15,7 +15,15 @@ python3 -m venv .venv
 
 On Windows, replace `./.venv/bin/python` with `.\.venv\Scripts\python.exe`.
 
-Download the latest release archive from the [releases page](https://github.com/onethree7/Horticalc/releases), extract it to a writable folder, and run `Horticalc.exe` (Windows) or `./horticalc` (Linux).
+For Windows, download `horticalc-<version>-windows-setup.exe` from the
+[releases page](https://github.com/onethree7/Horticalc/releases). It installs
+per user under `%LocalAppData%\Programs\Horticalc` without administrator
+rights. The Windows ZIP remains available as a portable alternative; unblock
+the downloaded ZIP before extracting it by following the
+[portable Windows instructions](docs/quickstart.md#windows-portable-zip).
+
+For Linux, download the release archive, extract it to a writable folder, and
+run `./horticalc`.
 
 The desktop GUI supports Windows 10/11 with the Microsoft WebView2 Runtime. The
 Linux x86_64 release uses the system GTK 3/WebKitGTK 4.1 runtime and is tested

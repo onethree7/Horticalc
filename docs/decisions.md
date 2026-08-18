@@ -26,8 +26,16 @@ Source: `LICENSE`, `pyproject.toml`, `README.md`, `scripts/packaging/README.txt`
 - Linux executable name: `horticalc`.
 - Windows includes `tzdata` as a hidden import.
 - Release artifacts include `frontend/`, `data/`, `recipes/`, the portable `README.txt`, and `LICENSE`.
+- The recommended Windows artifact is an Inno Setup 6 per-user installer with
+  stable AppId `{50DF7813-DAE5-4976-8B13-6D677CF44660}` and default location
+  `%LocalAppData%\Programs\Horticalc`; the portable ZIP remains supported.
+- Installer updates preserve `user/`. Uninstall preserves `user/`, removes
+  `logs/`, and removes installed program files.
+- The installer and executable remain unsigned; SHA-256 files and GitHub
+  Artifact Attestations provide integrity and provenance, not a verified
+  Windows publisher identity.
 
-Source: `scripts/packaging/horticalc.spec`, `scripts/packaging/build_windows.ps1`, `scripts/packaging/build_linux.sh`.
+Source: `scripts/packaging/horticalc.spec`, `scripts/packaging/horticalc.iss`, `scripts/packaging/build_windows.ps1`, `scripts/packaging/build_linux.sh`.
 
 ## Runtime And Networking
 
@@ -38,6 +46,9 @@ Source: `scripts/packaging/horticalc.spec`, `scripts/packaging/build_windows.ps1
 - Logs: rotating `AppRoot/logs/launcher.log` files.
 - Desktop host: pinned pywebview `6.2.1`, used only as a native window around the local FastAPI origin.
 - Windows renderer: WebView2 (`edgechromium`) only; no MSHTML or external-browser fallback.
+- A packaged Windows GUI start checks the pythonnet runtime's
+  `Zone.Identifier`. Internet and Restricted Zone values fail fast with the
+  portable ZIP unblock instructions; Horticalc never removes the stream.
 - Linux renderer: GTK/WebKitGTK only; no bundled Qt, CEF, or Chromium. GTK 3,
   WebKitGTK 4.1, GLib, ICU, libstdc++, GI typelibs, and their native dependency
   closure come from the target system as one coherent stack; PyGObject remains
@@ -111,7 +122,7 @@ Source: `src/horticalc/solver_config.py`, `src/horticalc/solver.py`.
 
 ## CI/Release
 
-- Release trigger: exact tag `v0.6.2` and manual workflow dispatch.
+- Release trigger: exact tag `v0.6.3` and manual workflow dispatch.
 - Build CI OSes: `ubuntu-22.04` and `windows-latest`.
 - Packaged Linux GUI CI: Ubuntu 22.04/24.04, Debian 13, and Fedora 44 under
   Xvfb/Openbox; Linux Mint 22.3 is a required manual VM gate.

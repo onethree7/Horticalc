@@ -6,6 +6,19 @@ Start
 Windows: double-click Horticalc.exe.
 Linux: run ./horticalc.
 
+The recommended Windows release is horticalc-<version>-windows-setup.exe. It
+installs for the current user under %LocalAppData%\Programs\Horticalc without
+administrator rights. The setup and executable are not Authenticode-signed;
+verify the official release checksum before accepting an Unknown publisher
+warning. Setup updates and uninstall both preserve user/, while uninstall
+removes logs/. The ZIP remains the fully supported portable alternative.
+
+Windows portable ZIP: before extracting, right-click the downloaded ZIP, open
+Properties, select Unblock/Zulassen, and click Apply. Then extract the complete
+archive to a writable folder. If it was already extracted while blocked,
+back up an existing user/ folder, delete the extracted folder, and repeat these
+steps with the original ZIP.
+
 Horticalc starts a private local service on 127.0.0.1 and opens the interface
 in its own native desktop window. It does not require or control an installed
 browser, and it does not expose the service to the local network.
@@ -41,6 +54,12 @@ Troubleshooting
 ---------------
 Runtime logs are stored in logs/launcher.log. Include the relevant log excerpt
 when reporting a startup problem.
+
+On Windows, Horticalc checks whether Mark of the Web blocks the bundled
+Python.Runtime.dll. If it reports this condition, back up an existing user/
+folder first, delete the extracted folder, unblock the original ZIP as described
+above, and extract it again. Horticalc does not remove Windows security metadata
+automatically.
 
 Project documentation and issue tracker:
 https://github.com/onethree7/Horticalc

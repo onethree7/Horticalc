@@ -2,13 +2,50 @@
 
 Status: `operation-guide`.
 
-## Packaged Release
+## Windows Setup
 
-1. Download the latest release archive for your platform.
+1. Download `horticalc-<version>-windows-setup.exe` from the official
+   [Horticalc releases page](https://github.com/onethree7/Horticalc/releases).
+2. Run the setup. It installs for the current user under
+   `%LocalAppData%\Programs\Horticalc` and does not require administrator
+   rights.
+3. Start Horticalc from the Start menu or leave **Launch Horticalc** selected
+   on the final setup page.
+
+The setup and executable are not currently Authenticode-signed, so Windows may
+show **Unknown publisher**. Verify that the setup came from the official release
+and compare its SHA-256 file before choosing **More info → Run anyway**.
+Installer updates preserve `user/`. Uninstall removes the program and logs but
+also preserves `user/` so profiles and preferences can be recovered by a later
+installation.
+
+## Windows Portable ZIP
+
+The Windows ZIP remains available for users who want a portable folder. Unblock
+the ZIP before extraction so Windows does not copy Mark of the Web to the
+bundled `Python.Runtime.dll`:
+
+1. Download `horticalc-<version>-windows.zip` but do not extract it yet.
+2. Right-click the ZIP and select **Properties**.
+3. On the **General** tab, select **Unblock** (shown as **Zulassen** on German
+   Windows), then choose **Apply** and **OK**.
+4. Extract the complete ZIP to a writable folder and run `Horticalc.exe`.
+
+If the ZIP was already extracted while blocked, first back up an existing
+`user/` folder, then delete that extracted folder, unblock the original ZIP,
+and extract it again. Unblocking the ZIP afterwards does not repair files that
+were already extracted. The equivalent PowerShell command is in
+[commands.md](commands.md#windows-portable-zip-unblock).
+
+Horticalc checks the packaged pythonnet runtime before starting the GUI. If it
+finds Internet or Restricted Zone metadata, it explains the steps above and
+exits without removing or changing the Windows security metadata.
+
+## Linux Packaged Release
+
+1. Download the latest Linux release archive.
 2. Extract the archive to a writable folder.
-3. Run the executable:
-   - Windows: `Horticalc.exe`
-   - Linux: `./horticalc`
+3. Run `./horticalc`.
 
 The launcher starts a local server on `127.0.0.1`, waits for the health check,
 and opens the GUI in a native Horticalc window. Windows 10/11 requires the

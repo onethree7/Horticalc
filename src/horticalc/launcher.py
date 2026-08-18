@@ -45,6 +45,24 @@ WEBVIEW2_DOWNLOAD_URL = "https://developer.microsoft.com/microsoft-edge/webview2
 LINUX_APT_WEBVIEW_COMMAND = "sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1"
 LINUX_DNF_WEBVIEW_COMMAND = "sudo dnf install -y webkit2gtk4.1"
 SOURCE_WEBVIEW_INSTALL_COMMAND = "python -m pip install -e ."
+PYTHON_RUNTIME_RELATIVE_PATH = Path("pythonnet/runtime/Python.Runtime.dll")
+MOTW_STREAM_NAME = "Zone.Identifier"
+BLOCKED_MOTW_ZONE_IDS = frozenset({3, 4})
+PORTABLE_MOTW_ERROR = (
+    "Horticalc needs the downloaded ZIP to be unblocked before extraction.\n\n"
+    "Windows automatically marks files downloaded from the Internet. When the Horticalc ZIP was "
+    "extracted, Windows helpfully applied this mark to one of its runtime files as well, and now "
+    "prevents Horticalc from loading it.\n\n"
+    "To fix this small gift from Microsoft:\n\n"
+    "Back up your user folder if needed, then delete this extracted Horticalc folder.\n"
+    "Right-click the original ZIP → Properties.\n"
+    "Check Unblock → Apply.\n"
+    "Extract the ZIP again.\n\n"
+    "Alternatively, use the Horticalc Setup installer.\n\n"
+    "Nothing malicious was detected. Your computer is fine. Horticalc is fine. Windows is simply "
+    "protecting you from the ZIP you just asked it to open.\n\n"
+    "Thank you, Microsoft."
+)
 
 
 class RendererDependencyError(RuntimeError):
@@ -66,6 +84,72 @@ def _env_flag(name: str) -> bool:
 
 def webview_storage_path(root: Path) -> Path:
     return root / "user" / WEBVIEW_STORAGE_DIR
+
+
+def read_zone_identifier(path: Path) -> int | None:
+    """Return the Windows attachment-manager ZoneId without changing the file."""
+
+    stream_path = Path(f"{path}:{MOTW_STREAM_NAME}")
+    try:
+        content = stream_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+
+    for line in content.splitlines():
+        key, separator, value = line.partition("=")
+        if not separator or key.strip().casefold() != "zoneid":
+            continue
+        try:
+            return int(value.strip())
+        except ValueError:
+            continue
+    return None
+
+
+def blocked_python_runtime_path(
+    *,
+    platform: str | None = None,
+    packaged: bool | None = None,
+    no_gui: bool = False,
+    runtime_root: Path | None = None,
+) -> Path | None:
+    """Return the MOTW-blocked pythonnet runtime used by the packaged Windows GUI."""
+
+    platform = sys.platform if platform is None else platform
+    packaged = bool(getattr(sys, "frozen", False)) if packaged is None else packaged
+    if platform != "win32" or not packaged or no_gui:
+        return None
+
+    if runtime_root is None:
+        bundled_root = getattr(sys, "_MEIPASS", None)
+        if not bundled_root:
+            return None
+        runtime_root = Path(bundled_root)
+
+    runtime_path = runtime_root / PYTHON_RUNTIME_RELATIVE_PATH
+    if read_zone_identifier(runtime_path) in BLOCKED_MOTW_ZONE_IDS:
+        return runtime_path
+    return None
+
+
+def require_unblocked_portable_runtime(
+    log_file: Path,
+    *,
+    no_gui: bool,
+    platform: str | None = None,
+    packaged: bool | None = None,
+    runtime_root: Path | None = None,
+) -> None:
+    blocked_path = blocked_python_runtime_path(
+        platform=platform,
+        packaged=packaged,
+        no_gui=no_gui,
+        runtime_root=runtime_root,
+    )
+    if blocked_path is None:
+        return
+    logging.getLogger("horticalc.launcher").error("Packaged runtime has a blocked Zone.Identifier: %s", blocked_path)
+    fail_fast(PORTABLE_MOTW_ERROR, log_file)
 
 
 def _logging_config(log_file: Path, *, packaged: bool | None = None) -> dict[str, Any]:
@@ -339,6 +423,7 @@ def main() -> None:
     logger = logging.getLogger("horticalc.launcher")
     logger.info("AppRoot resolved to %s", root)
     no_gui = _env_flag(NO_GUI_ENV)
+    require_unblocked_portable_runtime(log_file, no_gui=no_gui)
 
     from api.app import app
 

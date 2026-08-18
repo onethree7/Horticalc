@@ -5,6 +5,8 @@ import sys
 import os
 from pathlib import Path
 
+from PyInstaller.utils.hooks import collect_submodules
+
 
 # PyInstaller exec() does not guarantee __file__ in CI; resolve root via env/cwd.
 project_root_env = os.environ.get("HORTICALC_PROJECT_ROOT") or os.environ.get(
@@ -56,6 +58,9 @@ elif sys.platform.startswith("linux"):
     ]
 else:
     raise SystemExit("Horticalc desktop packages support Windows and Linux only")
+hidden_imports.extend(
+    collect_submodules("scipy._external.array_api_compat.numpy")
+)
 version_file = os.environ.get("HORTICALC_VERSION_FILE") if sys.platform == "win32" else None
 
 

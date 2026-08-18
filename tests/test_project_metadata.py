@@ -66,6 +66,9 @@ def test_pyproject_packages_app_assets_for_wheel_installs() -> None:
 def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     readme = (ROOT / "scripts" / "packaging" / "README.txt").read_text(encoding="utf-8")
     windows_build = (ROOT / "scripts" / "packaging" / "build_windows.ps1").read_text(encoding="utf-8")
+    installer_build = (ROOT / "scripts" / "packaging" / "build_windows_installer.ps1").read_text(encoding="utf-8")
+    installer_script = (ROOT / "scripts" / "packaging" / "horticalc.iss").read_text(encoding="utf-8")
+    installer_smoke = (ROOT / "scripts" / "packaging" / "smoke_windows_installer.ps1").read_text(encoding="utf-8")
     linux_build = (ROOT / "scripts" / "packaging" / "build_linux.sh").read_text(encoding="utf-8")
     release_workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
 
@@ -82,12 +85,36 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert "scripts/packaging/README.txt" in linux_build
     assert 'Join-Path $repoRoot "LICENSE"' in windows_build
     assert 'cp "$repo_root/LICENSE" "$app_root/LICENSE"' in linux_build
+    assert "50DF7813-DAE5-4976-8B13-6D677CF44660" in installer_script
+    assert "DefaultDirName={localappdata}\\Programs\\Horticalc" in installer_script
+    assert "PrivilegesRequired=lowest" in installer_script
+    assert "CloseApplications=yes" in installer_script
+    assert "RestartApplications=no" in installer_script
+    assert "postinstall skipifsilent" in installer_script
+    assert 'Name: "{app}\\user"; Flags: uninsneveruninstall' in installer_script
+    assert 'Name: "{app}\\logs"' in installer_script
+    assert 'Name: "{group}\\Horticalc"' in installer_script
+    install_delete = installer_script.split("[InstallDelete]", 1)[1].split("[Files]", 1)[0]
+    assert '"{app}\\user"' not in install_delete
+    assert "ISCC_PATH" in installer_build
+    assert "Inno Setup 6 compiler" in installer_build
+    assert "Runtime state found in installer input" in installer_build
+    assert "Zone.Identifier" in installer_smoke
+    assert "UseShellExecute = $false" in installer_smoke
+    assert "Installer update removed user data" in installer_smoke
+    assert "Uninstaller did not remove logs" in installer_smoke
     assert 'app_root / "LICENSE"' in release_workflow
     assert 'legacy_fertilizers = user_dir / "fertilizers.csv"' in release_workflow
     assert "Legacy Liquid,Flüssig,1.25,0.2" in release_workflow
     assert 'legacy_fertilizers.with_suffix(".csv.legacy-backup")' in release_workflow
     assert "csv.DictReader(handle)" in release_workflow
     assert "Clean smoke-test runtime state" in release_workflow
+    assert "Build Windows installer" in release_workflow
+    assert "Smoke test Windows installer" in release_workflow
+    assert "Attest Windows installer" in release_workflow
+    assert "Upload Windows installer artifact" in release_workflow
+    assert "release-assets/*.exe" in release_workflow
+    assert "release-assets/*.exe.sha256" in release_workflow
     assert "HORTICALC_NO_GUI" in release_workflow
     assert "HORTICALC_NO_BROWSER" not in release_workflow
     assert "gir1.2-webkit2-4.1" in release_workflow
@@ -101,11 +128,12 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert "sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1" in release_workflow
     assert "sudo dnf install -y webkit2gtk4.1" in release_workflow
     assert "needs:\n      - build\n      - linux-compatibility" in release_workflow
-    assert "name: Horticalc 0.6.2" in release_workflow
-    assert "body_path: .github/release-notes/v0.6.2.md" in release_workflow
+    assert "name: Horticalc 0.6.3" in release_workflow
+    assert "body_path: .github/release-notes/v0.6.3.md" in release_workflow
     cleanup_index = release_workflow.index("Clean smoke-test runtime state")
     assert cleanup_index < release_workflow.index("Package artifact (Linux)")
     assert cleanup_index < release_workflow.index("Package artifact (Windows)")
+    assert cleanup_index < release_workflow.index("Build Windows installer")
 
 
 def test_ci_resolves_release_constraints() -> None:
@@ -122,6 +150,7 @@ def test_pyinstaller_selects_one_native_webview_backend() -> None:
 
     assert '"webview.platforms.edgechromium"' in spec
     assert '"webview.platforms.gtk"' in spec
+    assert 'collect_submodules("scipy._external.array_api_compat.numpy")' in spec
     assert "support Windows and Linux only" in spec
     assert "a.exclude_system_libraries()" in spec
     for hook in ("pyi_rth_gtk.py", "pyi_rth_gdkpixbuf.py", "pyi_rth_gio.py", "pyi_rth_glib.py", "pyi_rth_gi.py"):
@@ -146,8 +175,31 @@ def test_linux_runtime_commands_do_not_drift_between_user_docs() -> None:
         assert "sudo dnf install -y webkit2gtk4.1" in text
 
 
+def test_windows_installer_and_portable_unblock_docs_do_not_drift() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    quickstart = (ROOT / "docs" / "quickstart.md").read_text(encoding="utf-8")
+    commands = (ROOT / "docs" / "commands.md").read_text(encoding="utf-8")
+    release_build = (ROOT / "docs" / "release_build.md").read_text(encoding="utf-8")
+    portable_readme = (ROOT / "scripts" / "packaging" / "README.txt").read_text(encoding="utf-8")
+
+    for text in (readme, quickstart, release_build):
+        assert "windows-setup.exe" in text
+        assert "%LocalAppData%\\Programs\\Horticalc" in text
+    for text in (quickstart, portable_readme):
+        assert "Unblock" in text
+        assert "delete" in text
+        assert "extract" in text
+        assert "Zulassen" not in text
+    assert "windows-setup.exe" in portable_readme
+    assert "%LocalAppData%\\Programs\\Horticalc" in portable_readme
+    assert "not Authenticode-signed" in portable_readme
+    assert "Unblock-File -LiteralPath" in commands
+    assert "build_windows_installer.ps1" in commands
+    assert "windows-setup.exe.sha256" in commands
+
+
 def test_runtime_package_api_and_cli_versions_match(api_client: TestClient) -> None:
-    assert __version__ == "0.6.2"
+    assert __version__ == "0.6.3"
     assert version("horticalc") == __version__
     assert api_client.get("/openapi.json").json()["info"]["version"] == __version__
     result = subprocess.run(
@@ -161,24 +213,22 @@ def test_runtime_package_api_and_cli_versions_match(api_client: TestClient) -> N
 
 
 def test_release_tag_must_match_the_single_version_literal() -> None:
-    assert expected_release_tag() == "v0.6.2"
-    validate_release_tag("v0.6.2")
-    with pytest.raises(ValueError, match="must be exactly v0.6.2"):
+    assert expected_release_tag() == "v0.6.3"
+    validate_release_tag("v0.6.3")
+    with pytest.raises(ValueError, match="must be exactly v0.6.3"):
         validate_release_tag("v4.1")
 
 
 def test_versioned_release_notes_cover_important_upgrade_information() -> None:
-    notes = (ROOT / ".github" / "release-notes" / "v0.6.2.md").read_text(encoding="utf-8")
+    notes = (ROOT / ".github" / "release-notes" / "v0.6.3.md").read_text(encoding="utf-8")
 
     for required_text in (
-        "Why the launcher changed",
-        "Windows 10 and Windows 11",
-        "Ubuntu 22.04",
-        "Debian 13",
-        "Fedora 44",
-        "HORTICALC_NO_GUI",
-        "gir1.2-webkit2-4.1",
-        "webkit2gtk4.1",
-        "Windows native GUI automation",
+        "Windows installer and portable ZIP",
+        "Mark of the Web",
+        "%LocalAppData%\\Programs\\Horticalc",
+        "Native-state export",
+        "EPSO Microtop",
+        "PyInstaller 6.22.0",
+        "not Authenticode-signed",
     ):
         assert required_text in notes

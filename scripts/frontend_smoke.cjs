@@ -443,7 +443,7 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
     await page.locator("#solveBtn").click();
     await page.locator("#copySolverResults:not([disabled])").waitFor();
     const potassiumResult = page.locator("#solverTargetsResultsTable tbody tr")
-      .filter({ has: page.locator("td:first-child", { hasText: /^K$/ }) });
+      .filter({ has: page.locator("td:first-child > span", { hasText: /^K$/ }) });
     await potassiumResult.locator("td:nth-child(2)").filter({ hasText: "100" }).waitFor();
     await page.waitForTimeout(650);
     if (!(await potassiumResult.locator("td:nth-child(2)").innerText()).includes("100")) {

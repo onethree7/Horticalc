@@ -6,15 +6,15 @@ Start
 Windows: double-click Horticalc.exe.
 Linux: run ./horticalc.
 
-The recommended Windows release is horticalc-<version>-windows-setup.exe. It
-installs for the current user under %LocalAppData%\Programs\Horticalc without
+The Windows installer is horticalc-<version>-windows-setup.exe. It installs for
+the current user under %LocalAppData%\Programs\Horticalc without
 administrator rights. The setup and executable are not Authenticode-signed;
 verify the official release checksum before accepting an Unknown publisher
 warning. Setup updates and uninstall both preserve user/, while uninstall
 removes logs/. The ZIP remains the fully supported portable alternative.
 
 Windows portable ZIP: before extracting, right-click the downloaded ZIP, open
-Properties, select Unblock/Zulassen, and click Apply. Then extract the complete
+Properties, select Unblock, and click Apply. Then extract the complete
 archive to a writable folder. If it was already extracted while blocked,
 back up an existing user/ folder, delete the extracted folder, and repeat these
 steps with the original ZIP.

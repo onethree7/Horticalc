@@ -21,25 +21,20 @@ installation.
 
 ## Windows Portable ZIP
 
-The Windows ZIP remains available for users who want a portable folder. Unblock
-the ZIP before extraction so Windows does not copy Mark of the Web to the
-bundled `Python.Runtime.dll`:
+Use the portable ZIP if you do not want an installation:
 
-1. Download `horticalc-<version>-windows.zip` but do not extract it yet.
-2. Right-click the ZIP and select **Properties**.
-3. On the **General** tab, select **Unblock** (shown as **Zulassen** on German
-   Windows), then choose **Apply** and **OK**.
-4. Extract the complete ZIP to a writable folder and run `Horticalc.exe`.
+1. Download `horticalc-<version>-windows.zip`.
+2. Before extracting, right-click the ZIP, open **Properties**, select
+   **Unblock**, and click **Apply**.
+3. Extract the ZIP and run `Horticalc.exe`.
 
-If the ZIP was already extracted while blocked, first back up an existing
-`user/` folder, then delete that extracted folder, unblock the original ZIP,
-and extract it again. Unblocking the ZIP afterwards does not repair files that
-were already extracted. The equivalent PowerShell command is in
-[commands.md](commands.md#windows-portable-zip-unblock).
+If you already extracted it while blocked, back up `user/`, delete the
+extracted folder, unblock the original ZIP, and extract it again. Unblocking
+the ZIP afterwards does not repair files already extracted. For PowerShell,
+see [commands.md](commands.md#windows-portable-zip-unblock).
 
-Horticalc checks the packaged pythonnet runtime before starting the GUI. If it
-finds Internet or Restricted Zone metadata, it explains the steps above and
-exits without removing or changing the Windows security metadata.
+If Horticalc reports Mark of the Web, repeat the steps above. It never changes
+the Windows security metadata itself.
 
 ## Linux Packaged Release
 

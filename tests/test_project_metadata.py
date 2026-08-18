@@ -187,9 +187,9 @@ def test_windows_installer_and_portable_unblock_docs_do_not_drift() -> None:
         assert "%LocalAppData%\\Programs\\Horticalc" in text
     for text in (quickstart, portable_readme):
         assert "Unblock" in text
-        assert "Zulassen" in text
         assert "delete" in text
         assert "extract" in text
+        assert "Zulassen" not in text
     assert "windows-setup.exe" in portable_readme
     assert "%LocalAppData%\\Programs\\Horticalc" in portable_readme
     assert "not Authenticode-signed" in portable_readme

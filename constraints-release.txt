@@ -2,19 +2,19 @@
 PyYAML==6.0.3
 fastapi==0.141.1
 pydantic==2.13.4
-pydantic_core==2.46.4
+pydantic_core==2.48.0
 uvicorn==0.52.3
 starlette==1.6.0
 numpy==2.4.6
 scipy==1.17.1
 anyio==4.14.2
-annotated-doc==0.0.4
-annotated-types==0.7.0
+annotated-doc==0.0.5
+annotated-types==0.8.0
 click==8.4.2
 colorama==0.4.6
 h11==0.16.0
 idna==3.18
-typing-inspection==0.4.2
+typing-inspection==0.4.4
 typing_extensions==4.16.0
 tzdata==2026.2; platform_system == "Windows"
 pywebview==6.2.1

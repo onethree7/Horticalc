@@ -51,9 +51,6 @@ Use **Plan -> Edit -> Verify** for every change.
    material into an ignored backup or a clearly labelled historical report.
 5. Avoid duplicate instructions. Link to the source-of-truth document instead.
 
-The pre-rework documentation backup is intentionally ignored at
-`_docs_backup/`.
-
 ## Standard Verification
 
 Run the standard suite when relevant. Use the repository test entrypoint; do

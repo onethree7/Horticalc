@@ -226,7 +226,7 @@ def test_versioned_release_notes_cover_important_upgrade_information() -> None:
         "Windows installer and portable ZIP",
         "Mark of the Web",
         "%LocalAppData%\\Programs\\Horticalc",
-        "Native-state export",
+        "Confirmed UI work",
         "EPSO Microtop",
         "PyInstaller 6.22.0",
         "not Authenticode-signed",

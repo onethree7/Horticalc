@@ -1,4 +1,8 @@
 Düngername,Liquid,Gewicht,NH4,NO3,P2O5,K2O,CaO,MgO,Na2O,SO4,Fe,Mn,Cu,Zn,B,Mo,Cl,CO3,HCO3,SiO2,UREA,Information,SolverMaxDosePerL
+Phygenera Cu-EDTA 15%,0,1.0,0,0,0,0,0,0,0,0,0,0,0.15,0,0,0,0,0,0,0,0,Cu-EDTA; Cu 15% (typ. 14.8%); CAS 14025-15-1,
+Phygenera Mn-EDTA 13%,0,1.0,0,0,0,0,0,0,0,0,0,0.13,0,0,0,0,0,0,0,0,0,Mn-EDTA; Mn 13% (typ. 12.8%); CAS 15375-84-5,
+Phygenera Zn-EDTA 14.5%,0,1.0,0,0,0,0,0,0,0,0,0,0,0,0.145,0,0,0,0,0,0,0,Zn-EDTA; Zn min. 14.5% (typ. 14.8%); CAS 14025-21-9,
+Phygenera Natriummolybdat-Dihydrat 39.65%,0,1.0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.3965,0,0,0,0,0,Na2MoO4·2H2O; Mo 39.65%; Reinheit min. 99%; CAS 10102-40-6,
 Agrolution pHLow 114 10-10-40+TE,0,1,0,0.1,0.1,0.4,0,0,0,0,0.0016,0.0006,0.0001,0.0001,0.0001,6e-05,0,0,0,0,0,Quelle: https://www.duengerexperte.de/de/Agrolution-pHLow-114.html | Gebinde: 25 kg | NPK label: 10-10-40+TE 25 kg | RAW extras: N_total: Gesamtstickstoff (N)=10%,
 Agrolution pHLow 222 20-20-20+TE,0,1,0.029,0.054,0.2,0.2,0,0,0,0,0.0016,0.0006,0.0001,0.0001,0.0001,6e-05,0,0,0,0,0.117,Quelle: https://www.duengerexperte.de/de/Agrolution-pHLow-222.html | Gebinde: 25 kg | NPK label: 20-20-20+TE 25 kg | RAW extras: N_total: Gesamtstickstoff (N)=20%,
 Agrolution Special 313 14-7-14+14CaO+TE,0,1.0,0.0,0.117,0.07,0.14,0.14,0.0,0.0,0.0,0.0016,0.0016,0.0001,0.0001,0.0001,0.0001,0.0,0.0,0.0,0.0,0.023,,

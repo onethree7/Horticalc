@@ -28,7 +28,7 @@ Use the portable ZIP if you do not want an installation:
    **Unblock**, and click **Apply**.
 3. Extract the ZIP and run `Horticalc.exe`.
 
-If you already extracted it while blocked, back up `user/`, delete the
+If you already extracted it while blocked, delete the
 extracted folder, unblock the original ZIP, and extract it again. Unblocking
 the ZIP afterwards does not repair files already extracted. For PowerShell,
 see [commands.md](commands.md#windows-portable-zip-unblock).

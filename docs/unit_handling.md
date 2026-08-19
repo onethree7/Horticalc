@@ -28,10 +28,6 @@ The supported gallon units are deliberately named `us_gallon` and `imperial_gall
 - Ion output is mmol/L and meq/L.
 - EC is mS/cm and uS/cm at 18 °C and 25 °C.
 
-## HydroBuddy Comparison (Research)
-
-HydroBuddy accepts liters, US gallons, or cubic meters and converts immediately to cubic meters, its calculation unit for `ppm = g/m³`. It separately uses a display factor for grams or ounces and always labels liquid products in mL. Horticalc follows the same principle—convert at the boundary and keep one calculation unit—but centralizes definitions outside the UI and exposes them through an API schema.
-
 ## Extension Rule
 
 Add future units from the core outward:

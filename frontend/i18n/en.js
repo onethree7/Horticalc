@@ -221,7 +221,7 @@ export default {
   "solver.noResult": "Please calculate a target profile first.",
   "solver.clipboardTitle": "Solver result",
   "solver.clipboardBatchVolume": "Batch ({unit})",
-  "solver.clipboardOsmosis": "Osmosis (%)",
+  "solver.clipboardOsmosis": "RO-water proportion (%)",
   "solver.clipboardNpk": "NPK TOTAL %",
   "solver.clipboardTargets": "Solver target values (mg/L)",
   "solver.clipboardIons": "Ions (mg/L)",

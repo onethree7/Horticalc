@@ -75,6 +75,21 @@ def test_i18n_catalogs_cover_the_supported_themes_and_solver_labels() -> None:
         assert required_keys <= set(_catalog(locale)), locale
 
 
+def test_theme_names_are_stable_across_locales() -> None:
+    catalogs = {locale: _catalog(locale) for locale in LOCALES}
+    theme_keys = [key for key in catalogs["en"] if key.startswith("theme.")]
+
+    for locale in LOCALES:
+        assert [catalogs[locale][key] for key in theme_keys] == [catalogs["en"][key] for key in theme_keys], locale
+
+
+def test_hydroponic_calculator_title_is_a_stable_product_name() -> None:
+    catalogs = {locale: _catalog(locale) for locale in LOCALES}
+
+    for locale, catalog in catalogs.items():
+        assert catalog["calculator.title"] == "Hydroponic Solution Calculator", locale
+
+
 def test_nonstandard_solver_models_are_marked_experimental_in_every_locale() -> None:
     markers = {
         "de": "experimentell",

@@ -142,10 +142,10 @@ Unblock the official Windows ZIP before extracting it:
 ```powershell
 Unblock-File -LiteralPath .\horticalc-vX.Y.Z-windows.zip
 ```
+(Or right click, and unblock file)
 
-Then extract the archive normally. If files were already extracted from the
-blocked ZIP, back up an existing `user/` folder, delete the extracted folder,
-and extract it again after running the command.
+Then extract the archive normally. Delete the extracted folder,
+and extract it again after running the command. 
 
 ## Release Verification
 

@@ -29,7 +29,11 @@ Deleting a recipe or nutrient-solution target removes only its file under
 `user/`. If that file overrode a shipped resource with the same filename, the
 shipped resource becomes effective again.
 
-The shipped calculator recipes are transparent reference calculations, not crop recommendations. `default.yml` is empty. Every non-default reference recipe uses `osmosis_percent: 100` and 1 g/L of each listed product, so its fertilizer-form concentrations follow directly from the declared catalog fractions. Solver and regression fixtures live outside `recipes/` and are never listed as user recipes.
+The shipped calculator recipes are reference calculations. `default.yml` is
+empty. Every non-default reference recipe uses `osmosis_percent: 100` and 1
+g/L of each listed product, so its fertilizer-form concentrations follow from
+the declared catalog fractions. Solver and regression fixtures live outside
+`recipes/` and are never listed as user recipes.
 
 API list routes omit malformed or unreadable user YAML files and log a warning.
 Water and target mappings must contain finite, non-negative numbers; API save
@@ -57,62 +61,49 @@ atomic. Malformed lines are logged and skipped so valid history remains readable
 
 Loaded by `load_fertilizers()` in `src/horticalc/data_io.py`.
 
-Required columns:
+### Schema
 
-- `Düngername` or `Duengername`
-- `Liquid`
-- `Gewicht`
+The canonical catalog requires:
 
-Optional solver metadata:
+- `Düngername` or the legacy-compatible `Duengername`
+- `Liquid` (`0` for solid, `1` for liquid)
+- `Gewicht` (a positive weight factor)
 
-- `SolverMaxDosePerL`: non-negative maximum dose the Solver may choose per
-  liter. Empty means unlimited; `0` excludes the product from variable Solver
-  dosing. Explicit recipe `fixed_grams` overrides this maximum.
+The optional `SolverMaxDosePerL` column limits variable solver dosing in the
+product's canonical dose unit. Empty means no limit; `0` excludes the product
+from variable dosing. An explicit `fixed_grams` entry remains available for a
+fixed recipe dose.
 
-The shipped `data/fertilizers.csv` sets `SolverMaxDosePerL` to `0` for
-HuminTech AMINO POWER and Fulvital, so the Solver uses those additives only at
-an explicit fixed dose. Every other shipped product leaves the field empty.
-A user override can change or remove a product limit explicitly.
+All other numeric columns are composition fractions. A value of `0.14`
+means 14% by mass. Legacy `NR`/`Nr.` columns are ignored. User override
+catalogs use the shipped column layout and may append composition columns.
 
-All other numeric columns are interpreted as composition fractions. A value of
-`0.14` means 14 percent by mass. `NR` or `Nr.` is accepted only for legacy CSV
-compatibility and ignored during loading; newly written catalogs omit it.
-New `fertilizers_overrides.csv` files use the stable shipped-catalog column
-layout, with any user-defined composition columns appended. Empty values stay
-empty rather than causing columns to disappear. Source: `save_fertilizers()` in
-`src/horticalc/data_io.py`.
+### Composition and dose conversion
 
-`load_fertilizers()` returns the fully merged shipped and user catalog sorted
-by normalized fertilizer name. The API, GUI, solver, and CLI therefore share
-the same default order. Source: `src/horticalc/data_io.py`.
-
-Composition keys are defined by `COMP_COLS` in `src/horticalc/core.py`: `NO3`, `NH4`, `UREA`, `P2O5`, `K2O`, `CaO`, `MgO`, `Na2O`, `SO4`, `Cl`, `CO3`, `HCO3`, `SiO2`, `Fe`, `Mn`, `Cu`, `Zn`, `B`, `Mo`.
-
-`Liquid` is strictly `0` for a solid fertilizer or `1` for a liquid
-fertilizer. It is exposed by the API as the Boolean field `liquid`; localized
-labels are frontend presentation only. `Gewicht` is a `weight_factor` and
-multiplies the fertilizer dose to effective product mass. It must be a finite
-number greater than zero; invalid values are rejected instead of being silently
-converted during persistence.
-`SolverMaxDosePerL` uses the same canonical dose convention as Solver results:
-g/L for solids and mL/L for liquids. It limits product dose, not nutrient
-mg/L. The fertilizer editor exposes this field directly.
-
-### Dose Units, Mass, And Liquid Fertilizers
-
-Recipes and solver results use the `grams` field. In practice, the value is the user-facing dose:
-
-- For solid fertilizers, enter grams.
-- For liquid fertilizers, enter milliliters when `Liquid = 1` and `Gewicht` stores the product density in g/mL.
-
-`compute_solution()` in `src/horticalc/core.py` converts the dose to effective product mass:
+Composition keys are defined by `COMP_COLS` in `src/horticalc/core.py`:
 
 ```text
-effective product mass in g = dose * Gewicht
-nutrient mg/L = dose * Gewicht * composition_fraction * 1000 / liters
+NO3  NH4  UREA  P2O5  K2O  CaO  MgO  Na2O
+SO4  Cl   CO3   HCO3  SiO2
+Fe   Mn   Cu   Zn   B    Mo
 ```
 
-The UI may present solid doses as g/kg/oz/lb and liquid doses as mL/L/US fl oz/Imp fl oz, but saved recipes, API payloads, solver output, and CLI output keep the canonical contract.
+Fertilizer `NH4`, `NO3`, and `UREA` values are elemental nitrogen
+fractions. Oxide and salt forms are converted to elemental values using the
+molar masses in `data/molar_masses.yml`.
+
+Recipes and solver results use `grams` as the canonical dose field. The
+fertilizer's `Gewicht` converts that dose to effective product mass:
+
+```text
+effective product mass (g) = grams × Gewicht
+nutrient concentration (mg/L) = grams × Gewicht × fraction × 1000 / liters
+```
+
+For liquid products, the UI may display a volume dose; `Gewicht` stores the
+density used for the conversion. Saved recipe and solver payloads retain the
+canonical dose contract. The source of this calculation is
+`compute_solution()` in `src/horticalc/core.py`.
 
 ## Water Profiles
 

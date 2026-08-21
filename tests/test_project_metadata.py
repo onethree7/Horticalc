@@ -128,8 +128,8 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert "sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1" in release_workflow
     assert "sudo dnf install -y webkit2gtk4.1" in release_workflow
     assert "needs:\n      - build\n      - linux-compatibility" in release_workflow
-    assert "name: Horticalc 0.6.3" in release_workflow
-    assert "body_path: .github/release-notes/v0.6.3.md" in release_workflow
+    assert "name: Horticalc 0.6.4" in release_workflow
+    assert "body_path: .github/release-notes/v0.6.4.md" in release_workflow
     cleanup_index = release_workflow.index("Clean smoke-test runtime state")
     assert cleanup_index < release_workflow.index("Package artifact (Linux)")
     assert cleanup_index < release_workflow.index("Package artifact (Windows)")
@@ -204,7 +204,7 @@ def test_windows_release_docs_have_clear_owners() -> None:
 
 
 def test_runtime_package_api_and_cli_versions_match(api_client: TestClient) -> None:
-    assert __version__ == "0.6.3"
+    assert __version__ == "0.6.4"
     assert version("horticalc") == __version__
     assert api_client.get("/openapi.json").json()["info"]["version"] == __version__
     result = subprocess.run(
@@ -218,22 +218,20 @@ def test_runtime_package_api_and_cli_versions_match(api_client: TestClient) -> N
 
 
 def test_release_tag_must_match_the_single_version_literal() -> None:
-    assert expected_release_tag() == "v0.6.3"
-    validate_release_tag("v0.6.3")
-    with pytest.raises(ValueError, match="must be exactly v0.6.3"):
+    assert expected_release_tag() == "v0.6.4"
+    validate_release_tag("v0.6.4")
+    with pytest.raises(ValueError, match="must be exactly v0.6.4"):
         validate_release_tag("v4.1")
 
 
 def test_versioned_release_notes_cover_important_upgrade_information() -> None:
-    notes = (ROOT / ".github" / "release-notes" / "v0.6.3.md").read_text(encoding="utf-8")
+    notes = (ROOT / ".github" / "release-notes" / "v0.6.4.md").read_text(encoding="utf-8")
 
     for required_text in (
-        "Windows installer and portable ZIP",
-        "Mark of the Web",
-        "%LocalAppData%\\Programs\\Horticalc",
-        "Confirmed UI work",
-        "EPSO Microtop",
-        "PyInstaller 6.22.0",
-        "not Authenticode-signed",
+        "mineral salts",
+        "trace-element sources",
+        "Horticalc leaf icon",
+        "technical UI terminology",
+        "documentation",
     ):
         assert required_text in notes

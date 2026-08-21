@@ -173,41 +173,34 @@ def test_windows_packaging_uses_the_horticalc_leaf_icon() -> None:
     assert 'Join-Path $repoRoot "assets/horticalc.ico"' in installer_build
 
 
-def test_linux_runtime_commands_do_not_drift_between_user_docs() -> None:
-    paths = (
-        ROOT / "README.md",
-        ROOT / "scripts" / "packaging" / "README.txt",
-        ROOT / "docs" / "quickstart.md",
-        ROOT / "docs" / "commands.md",
-        ROOT / "docs" / "release_build.md",
-    )
-    for path in paths:
+def test_linux_runtime_commands_have_user_and_offline_owners() -> None:
+    for path in (ROOT / "README.md", ROOT / "scripts" / "packaging" / "README.txt"):
         text = path.read_text(encoding="utf-8")
         assert "sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1" in text
         assert "sudo dnf install -y webkit2gtk4.1" in text
 
 
-def test_windows_installer_and_portable_unblock_docs_do_not_drift() -> None:
+def test_windows_release_docs_have_clear_owners() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    quickstart = (ROOT / "docs" / "quickstart.md").read_text(encoding="utf-8")
-    commands = (ROOT / "docs" / "commands.md").read_text(encoding="utf-8")
-    release_build = (ROOT / "docs" / "release_build.md").read_text(encoding="utf-8")
+    release = (ROOT / "RELEASE.md").read_text(encoding="utf-8")
+    usage = (ROOT / "docs" / "usage.md").read_text(encoding="utf-8")
     portable_readme = (ROOT / "scripts" / "packaging" / "README.txt").read_text(encoding="utf-8")
 
-    for text in (readme, quickstart, release_build):
+    for text in (readme, release, portable_readme):
         assert "windows-setup.exe" in text
+    for text in (release, portable_readme):
         assert "%LocalAppData%\\Programs\\Horticalc" in text
-    for text in (quickstart, portable_readme):
-        assert "Unblock" in text
-        assert "delete" in text
-        assert "extract" in text
+    for text in (readme, usage, portable_readme):
+        normalized = text.casefold()
+        assert "unblock" in normalized
+        assert "delete" in normalized
+        assert "extract" in normalized
         assert "Zulassen" not in text
     assert "windows-setup.exe" in portable_readme
     assert "%LocalAppData%\\Programs\\Horticalc" in portable_readme
     assert "not Authenticode-signed" in portable_readme
-    assert "Unblock-File -LiteralPath" in commands
-    assert "build_windows_installer.ps1" in commands
-    assert "windows-setup.exe.sha256" in commands
+    assert "build_windows_installer.ps1" in release
+    assert "windows-setup.exe.sha256" in release
 
 
 def test_runtime_package_api_and_cli_versions_match(api_client: TestClient) -> None:

@@ -2,67 +2,56 @@
 
 Contributor and automation entrypoint for Horticalc.
 
-## Golden Rule
+## Working rule
 
-Use **Plan -> Edit -> Verify** for every change.
+Use **Plan → Edit → Verify** for every change.
 
-- Keep changes scoped to the requested behavior.
+- Keep work scoped to the requested behavior.
 - Prefer existing utilities and patterns over new dependencies.
-- Do not preserve obsolete internal identifiers through runtime aliases,
-  fallbacks, or backward-detection shims. Replace them completely and migrate
-  affected local persisted files in place when necessary.
-- Check for nested `AGENTS.md` before editing inside a subdirectory.
-- Do not change runtime behavior while doing documentation work unless the task
-  explicitly asks for code changes.
-- Treat `src/horticalc/`, `api/app.py`, `frontend/`, `scripts/`, and tests as
-  the source of truth. Docs must describe code, not wishful plans.
+- Check for a nested `AGENTS.md` before editing a subdirectory.
+- Do not preserve obsolete internal identifiers through aliases, fallback
+  detection, or runtime shims. Replace them and migrate affected persisted data
+  when required.
+- Do not change runtime behavior during documentation work unless the task also
+  requests a code change.
 
-## Docs Structure
+## Sources of truth
 
-- [README.md](README.md): user entrypoint and fastest run commands.
-- [AGENTS.md](AGENTS.md): automation and contributor contract.
-- [docs/documentation_architecture.md](docs/documentation_architecture.md): docs charter, status taxonomy, and single-source rules.
-- [docs/index.md](docs/index.md): docs map.
-- [docs/quickstart.md](docs/quickstart.md): install and first run.
-- [docs/user_guide.md](docs/user_guide.md): UI and workflow.
-- [docs/cli_reference.md](docs/cli_reference.md): CLI command reference.
-- [docs/commands.md](docs/commands.md): single source of truth for commands.
-- [docs/development.md](docs/development.md): setup, tests, packaging, and docs updates.
-- [docs/architecture.md](docs/architecture.md): current subsystem map.
-- [docs/api_reference.md](docs/api_reference.md): FastAPI surface.
-- [docs/data_model.md](docs/data_model.md): files, units, output fields.
-- [docs/unit_handling.md](docs/unit_handling.md): canonical and display units.
-- [docs/solver.md](docs/solver.md): solver behavior.
-- [docs/ec.md](docs/ec.md): electrical conductivity model.
-- [docs/gui.md](docs/gui.md): frontend behavior.
-- [docs/nutrient_solution_profiles.md](docs/nutrient_solution_profiles.md): cited formulations.
-- [docs/release_build.md](docs/release_build.md): packaging, release, and verification.
-- [docs/decisions.md](docs/decisions.md): accepted decisions and current defaults.
-- [docs/terminology_style_guide.md](docs/terminology_style_guide.md): canonical terms and units.
+Treat `src/horticalc/`, `api/app.py`, `frontend/`, `scripts/`, `.github/`, and
+`tests/` as authoritative. Documentation must describe implemented behavior.
 
-## Documentation Law
+Documentation ownership is intentionally small:
 
-1. Current-state docs must say what the code does now and cite the owning file.
-2. Plans and research reports must be labelled as such.
-3. When code changes an API route, output key, file path, solver default,
-   launcher behavior, persistence rule, or UI workflow, update the matching doc
-   in the same change.
-4. Do not leave obsolete roadmap docs in the active docs set. Move historical
-   material into an ignored backup or a clearly labelled historical report.
-5. Avoid duplicate instructions. Link to the source-of-truth document instead.
+- `README.md`: product entrypoint, downloads, and first run.
+- `CONTRIBUTING.md`: source setup, tests, and documentation changes.
+- `RELEASE.md`: packaging, release gates, and artifact verification.
+- `SECURITY.md`: security support and reporting.
+- `docs/usage.md`, `docs/cli.md`, and `docs/api.md`: supported user interfaces.
+- `docs/data-formats.md`, `docs/solver.md`, `docs/ec.md`, and
+  `docs/architecture.md`: technical contracts and design.
 
-## Standard Verification
+## Documentation rules
 
-Run the standard suite when relevant. Use the repository test entrypoint; do
-not probe with bare `python -m pytest`. The entrypoint creates `.venv` when
-needed and installs the declared development dependencies only when pytest is
-missing:
+1. Write current behavior and cite its owning source where that helps
+   maintenance.
+2. Keep commands with the task that uses them; link instead of copying.
+3. Keep implementation history in Git, not in current-state guides.
+4. When code changes an API route, output key, data path, solver default,
+   launcher behavior, persistence rule, UI workflow, or release artifact,
+   update its owning document in the same change.
+5. Delete obsolete documentation instead of retaining active redirects or
+   compatibility pages.
+
+## Verification
+
+The standard command is intentionally repeated here as the automation bootstrap;
+all focused and documentation commands belong in `CONTRIBUTING.md`. Run the
+repository test entrypoint, not bare Pytest:
 
 ```bash
 python scripts/test.py
 ```
 
-Pass pytest arguments after the script name for focused runs, for example
-`python scripts/test.py tests/test_ec.py -q`.
-
-For docs-only changes, also check links and stale references using the docs anti-drift command in `docs/commands.md`.
+For focused checks, see [Run tests](CONTRIBUTING.md#run-tests). For documentation
+checks, see [Update documentation](CONTRIBUTING.md#update-documentation) before
+the full suite.

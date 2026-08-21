@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v0.6.3"
+      - "v0.6.4"
 
 permissions:
   contents: write
@@ -437,7 +437,7 @@ jobs:
 
   publish-release:
     name: Publish release assets
-    if: github.ref == 'refs/tags/v0.6.3'
+    if: github.ref == 'refs/tags/v0.6.4'
     needs:
       - build
       - linux-compatibility
@@ -457,8 +457,8 @@ jobs:
       - name: Upload release assets
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
-          name: Horticalc 0.6.3
-          body_path: .github/release-notes/v0.6.3.md
+          name: Horticalc 0.6.4
+          body_path: .github/release-notes/v0.6.4.md
           files: |
             release-assets/*.tar.gz
             release-assets/*.tar.gz.sha256

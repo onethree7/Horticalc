@@ -1,89 +1,84 @@
 # Architecture
 
-Status: `current-state`.
+Horticalc is a local desktop application with a browser-based interface and a
+Python calculation core. The runtime has five boundaries:
 
-Horticalc has five runtime layers:
+1. static UI in `frontend/`;
+2. same-origin FastAPI application in `api/app.py`;
+3. calculation and data services in `src/horticalc/`;
+4. Solver implementations in `src/horticalc/solver.py` and
+   `src/horticalc/priority_solver.py`;
+5. desktop launcher and packaging in `src/horticalc/launcher.py` and
+   `scripts/packaging/`.
 
-1. Static WebView UI in `frontend/`.
-2. FastAPI app in `api/app.py`.
-3. Calculation core in `src/horticalc/`.
-4. Solver in `src/horticalc/solver.py` and `src/horticalc/solver_config.py`.
-5. Portable launcher and packaging in `src/horticalc/launcher.py`, `scripts/packaging/`, and `.github/workflows/release.yml`.
+## Desktop startup
 
-## Source Of Truth By Concern
+The launcher claims the single-instance lock, starts uvicorn on an available
+loopback port, waits for `/health`, and opens a pywebview window at the local
+origin. Windows selects WebView2; Linux selects GTK/WebKitGTK. The application
+does not open or control an external browser.
 
-| Concern | Source files | Notes |
-| --- | --- | --- |
-| Recipe calculation | `src/horticalc/core.py` | Converts fertilizer doses and water composition into solution output. |
-| EC | `src/horticalc/ec.py` | Computes ion-based EC at 18 C and 25 C. |
-| NPK and ratios | `src/horticalc/metrics.py` | Formats NPK strings and summary ratios. |
-| Sluijsmann | `src/horticalc/sluijsmann.py` | CaO-equivalent alkalinity/acidity metric. |
-| Solver | `src/horticalc/solver.py`, `src/horticalc/priority_solver.py`, `src/horticalc/solver_config.py` | Solves target profiles through standard NNLS + tuning (`nnls_tuning`) or the experimental mass-NNLS and hierarchical models. |
-| Unit definitions | `src/horticalc/units.py` | Canonical volume and dose conversions. |
-| Data paths | `src/horticalc/paths.py` | AppRoot, shipped defaults, user overrides, logs, lockfile. |
-| Target profile contract | `src/horticalc/nutrient_profiles.py` | Canonical normalization and Solver-setup presence rules shared by API and YAML persistence. |
-| Solver history | `src/horticalc/solver_history.py` | Versioned JSONL snapshots, atomic writes, retention, summaries, and detail lookup. |
-| Persistence IO | `src/horticalc/data_io.py` | Loads and saves CSV, YAML, and JSON. |
-| API | `api/app.py` | JSON routes, YAML save support, and static frontend. |
-| UI | `frontend/index.html`, `frontend/app/main.js`, controller modules, `frontend/styles/` | Native ES-module composition, feature-owned state, and workflows. |
-| Desktop host | `src/horticalc/launcher.py`, `src/horticalc/single_instance.py`, `src/horticalc/activation.py` | Starts API, waits for health, owns the pywebview window, lock, and single-instance activation. |
-| Packaging | `scripts/packaging/*`, `.github/workflows/release.yml` | PyInstaller onedir builds and smoke tests. |
+A second launch authenticates to the hidden activation endpoint using the
+random token in the owner lock, restores the existing native window, and exits.
+Closing that window stops uvicorn and removes the lock.
 
-## Request Flows
+## Request flow
 
-### Calculator
+Calculator requests pass validated fertilizer doses and water data from the UI
+through `POST /calculate` to `compute_solution()` in
+`src/horticalc/core.py`. The core performs composition conversion, water
+mixing, ion and balance calculations, EC, NPK metrics, and Sluijsmann without a
+dependency on HTTP or the DOM.
 
-1. UI converts the selected batch volume and doses to canonical units and posts to `/calculate`.
-2. `api/app.py` validates allowed water keys and fertilizer names.
-3. `compute_solution()` in `src/horticalc/core.py` applies osmosis, normalizes water forms, calculates elements, oxides, ions, ion balance, EC, NPK, Sluijsmann, and returns the output.
+Solver requests pass targets, allowed and fixed fertilizers, water, and model
+configuration through `POST /solve`. The Solver builds the fertilizer
+contribution problem, applies the selected optimization model, then calls the
+same calculation core to report the achieved solution. Successful API solves
+are recorded as canonical JSONL snapshots; history-write failures are non-fatal
+to the solve.
 
-### Solver
+## API boundary
 
-1. UI posts target values, allowed fertilizers, optional fixed doses, water profile, and solver config to `/solve`.
-2. `solve_recipe_data()` in `src/horticalc/solver.py` subtracts the water baseline, builds the fertilizer contribution matrix, excludes products with a zero per-liter Solver limit from variable dosing, dispatches to standard NNLS + tuning or the experimental mass-NNLS and SciPy HiGHS hierarchical-priority models, recomputes the achieved solution with `compute_solution()`, and returns solver errors plus model-specific audit metadata.
-3. After a successful solve, `api/app.py` records the canonical setup, result,
-   fertilizer forms, and printable calculation projection through
-   `src/horticalc/solver_history.py`. Recording failures are non-fatal.
+The supported automation boundary contains health, calculation, Solver, and
+their schemas as defined in [HTTP API](api.md). Other routes exist to support
+the bundled UI's persistence and launcher lifecycle and are internal to the
+desktop application.
 
-## AppRoot And Portable Data Layout
+The frontend uses native ES modules with no production bundler or
+Python–JavaScript bridge. Feature controllers own their UI state; shared
+transport, formatting, units, and storage helpers remain independent of the
+feature DOM.
 
-`app_root()` in `src/horticalc/paths.py` resolves to the repository root in
-development, the executable folder in PyInstaller releases, or the install
-prefix when the packaged assets are present. The Windows setup installs that
-same onedir layout under `%LocalAppData%\Programs\Horticalc`; the portable ZIP
-uses whichever writable folder receives the extraction.
+## AppRoot and persistence
+
+`app_root()` in `src/horticalc/paths.py` resolves to the repository root during
+development and the executable directory in a packaged application.
 
 ```text
 AppRoot/
-  data/       shipped defaults
-  recipes/    shipped defaults
+  data/       shipped data
+  recipes/    shipped recipes
   frontend/   static UI
-  user/       user-created overrides, preferences, solver history, and WebView state
-  logs/       rotating launcher/server logs
+  user/       preferences, overrides, profiles, and Solver history
+  logs/       rotating launcher and server logs
 ```
 
-`ensure_portable_layout()` creates `user/` and `logs/`, checks they are writable, and prunes redundant YAML copies from older releases. API resource lookup layers user YAML over shipped YAML by filename. The fertilizer catalog is shipped in `data/fertilizers.csv`; user edits are stored as `user/fertilizers_overrides.csv` and `user/fertilizers_disabled.txt`.
+Shipped resources are read-only defaults. User YAML files override same-named
+shipped resources; fertilizer edits are stored as catalogue deltas. WebView
+state lives in `user/webview/`, separate from Solver history and structured
+profiles.
 
-Solver history is independent of WebView storage. The API reads compact
-summaries at startup and full entries on demand; the frontend formats stored
-canonical values using the currently selected locale and display units. Pin
-metadata stays with each JSONL entry so retention and clearing remain atomic.
-Recipe and target-profile favorite filenames use `user/preferences.json` and
-never modify layered shipped YAML resources.
+The API owns validation and persistence. The core owns chemistry and
+optimization inputs but not filesystem or HTTP presentation. The UI owns
+display units, locale, navigation, and transient interaction state.
 
-The launcher lock records the backend owner's PID, port, and a random activation
-token. The owner starts uvicorn in a background thread and pywebview on the main
-thread. Windows explicitly selects WebView2 (`edgechromium`); Linux explicitly
-selects GTK/WebKitGTK. Closing the native window stops uvicorn and removes the
-lock. A second launch authenticates to the internal activation endpoint,
-restores and focuses the existing window, then exits. Persistent WebView state
-lives under `user/webview/`; Horticalc does not launch or supervise an external
-browser.
+## Packaging boundary
 
-## Current Boundaries
+PyInstaller produces an onedir application containing Python, Horticalc,
+frontend assets, data, recipes, the portable README, and the license. Windows
+adds an Inno Setup installer. Linux deliberately relies on the target system's
+coherent GTK/WebKitGTK stack instead of bundling a partial renderer stack.
 
-- The core does not know about HTTP or the DOM.
-- The API owns request validation and persistence.
-- The UI owns presentation, local WebView state, and workflow navigation.
-- `frontend/app/main.js` is the UI composition root. Feature controllers depend only on injected transport/services and shared pure helpers; `frontend/app/api.js` has no DOM dependency.
-- Packaged releases use PyInstaller onedir.
+Build and release gates are documented in [Releases](../RELEASE.md); the
+authoritative implementation is `scripts/packaging/` and
+`.github/workflows/release.yml`.

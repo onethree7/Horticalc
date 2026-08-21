@@ -1,34 +1,58 @@
 # Horticalc
 
-Horticalc is a local, open-source horticultural fertilizer calculator. It
-combines fertilizer composition, water composition, batch size, and optional
-reverse-osmosis mixing to calculate the nutrient profile of a solution, and its
-solver can work backwards from nutrient targets to suggest fertilizer doses.
+Horticalc is a local, open-source fertilizer calculator for horticultural
+nutrient solutions. It turns fertilizer analyses, water data, batch volume,
+doses, and RO mixing into elemental, oxide, NPK, dissolved-ion, ion-balance, and
+EC results. The Solver works backwards from a nutrient target or published
+formula to calculate doses from the fertilizers you actually have, making it
+useful for reproducing or adapting solutions with alternative agricultural
+products.
 
-## Quick Start
+## Quick start
 
-```bash
-python3 -m venv .venv
-./.venv/bin/python -m pip install -e .
-./.venv/bin/python -m horticalc.launcher
-```
+### Windows installer (recommended)
 
-On Windows, replace `./.venv/bin/python` with `.\.venv\Scripts\python.exe`.
+1. Download `horticalc-vX.Y.Z-windows-setup.exe` from the
+   [latest release](https://github.com/onethree7/Horticalc/releases/latest).
+2. Run the installer. It installs for the current user without administrator
+   rights.
+3. Start **Horticalc** from the Start menu.
 
-For Windows, download `horticalc-<version>-windows-setup.exe` from the
-[releases page](https://github.com/onethree7/Horticalc/releases). It installs
-per user under `%LocalAppData%\Programs\Horticalc` without administrator
-rights. The Windows ZIP remains available as a portable alternative; unblock
-the downloaded ZIP before extracting it by following the
-[portable Windows instructions](docs/quickstart.md#windows-portable-zip).
+### Portable Windows
 
-For Linux, download the release archive, extract it to a writable folder, and
-run `./horticalc`.
+1. Download `horticalc-vX.Y.Z-windows.zip` from the latest release.
+2. Before extracting, right-click the ZIP and open **Properties**. If Windows
+   shows **Unblock** under **Security**, select it and click **Apply**.
+3. Then extract the complete archive to a writable directory and run
+   `Horticalc.exe` inside it. See [startup problems](docs/usage.md#startup-problems)
+   if it was extracted before unblocking.
 
-The desktop GUI supports Windows 10/11 with the Microsoft WebView2 Runtime. The
-Linux x86_64 release uses the system GTK 3/WebKitGTK 4.1 runtime and is tested
-on Ubuntu 22.04/24.04, Debian 13, Fedora 44, and manually on Linux Mint 22.3.
-Install the Linux runtime before starting Horticalc:
+### Linux
+
+1. Download `horticalc-vX.Y.Z-linux.tar.gz` for x86_64 from the latest release.
+2. Extract it to a writable directory.
+3. Run `./horticalc` from the extracted directory.
+
+To run from source, see [Contributing](CONTRIBUTING.md).
+
+## First calculation
+
+1. Open **Calculator** and set the batch volume.
+2. Add a fertilizer and enter its dose.
+3. Select or enter the water analysis.
+4. Choose **Calculate** and inspect the nutrient and EC results.
+
+The **Solver** performs the reverse workflow: provide nutrient targets and the
+fertilizers it may use, then review the proposed doses before applying them.
+
+## System requirements and startup help
+
+Windows 10 and 11 require the
+[Microsoft WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/),
+which is already present on most current systems. If Horticalc reports it
+missing, install it from Microsoft.
+
+The Linux build requires GTK 3 and WebKitGTK 4.1:
 
 ```bash
 # Ubuntu, Debian, and Linux Mint
@@ -38,27 +62,27 @@ sudo apt update && sudo apt install -y libgirepository-1.0-1 gir1.2-webkit2-4.1
 sudo dnf install -y webkit2gtk4.1
 ```
 
-Horticalc runs in its own native window; an installed Edge, Chrome, or Chromium
-browser is not required.
-Source installs currently support Python 3.10 through 3.13.
+If a portable Windows copy reports Mark of the Web, Windows' downloaded-file
+security metadata, delete the freshly extracted application, unblock the
+original ZIP if the option appears, and extract it again. Horticalc stores
+startup details in `logs/launcher.log`.
 
 ## Documentation
 
-- [Quickstart](docs/quickstart.md)
-- [User guide](docs/user_guide.md)
-- [CLI reference](docs/cli_reference.md)
-- [Commands](docs/commands.md)
-- [Development guide](docs/development.md)
+- [Using Horticalc](docs/usage.md)
+- [Command-line interface](docs/cli.md)
+- [HTTP API](docs/api.md)
+- [Solver and EC models](docs/solver.md) · [EC](docs/ec.md)
+- [Data formats](docs/data-formats.md)
 - [Architecture](docs/architecture.md)
-- [API reference](docs/api_reference.md)
-- [Data model](docs/data_model.md)
-- [Release builds](docs/release_build.md)
+- [Contributing](CONTRIBUTING.md) · [Releases](RELEASE.md) · [Security](SECURITY.md)
 
-See [docs/index.md](docs/index.md) for the full map and [docs/documentation_architecture.md](docs/documentation_architecture.md) for the docs charter.
+## Data and safety
+
+Bundled fertilizer data and target profiles are point-in-time references, not
+manufacturer instructions. Check current labels and technical documentation
+before mixing or dosing a real solution.
 
 ## License
 
-Copyright © 2026 Horticalc contributors.
-
-Horticalc is free software licensed under the GNU General Public License,
-version 3 or (at your option) any later version. See [LICENSE](LICENSE).
+Horticalc is licensed under GPL-3.0-or-later. See [LICENSE](LICENSE).

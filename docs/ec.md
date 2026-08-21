@@ -1,70 +1,45 @@
-# Electrical Conductivity
+# Electrical conductivity
 
-Status: `current-state`.
-
-EC is computed in `src/horticalc/ec.py` from ion species in `ions_mmol_per_l`. It is not a ppm/TDS-factor model.
+Horticalc calculates electrical conductivity from the ion concentrations
+produced by the chemistry core. It does not estimate EC from a ppm/TDS factor.
+The implementation is `src/horticalc/ec.py`.
 
 ## Model
 
-Primary model:
+For covered ions, Horticalc applies McCleskey et al. (2012), equations 7–9 and
+table 1: molal conductivity varies with temperature and is corrected for ionic
+strength. `H2PO4-` uses its limiting conductivity at 25 °C from the CRC
+reference because it is not covered by the primary table.
 
-- McCleskey et al. 2012 equations 7-9 and table 1.
-- Temperature-dependent molal conductivity.
-- Ionic-strength correction.
+Default outputs are calculated at 18 °C and 25 °C with a density approximation
+of `1.0 kg/L`.
 
-Fallback model:
+The primary set is `K+`, `Na+`, `NH4+`, `Ca2+`, `Mg2+`, `Cl-`, `SO4^2-`,
+`NO3-`, `HCO3-`, and `CO3^2-`. Ion-label aliases are normalized and accumulated.
+Unsupported labels are listed in `coverage.ignored_ions` and produce a warning.
 
-- Vanysek/CRC limiting ionic conductivity at 25 °C for ions not covered by the McCleskey table.
-- Current fallback: `H2PO4-`.
+## Input and output
 
-Default temperatures: `18.0 °C` and `25.0 °C`. Default density approximation: `1.0 kg/L`.
+`compute_ec(ions_mmol_per_l)` accepts finite, non-negative ion concentrations.
+Density must be finite and greater than zero.
 
-## Input
-
-`compute_ec(ions_mmol_per_l)` accepts the ion mapping from `core._compute_ions()`.
-
-Recognized McCleskey ions:
-
-- `K+`, `Na+`, `NH4+`, `Ca2+`, `Mg2+`, `Cl-`, `SO4^2-`, `NO3-`, `HCO3-`, `CO3^2-`
-
-Fallback ion:
-
-- `H2PO4-`
-
-Unknown ion labels are reported in `coverage.ignored_ions` and warnings.
-Ion labels are parsed and classified once per call. Aliases that normalize to
-the same canonical ion (for example `Ca+2` and `Ca2+`) are accumulated rather
-than overwritten. Unsupported-ion warnings are emitted once even when several
-temperatures are requested. Density must be finite and greater than zero; ion
-concentrations must be finite and non-negative.
-
-## Output
-
-`compute_ec()` returns:
-
-- `method`
-- `inputs`
-- `ionic_strength_mol_per_kg`
-- `ec_mS_per_cm`
-- `ec_uS_per_cm`
-- `contrib_mS_per_cm`
-- `transport_numbers`
-- `warnings`
-- `coverage`
-- `atc`
-
-`CalcResult.to_dict()` exposes `ec` (full solution), `ec_water` (water-only), and `ec_fertilizer` (fertilizer-only).
+The result contains method and input metadata, ionic strength, EC in `mS/cm`
+and `uS/cm`, per-ion contributions, transport numbers, coverage, warnings, and
+temperature-correction data. Calculator output exposes full-solution,
+water-only, and fertilizer-only EC as `ec`, `ec_water`, and `ec_fertilizer`.
 
 ## Assumptions
 
-- Molality is approximated from mol/L using fixed density.
-- Missing species such as H+, OH-, and complexes are not modelled.
-- All phosphorus in ion output is represented as `H2PO4-`; pH-dependent phosphate speciation is not modelled.
-- Fallback ions do not get the McCleskey ionic-strength correction.
+- Molality is approximated from molarity using the configured fixed density.
+- Missing species, including `H+`, `OH-`, and complexes, are not modelled.
+- Phosphorus in the ion output is represented as `H2PO4-`; pH-dependent
+  phosphate speciation is not modelled.
+- The fallback ion does not receive the McCleskey ionic-strength correction.
 
 ## Sources
 
-- McCleskey RB, Nordstrom DK, Ryan JN, Ball JW. *A new method of calculating electrical conductivity with applications to natural waters.* Geochimica et Cosmochimica Acta 77 (2012) 369-382. DOI: 10.1016/j.gca.2011.10.031.
-- Vanysek P. *Ionic Conductivity and Diffusion at Infinite Dilution.* CRC Handbook of Chemistry and Physics, 93rd Edition.
-
-For verification commands, see [commands.md](commands.md#run-tests).
+- McCleskey RB, Nordstrom DK, Ryan JN, Ball JW. *A new method of calculating
+  electrical conductivity with applications to natural waters.* Geochimica et
+  Cosmochimica Acta 77 (2012), 369–382. DOI: 10.1016/j.gca.2011.10.031.
+- Vanysek P. *Ionic Conductivity and Diffusion at Infinite Dilution.* CRC
+  Handbook of Chemistry and Physics, 93rd edition.

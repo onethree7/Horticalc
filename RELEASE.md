@@ -60,11 +60,13 @@ tagged assets only after required jobs pass.
 Before tagging a release:
 
 1. Update the package version in `src/horticalc/__init__.py`.
-2. Update the accepted tag and versioned release-note path in
-   `.github/workflows/release.yml`.
-3. Add the matching `.github/release-notes/v<version>.md`.
-4. Run `python scripts/check_release_version.py` and the standard test suite.
-5. Create the exact `v<version>` tag only after the reviewed commit is ready.
+2. Add the matching `.github/release-notes/v<version>.md`.
+3. Run `python scripts/check_release_version.py --tag v<version>` and the
+   standard test suite.
+4. Create the exact `v<version>` tag only after the reviewed commit is ready.
+
+Routine releases do not require workflow or test edits. The tag supplies the
+artifact version and release-note path; the version checker rejects mismatches.
 
 Manual workflow builds use the short commit identifier in artifact names.
 Tagged builds use the release tag.

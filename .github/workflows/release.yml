@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v0.6.4"
+      - "v*"
 
 permissions:
   contents: write
@@ -437,7 +437,7 @@ jobs:
 
   publish-release:
     name: Publish release assets
-    if: github.ref == 'refs/tags/v0.6.4'
+    if: startsWith(github.ref, 'refs/tags/v')
     needs:
       - build
       - linux-compatibility
@@ -448,6 +448,17 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Compute release metadata
+        id: release
+        shell: bash
+        run: |
+          release_version="${GITHUB_REF_NAME#v}"
+          notes_path=".github/release-notes/${GITHUB_REF_NAME}.md"
+          test -n "${release_version}"
+          test -f "${notes_path}"
+          echo "name=Horticalc ${release_version}" >> "$GITHUB_OUTPUT"
+          echo "notes_path=${notes_path}" >> "$GITHUB_OUTPUT"
+
       - name: Download verified artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -457,8 +468,8 @@ jobs:
       - name: Upload release assets
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
-          name: Horticalc 0.6.4
-          body_path: .github/release-notes/v0.6.4.md
+          name: ${{ steps.release.outputs.name }}
+          body_path: ${{ steps.release.outputs.notes_path }}
           files: |
             release-assets/*.tar.gz
             release-assets/*.tar.gz.sha256

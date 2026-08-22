@@ -313,6 +313,7 @@ async function loadStartupResources() {
     api.fetchRecipes(i18n.t("errors.loadRecipes")),
     api.fetchNutrientSolutions(i18n.t("errors.loadNutrientSolutions")),
     api.fetchUnitDefinitions(i18n.t("errors.loadUnitSchema")),
+    api.fetchAppVersion(),
   ]);
   const errors = [];
   return {
@@ -338,6 +339,7 @@ async function loadStartupResources() {
       massUnits: [...FALLBACK_MASS_UNITS],
       liquidVolumeUnits: [...FALLBACK_LIQUID_VOLUME_UNITS],
     }, i18n.t("errors.loadUnitSchema"), errors),
+    appVersion: results[9].status === "fulfilled" ? results[9].value : "",
     errors,
   };
 }
@@ -379,7 +381,7 @@ async function init() {
   profiles.setFavorites(preferences);
   profiles.setProfiles({ recipeProfiles: resources.recipes, solutions: resources.solutions });
   profiles.mount();
-  shell.mount();
+  shell.mount({ version: resources.appVersion });
   history.mount();
   solver.setAllowedContext("global");
 

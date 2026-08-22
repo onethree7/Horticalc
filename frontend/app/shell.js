@@ -8,6 +8,7 @@ const VIEW_CONFIG = {
 };
 
 export function createShellController({ i18n, onViewChange }) {
+  const appVersion = qs("#appVersion");
   const calculatorMode = qs("#calculatorMode");
   const solverMode = qs("#solverMode");
   const editorMode = qs("#fertilizerEditorMode");
@@ -66,7 +67,8 @@ export function createShellController({ i18n, onViewChange }) {
     if (scroll) window.setTimeout(() => scrollToAnchor(VIEW_CONFIG[nextView].anchor), 0);
   }
 
-  function mount() {
+  function mount({ version = "" } = {}) {
+    if (appVersion) appVersion.textContent = version ? `v${version}` : "";
     qsa("[data-shell-view]").forEach((button) => {
       button.addEventListener("click", () => show(button.dataset.shellView || "fertilizers"));
     });

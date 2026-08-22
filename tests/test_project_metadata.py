@@ -210,6 +210,7 @@ def test_windows_release_docs_have_clear_owners() -> None:
 def test_runtime_package_api_and_cli_versions_match(api_client: TestClient) -> None:
     assert re.fullmatch(r"\d+\.\d+\.\d+", __version__)
     assert version("horticalc") == __version__
+    assert api_client.get("/health").json()["version"] == __version__
     assert api_client.get("/openapi.json").json()["info"]["version"] == __version__
     result = subprocess.run(
         [sys.executable, "-m", "horticalc", "--version"],

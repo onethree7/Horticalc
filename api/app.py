@@ -546,7 +546,7 @@ def load_app_data() -> None:
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok"}
+    return {"status": "ok", "version": __version__}
 
 
 @app.post("/_launcher/activate", status_code=204, include_in_schema=False)

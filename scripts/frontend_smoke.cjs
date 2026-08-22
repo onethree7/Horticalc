@@ -252,6 +252,11 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
     if (apiState !== "ready") {
       throw new Error(`API startup state was ${apiState}: ${await page.locator("#apiStatus").innerText()}`);
     }
+    const health = await page.evaluate(() => globalThis.fetch("/health").then((response) => response.json()));
+    const displayedVersion = await page.locator("#appVersion").innerText();
+    if (displayedVersion !== `v${health.version}`) {
+      throw new Error(`Displayed version was ${displayedVersion}, expected v${health.version}`);
+    }
     await page.locator("#calculatorMode:not(.is-hidden)").waitFor();
     await assertNoPageOverflow(page, "desktop calculator");
 

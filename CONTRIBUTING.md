@@ -33,8 +33,7 @@ desktop window. Direct API commands are in [HTTP API](docs/api.md#run-locally).
 
 ## Make a change
 
-Use **Plan → Edit → Verify**. Keep the change focused, prefer existing patterns,
-and check for a nested `AGENTS.md` before editing a subdirectory.
+Use **Plan → Edit → Verify**. Keep the change focused, prefer existing patterns.
 
 Runtime sources of truth are:
 

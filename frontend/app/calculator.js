@@ -4,7 +4,14 @@ import {
   NUTRIENT_FORMATTER,
   SUMMARY_COLUMN_ORDER,
 } from "./constants.js";
-import { appendDoseInput, createSelect, createTable, qs, renderTableRows } from "./dom.js";
+import {
+  appendDoseInput,
+  createSearchableCombobox,
+  createTable,
+  qs,
+  qsa,
+  renderTableRows,
+} from "./dom.js";
 import { buildAlignedRows, formatNumber, roundScaledValue } from "./formatting.js";
 import { applyScaledValues, bindScaleButtons } from "./scaling.js";
 import { createLatestRequestGate } from "../request_gate.js";
@@ -30,12 +37,14 @@ const summaryColumnOrder = SUMMARY_COLUMN_ORDER;
 const calculationRequests = createLatestRequestGate();
 let fertilizerOptions = [];
 let calculatorRows = [createCalculatorRow()];
+let calculatorSelectedIndex = 0;
 let calculatorScaleFactor = 1;
 let lastCalculation = null;
 let calculatorResultCurrent = false;
 let recalculateTimer;
 let fertilizerSelectTable;
 let calculatorTable;
+let fertilizerComboboxes = [];
 let mounted = false;
 
 const setCalculatorResultCurrent = (current) => {
@@ -209,6 +218,33 @@ function buildCalculatorClipboardText() {
   return lines.join("\n");
 }
 
+function destroyFertilizerComboboxes() {
+  fertilizerComboboxes.forEach((combobox) => combobox.destroy());
+  fertilizerComboboxes = [];
+}
+
+function syncSelectedCalculatorRows() {
+  qsa("#fertilizerSelectTable tbody tr, #calculatorTable tbody tr").forEach((row) => {
+    const selected = Number(row.dataset.calculatorIndex) === calculatorSelectedIndex;
+    row.classList.toggle("is-selected", selected);
+    row.setAttribute("aria-selected", selected ? "true" : "false");
+  });
+}
+
+function setSelectedCalculatorRow(index) {
+  calculatorSelectedIndex = Math.min(Math.max(0, index), calculatorRows.length - 1);
+  syncSelectedCalculatorRows();
+}
+
+function prepareSelectableCalculatorRow(row, index) {
+  row.dataset.calculatorIndex = String(index);
+  row.addEventListener("pointerdown", () => setSelectedCalculatorRow(index));
+  row.addEventListener("focusin", () => setSelectedCalculatorRow(index));
+  const selected = index === calculatorSelectedIndex;
+  row.classList.toggle("is-selected", selected);
+  row.setAttribute("aria-selected", selected ? "true" : "false");
+}
+
 async function copyCalculatorResultsToClipboard() {
   if (!lastCalculation || !calculatorResultCurrent) {
     notifications.reportError(null, t("calculator.noResult"));
@@ -225,22 +261,34 @@ async function copyCalculatorResultsToClipboard() {
 }
 
 function renderSelectionTable() {
+  destroyFertilizerComboboxes();
   renderTableRows(fertilizerSelectTable, calculatorRows.length, (i) => {
     const calculatorRow = calculatorRows[i];
     const row = document.createElement("tr");
+    prepareSelectableCalculatorRow(row, i);
 
     const indexCell = document.createElement("td");
     indexCell.textContent = `${i + 1}`;
 
     const selectCell = document.createElement("td");
-    const select = createSelect(fertilizerOptions, (value) => {
-      calculatorRow.name = value;
-      renderSelectionTable();
-      renderCalculatorTable();
-      scheduleRecalculate();
-    }, t("common.selectEmpty"));
-    select.value = calculatorRow.name;
-    selectCell.appendChild(select);
+    const combobox = createSearchableCombobox({
+      id: `fertilizer-select-${i}`,
+      options: fertilizerOptions,
+      value: calculatorRow.name,
+      onCommit: (value) => {
+        if (calculatorRow.name === value) return;
+        calculatorRow.name = value;
+        renderSelectionTable();
+        renderCalculatorTable();
+        scheduleRecalculate();
+      },
+      accessibleLabel: t("aria.searchFertilizerRow", { row: i + 1 }),
+      emptyLabel: t("common.selectEmpty"),
+      noResultsLabel: t("calculator.noFertilizersFound"),
+      placeholder: t("calculator.fertilizerSearchPlaceholder"),
+    });
+    fertilizerComboboxes.push(combobox);
+    selectCell.appendChild(combobox.element);
 
     const selectedOption = fertilizerOptions.find((option) => option.name === calculatorRow.name);
 
@@ -271,6 +319,7 @@ function renderCalculatorTable() {
   renderTableRows(calculatorTable, calculatorRows.length, (i) => {
     const calculatorRow = calculatorRows[i];
     const row = document.createElement("tr");
+    prepareSelectableCalculatorRow(row, i);
     if (calculatorRow.baseGrams === undefined) {
       const currentAmount = Math.max(0, Number(calculatorRow.grams) || 0);
       calculatorRow.baseGrams =
@@ -379,6 +428,7 @@ function applyRecipe(recipe, { applyLiters = true } = {}) {
   if (!calculatorRows.length) {
     calculatorRows.push(createCalculatorRow());
   }
+  calculatorSelectedIndex = 0;
 
   updateCalculatorScaleDisplay();
   renderSelectionTable();
@@ -392,6 +442,7 @@ function collectSelectedFertilizerNames() {
 
 function addFertilizerRow() {
   calculatorRows.push(createCalculatorRow());
+  calculatorSelectedIndex = calculatorRows.length - 1;
   renderSelectionTable();
   renderCalculatorTable();
 }
@@ -401,9 +452,11 @@ function removeFertilizerRow() {
     return;
   }
 
-  calculatorRows.pop();
+  const [removedRow] = calculatorRows.splice(calculatorSelectedIndex, 1);
+  calculatorSelectedIndex = Math.min(calculatorSelectedIndex, calculatorRows.length - 1);
   renderSelectionTable();
   renderCalculatorTable();
+  if (removedRow.name || removedRow.grams > 0) scheduleRecalculate();
 }
 
 function buildRecipePayloadFromSelection(name) {
@@ -440,6 +493,7 @@ function buildSolutionSnapshot() {
 }
 
 function initializeTables() {
+  destroyFertilizerComboboxes();
   const selectTable = createTable({
     id: "fertilizerSelectTable",
     className: "grid grid--form grid--fertilizer",
@@ -486,6 +540,7 @@ function setFertilizers(fertilizers) {
     if (row.name && !available.has(row.name)) calculatorRows[index] = createCalculatorRow();
   });
   if (!calculatorRows.length) calculatorRows.push(createCalculatorRow());
+  calculatorSelectedIndex = Math.min(calculatorSelectedIndex, calculatorRows.length - 1);
   units.setFertilizers(fertilizerOptions);
   if (fertilizerSelectTable) renderSelectionTable();
   if (calculatorTable) renderCalculatorTable();

@@ -9,11 +9,29 @@
 .solver-settings select,
 .solver-advanced-config select,
 #solverAllowedSearch,
-#fertEditorSearch {
+#fertEditorSearch,
+.searchable-combobox-input {
   background: var(--app-input-bg);
   border-color: var(--app-input-border);
   color: var(--app-text);
   box-shadow: var(--app-input-shadow);
+}
+
+.searchable-combobox-listbox {
+  border: 1px solid var(--app-input-border);
+  border-radius: var(--radius-2);
+  background: var(--app-input-bg);
+  box-shadow: var(--app-shell-shadow);
+  color: var(--app-text);
+  scrollbar-color: var(--app-scrollbar-thumb) var(--app-scrollbar-track);
+}
+
+.searchable-combobox-option.is-active {
+  background: var(--app-table-row-hover);
+}
+
+.searchable-combobox-listbox.is-empty {
+  color: var(--app-muted);
 }
 
 .rail-config .rail-config-liters input {
@@ -194,6 +212,11 @@ button:disabled:hover,
 
 #fertilizerEditorTable tbody tr.is-selected {
   outline-color: rgb(65 231 255 / 44%);
+}
+
+#fertilizerSelectTable tbody tr.is-selected,
+#calculatorTable tbody tr.is-selected {
+  outline-color: color-mix(in srgb, var(--app-teal) 52%, transparent);
 }
 
 .table-wrap,

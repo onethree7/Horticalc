@@ -120,7 +120,6 @@
   --app-workflow-glow: var(--app-green);
   --app-live-value-shadow: none;
   --app-sticky-offset: 1rem;
-  --content-max-width: 1480px;
 }
 
 .app-body[data-theme="horticalc-light"] {

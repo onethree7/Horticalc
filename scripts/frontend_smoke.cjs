@@ -22,6 +22,133 @@ async function assertNoPageOverflow(page, label) {
   }
 }
 
+async function assertFlexibleDesktopFrame(page) {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  const layout = await page.locator(".app-shell").evaluate((frame) => ({
+    frameWidth: frame.getBoundingClientRect().width,
+    viewportWidth: document.documentElement.clientWidth,
+  }));
+  const expectedWidth = layout.viewportWidth - 16;
+  if (layout.frameWidth <= 1480 || Math.abs(layout.frameWidth - expectedWidth) > 1) {
+    throw new Error(`Desktop app frame did not use the available width: ${JSON.stringify({
+      ...layout,
+      expectedWidth,
+    })}`);
+  }
+  await assertNoPageOverflow(page, "1920px desktop layout");
+  await page.setViewportSize({ width: 1280, height: 900 });
+}
+
+async function exerciseCalculatorFertilizerSearch(page) {
+  const firstInput = page.locator("#fertilizerSelectTable .searchable-combobox-input").first();
+
+  await firstInput.fill("haka");
+  const hakaphosOptions = page.locator(".searchable-combobox-option");
+  const hakaphosNames = await hakaphosOptions.allTextContents();
+  if (hakaphosNames.length < 2 || hakaphosNames.some((name) => !name.toLowerCase().includes("haka"))) {
+    throw new Error(`Hakaphos search returned unexpected options: ${JSON.stringify(hakaphosNames)}`);
+  }
+  await firstInput.press("Escape");
+  if (await firstInput.inputValue() !== "") {
+    throw new Error("Escape committed the fertilizer search text");
+  }
+
+  await firstInput.fill("313");
+  await page.locator(".searchable-combobox-option").click();
+  await page.waitForFunction(() => document.querySelector(
+    "#fertilizerSelectTable .searchable-combobox-input",
+  )?.value.includes("313"));
+  const selected313 = await firstInput.inputValue();
+
+  await firstInput.fill("special");
+  const specialNames = await page.locator(".searchable-combobox-option").allTextContents();
+  if (specialNames.length < 2 || specialNames.some((name) => !name.toLowerCase().includes("special"))) {
+    throw new Error(`Special search returned unexpected options: ${JSON.stringify(specialNames)}`);
+  }
+  await firstInput.press("Escape");
+
+  await firstInput.fill("no-such-fertilizer");
+  await page.locator(".searchable-combobox-listbox.is-empty").waitFor();
+  await firstInput.press("Tab");
+  await page.waitForFunction((expected) => document.querySelector(
+    "#fertilizerSelectTable .searchable-combobox-input",
+  )?.value === expected, selected313);
+
+  await firstInput.fill("");
+  await firstInput.press("Enter");
+  await page.waitForFunction(() => document.querySelector(
+    "#fertilizerSelectTable .searchable-combobox-input",
+  )?.value === "");
+}
+
+async function chooseCalculatorFertilizer(page, rowIndex, query) {
+  const input = page.locator("#fertilizerSelectTable .searchable-combobox-input").nth(rowIndex);
+  await input.fill(query);
+  await input.press("Enter");
+  await page.waitForFunction(({ index, expected }) => {
+    const inputs = document.querySelectorAll("#fertilizerSelectTable .searchable-combobox-input");
+    return inputs[index]?.value.toLowerCase().includes(expected);
+  }, { index: rowIndex, expected: query.toLowerCase() });
+}
+
+async function exerciseSelectedCalculatorRowRemoval(page) {
+  await chooseCalculatorFertilizer(page, 0, "313");
+  await page.locator("#addFertilizerRow").click();
+  await page.locator("#addFertilizerRow").click();
+  await chooseCalculatorFertilizer(page, 1, "haka");
+  await chooseCalculatorFertilizer(page, 2, "solusop");
+  await page.locator("#copyCalculatorResults:not([disabled])").waitFor();
+
+  await page.locator("#calculatorTable tbody input").nth(1).focus();
+  for (const selector of ["#fertilizerSelectTable tbody tr", "#calculatorTable tbody tr"]) {
+    if (await page.locator(selector).nth(1).getAttribute("aria-selected") !== "true") {
+      throw new Error(`Focused calculator row was not selected in ${selector}`);
+    }
+  }
+
+  await page.locator("#removeFertilizerRow").click();
+  await page.locator("#copyCalculatorResults:disabled").waitFor();
+  await page.locator("#copyCalculatorResults:not([disabled])").waitFor();
+  const remainingNames = await page.locator(
+    "#fertilizerSelectTable .searchable-combobox-input",
+  ).evaluateAll((inputs) => inputs.map((input) => input.value));
+  if (remainingNames.length !== 2
+      || remainingNames.some((name) => name.toLowerCase().includes("haka"))
+      || !remainingNames.some((name) => name.includes("313"))
+      || !remainingNames.some((name) => name.toLowerCase().includes("solusop"))) {
+    throw new Error(`Selected calculator row was not removed exactly: ${JSON.stringify(remainingNames)}`);
+  }
+
+  await page.locator("#removeFertilizerRow").click();
+  await page.locator("#removeFertilizerRow").click();
+  const finalRowCount = await page.locator("#fertilizerSelectTable tbody tr").count();
+  if (finalRowCount !== 1) {
+    throw new Error(`Calculator removed its final component row: ${finalRowCount}`);
+  }
+}
+
+async function exerciseExistingEditorRowRemoval(page) {
+  const rows = page.locator("#fertilizerEditorTable tbody tr");
+  const initialCount = await rows.count();
+  const removedName = await rows.nth(1).locator('input[data-field="name"]').inputValue();
+  await rows.nth(1).click();
+  await page.locator("#fertEditorDeleteRow").click();
+  const remainingNames = await page.locator(
+    '#fertilizerEditorTable input[data-field="name"]',
+  ).evaluateAll((inputs) => inputs.map((input) => input.value));
+  if (remainingNames.length !== initialCount - 1 || remainingNames.includes(removedName)) {
+    throw new Error(`Editor did not remove the selected row: ${JSON.stringify({
+      removedName,
+      initialCount,
+      remainingCount: remainingNames.length,
+    })}`);
+  }
+  await page.locator("#fertEditorLoad").click();
+  await page.waitForFunction((expected) => document.querySelectorAll(
+    "#fertilizerEditorTable tbody tr",
+  ).length === expected, initialCount);
+}
+
 async function assertProfilePickerLayout(page, selector, expectedStacked, label) {
   const layout = await page.locator(selector).evaluate((select) => {
     const row = select.closest(".profile-picker-row");
@@ -301,6 +428,9 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
     }
     await page.locator("#calculatorMode:not(.is-hidden)").waitFor();
     await assertNoPageOverflow(page, "desktop calculator");
+    await assertFlexibleDesktopFrame(page);
+    await exerciseCalculatorFertilizerSearch(page);
+    await exerciseSelectedCalculatorRowRemoval(page);
 
     const profileFavorite = page.locator("#favoriteProfile");
     await page.locator("#favoriteProfile:disabled").waitFor();
@@ -350,8 +480,7 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
     await page.locator("[data-shell-view='editor']").click();
     await page.locator("#fertilizerEditorMode:not(.is-hidden)").waitFor();
     await page.locator("#fertilizerEditorTable thead th:last-child[title]:not([title=''])").waitFor();
-    await page.locator("#fertEditorAddRow").click();
-    await page.locator("#fertEditorDeleteRow").click();
+    await exerciseExistingEditorRowRemoval(page);
 
     await page.locator("[data-shell-view='solver']").focus();
     await page.keyboard.press("Enter");

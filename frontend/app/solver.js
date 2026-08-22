@@ -817,8 +817,7 @@ function mount({ configDefinitions = [], config = {} } = {}) {
 }
 
 function activate() {
-  renderSolverAllowedOptions();
-  renderSolverFixedTable();
+  refreshLocalized();
 }
 
 function deactivate() {

@@ -24,6 +24,39 @@ from .validation import positive_float as _positive_float
 
 logger = logging.getLogger(__name__)
 
+MAX_YAML_BYTES = 1_048_576
+MAX_YAML_DEPTH = 64
+MAX_YAML_NODES = 10_000
+
+
+class BoundedSafeLoader(yaml.SafeLoader):
+    def __init__(self, stream: Any) -> None:
+        super().__init__(stream)
+        self._depth = 0
+        self._nodes = 0
+
+    def compose_node(self, parent: Any, index: Any) -> yaml.Node:
+        if self.check_event(yaml.AliasEvent):
+            raise yaml.YAMLError("YAML aliases are not supported")
+        self._depth += 1
+        self._nodes += 1
+        try:
+            if self._depth > MAX_YAML_DEPTH:
+                raise yaml.YAMLError("YAML nesting is too deep")
+            if self._nodes > MAX_YAML_NODES:
+                raise yaml.YAMLError("YAML document is too large")
+            return super().compose_node(parent, index)
+        finally:
+            self._depth -= 1
+
+
+def safe_load_yaml(stream: Any) -> Any:
+    loader = BoundedSafeLoader(stream)
+    try:
+        return loader.get_single_data()
+    finally:
+        loader.dispose()
+
 
 @dataclass(frozen=True)
 class Fertilizer:
@@ -91,20 +124,29 @@ def _fertilizer_name_from_row(row: dict[str, str | None]) -> str:
     return ""
 
 
-def _require_finite_numbers(value: Any, location: str) -> None:
+def _require_finite_numbers(value: Any, location: str, *, _depth: int = 0, _nodes: list[int] | None = None) -> None:
+    if _depth > MAX_YAML_DEPTH:
+        raise ValueError(f"{location} is nested too deeply")
+    if _nodes is None:
+        _nodes = [0]
+    _nodes[0] += 1
+    if _nodes[0] > MAX_YAML_NODES:
+        raise ValueError(f"{location} contains too many values")
     if isinstance(value, float) and not math.isfinite(value):
         raise ValueError(f"{location} must contain only finite numbers")
     if isinstance(value, dict):
         for key, item in value.items():
-            _require_finite_numbers(item, f"{location}.{key}")
+            _require_finite_numbers(item, f"{location}.{key}", _depth=_depth + 1, _nodes=_nodes)
     elif isinstance(value, (list, tuple)):
         for index, item in enumerate(value):
-            _require_finite_numbers(item, f"{location}[{index}]")
+            _require_finite_numbers(item, f"{location}[{index}]", _depth=_depth + 1, _nodes=_nodes)
 
 
 def _load_yaml(path: Path) -> dict:
+    if path.stat().st_size > MAX_YAML_BYTES:
+        raise ValueError(f"{path} exceeds the {MAX_YAML_BYTES}-byte YAML limit")
     with path.open("r", encoding="utf-8") as f:
-        payload = yaml.safe_load(f)
+        payload = safe_load_yaml(f)
     if payload is None:
         return {}
     if not isinstance(payload, dict):

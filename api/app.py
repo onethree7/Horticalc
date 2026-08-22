@@ -13,13 +13,21 @@ from uuid import uuid4
 import yaml
 from fastapi import FastAPI, Header, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, FiniteFloat, ValidationError
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from horticalc import __version__
-from horticalc.activation import ActivationUnavailable, InvalidActivationToken, request_activation
+from horticalc.activation import (
+    ActivationUnavailable,
+    InvalidActivationToken,
+    activation_token_configured,
+    configure_activation_token,
+    request_activation,
+    validate_activation_token,
+)
 from horticalc.chemistry import ALLOWED_TARGET_KEYS, ALLOWED_WATER_KEYS, COMP_COLS
 from horticalc.core import (
     augment_water_profile_with_elements,
@@ -35,6 +43,7 @@ from horticalc.data_io import (
     load_recipe,
     load_user_preferences,
     load_water_profile_data,
+    safe_load_yaml,
     save_fertilizers,
     save_nutrient_solution,
     save_recipe,
@@ -81,15 +90,127 @@ from horticalc.validation import non_negative_float, percentage_float, unique_st
 
 logger = logging.getLogger(__name__)
 
+MAX_REQUEST_BODY_BYTES = 1_048_576
+MAX_COLLECTION_ITEMS = 1_000
+MAX_MAPPING_ITEMS = 256
+MAX_NAME_LENGTH = 200
+MAX_TEXT_LENGTH = 4_000
+SESSION_COOKIE_NAME = "horticalc_session"
+SESSION_TOKEN_ENV = "HORTICALC_SESSION_TOKEN"
+DESKTOP_ROUTE_PREFIXES = (
+    "/preferences",
+    "/solver-history",
+    "/fertilizers",
+    "/water-profiles",
+    "/nutrient-solutions",
+    "/molar-masses",
+    "/recipes",
+)
+
+
+class RequestBodyLimitMiddleware:
+    def __init__(self, app: ASGIApp, max_bytes: int) -> None:
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        headers = dict(scope.get("headers", []))
+        content_length = headers.get(b"content-length")
+        if content_length is not None:
+            try:
+                if int(content_length) > self.max_bytes:
+                    await self._reject(send)
+                    return
+            except ValueError:
+                pass
+
+        messages: list[Message] = []
+        received = 0
+        while True:
+            message = await receive()
+            messages.append(message)
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > self.max_bytes:
+                    await self._reject(send)
+                    return
+                if not message.get("more_body", False):
+                    break
+            elif message["type"] == "http.disconnect":
+                break
+
+        message_index = 0
+
+        async def replay_receive() -> Message:
+            nonlocal message_index
+            if message_index >= len(messages):
+                return {"type": "http.disconnect"}
+            message = messages[message_index]
+            message_index += 1
+            return message
+
+        await self.app(scope, replay_receive, send)
+
+    @staticmethod
+    async def _reject(send: Send) -> None:
+        body = json.dumps({"detail": "Request body is too large"}).encode("utf-8")
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 413,
+                "headers": [
+                    (b"content-type", b"application/json"),
+                    (b"content-length", str(len(body)).encode("ascii")),
+                ],
+            }
+        )
+        await send({"type": "http.response.body", "body": body})
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    test_session_token = os.environ.get(SESSION_TOKEN_ENV)
+    if test_session_token and not activation_token_configured():
+        configure_activation_token(test_session_token)
     load_app_data()
     yield
 
 
 app = FastAPI(title="Horticalc API", version=__version__, lifespan=lifespan)
+app.add_middleware(RequestBodyLimitMiddleware, max_bytes=MAX_REQUEST_BODY_BYTES)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost"])
+
+
+def _is_desktop_route(path: str) -> bool:
+    return any(path == prefix or path.startswith(f"{prefix}/") for prefix in DESKTOP_ROUTE_PREFIXES)
+
+
+@app.middleware("http")
+async def desktop_session(request: Request, call_next):
+    if request.method == "GET" and request.url.path == "/" and "session" in request.query_params:
+        if not validate_activation_token(request.query_params["session"]):
+            return JSONResponse(status_code=403, content={"detail": "Invalid desktop session"})
+        response = RedirectResponse(url="/", status_code=303)
+        response.set_cookie(
+            SESSION_COOKIE_NAME,
+            request.query_params["session"],
+            httponly=True,
+            samesite="strict",
+            path="/",
+        )
+        return response
+
+    if _is_desktop_route(request.url.path):
+        if not validate_activation_token(request.cookies.get(SESSION_COOKIE_NAME, "")):
+            return JSONResponse(status_code=403, content={"detail": "Desktop session required"})
+        origin = request.headers.get("origin")
+        expected_origin = f"{request.url.scheme}://{request.url.netloc}"
+        if origin is not None and origin != expected_origin:
+            return JSONResponse(status_code=403, content={"detail": "Cross-origin request rejected"})
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -122,30 +243,30 @@ FRONTEND_DIR = app_root() / "frontend"
 
 
 class FertilizerEntry(BaseModel):
-    name: str
+    name: str = Field(max_length=MAX_NAME_LENGTH)
     grams: FiniteFloat = Field(ge=0)
 
 
 class FertilizerPayload(BaseModel):
-    name: str
+    name: str = Field(max_length=MAX_NAME_LENGTH)
     liquid: bool
     weight_factor: float | None = None
-    comp: Dict[str, float] | None = None
+    comp: Dict[str, float] | None = Field(default=None, max_length=MAX_MAPPING_ITEMS)
     solver_max_dose_per_l: FiniteFloat | None = Field(default=None, ge=0)
 
 
 class PreferencesPayload(BaseModel):
-    theme: Optional[str] = None
-    locale: Optional[str] = None
+    theme: Optional[str] = Field(default=None, max_length=MAX_NAME_LENGTH)
+    locale: Optional[str] = Field(default=None, max_length=MAX_NAME_LENGTH)
     default_liters: Optional[FiniteFloat] = Field(default=None, gt=0)
-    volume_unit: Optional[str] = None
-    solid_dose_unit: Optional[str] = None
-    liquid_dose_unit: Optional[str] = None
-    solver_config: Optional[Dict[str, Any]] = None
-    last_water_profile: Optional[str] = None
+    volume_unit: Optional[str] = Field(default=None, max_length=MAX_NAME_LENGTH)
+    solid_dose_unit: Optional[str] = Field(default=None, max_length=MAX_NAME_LENGTH)
+    liquid_dose_unit: Optional[str] = Field(default=None, max_length=MAX_NAME_LENGTH)
+    solver_config: Optional[Dict[str, Any]] = Field(default=None, max_length=MAX_MAPPING_ITEMS)
+    last_water_profile: Optional[str] = Field(default=None, max_length=MAX_NAME_LENGTH)
     solver_history_limit: Optional[int] = Field(default=None, ge=0, le=MAX_SOLVER_HISTORY_LIMIT)
-    favorite_recipes: List[str] = Field(default_factory=list)
-    favorite_nutrient_solutions: List[str] = Field(default_factory=list)
+    favorite_recipes: List[str] = Field(default_factory=list, max_length=MAX_COLLECTION_ITEMS)
+    favorite_nutrient_solutions: List[str] = Field(default_factory=list, max_length=MAX_COLLECTION_ITEMS)
 
 
 class SolverHistoryPinPayload(BaseModel):
@@ -154,10 +275,10 @@ class SolverHistoryPinPayload(BaseModel):
 
 class RecipeRequest(BaseModel):
     liters: FiniteFloat = Field(default=10.0, gt=0)
-    fertilizers: List[FertilizerEntry] = Field(default_factory=list)
+    fertilizers: List[FertilizerEntry] = Field(default_factory=list, max_length=MAX_COLLECTION_ITEMS)
     urea_as_nh4: bool = False
-    water_profile_name: Optional[str] = None
-    water_mg_l: Optional[Dict[str, float]] = None
+    water_profile_name: Optional[str] = Field(default=None, max_length=MAX_NAME_LENGTH)
+    water_mg_l: Optional[Dict[str, float]] = Field(default=None, max_length=MAX_MAPPING_ITEMS)
     osmosis_percent: FiniteFloat | None = Field(default=0, ge=0, le=100)
 
 
@@ -187,17 +308,17 @@ class CalculationResponse(BaseModel):
 
 
 class SolveRequest(BaseModel):
-    targets: Dict[str, float] = Field(default_factory=dict)
+    targets: Dict[str, float] = Field(default_factory=dict, max_length=MAX_MAPPING_ITEMS)
     liters: FiniteFloat = Field(default=10.0, gt=0)
-    water_profile: Optional[Dict[str, Any]] = None
-    fertilizers_allowed: List[str] = Field(default_factory=list)
-    fixed_grams: Dict[str, FiniteFloat] = Field(default_factory=dict)
+    water_profile: Optional[Dict[str, Any]] = Field(default=None, max_length=MAX_MAPPING_ITEMS)
+    fertilizers_allowed: List[str] = Field(default_factory=list, max_length=MAX_COLLECTION_ITEMS)
+    fixed_grams: Dict[str, FiniteFloat] = Field(default_factory=dict, max_length=MAX_MAPPING_ITEMS)
     urea_as_nh4: bool = False
-    solver_config: Dict[str, Any] = Field(default_factory=dict)
+    solver_config: Dict[str, Any] = Field(default_factory=dict, max_length=MAX_MAPPING_ITEMS)
 
 
 class SolveFertilizerEntry(BaseModel):
-    name: str
+    name: str = Field(max_length=MAX_NAME_LENGTH)
     grams: float
 
 
@@ -216,43 +337,45 @@ class SolveResponse(BaseModel):
 
 
 class WaterProfilePayload(BaseModel):
-    name: str
-    source: Optional[str] = ""
-    mg_per_l: Dict[str, float] = Field(default_factory=dict)
+    name: str = Field(max_length=MAX_NAME_LENGTH)
+    source: Optional[str] = Field(default="", max_length=MAX_TEXT_LENGTH)
+    mg_per_l: Dict[str, float] = Field(default_factory=dict, max_length=MAX_MAPPING_ITEMS)
     osmosis_percent: FiniteFloat | None = Field(default=0, ge=0, le=100)
 
 
 class NutrientSolutionPayload(BaseModel):
-    name: str
-    source: Optional[str] = ""
-    targets_mg_per_l: Dict[str, float] = Field(default_factory=dict)
+    name: str = Field(max_length=MAX_NAME_LENGTH)
+    source: Optional[str] = Field(default="", max_length=MAX_TEXT_LENGTH)
+    targets_mg_per_l: Dict[str, float] = Field(default_factory=dict, max_length=MAX_MAPPING_ITEMS)
     liters: Optional[FiniteFloat] = Field(default=None, gt=0)
-    water_profile: Optional[str] = None
+    water_profile: Optional[str] = Field(default=None, max_length=MAX_NAME_LENGTH)
     osmosis_percent: Optional[FiniteFloat] = Field(default=None, ge=0, le=100)
-    fertilizers_allowed: Optional[List[str]] = None
-    fixed_grams: Optional[Dict[str, FiniteFloat]] = None
+    fertilizers_allowed: Optional[List[str]] = Field(default=None, max_length=MAX_COLLECTION_ITEMS)
+    fixed_grams: Optional[Dict[str, FiniteFloat]] = Field(default=None, max_length=MAX_MAPPING_ITEMS)
     urea_as_nh4: Optional[bool] = None
-    solver_config: Optional[Dict[str, Any]] = None
+    solver_config: Optional[Dict[str, Any]] = Field(default=None, max_length=MAX_MAPPING_ITEMS)
     overwrite: bool = False
 
 
 class RecipePayload(BaseModel):
-    name: str
+    name: str = Field(max_length=MAX_NAME_LENGTH)
     liters: FiniteFloat = Field(default=10.0, gt=0)
-    fertilizers: List[FertilizerEntry] = Field(default_factory=list)
-    fertilizers_allowed: List[str] = Field(default_factory=list)
+    fertilizers: List[FertilizerEntry] = Field(default_factory=list, max_length=MAX_COLLECTION_ITEMS)
+    fertilizers_allowed: List[str] = Field(default_factory=list, max_length=MAX_COLLECTION_ITEMS)
     urea_as_nh4: bool = False
-    water_profile: Optional[str] = None
+    water_profile: Optional[str] = Field(default=None, max_length=MAX_NAME_LENGTH)
     osmosis_percent: FiniteFloat | None = Field(default=0, ge=0, le=100)
-    solver_config: Dict[str, Any] = Field(default_factory=dict)
+    solver_config: Dict[str, Any] = Field(default_factory=dict, max_length=MAX_MAPPING_ITEMS)
 
 
 async def _parse_request_payload(request: Request) -> dict:
-    content_type = (request.headers.get("content-type") or "").lower()
+    content_type = (request.headers.get("content-type") or "").partition(";")[0].strip().lower()
+    if content_type not in {"application/json", "application/yaml", "application/x-yaml", "text/yaml"}:
+        raise HTTPException(status_code=415, detail="Content-Type must be JSON or YAML")
     try:
-        if "yaml" in content_type:
+        if content_type != "application/json":
             raw_body = await request.body()
-            payload = yaml.safe_load(raw_body.decode("utf-8"))
+            payload = safe_load_yaml(raw_body.decode("utf-8"))
             if payload is None:
                 payload = {}
         else:

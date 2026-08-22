@@ -13,10 +13,11 @@ Python calculation core. The runtime has five boundaries:
 
 ## Desktop startup
 
-The launcher claims the single-instance lock, starts uvicorn on an available
-loopback port, waits for `/health`, and opens a pywebview window at the local
-origin. Windows selects WebView2; Linux selects GTK/WebKitGTK. The application
-does not open or control an external browser.
+The launcher reserves a loopback listening socket before claiming the
+single-instance lock and gives that socket directly to uvicorn. It waits for
+`/health`, then opens a pywebview window at the local origin. Windows selects
+WebView2; Linux selects GTK/WebKitGTK. The application does not open or control
+an external browser.
 
 A second launch authenticates to the hidden activation endpoint using the
 random token in the owner lock, restores the existing native window, and exits.
@@ -42,7 +43,11 @@ to the solve.
 The supported automation boundary contains health, calculation, Solver, and
 their schemas as defined in [HTTP API](api.md). Other routes exist to support
 the bundled UI's persistence and launcher lifecycle and are internal to the
-desktop application.
+desktop application. The launcher bootstraps an HttpOnly, same-site session
+cookie from its random activation token. Internal data routes require that
+cookie and reject requests carrying a foreign `Origin`; the supported
+automation routes remain available to loopback clients without a desktop
+session.
 
 The frontend uses native ES modules with no production bundler or
 Python–JavaScript bridge. Feature controllers own their UI state; shared

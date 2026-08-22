@@ -26,6 +26,17 @@ def configure_activation_token(token: str) -> None:
         _activation_token = token
 
 
+def activation_token_configured() -> bool:
+    with _state_lock:
+        return _activation_token is not None
+
+
+def validate_activation_token(token: str) -> bool:
+    with _state_lock:
+        expected_token = _activation_token
+    return expected_token is not None and secrets.compare_digest(token, expected_token)
+
+
 def configure_activation_handler(handler: Callable[[Any], bool], target: Any) -> None:
     global _activation_handler, _activation_target
     with _state_lock:
@@ -43,10 +54,9 @@ def clear_activation_handler() -> None:
 
 def request_activation(token: str) -> None:
     with _state_lock:
-        expected_token = _activation_token
         handler = _activation_handler
         target = _activation_target
-    if expected_token is None or not secrets.compare_digest(token, expected_token):
+    if not validate_activation_token(token):
         raise InvalidActivationToken
     if handler is None or target is None or not handler(target):
         raise ActivationUnavailable

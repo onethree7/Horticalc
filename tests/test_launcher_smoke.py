@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import socket
 import sys
 import types
 import urllib.error
@@ -26,6 +27,7 @@ from horticalc.launcher import (
     read_zone_identifier,
     renderer_error_message,
     require_unblocked_portable_runtime,
+    reserve_server_socket,
     run_webview,
     selected_renderer,
     stop_server,
@@ -47,6 +49,19 @@ TOKEN = "t" * 43
 
 def test_app_root_matches_repo_root_in_dev() -> None:
     assert app_root() == repo_root()
+
+
+def test_reserved_server_socket_cannot_be_claimed_by_another_process() -> None:
+    reserved = reserve_server_socket()
+    assert reserved is not None
+    port = int(reserved.getsockname()[1])
+    competing = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        with pytest.raises(OSError):
+            competing.bind(("127.0.0.1", port))
+    finally:
+        competing.close()
+        reserved.close()
 
 
 def test_app_root_candidate_requires_frontend_data_and_recipe(tmp_path) -> None:

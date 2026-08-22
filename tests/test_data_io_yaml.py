@@ -24,6 +24,30 @@ def test_yaml_loaders_require_top_level_mapping(tmp_path: Path, content: str) ->
         load_recipe(path)
 
 
+def test_yaml_loader_rejects_aliases_before_recursive_validation(tmp_path: Path) -> None:
+    path = tmp_path / "cyclic.yml"
+    path.write_text("root: &root\n  self: *root\n", encoding="utf-8")
+
+    with pytest.raises(data_io.yaml.YAMLError, match="aliases are not supported"):
+        load_recipe(path)
+
+
+def test_yaml_loader_rejects_excessive_nesting(tmp_path: Path) -> None:
+    path = tmp_path / "deep.yml"
+    path.write_text("value: " + "[" * 70 + "0" + "]" * 70, encoding="utf-8")
+
+    with pytest.raises(data_io.yaml.YAMLError, match="nesting is too deep"):
+        load_recipe(path)
+
+
+def test_yaml_loader_rejects_oversized_files(tmp_path: Path) -> None:
+    path = tmp_path / "large.yml"
+    path.write_text("value: " + "x" * data_io.MAX_YAML_BYTES, encoding="utf-8")
+
+    with pytest.raises(ValueError, match="YAML limit"):
+        load_recipe(path)
+
+
 @pytest.mark.parametrize(
     ("filename", "content", "loader"),
     [

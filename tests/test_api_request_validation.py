@@ -180,3 +180,72 @@ def test_resource_list_skips_invalid_yaml(api_client: TestClient, monkeypatch, t
     assert response.status_code == 200
     assert response.json() == [{"name": "Good", "filename": "good.yml", "deletable": True}]
     assert "Skipping invalid YAML resource" in caplog.text
+
+
+def test_desktop_persistence_requires_authenticated_session(
+    api_client: TestClient,
+    isolated_api_layout,
+) -> None:
+    api_client.cookies.clear()
+
+    response = api_client.post("/water-profiles", json={"name": "Forged", "mg_per_l": {}})
+
+    assert response.status_code == 403
+    assert not (isolated_api_layout.water_profiles / "Forged.yml").exists()
+
+
+def test_desktop_persistence_rejects_foreign_origin(
+    api_client: TestClient,
+    isolated_api_layout,
+) -> None:
+    response = api_client.post(
+        "/water-profiles",
+        json={"name": "Forged", "mg_per_l": {}},
+        headers={"origin": "https://attacker.example"},
+    )
+
+    assert response.status_code == 403
+    assert not (isolated_api_layout.water_profiles / "Forged.yml").exists()
+
+
+def test_yaml_persistence_rejects_unapproved_content_type(
+    api_client: TestClient,
+    isolated_api_layout,
+) -> None:
+    response = api_client.post(
+        "/water-profiles",
+        content="name: Forged\nmg_per_l: {}\n",
+        headers={"content-type": "text/plain"},
+    )
+
+    assert response.status_code == 415
+    assert not (isolated_api_layout.water_profiles / "Forged.yml").exists()
+
+
+def test_request_body_limit_applies_to_public_automation_routes(api_client: TestClient) -> None:
+    response = api_client.post(
+        "/calculate",
+        content=b" " * (api_app.MAX_REQUEST_BODY_BYTES + 1),
+        headers={"content-type": "application/json"},
+    )
+
+    assert response.status_code == 413
+
+
+def test_request_body_limit_rejects_chunked_transfer(api_client: TestClient) -> None:
+    response = api_client.post(
+        "/calculate",
+        content=iter([b" " * 600_000, b" " * 600_000]),
+        headers={"content-type": "application/json"},
+    )
+
+    assert response.status_code == 413
+
+
+def test_solver_rejects_excessive_collection_cardinality(api_client: TestClient) -> None:
+    response = api_client.post(
+        "/solve",
+        json={"fertilizers_allowed": ["A"] * (api_app.MAX_COLLECTION_ITEMS + 1)},
+    )
+
+    assert response.status_code == 422

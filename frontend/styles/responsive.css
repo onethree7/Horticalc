@@ -121,7 +121,7 @@
     font-size: 1.32rem;
   }
 
-  .rail-brand span:not(.rail-logo) {
+  .rail-brand span:not(.rail-logo, .rail-version) {
     font-size: 0.78rem;
   }
 

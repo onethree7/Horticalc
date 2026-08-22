@@ -97,6 +97,11 @@ export const setSolverHistoryPinned = (entryId, pinned, message) =>
   putJson(`/solver-history/${encodeURIComponent(entryId)}`, { pinned }, message);
 export const clearSolverHistory = (message) => deleteJson("/solver-history", message);
 
+export async function fetchAppVersion() {
+  const data = await getJson("/health", "Unable to load application version");
+  return typeof data?.version === "string" ? data.version : "";
+}
+
 export async function fetchFertilizerCompKeys(message) {
   const data = await getJson("/schema/fertilizer-comp-keys", message);
   return Array.isArray(data) ? data : Array.isArray(data?.keys) ? data.keys : [];

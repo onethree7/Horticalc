@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from horticalc import __version__
 from tests.frontend_assets import frontend_app_sources, frontend_module_entry
 
 EXPECTED_CSP = (
@@ -40,7 +41,7 @@ def test_frontend_main_busts_i18n_runtime_cache(api_client: TestClient) -> None:
 def test_health_endpoint_still_available(api_client: TestClient) -> None:
     response = api_client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {"status": "ok", "version": __version__}
 
 
 def test_local_responses_have_desktop_security_headers(api_client: TestClient) -> None:

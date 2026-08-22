@@ -28,7 +28,7 @@ Windows PowerShell:
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/health` | Return `{"status":"ok"}`. |
+| `GET` | `/health` | Return the service status and current application version. |
 | `GET` | `/schema/fertilizer-comp-keys` | Return accepted fertilizer composition keys. |
 | `GET` | `/schema/solver-config` | Return Solver configuration definitions and defaults. |
 | `GET` | `/schema/units` | Return supported volume and dose units. |

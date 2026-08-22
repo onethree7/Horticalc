@@ -7,6 +7,20 @@ import horticalc.data_io as data_io
 from horticalc import paths
 from horticalc.data_io import Fertilizer, load_fertilizers, save_fertilizers
 
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_green_house_calcium_edta_uses_catalog_name() -> None:
+    names = list(load_fertilizers(ROOT / "data" / "fertilizers.csv"))
+
+    assert "GH Ca-EDTA" not in names
+    assert [name for name in names if name.startswith("Green House Feeding ")] == [
+        "Green House Feeding Booster PK+",
+        "Green House Feeding Ca-EDTA",
+        "Green House Feeding Hybrids",
+        "Green House Feeding Short Flowering",
+    ]
+
 
 def test_load_fertilizers_ignores_number_field(tmp_path: Path) -> None:
     csv_path = tmp_path / "fertilizers.csv"

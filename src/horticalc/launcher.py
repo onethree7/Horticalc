@@ -210,15 +210,16 @@ def fail_fast(message: str, log_file: Path | None = None) -> None:
     raise SystemExit(1)
 
 
-def find_free_port() -> int | None:
+def reserve_server_socket() -> socket.socket | None:
     for port in PORT_RANGE:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            try:
-                sock.bind(("127.0.0.1", port))
-            except OSError:
-                continue
-            return port
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.bind(("127.0.0.1", port))
+        except OSError:
+            sock.close()
+            continue
+        sock.set_inheritable(True)
+        return sock
     return None
 
 
@@ -229,10 +230,10 @@ def wait_for_health(
 ) -> tuple[bool, str | None]:
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
-        if health_ok(port):
-            return True, None
         if not server_thread.is_alive():
             return False, "Server stopped unexpectedly. See the log file for details."
+        if health_ok(port):
+            return True, None
         time.sleep(0.5)
     return False, (
         f"Server failed to become healthy within {timeout_seconds:.0f} seconds. See the log file for details."
@@ -244,10 +245,13 @@ def stop_server(
     server_thread: threading.Thread,
     lock_path: Path,
     timeout_seconds: float = 5.0,
+    server_socket: socket.socket | None = None,
 ) -> None:
     server.should_exit = True
     if server_thread is not threading.current_thread():
         server_thread.join(timeout=timeout_seconds)
+    if server_socket is not None:
+        server_socket.close()
     remove_lockfile(lock_path, expected_pid=os.getpid())
 
 
@@ -257,11 +261,12 @@ def require_server_health(
     lock_path: Path,
     port: int,
     log_file: Path,
+    server_socket: socket.socket,
 ) -> None:
     healthy, error_message = wait_for_health(port, HEALTH_TIMEOUT_SECONDS, server_thread)
     if healthy:
         return
-    stop_server(server, server_thread, lock_path)
+    stop_server(server, server_thread, lock_path, server_socket=server_socket)
     fail_fast(error_message or "Server failed to start.", log_file)
 
 
@@ -443,13 +448,15 @@ def main() -> None:
                 return
             fail_fast("Horticalc is running, but its window could not be activated.", log_file)
 
-        port = find_free_port()
-        if port is None:
+        server_socket = reserve_server_socket()
+        if server_socket is None:
             fail_fast("No free port found in the 8000-8100 range.", log_file)
+        port = int(server_socket.getsockname()[1])
         activation_token = secrets.token_urlsafe(32)
         if claim_lockfile(lock_path, port, activation_token):
             configure_activation_token(activation_token)
             break
+        server_socket.close()
         logger.info("Another launcher claimed the server lock; waiting for it.")
 
     config = uvicorn.Config(
@@ -460,16 +467,21 @@ def main() -> None:
         access_log=not bool(getattr(sys, "frozen", False)),
     )
     server = uvicorn.Server(config)
-    server_thread = threading.Thread(target=server.run, name="uvicorn-server", daemon=True)
+    server_thread = threading.Thread(
+        target=server.run,
+        kwargs={"sockets": [server_socket]},
+        name="uvicorn-server",
+        daemon=True,
+    )
     server_thread.start()
 
     def cleanup() -> None:
         clear_activation_handler()
-        stop_server(server, server_thread, lock_path)
+        stop_server(server, server_thread, lock_path, server_socket=server_socket)
 
     atexit.register(cleanup)
     try:
-        require_server_health(server, server_thread, lock_path, port, log_file)
+        require_server_health(server, server_thread, lock_path, port, log_file, server_socket)
         if no_gui:
             logger.info("%s is set; running the local server without a desktop window.", NO_GUI_ENV)
             server_thread.join()
@@ -477,7 +489,7 @@ def main() -> None:
 
         storage_path = webview_storage_path(root)
         storage_path.mkdir(parents=True, exist_ok=True)
-        url = f"http://127.0.0.1:{port}/"
+        url = f"http://127.0.0.1:{port}/?session={activation_token}"
         logger.info("Opening native desktop window with %s.", selected_renderer())
         try:
             run_webview(url, storage_path, server)

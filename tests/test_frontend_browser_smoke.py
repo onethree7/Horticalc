@@ -12,6 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SMOKE_SCRIPT = ROOT / "scripts" / "frontend_smoke.cjs"
+SESSION_TOKEN = "t" * 43
 
 
 def _free_port() -> int:
@@ -40,7 +41,11 @@ def test_frontend_workflows_execute_without_browser_errors() -> None:
 
     port = _free_port()
     url = f"http://127.0.0.1:{port}"
-    server_environment = {**os.environ, "HORTICALC_TEST_DISABLE_SOLVER_HISTORY": "1"}
+    server_environment = {
+        **os.environ,
+        "HORTICALC_TEST_DISABLE_SOLVER_HISTORY": "1",
+        "HORTICALC_SESSION_TOKEN": SESSION_TOKEN,
+    }
     server = subprocess.Popen(
         [
             os.fspath(Path(os.sys.executable)),
@@ -59,7 +64,7 @@ def test_frontend_workflows_execute_without_browser_errors() -> None:
     )
     try:
         _wait_for_server(url)
-        environment = {**os.environ, "HORTICALC_TEST_URL": url}
+        environment = {**os.environ, "HORTICALC_TEST_URL": f"{url}/?session={SESSION_TOKEN}"}
         subprocess.run(["node", os.fspath(SMOKE_SCRIPT)], cwd=ROOT, env=environment, check=True)
     finally:
         server.terminate()

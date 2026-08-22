@@ -131,7 +131,7 @@ Malformed request bodies return HTTP `400`; model-shape and bounded-field errors
 return `422`; domain validation such as unknown nutrient keys or fertilizer
 names returns `400`. A named water profile that does not exist returns `404`.
 All numeric inputs must be finite, and concentrations and doses must be
-non-negative.
+non-negative. Request bodies are limited to 1 MiB.
 
 ## Internal routes
 
@@ -139,4 +139,5 @@ Preferences, Solver history, launcher activation, fertilizer persistence,
 water-profile persistence, nutrient-target profiles, recipes, molar-mass data,
 and the static frontend are implementation APIs for the desktop UI. They may be
 visible in OpenAPI, but they are not part of the supported external contract
-defined by this page.
+defined by this page. The persistence and desktop-data routes require the
+authenticated session established by the launcher and reject foreign origins.

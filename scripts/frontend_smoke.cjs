@@ -117,6 +117,48 @@ async function exerciseProfileFavorite(page, button) {
   await button.click();
 }
 
+async function assertCrossViewLocalization(page) {
+  const languageSelect = page.locator("#languageSelect");
+  const originalLocale = await languageSelect.inputValue();
+  const calculatorTypeCell = page.locator("#fertilizerSelectTable tbody td:nth-child(3)").first();
+
+  await languageSelect.selectOption("zh");
+  const chineseType = (await calculatorTypeCell.innerText()).trim();
+  const germanType = new Map([
+    ["固体", "Fest"],
+    ["液体", "Flüssig"],
+  ]).get(chineseType);
+  if (!germanType) {
+    throw new Error(`Calculator type was not localized in Chinese: ${JSON.stringify(chineseType)}`);
+  }
+
+  await page.locator("[data-shell-view='solver']").click();
+  await page.locator("#solverMode:not(.is-hidden)").waitFor();
+  await languageSelect.selectOption("de");
+  await page.locator("[data-shell-view='fertilizers']").click();
+  await page.locator("#calculatorMode:not(.is-hidden)").waitFor();
+  const refreshedType = (await calculatorTypeCell.innerText()).trim();
+  if (refreshedType !== germanType) {
+    throw new Error(`Calculator type stayed stale after returning from Solver: ${JSON.stringify({
+      expected: germanType,
+      actual: refreshedType,
+    })}`);
+  }
+
+  await languageSelect.selectOption("zh");
+  await page.locator("[data-shell-view='solver']").click();
+  await page.locator("#solverMode:not(.is-hidden)").waitFor();
+  const firstPriority = (await page.locator("#solverTargetsTable select").first()
+    .locator("option").first().innerText()).trim();
+  if (firstPriority !== "1 · 必须") {
+    throw new Error(`Solver priority stayed stale after returning from Calculator: ${JSON.stringify(firstPriority)}`);
+  }
+
+  await languageSelect.selectOption(originalLocale);
+  await page.locator("[data-shell-view='fertilizers']").click();
+  await page.locator("#calculatorMode:not(.is-hidden)").waitFor();
+}
+
 async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGrams) {
   await page.locator("#profileSelect").selectOption("Browser_solver_setup.yml");
   await page.locator("#includeSolverSetup").uncheck();
@@ -541,6 +583,7 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
     if (errors.length) throw new Error(`Browser errors:\n${errors.join("\n")}`);
     if (dialogs.length) throw new Error(`Application dialogs:\n${dialogs.join("\n")}`);
     await page.locator("#calculatorMode:not(.is-hidden)").waitFor();
+    await assertCrossViewLocalization(page);
 
     for (const width of [900, 600, 500]) {
       await page.setViewportSize({ width, height: 900 });

@@ -270,6 +270,7 @@ shell = createShellController({
     profiles.setMode(nextView === "solver" ? "solver" : "calculator");
     if (nextView === "editor") editor.activate();
     if (nextView === "solver") solver.activate();
+    if (nextView === "fertilizers") calculator.refreshLocalized();
   },
 });
 

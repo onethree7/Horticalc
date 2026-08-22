@@ -55,6 +55,10 @@
     min-height: 34rem;
   }
 
+  .profile-picker-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .solver-comparison-grid,
   .solver-lower-grid {
     grid-template-columns: 1fr;

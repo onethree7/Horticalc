@@ -22,6 +22,51 @@ async function assertNoPageOverflow(page, label) {
   }
 }
 
+async function assertProfilePickerLayout(page, selector, expectedStacked, label) {
+  const layout = await page.locator(selector).evaluate((select) => {
+    const row = select.closest(".profile-picker-row");
+    const actions = row?.querySelector(".profile-picker-actions");
+    if (!row || !actions) return null;
+    const rowRect = row.getBoundingClientRect();
+    const selectRect = select.getBoundingClientRect();
+    const actionsRect = actions.getBoundingClientRect();
+    return {
+      contained: selectRect.left >= rowRect.left - 1 && selectRect.right <= rowRect.right + 1,
+      rowClientWidth: row.clientWidth,
+      rowScrollWidth: row.scrollWidth,
+      stacked: actionsRect.top >= selectRect.bottom - 1,
+    };
+  });
+  if (!layout || !layout.contained || layout.rowScrollWidth > layout.rowClientWidth + 1) {
+    throw new Error(`${label} overflows its picker row: ${JSON.stringify(layout)}`);
+  }
+  if (layout.stacked !== expectedStacked) {
+    throw new Error(`${label} stacked state was ${layout.stacked}, expected ${expectedStacked}`);
+  }
+}
+
+async function assertSelectedOptionTooltip(page, selector, label) {
+  const select = page.locator(selector);
+  const selectedText = (await select.locator("option:checked").innerText()).trim();
+  const title = await select.getAttribute("title");
+  if (title !== selectedText) {
+    throw new Error(`${label} tooltip was ${JSON.stringify(title)}, expected ${JSON.stringify(selectedText)}`);
+  }
+}
+
+async function assertProfilePickerBreakpoints(page, selector, label) {
+  for (const [width, expectedStacked] of [[1280, false], [960, true], [640, true]]) {
+    await page.setViewportSize({ width, height: 900 });
+    await assertProfilePickerLayout(
+      page,
+      selector,
+      expectedStacked,
+      `${label} at ${width}px`,
+    );
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+}
+
 async function assertHistoryPreviewLayout(page, historyEntry) {
   if (await historyEntry.getAttribute("title")) {
     throw new Error("Solver history row still exposes a competing native tooltip");
@@ -213,6 +258,8 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
     const profileFavorite = page.locator("#favoriteProfile");
     await page.locator("#favoriteProfile:disabled").waitFor();
     await page.locator("#profileSelect").selectOption({ index: 1 });
+    await assertSelectedOptionTooltip(page, "#profileSelect", "calculator profile picker");
+    await assertProfilePickerBreakpoints(page, "#profileSelect", "calculator profile picker");
     await exerciseProfileFavorite(page, profileFavorite);
     await page.locator("#loadProfile").click();
 
@@ -249,6 +296,9 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
 
     await page.locator("[data-shell-view='water']").click();
     await page.locator("#waterSection:not(.is-hidden)").waitFor();
+    await page.locator("#waterProfileSelect").selectOption({ index: 1 });
+    await assertSelectedOptionTooltip(page, "#waterProfileSelect", "water profile picker");
+    await assertProfilePickerBreakpoints(page, "#waterProfileSelect", "water profile picker");
 
     await page.locator("[data-shell-view='editor']").click();
     await page.locator("#fertilizerEditorMode:not(.is-hidden)").waitFor();

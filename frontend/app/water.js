@@ -6,7 +6,7 @@ import {
   SUMMARY_COLUMN_ORDER,
   SUMMARY_VIEW_KEY,
 } from "./constants.js";
-import { qs, qsa } from "./dom.js";
+import { qs, qsa, syncSelectedOptionTitle } from "./dom.js";
 import { decimalInputValue, formatNumber } from "./formatting.js";
 import { createLatestRequestGate } from "../request_gate.js";
 import { storageGet, storageSet } from "./storage.js";
@@ -745,6 +745,7 @@ function renderWaterProfileOptions() {
     option.textContent = profile.name || profile.filename;
     waterProfileSelect.appendChild(option);
   });
+  syncSelectedOptionTitle(waterProfileSelect);
 }
 
   function setResources({ profiles = [], masses = {} } = {}) {
@@ -776,6 +777,7 @@ function renderWaterProfileOptions() {
     waterUnitToggle.checked = waterUnit === "mol_l";
     osmosisPercentInput.value = Number(snapshot.osmosis_percent) || 0;
     waterProfileSelect.value = snapshot.water_profile_value || "";
+    syncSelectedOptionTitle(waterProfileSelect);
     waterFieldDefinitions.forEach(({ key }) => {
       waterValues[key] = Number(snapshot.water_values?.[key]) || 0;
     });
@@ -828,6 +830,7 @@ function renderWaterProfileOptions() {
       const profile = await api.fetchWaterProfileData("default", t("errors.loadWaterProfile"));
       if (!waterProfileRequests.isCurrent(version)) return;
       waterProfileSelect.value = "default.yml";
+      syncSelectedOptionTitle(waterProfileSelect);
       applyWaterProfile(profile);
       api.persistPreferences({ last_water_profile: "default.yml" });
     } catch (error) {
@@ -858,6 +861,7 @@ function renderWaterProfileOptions() {
     if (mounted) return;
     mounted = true;
     loadWaterProfileButton.addEventListener("click", loadSelectedProfile);
+    waterProfileSelect.addEventListener("change", () => syncSelectedOptionTitle(waterProfileSelect));
     resetWaterProfileButton.addEventListener("click", resetProfile);
     saveWaterProfileButton.addEventListener("click", saveProfile);
     osmosisPercentInput.addEventListener("input", () => {
@@ -901,6 +905,9 @@ function renderWaterProfileOptions() {
     setProfiles,
     setResources,
     setOsmosisPercent(value) { osmosisPercentInput.value = Number(value) || 0; },
-    setSelectedProfile(filename) { waterProfileSelect.value = filename || ""; },
+    setSelectedProfile(filename) {
+      waterProfileSelect.value = filename || "";
+      syncSelectedOptionTitle(waterProfileSelect);
+    },
   };
 }

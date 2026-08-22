@@ -1,4 +1,4 @@
-import { qs } from "./dom.js";
+import { qs, syncSelectedOptionTitle } from "./dom.js";
 import { createLatestRequestGate } from "../request_gate.js";
 
 export function sortFavoriteProfiles(profiles = [], favorites = []) {
@@ -43,6 +43,7 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
 
   function refreshSelectionActions() {
     const selected = select.value;
+    syncSelectedOptionTitle(select);
     const favorite = Boolean(selected) && activeFavorites().has(selected);
     const label = t(favorite ? "profile.removeFavorite" : "profile.addFavorite");
     favoriteButton.disabled = !selected;

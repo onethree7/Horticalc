@@ -136,6 +136,10 @@ button:disabled:hover,
   align-items: start;
 }
 
+.profile-setup-option.is-hidden {
+  display: none;
+}
+
 .profile-setup-option .toggle {
   justify-self: start;
 }

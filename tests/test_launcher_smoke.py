@@ -40,7 +40,6 @@ from horticalc.single_instance import (
     read_lockfile,
     remove_lockfile,
     wait_for_existing_server,
-    write_lockfile,
 )
 
 TOKEN = "t" * 43
@@ -66,18 +65,6 @@ def test_app_root_candidate_requires_frontend_data_and_recipe(tmp_path) -> None:
     assert _first_app_root_with_assets((empty_root, installed_root)) == installed_root.resolve()
 
 
-def test_lockfile_roundtrip_includes_activation_token(tmp_path) -> None:
-    path = lockfile_path(tmp_path)
-    write_lockfile(path, port=8000, activation_token=TOKEN, pid=1234)
-
-    payload = read_lockfile(path)
-
-    assert payload is not None
-    assert payload["port"] == 8000
-    assert payload["pid"] == 1234
-    assert payload["activation_token"] == TOKEN
-
-
 def test_lockfile_rejects_obsolete_schema(tmp_path) -> None:
     path = lockfile_path(tmp_path)
     path.parent.mkdir(parents=True)
@@ -98,7 +85,7 @@ def test_packaged_logging_rotates_and_suppresses_access_noise(tmp_path) -> None:
 
 def test_lockfile_removal_is_owner_aware(tmp_path) -> None:
     path = lockfile_path(tmp_path)
-    write_lockfile(path, port=8000, activation_token=TOKEN, pid=1234)
+    assert claim_lockfile(path, port=8000, activation_token=TOKEN, pid=1234) is True
 
     remove_lockfile(path, expected_pid=5678)
     assert path.exists()
@@ -107,35 +94,26 @@ def test_lockfile_removal_is_owner_aware(tmp_path) -> None:
     assert not path.exists()
 
 
-def test_lockfile_write_is_atomic_on_replace_failure(tmp_path, monkeypatch) -> None:
-    path = lockfile_path(tmp_path)
-    path.parent.mkdir(parents=True)
-    original = '{"pid": 1234, "port": 8000}'
-    path.write_text(original, encoding="utf-8")
-    monkeypatch.setattr(
-        single_instance.os,
-        "replace",
-        lambda *_args: (_ for _ in ()).throw(OSError("replace failed")),
-    )
-
-    with pytest.raises(OSError, match="replace failed"):
-        write_lockfile(path, port=8001, activation_token=TOKEN, pid=5678)
-
-    assert path.read_text(encoding="utf-8") == original
-    assert list(path.parent.glob(f".{path.name}.tmp-*")) == []
-
-
 def test_exclusive_lockfile_claim_has_single_winner(tmp_path) -> None:
     path = lockfile_path(tmp_path)
 
     assert claim_lockfile(path, port=8000, activation_token=TOKEN, pid=1234) is True
     assert claim_lockfile(path, port=8001, activation_token="x" * 43, pid=5678) is False
-    assert read_lockfile(path)["pid"] == 1234
+    payload = read_lockfile(path)
+    assert payload is not None
+    started_at = payload.pop("started_at")
+    assert isinstance(started_at, float)
+    assert started_at > 0
+    assert payload == {
+        "pid": 1234,
+        "port": 8000,
+        "activation_token": TOKEN,
+    }
 
 
 def test_existing_server_waits_for_live_owner_health(tmp_path, monkeypatch) -> None:
     path = lockfile_path(tmp_path)
-    write_lockfile(path, port=8000, activation_token=TOKEN, pid=1234)
+    assert claim_lockfile(path, port=8000, activation_token=TOKEN, pid=1234) is True
     health_results = iter([False, True])
     monkeypatch.setattr(single_instance, "health_ok", lambda _port: next(health_results))
     monkeypatch.setattr(single_instance, "_pid_is_running", lambda _pid: True)
@@ -145,7 +123,7 @@ def test_existing_server_waits_for_live_owner_health(tmp_path, monkeypatch) -> N
 
 def test_existing_server_removes_dead_or_malformed_locks(tmp_path, monkeypatch) -> None:
     path = lockfile_path(tmp_path)
-    write_lockfile(path, port=8000, activation_token=TOKEN, pid=1234)
+    assert claim_lockfile(path, port=8000, activation_token=TOKEN, pid=1234) is True
     monkeypatch.setattr(single_instance, "health_ok", lambda _port: False)
     monkeypatch.setattr(single_instance, "_pid_is_running", lambda _pid: False)
 
@@ -466,7 +444,7 @@ def test_run_webview_uses_native_window_without_js_bridge(tmp_path, monkeypatch)
 
 def test_stop_server_is_idempotent(tmp_path) -> None:
     path = lockfile_path(tmp_path)
-    write_lockfile(path, 8000, TOKEN, pid=launcher.os.getpid())
+    assert claim_lockfile(path, 8000, TOKEN, pid=launcher.os.getpid()) is True
     joins = []
     server = types.SimpleNamespace(should_exit=False)
     thread = types.SimpleNamespace(join=lambda timeout: joins.append(timeout))

@@ -33,7 +33,6 @@
   --app-green: #9bd36a;
   --app-teal: #4cc7b0;
   --app-amber: #d8b45d;
-  --app-red: #d66f5e;
   --app-solver: #b67cff;
   --app-solver-glow: #41e7ff;
   --app-body-bg: linear-gradient(180deg, rgb(25 29 23 / 96%), rgb(12 14 12 / 100%) 34rem), var(--app-bg);
@@ -110,8 +109,6 @@
   --app-segmented-active-border: rgb(76 199 176 / 50%);
   --app-segmented-active-text: var(--app-heading-text);
   --app-compact-label: var(--app-muted);
-  --app-balance-tile-bg: var(--app-table-row-even);
-  --app-balance-label: var(--app-muted);
   --app-fert-editor-head-bg: #202c30;
   --app-fert-editor-input-bg: #0a100f;
   --app-rail-border: var(--app-border);
@@ -137,7 +134,6 @@
   --app-green: #537d42;
   --app-teal: #3d7e79;
   --app-amber: #89672e;
-  --app-red: #9c4d45;
   --app-solver: #68608c;
   --app-solver-glow: #407d8b;
   --app-body-bg: linear-gradient(180deg, #e9eee5, #d8e0d5 34rem), var(--app-bg);
@@ -214,8 +210,6 @@
   --app-segmented-active-border: rgb(83 125 66 / 35%);
   --app-segmented-active-text: #20271f;
   --app-compact-label: #586356;
-  --app-balance-tile-bg: rgb(213 223 210 / 92%);
-  --app-balance-label: #5d6859;
   --app-fert-editor-head-bg: #b7c6b7;
   --app-fert-editor-input-bg: #e8eee5;
 }
@@ -230,7 +224,6 @@
   --app-green: #90ff00;
   --app-teal: #00f7ff;
   --app-amber: #ffe100;
-  --app-red: #ff5c5c;
   --app-solver: #d080ff;
   --app-solver-glow: #00f7ff;
   --app-body-bg: #000;
@@ -291,8 +284,6 @@
   --app-segmented-active-border: #ffe100;
   --app-segmented-active-text: #ffe100;
   --app-compact-label: #d9d9d9;
-  --app-balance-tile-bg: #080808;
-  --app-balance-label: #d9d9d9;
   --app-fert-editor-head-bg: #1f1f1f;
   --app-fert-editor-input-bg: #000;
 }
@@ -307,7 +298,6 @@
   --app-green: #adc76f;
   --app-teal: #5fc0ac;
   --app-amber: #f0a020;
-  --app-red: #df715f;
   --app-solver: #d49cff;
   --app-solver-glow: #64d4cd;
   --app-body-bg: linear-gradient(180deg, #2a2118, #12100e 34rem), var(--app-bg);
@@ -379,8 +369,6 @@
   --app-segmented-active-border: rgb(240 160 32 / 32%);
   --app-segmented-active-text: #fff8e8;
   --app-compact-label: #d0b98a;
-  --app-balance-tile-bg: rgb(35 28 20 / 82%);
-  --app-balance-label: #d0b98a;
   --app-fert-editor-head-bg: #43331f;
   --app-fert-editor-input-bg: #17130f;
 }
@@ -395,7 +383,6 @@
   --app-green: #63b265;
   --app-teal: #bdd3bf;
   --app-amber: #d57500;
-  --app-red: #c84448;
   --app-solver: #9b8aa8;
   --app-solver-glow: #bdd3bf;
   --app-body-bg: linear-gradient(180deg, #16210e 0, #16210e 5rem, #333 5rem), var(--app-bg);
@@ -466,8 +453,6 @@
   --app-segmented-active-border: rgb(213 117 0 / 82%);
   --app-segmented-active-text: #c3e0bd;
   --app-compact-label: #bdd3bf;
-  --app-balance-tile-bg: #303030;
-  --app-balance-label: #bca26a;
   --app-fert-editor-head-bg: #363636;
   --app-fert-editor-input-bg: #2d2d2d;
 }
@@ -482,7 +467,6 @@
   --app-green: #73ff5a;
   --app-teal: #38d78c;
   --app-amber: #d8d36c;
-  --app-red: #ff756b;
   --app-solver: #a6ff8b;
   --app-solver-glow: #57ffb0;
   --app-body-bg: linear-gradient(180deg, #0c1b10, #030704 34rem), var(--app-bg);
@@ -553,8 +537,6 @@
   --app-segmented-active-border: rgb(115 255 90 / 28%);
   --app-segmented-active-text: #f1ffed;
   --app-compact-label: #94c28d;
-  --app-balance-tile-bg: rgb(8 20 9 / 82%);
-  --app-balance-label: #94c28d;
   --app-fert-editor-head-bg: #17351d;
   --app-fert-editor-input-bg: #030704;
 }
@@ -569,7 +551,6 @@
   --app-green: #80c8ff;
   --app-teal: #4bd3de;
   --app-amber: #d9b96f;
-  --app-red: #e47b78;
   --app-solver: #a9a7ff;
   --app-solver-glow: #4bd3de;
   --app-body-bg: linear-gradient(180deg, #121b29, #060a10 34rem), var(--app-bg);
@@ -640,8 +621,6 @@
   --app-segmented-active-border: rgb(75 211 222 / 30%);
   --app-segmented-active-text: #f5f9ff;
   --app-compact-label: #a9b7ca;
-  --app-balance-tile-bg: rgb(13 23 36 / 82%);
-  --app-balance-label: #a9b7ca;
   --app-fert-editor-head-bg: #20354f;
   --app-fert-editor-input-bg: #07101a;
 }
@@ -657,7 +636,6 @@
   --app-green: #b6ff5e;
   --app-teal: #33f6ff;
   --app-amber: #ffd166;
-  --app-red: #ff4d8d;
   --app-solver: #ff4fd8;
   --app-solver-glow: #37f3ff;
   --app-body-bg:
@@ -743,8 +721,6 @@
   --app-segmented-active-border: rgb(51 246 255 / 52%);
   --app-segmented-active-text: #fff;
   --app-compact-label: #b7c2f4;
-  --app-balance-tile-bg: rgb(18 20 43 / 90%);
-  --app-balance-label: #b7c2f4;
   --app-fert-editor-head-bg: #30265e;
   --app-fert-editor-input-bg: #0b0b1b;
   --app-rail-border: color-mix(in srgb, var(--app-teal) 26%, transparent);
@@ -832,8 +808,6 @@
   --app-segmented-active-border: var(--app-teal);
   --app-segmented-active-text: var(--app-heading-text);
   --app-compact-label: var(--app-muted);
-  --app-balance-tile-bg: var(--app-table-row-even);
-  --app-balance-label: var(--app-muted);
   --app-fert-editor-head-bg: var(--app-table-head-bg);
   --app-fert-editor-input-bg: var(--app-input-bg);
   --app-rail-border: var(--app-border);
@@ -861,7 +835,6 @@
   --app-green: #859900;
   --app-teal: #2aa198;
   --app-amber: #b58900;
-  --app-red: #dc322f;
   --app-solver: #6c71c4;
   --app-solver-glow: #268bd2;
   --app-shell-shadow: 0 18px 48px rgb(88 110 117 / 22%), var(--app-surface-shadow);
@@ -882,7 +855,6 @@
   --app-green: #50fa7b;
   --app-teal: #8be9fd;
   --app-amber: #f1fa8c;
-  --app-red: #f55;
   --app-solver: #ff79c6;
   --app-solver-glow: #bd93f9;
   --app-button-bg: #6272a4;
@@ -899,7 +871,6 @@
   --app-green: #b8bb26;
   --app-teal: #8ec07c;
   --app-amber: #fabd2f;
-  --app-red: #fb4934;
   --app-solver: #d3869b;
   --app-solver-glow: #83a598;
   --app-button-bg: #689d6a;
@@ -916,7 +887,6 @@
   --app-green: #a6e3a1;
   --app-teal: #94e2d5;
   --app-amber: #f9e2af;
-  --app-red: #f38ba8;
   --app-solver: #cba6f7;
   --app-solver-glow: #89b4fa;
   --app-button-bg: #7287fd;
@@ -933,7 +903,6 @@
   --app-green: #a6e22e;
   --app-teal: #66d9ef;
   --app-amber: #e6db74;
-  --app-red: #f92672;
   --app-solver: #ae81ff;
   --app-solver-glow: #66d9ef;
   --app-button-bg: #7b9f18;
@@ -957,7 +926,6 @@
   --app-green: #008000;
   --app-teal: #000080;
   --app-amber: #808000;
-  --app-red: #800000;
   --app-solver: #800080;
   --app-solver-glow: #000080;
   --app-body-bg: #008080;
@@ -1045,7 +1013,6 @@
   --app-green: #ffd15c;
   --app-teal: #ffb000;
   --app-amber: #ffd15c;
-  --app-red: #ff5a1f;
   --app-solver: #ff8f1f;
   --app-solver-glow: #ffb000;
   --app-body-bg: radial-gradient(ellipse at 50% 42%, #241500, #030200 68%);

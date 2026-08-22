@@ -9,15 +9,6 @@ function finiteTarget(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
-export function missingHistoryFertilizers(setup = {}, availableFertilizers = []) {
-  const available = new Set(availableFertilizers.map((fertilizer) => fertilizer.name));
-  const names = new Set([
-    ...(setup.fertilizers_allowed || []),
-    ...Object.keys(setup.fixed_grams || {}),
-  ]);
-  return [...names].filter((name) => !available.has(name));
-}
-
 export function formatSolverHistorySummary(entry, { locale, units }) {
   const date = new Date(entry?.created_at);
   const timestamp = Number.isNaN(date.getTime())

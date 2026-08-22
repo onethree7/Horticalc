@@ -102,15 +102,4 @@ export function onLocaleChange(listener) {
   return () => listeners.delete(listener);
 }
 
-export function validateCatalogs() {
-  const baseKeys = Object.keys(catalogs[DEFAULT_LOCALE] || {}).sort();
-  return Object.fromEntries(supportedLocales.map((locale) => {
-    const keys = Object.keys(catalogs[locale] || {}).sort();
-    return [locale, {
-      missing: baseKeys.filter((key) => !keys.includes(key)),
-      extra: keys.filter((key) => !baseKeys.includes(key)),
-    }];
-  }));
-}
-
 document.documentElement.lang = currentLocale;

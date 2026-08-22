@@ -3,7 +3,6 @@ export const DEFAULT_VOLUME_UNIT = "liter";
 export const DEFAULT_SOLID_DOSE_UNIT = "gram";
 export const DEFAULT_LIQUID_DOSE_UNIT = "milliliter";
 export const DEFAULT_THEME = "horticalc-dark";
-export const SCALE_STEP = 0.05;
 
 export const FALLBACK_VOLUME_UNITS = [
   { key: "liter", label: "Liter", symbol: "L", liters_per_unit: 1 },
@@ -34,11 +33,6 @@ export const ION_NITROGEN_EXPANDED_KEY = "horticalc.ion_n_expanded";
 export const SOLVER_AUTO_APPLY_KEY = "horticalc.solver_auto_apply";
 export const LAST_FERTILIZERS_ALLOWED_CONTEXT_KEY_PREFIX = "last_fertilizers_allowed::";
 
-export const NUMBER_FORMATTER = new Intl.NumberFormat("en-US", {
-  minimumFractionDigits: 3,
-  maximumFractionDigits: 3,
-  useGrouping: false,
-});
 export const NUTRIENT_FORMATTER = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 0,
   maximumFractionDigits: 2,

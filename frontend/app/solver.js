@@ -263,7 +263,7 @@ function renderSolverTargetsTable() {
       select.title = reportOnly
         ? t("solver.reportOnlyHint")
         : priorityEnabled
-          ? t(`solver.priority.${direction}Hint`)
+          ? t(`solver.priority.${direction}Hint`, { element: field.label })
           : t("solver.priority.selectHierarchicalHint");
       select.addEventListener("change", () => {
         solverTargetPriorities[field.key][direction] = normalizedPriority(select.value);

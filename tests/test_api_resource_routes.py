@@ -1,11 +1,10 @@
-import pytest
 from fastapi.testclient import TestClient
 
 import api.app as api_app
 from horticalc import paths
 
 
-def test_unit_schema_exposes_canonical_volume_and_explicit_gallons(api_client: TestClient) -> None:
+def test_unit_schema_exposes_canonical_units_and_exact_factors(api_client: TestClient) -> None:
     response = api_client.get("/schema/units")
 
     assert response.status_code == 200
@@ -13,13 +12,39 @@ def test_unit_schema_exposes_canonical_volume_and_explicit_gallons(api_client: T
     assert payload["canonical_volume_unit"] == "liter"
     assert payload["canonical_solid_dose_unit"] == "gram"
     assert payload["canonical_liquid_dose_unit"] == "milliliter"
-    units = {entry["key"]: entry for entry in payload["volume_units"]}
-    assert units["us_gallon"]["liters_per_unit"] == pytest.approx(3.785411784)
-    assert units["imperial_gallon"]["liters_per_unit"] == pytest.approx(4.54609)
-    mass_units = {entry["key"]: entry for entry in payload["mass_units"]}
-    liquid_units = {entry["key"]: entry for entry in payload["liquid_volume_units"]}
-    assert mass_units["ounce"]["grams_per_unit"] == pytest.approx(28.349523125)
-    assert liquid_units["us_fluid_ounce"]["milliliters_per_unit"] == pytest.approx(29.5735295625)
+    assert payload["volume_units"] == [
+        {"key": "liter", "label": "Liter", "symbol": "L", "liters_per_unit": 1.0},
+        {"key": "us_gallon", "label": "US gallon", "symbol": "US gal", "liters_per_unit": 3.785411784},
+        {"key": "imperial_gallon", "label": "Imperial gallon", "symbol": "Imp gal", "liters_per_unit": 4.54609},
+        {"key": "cubic_meter", "label": "Cubic meter", "symbol": "m³", "liters_per_unit": 1000.0},
+    ]
+    assert payload["mass_units"] == [
+        {"key": "gram", "label": "Gram", "symbol": "g", "grams_per_unit": 1.0},
+        {"key": "kilogram", "label": "Kilogram", "symbol": "kg", "grams_per_unit": 1000.0},
+        {"key": "ounce", "label": "Ounce", "symbol": "oz", "grams_per_unit": 28.349523125},
+        {"key": "pound", "label": "Pound", "symbol": "lb", "grams_per_unit": 453.59237},
+    ]
+    assert payload["liquid_volume_units"] == [
+        {
+            "key": "milliliter",
+            "label": "Milliliter",
+            "symbol": "mL",
+            "milliliters_per_unit": 1.0,
+        },
+        {"key": "liter", "label": "Liter", "symbol": "L", "milliliters_per_unit": 1000.0},
+        {
+            "key": "us_fluid_ounce",
+            "label": "US fluid ounce",
+            "symbol": "US fl oz",
+            "milliliters_per_unit": 29.5735295625,
+        },
+        {
+            "key": "imperial_fluid_ounce",
+            "label": "Imperial fluid ounce",
+            "symbol": "Imp fl oz",
+            "milliliters_per_unit": 28.4130625,
+        },
+    ]
 
 
 def test_portable_layout_resource_routes(api_client: TestClient) -> None:

@@ -9,7 +9,6 @@ from scipy.optimize import linprog
 MIN_PRIORITY = 1
 MAX_PRIORITY = 4
 REPORT_ONLY_PRIORITY = 0
-DEFAULT_PRIORITY = 3
 
 
 @dataclass(frozen=True)

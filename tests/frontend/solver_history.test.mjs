@@ -4,7 +4,6 @@ import test from "node:test";
 import {
   compactSolverHistoryPreview,
   formatSolverHistorySummary,
-  missingHistoryFertilizers,
 } from "../../frontend/app/history.js";
 import { buildSolverPrintableText } from "../../frontend/app/solver_printable.js";
 import { createUnitService } from "../../frontend/app/units.js";
@@ -60,18 +59,6 @@ test("printable solver history uses stored fertilizer kinds and canonical calcul
   assert.match(text, /1-2-3/);
   assert.match(text, /1\.200/);
   assert.match(text, /N\s+100\s+99\s+-1/);
-});
-
-test("history restore validation includes allowed and fixed fertilizers", () => {
-  const missing = missingHistoryFertilizers(
-    {
-      fertilizers_allowed: ["Available", "Removed allowed"],
-      fixed_grams: { "Removed fixed": 1 },
-    },
-    [{ name: "Available" }],
-  );
-
-  assert.deepEqual(missing, ["Removed allowed", "Removed fixed"]);
 });
 
 test("solver history hover preview is a bounded excerpt with a dialog hint", () => {

@@ -3,11 +3,9 @@ from __future__ import annotations
 import json
 import logging
 import os
-import tempfile
 import time
 import urllib.error
 import urllib.request
-from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -51,26 +49,6 @@ def _write_json_stream(handle, payload: dict[str, Any]) -> None:
     os.fsync(handle.fileno())
 
 
-def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temp_path: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            delete=False,
-            dir=path.parent,
-            prefix=f".{path.name}.tmp-",
-        ) as temp_file:
-            temp_path = Path(temp_file.name)
-            _write_json_stream(temp_file, payload)
-        os.replace(temp_path, path)
-    finally:
-        if temp_path is not None:
-            with suppress(OSError):
-                temp_path.unlink(missing_ok=True)
-
-
 def _lock_payload(port: int, activation_token: str, pid: int | None = None) -> dict[str, Any]:
     return {
         "pid": pid or os.getpid(),
@@ -99,10 +77,6 @@ def read_lockfile(path: Path) -> dict[str, Any] | None:
     if not isinstance(activation_token, str) or len(activation_token) < 32:
         return None
     return payload
-
-
-def write_lockfile(path: Path, port: int, activation_token: str, pid: int | None = None) -> None:
-    _atomic_write_json(path, _lock_payload(port, activation_token, pid))
 
 
 def claim_lockfile(path: Path, port: int, activation_token: str, pid: int | None = None) -> bool:

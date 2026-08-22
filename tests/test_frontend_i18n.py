@@ -61,6 +61,8 @@ def test_i18n_catalogs_cover_the_supported_themes_and_solver_labels() -> None:
         "solver.priority.reportOnly",
         "solver.priority.underAria",
         "solver.priority.overAria",
+        "solver.priority.underHint",
+        "solver.priority.overHint",
         "solver.priority.resultSummary",
         "solver.reportOnlyHint",
         "editor.solverMaxDoseHint",

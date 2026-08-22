@@ -104,12 +104,6 @@ SOLVER_CONFIG_DEFINITIONS: tuple[dict[str, Any], ...] = (
 SOLVER_CONFIG_TYPES = {definition["key"]: definition["type"] for definition in SOLVER_CONFIG_DEFINITIONS}
 SOLVER_CONFIG_DEFAULTS = {definition["key"]: definition.get("default") for definition in SOLVER_CONFIG_DEFINITIONS}
 SOLVER_CONFIG_BY_KEY = {definition["key"]: definition for definition in SOLVER_CONFIG_DEFINITIONS}
-BOOLEAN_SOLVER_KEYS = tuple(
-    definition["key"] for definition in SOLVER_CONFIG_DEFINITIONS if definition["type"] == "boolean"
-)
-BOOLEAN_SOLVER_DEFAULTS = {key: bool(SOLVER_CONFIG_DEFAULTS[key]) for key in BOOLEAN_SOLVER_KEYS}
-MATRIX_BOOLEAN_SOLVER_KEYS = tuple(key for key in BOOLEAN_SOLVER_KEYS if key != "s_objective_enabled")
-MATRIX_BOOLEAN_SOLVER_DEFAULTS = {key: BOOLEAN_SOLVER_DEFAULTS[key] for key in MATRIX_BOOLEAN_SOLVER_KEYS}
 
 
 def _flag_name(key: str) -> str:

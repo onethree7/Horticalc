@@ -3,9 +3,6 @@ import { buildAlignedRows, formatNumber } from "./formatting.js";
 import { formatClipboardIonLabel, solverResultDisplayKeys } from "./solver_payload.js";
 import { solverModelLabel, targetPrioritySummary } from "./solver_presentation.js";
 
-export const printableSolverModelLabel = solverModelLabel;
-export const printableTargetPrioritySummary = targetPrioritySummary;
-
 export function buildSolverPrintableText({
   result,
   calculation = {},

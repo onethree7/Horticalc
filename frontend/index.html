@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Horticalc GUI</title>
-    <link rel="stylesheet" href="styles/base.css?v=layout13" />
-    <link rel="stylesheet" href="styles/themes.css?v=layout13" />
-    <link rel="stylesheet" href="styles/shell.css?v=layout13" />
-    <link rel="stylesheet" href="styles/components.css?v=layout13" />
-    <link rel="stylesheet" href="styles/responsive.css?v=layout13" />
+    <link rel="stylesheet" href="styles/base.css?v=layout14" />
+    <link rel="stylesheet" href="styles/themes.css?v=layout14" />
+    <link rel="stylesheet" href="styles/shell.css?v=layout14" />
+    <link rel="stylesheet" href="styles/components.css?v=layout14" />
+    <link rel="stylesheet" href="styles/responsive.css?v=layout14" />
   </head>
   <body class="compact app-body">
     <svg class="icon-sprite" aria-hidden="true" focusable="false">
@@ -383,7 +383,7 @@
           <div class="actions inline-actions">
             <button id="addFertilizerRow" class="btn btn--outline btn--icon icon-button" type="button" data-i18n-aria-label="aria.addFertilizerRow" data-i18n-title="aria.addFertilizerRow">+</button>
             <button id="removeFertilizerRow" class="btn btn--outline btn--icon icon-button" type="button" data-i18n-aria-label="aria.removeFertilizerRow" data-i18n-title="aria.removeFertilizerRow">-</button>
-            <span class="inline-hint" data-i18n="calculator.componentHint">Choose fertilizers from the database; the plus adds more rows.</span>
+            <span class="inline-hint" data-i18n="calculator.componentHint">Search for or select a fertilizer; plus adds a row and minus removes the selected row.</span>
           </div>
           <div class="table-wrap" id="fertilizerSelectTableWrap"></div>
         </section>
@@ -685,7 +685,7 @@
             <h2 data-i18n="editor.title">Fertilizer editor</h2>
           </div>
           <p class="hint" data-i18n="editor.percentHint">Enter values as percentages (e.g. 15 for 15%). They are saved as fractions (0.15) in the CSV.</p>
-          <p class="hint" data-i18n="editor.listHint">Save/load the fertilizer list locally.</p>
+          <p class="hint" data-i18n="editor.listHint">Save/load the fertilizer list locally. Select a row and press minus to delete it.</p>
           <div class="water-controls">
             <div class="water-control-group">
               <label data-i18n="editor.listLabel">Fertilizer list</label>
@@ -708,6 +708,6 @@
       </section>
     </main>
 
-    <script type="module" src="app/main.js?v=3"></script>
+    <script type="module" src="app/main.js?v=4"></script>
 </body>
 </html>

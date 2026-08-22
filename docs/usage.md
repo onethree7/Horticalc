@@ -12,6 +12,11 @@ Use **Calculator** when fertilizer doses are already known.
 3. Add fertilizer components and their doses.
 4. Select **Calculate**.
 
+The fertilizer field searches the complete catalogue name as you type, so a
+product fragment such as `haka`, `313`, or `special` works without knowing the
+manufacturer. Select a component row and use minus to remove that exact row;
+plus adds and selects a new row.
+
 The result separates fertilizer and water contributions and reports elemental
 and oxide concentrations, ions, ion balance, EC, and NPK ratios. Changing a
 display unit converts the visible quantity without changing the stored batch or
@@ -36,6 +41,8 @@ entered source-water concentration.
 Use **Fertilizer editor** to search and edit the effective catalogue. Composition
 values are mass fractions: `0.14` means 14%. A liquid product uses its weight
 factor as density when converting the displayed volume dose.
+
+Select an editor row and use minus to delete it from the editable list.
 
 **Solver max / L** limits the variable dose the Solver may select. An empty
 value means unlimited; `0` prevents variable selection while still allowing a

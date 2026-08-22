@@ -59,7 +59,7 @@ html {
 
 .app-shell {
   box-sizing: border-box;
-  width: min(calc(100% - (var(--space-4) * 2)), var(--content-max-width));
+  width: calc(100% - (var(--space-4) * 2));
   min-width: 0;
   max-width: 100%;
   height: calc(100vh - (var(--space-4) * 2));

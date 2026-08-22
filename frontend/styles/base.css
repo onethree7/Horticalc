@@ -13,7 +13,6 @@
   --text-xs: 0.72rem;
   --text-sm: 0.78rem;
   --text-md: 0.9rem;
-  --content-max-width: 1200px;
   --col-width-wide: 5.5rem;
   --col-width-standard: 4.6rem;
 
@@ -119,7 +118,6 @@ main {
   flex-direction: column;
   gap: var(--space-4);
   margin: 0 auto;
-  max-width: var(--content-max-width);
 }
 
 .block {
@@ -410,6 +408,46 @@ main {
   font-size: var(--text-sm);
 }
 
+.searchable-combobox {
+  position: relative;
+  width: 100%;
+}
+
+.searchable-combobox::after {
+  position: absolute;
+  top: 50%;
+  right: var(--space-2);
+  border: 4px solid transparent;
+  border-top-color: currentcolor;
+  content: "";
+  opacity: 0.72;
+  pointer-events: none;
+  transform: translateY(-15%);
+}
+
+.grid .searchable-combobox-input {
+  padding-right: calc(var(--space-4) * 2);
+}
+
+.searchable-combobox-listbox {
+  position: fixed;
+  z-index: 10001;
+  overflow: auto;
+  padding: var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.searchable-combobox-option,
+.searchable-combobox-listbox.is-empty {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-1);
+  overflow-wrap: anywhere;
+}
+
+.searchable-combobox-option {
+  cursor: pointer;
+}
+
 .grid input[type="checkbox"] {
   width: auto;
 }
@@ -622,6 +660,12 @@ main {
 
 #fertilizerEditorTable tbody tr.is-selected {
   outline: 2px solid rgb(255 255 255 / 18%);
+  outline-offset: -2px;
+}
+
+#fertilizerSelectTable tbody tr.is-selected,
+#calculatorTable tbody tr.is-selected {
+  outline: 2px solid rgb(255 255 255 / 22%);
   outline-offset: -2px;
 }
 

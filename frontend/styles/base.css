@@ -796,6 +796,26 @@ main {
   font-size: var(--text-sm);
 }
 
+.profile-picker-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
+}
+
+.profile-picker-row select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.profile-picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
 
 #waterValuesTable input.is-helper {
   color: var(--app-helper-text);

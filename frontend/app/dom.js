@@ -1,6 +1,11 @@
 export const qs = (selector, root = document) => root.querySelector(selector);
 export const qsa = (selector, root = document) => root.querySelectorAll(selector);
 
+export function syncSelectedOptionTitle(select) {
+  const selectedOption = select.selectedOptions[0];
+  select.title = select.value && selectedOption ? selectedOption.textContent.trim() : "";
+}
+
 export function appendDoseInput(cell, input, unitSymbol) {
   const wrapper = document.createElement("span");
   wrapper.className = "dose-input";

@@ -45,6 +45,16 @@ To run from source, see [Contributing](CONTRIBUTING.md).
 The **Solver** performs the reverse workflow: provide nutrient targets and the
 fertilizers it may use, then review the proposed doses before applying them.
 
+## Screenshots
+
+### Calculator
+
+![Calculator showing a fertilizer recipe and calculated doses](assets/screenshots/calculator.png)
+
+### Solver
+
+![Solver comparing nutrient targets with achieved values and fertilizer amounts](assets/screenshots/solver.png)
+
 ## System requirements and startup help
 
 Windows 10 and 11 require the

@@ -332,17 +332,24 @@ html {
 }
 
 .rail-config-reset {
-  width: 100%;
+  width: min(100%, 20rem);
   margin-bottom: var(--space-3);
   border-color: color-mix(in srgb, var(--app-teal) 34%, transparent);
   color: color-mix(in srgb, white 82%, var(--app-teal));
 }
 
 .rail-config-grid--advanced {
+  width: min(100%, var(--solver-settings-measure));
+  grid-template-columns: repeat(2, minmax(20rem, 1fr));
   max-height: 22rem;
   overflow-y: auto;
   padding-right: var(--space-2);
   scrollbar-color: var(--app-scrollbar-thumb) var(--app-scrollbar-track);
+}
+
+.rail-config-grid--advanced label:not(.toggle) {
+  grid-template-columns: minmax(0, 1fr) var(--solver-number-field-measure);
+  align-items: center;
 }
 
 .rail-guide {

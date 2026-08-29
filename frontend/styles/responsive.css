@@ -1,3 +1,38 @@
+@media (width >= 1600px) {
+  .summary {
+    --summary-row-label-measure: 8rem;
+  }
+
+  .summary-scroll .table-card {
+    min-width: 100%;
+  }
+
+  .summary-scroll table.grid.nutrient-grid--summary {
+    width: 100%;
+    display: table;
+  }
+
+  .summary .nutrient-grid--summary col:not(.col-row-label) {
+    width: auto;
+  }
+
+  .summary .nutrient-grid--summary :is(thead th:first-child, .row-label) {
+    width: var(--summary-row-label-measure);
+    min-width: var(--summary-row-label-measure);
+    max-width: var(--summary-row-label-measure);
+  }
+
+  #waterValuesTable th:nth-child(2),
+  #waterValuesTable td:nth-child(2) {
+    width: 18rem;
+  }
+
+  #waterValuesTable th:nth-child(3),
+  #waterValuesTable td:nth-child(3) {
+    width: 10rem;
+  }
+}
+
 @media (width <= 980px) {
   :root {
     --app-sticky-offset: 1rem;
@@ -75,6 +110,11 @@
 
   .solver-auto-apply {
     justify-content: flex-start;
+  }
+
+  .rail-config-grid--advanced,
+  .rail-config-grid--advanced label:not(.toggle) {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -96,12 +96,17 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert 'Name: "{group}\\Horticalc"' in installer_script
     install_delete = installer_script.split("[InstallDelete]", 1)[1].split("[Files]", 1)[0]
     assert '"{app}\\user"' not in install_delete
+    assert 'Name: "{app}\\user\\webview\\EBWebView\\Default\\Cache"' in install_delete
+    assert 'Name: "{app}\\user\\webview\\EBWebView\\Default\\Code Cache"' in install_delete
+    assert 'Name: "{app}\\user\\webview"' not in install_delete
     assert "ISCC_PATH" in installer_build
     assert "Inno Setup 6 compiler" in installer_build
     assert "Runtime state found in installer input" in installer_build
     assert "Zone.Identifier" in installer_smoke
     assert "UseShellExecute = $false" in installer_smoke
     assert "Installer update removed user data" in installer_smoke
+    assert "Installer update left stale WebView cache" in installer_smoke
+    assert "Installer update removed preserved WebView state" in installer_smoke
     assert "Uninstaller did not remove logs" in installer_smoke
     assert 'app_root / "LICENSE"' in release_workflow
     assert 'legacy_fertilizers = user_dir / "fertilizers.csv"' in release_workflow

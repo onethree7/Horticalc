@@ -15,6 +15,10 @@
   --text-md: 0.9rem;
   --col-width-wide: 5.5rem;
   --col-width-standard: 4.6rem;
+  --workspace-form-measure: 72rem;
+  --workspace-comparison-measure: 96rem;
+  --solver-settings-measure: 64rem;
+  --solver-number-field-measure: 10rem;
 
   background-color: #10141b;
   color: #e8edf2;
@@ -263,7 +267,7 @@ main {
 }
 
 .summary .nutrient-grid--summary col.col-row-label {
-  width: 6.2rem;
+  width: var(--summary-row-label-measure);
 }
 
 .summary .nutrient-grid--summary col.col-n-total {
@@ -687,6 +691,8 @@ main {
 }
 
 .summary {
+  --summary-row-label-measure: 12rem;
+
   margin-top: var(--space-4);
 }
 
@@ -745,7 +751,8 @@ main {
 }
 
 .summary-scroll .table-card {
-  width: max-content;
+  width: 100%;
+  min-width: max-content;
   max-width: none;
 }
 
@@ -759,8 +766,7 @@ main {
 }
 
 .summary-scroll,
-.summary-scroll .summary-tables,
-.summary-scroll .table-card {
+.summary-scroll .summary-tables {
   min-width: 0;
 }
 
@@ -1003,6 +1009,17 @@ main {
 
 .is-hidden {
   display: none;
+}
+
+#waterSection {
+  width: min(100%, var(--workspace-form-measure));
+  margin-inline: 0 auto;
+}
+
+#profileSection:has(~ #solverMode:not(.is-hidden)),
+#solverMode:not(.is-hidden) {
+  width: min(100%, var(--workspace-comparison-measure));
+  margin-inline: 0 auto;
 }
 
 .solver-settings {

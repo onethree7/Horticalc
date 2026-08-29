@@ -122,9 +122,31 @@ Test-InstalledApplication
 
 $sentinel = Join-Path $installRootPath "user/installer-smoke-sentinel.txt"
 Set-Content -LiteralPath $sentinel -Value "preserve"
+
+$webviewDefault = Join-Path $installRootPath "user/webview/EBWebView/Default"
+$webviewCacheSentinels = @(
+    (Join-Path $webviewDefault "Cache/stale-http-cache.bin"),
+    (Join-Path $webviewDefault "Code Cache/stale-code-cache.bin")
+)
+foreach ($cacheSentinel in $webviewCacheSentinels) {
+    New-Item -ItemType Directory -Path (Split-Path -Parent $cacheSentinel) -Force | Out-Null
+    Set-Content -LiteralPath $cacheSentinel -Value "remove"
+}
+$webviewStateSentinel = Join-Path $webviewDefault "Local Storage/installer-smoke-state.txt"
+New-Item -ItemType Directory -Path (Split-Path -Parent $webviewStateSentinel) -Force | Out-Null
+Set-Content -LiteralPath $webviewStateSentinel -Value "preserve"
+
 Invoke-Setup
 if (-not (Test-Path -LiteralPath $sentinel)) {
     throw "Installer update removed user data."
+}
+foreach ($cacheSentinel in $webviewCacheSentinels) {
+    if (Test-Path -LiteralPath $cacheSentinel) {
+        throw "Installer update left stale WebView cache: $cacheSentinel"
+    }
+}
+if (-not (Test-Path -LiteralPath $webviewStateSentinel)) {
+    throw "Installer update removed preserved WebView state."
 }
 
 $uninstaller = Get-ChildItem -LiteralPath $installRootPath -Filter "unins*.exe" -File |
@@ -149,6 +171,9 @@ if (Test-Path -LiteralPath (Join-Path $installRootPath "logs")) {
 }
 if (-not (Test-Path -LiteralPath $sentinel)) {
     throw "Uninstaller removed user data."
+}
+if (-not (Test-Path -LiteralPath $webviewStateSentinel)) {
+    throw "Uninstaller removed preserved WebView state."
 }
 
 Unblock-File -LiteralPath $setup

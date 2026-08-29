@@ -43,7 +43,6 @@ export function createWaterController({ api, i18n, notifications, onChange }) {
   const nutrientIntegerFormatter = NUTRIENT_INTEGER_FORMATTER;
   const ionFormatter = ION_FORMATTER;
   const summaryColumnOrder = SUMMARY_COLUMN_ORDER;
-  const summaryLabelWidth = "12rem";
   const nutrientIntegerKeys = new Set(["N_total", "P", "K", "Ca", "Mg", "S"]);
   const nutrientTraceKeys = new Set(["Fe", "Mn", "Cu", "Zn", "B", "Mo", "Si"]);
   const oxideIntegerKeys = new Set(["N_total", "P2O5", "K2O", "CaO", "MgO", "SO4"]);
@@ -374,7 +373,6 @@ function buildSummaryColgroup(summaryColumns) {
   const colgroup = document.createElement("colgroup");
   const labelCol = document.createElement("col");
   labelCol.classList.add("col-row-label");
-  labelCol.style.width = summaryLabelWidth;
   colgroup.appendChild(labelCol);
   summaryColumns.forEach((columnGroup) => {
     const col = document.createElement("col");

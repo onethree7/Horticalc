@@ -216,6 +216,11 @@ async def desktop_session(request: Request, call_next):
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
     response = await call_next(request)
+    if request.method in {"GET", "HEAD"} and (
+        request.url.path in {"/", "/index.html", "/request_gate.js"}
+        or request.url.path.startswith(("/app/", "/i18n/", "/styles/"))
+    ):
+        response.headers["Cache-Control"] = "no-cache"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
         "connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"

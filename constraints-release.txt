@@ -3,7 +3,7 @@ PyYAML==6.0.3
 fastapi==0.141.1
 pydantic==2.13.4
 pydantic_core==2.46.4
-uvicorn==0.52.3
+uvicorn==0.52.4
 starlette==1.6.0
 numpy==2.4.6
 scipy==1.17.1
@@ -24,10 +24,10 @@ bottle==0.13.4
 proxy_tools==0.1.0
 PyGObject==3.50.0; platform_system == "Linux"
 PyGObject-stubs==2.16.0; platform_system == "Linux"
-pycairo==1.29.0; platform_system == "Linux"
+pycairo==1.29.1; platform_system == "Linux"
 cffi==2.1.1
 pycparser==3.0
-pyinstaller==6.22.0
+pyinstaller==6.22.2
 pyinstaller-hooks-contrib==2026.6
 altgraph==0.17.5
 packaging==26.3

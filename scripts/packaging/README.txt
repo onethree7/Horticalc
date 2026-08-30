@@ -12,8 +12,11 @@ administrator rights. The setup and executable are not Authenticode-signed;
 verify the official release checksum before accepting an Unknown publisher
 warning. Setup updates preserve saved data and settings, while uninstall
 preserves user/ and removes logs/. Setup updates clear only WebView's HTTP and
-code caches so the updated interface loads immediately. The ZIP remains the
-fully supported portable alternative.
+code caches so the updated interface loads immediately. A first install allows
+the destination to be changed and offers Start Menu and desktop shortcuts.
+Running Setup again reuses that destination and offers installation of the
+bundled version (including reinstall or upgrade/downgrade) or uninstall. The
+ZIP remains the fully supported portable alternative.
 
 Windows portable ZIP: before extracting, right-click the downloaded ZIP, open
 Properties, select Unblock, and click Apply. Then extract the complete

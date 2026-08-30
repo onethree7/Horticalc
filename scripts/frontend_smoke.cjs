@@ -41,6 +41,7 @@ async function assertFlexibleDesktopFrame(page) {
 
 async function assertUiScaleControls(page) {
   const control = page.locator("#uiScaleSelect");
+  await page.setViewportSize({ width: 2560, height: 1440 });
   await control.selectOption("100", { force: true });
   await page.waitForFunction(
     () => document.documentElement.style.getPropertyValue("--app-ui-scale") === "1",
@@ -54,9 +55,12 @@ async function assertUiScaleControls(page) {
     );
     const frame = await page.locator(".app-shell").evaluate((element) => {
       const rect = element.getBoundingClientRect();
+      const bodyRect = document.body.getBoundingClientRect();
       return {
+        bodyBottom: bodyRect.bottom,
         left: rect.left,
         right: rect.right,
+        viewportHeight: document.documentElement.clientHeight,
         viewportWidth: document.documentElement.clientWidth,
       };
     });
@@ -65,9 +69,13 @@ async function assertUiScaleControls(page) {
         || Math.abs(frame.left - rightInset) > 1) {
       throw new Error(`${scale}% UI scale moved the app frame edge: ${JSON.stringify(frame)}`);
     }
+    if (frame.bodyBottom < frame.viewportHeight - 1) {
+      throw new Error(`${scale}% UI scale did not cover the viewport height: ${JSON.stringify(frame)}`);
+    }
     await assertNoPageOverflow(page, `${scale}% UI scale`);
   }
 
+  await page.setViewportSize({ width: 1280, height: 900 });
   await control.selectOption("125", { force: true });
   await page.waitForFunction(() => document.querySelector("#uiScaleSelect")?.value === "125");
 

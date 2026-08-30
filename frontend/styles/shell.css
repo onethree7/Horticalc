@@ -10,6 +10,7 @@ html {
   width: 100%;
   height: calc(100% / var(--app-ui-scale));
   color-scheme: var(--app-color-scheme);
+  min-height: calc(100vh / var(--app-ui-scale));
   padding-bottom: 0;
   overflow: hidden auto;
   zoom: var(--app-ui-scale);

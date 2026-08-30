@@ -14,9 +14,9 @@ products.
 
 1. Download `horticalc-vX.Y.Z-windows-setup.exe` from the
    [latest release](https://github.com/onethree7/Horticalc/releases/latest).
-2. Run the installer. It installs for the current user without administrator
-   rights.
-3. Start **Horticalc** from the Start menu.
+2. Run the installer and choose the destination and shortcuts. It installs for
+   the current user without administrator rights.
+3. Start **Horticalc** from the selected Start Menu or desktop shortcut.
 
 ### Portable Windows
 

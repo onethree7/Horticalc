@@ -13,6 +13,15 @@ if (-not (Test-Path -LiteralPath $installParent)) {
     New-Item -ItemType Directory -Path $installParent | Out-Null
 }
 $installRootPath = [System.IO.Path]::GetFullPath($InstallRoot)
+if (Test-Path -LiteralPath $installRootPath) {
+    throw "Refusing to reuse an existing installer smoke-test directory."
+}
+$uninstallRegistryKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{50DF7813-DAE5-4976-8B13-6D677CF44660}_is1"
+if (Test-Path -LiteralPath $uninstallRegistryKey) {
+    throw "Refusing to run the installer smoke test while Horticalc is already registered for this user."
+}
+$startMenuShortcut = Join-Path ([Environment]::GetFolderPath("Programs")) "Horticalc/Horticalc.lnk"
+$desktopShortcut = Join-Path ([Environment]::GetFolderPath("Desktop")) "Horticalc.lnk"
 
 function Invoke-ExecutableAndWait {
     param(
@@ -44,12 +53,20 @@ function Invoke-ExecutableAndWait {
 }
 
 function Invoke-Setup {
-    Invoke-ExecutableAndWait -FilePath $setup -Description "Installer" -ArgumentList @(
+    param(
+        [string]$RequestedInstallRoot = $installRootPath,
+        [string]$MergeTasks = ""
+    )
+    $arguments = @(
         "/VERYSILENT"
         "/SUPPRESSMSGBOXES"
         "/NORESTART"
-        "/DIR=$installRootPath"
+        "/DIR=$RequestedInstallRoot"
     )
+    if (-not [string]::IsNullOrWhiteSpace($MergeTasks)) {
+        $arguments += "/MERGETASKS=$MergeTasks"
+    }
+    Invoke-ExecutableAndWait -FilePath $setup -Description "Installer" -ArgumentList $arguments
 }
 
 function Test-InstalledApplication {
@@ -108,6 +125,12 @@ function Test-InstalledApplication {
 
 Set-Content -LiteralPath $setup -Stream Zone.Identifier -Value "[ZoneTransfer]`r`nZoneId=3"
 Invoke-Setup
+if (-not (Test-Path -LiteralPath $startMenuShortcut)) {
+    throw "Installer did not create the default Start Menu shortcut."
+}
+if (Test-Path -LiteralPath $desktopShortcut) {
+    throw "Installer created the optional desktop shortcut by default."
+}
 
 $runtimeDll = Join-Path $installRootPath "_internal/pythonnet/runtime/Python.Runtime.dll"
 if (-not (Test-Path -LiteralPath $runtimeDll)) {
@@ -135,8 +158,32 @@ foreach ($cacheSentinel in $webviewCacheSentinels) {
 $webviewStateSentinel = Join-Path $webviewDefault "Local Storage/installer-smoke-state.txt"
 New-Item -ItemType Directory -Path (Split-Path -Parent $webviewStateSentinel) -Force | Out-Null
 Set-Content -LiteralPath $webviewStateSentinel -Value "preserve"
+$repairTarget = Join-Path $installRootPath "frontend/index.html"
+Remove-Item -LiteralPath $repairTarget
 
-Invoke-Setup
+$conflictingInstallRoot = Join-Path $installParent "Horticalc-conflicting-path"
+if (Test-Path -LiteralPath $conflictingInstallRoot) {
+    throw "Refusing to reuse an existing conflicting-path smoke-test directory."
+}
+Invoke-Setup -RequestedInstallRoot $conflictingInstallRoot -MergeTasks "!startmenuicon,desktopicon"
+if (Test-Path -LiteralPath (Join-Path $conflictingInstallRoot "Horticalc.exe")) {
+    throw "Installer created a second installation when /DIR conflicted with the registered path."
+}
+$registeredPath = (Get-ItemProperty -LiteralPath $uninstallRegistryKey -Name InstallLocation).InstallLocation
+$normalizedRegisteredPath = [System.IO.Path]::GetFullPath($registeredPath).TrimEnd([char[]]"\/")
+$normalizedInstallRoot = $installRootPath.TrimEnd([char[]]"\/")
+if ($normalizedRegisteredPath -ne $normalizedInstallRoot) {
+    throw "Installer changed the registered install path during update."
+}
+if (-not (Test-Path -LiteralPath $repairTarget)) {
+    throw "Installer repair did not restore a missing application file."
+}
+if (Test-Path -LiteralPath $startMenuShortcut) {
+    throw "Installer did not remove the deselected Start Menu shortcut."
+}
+if (-not (Test-Path -LiteralPath $desktopShortcut)) {
+    throw "Installer did not create the selected desktop shortcut."
+}
 if (-not (Test-Path -LiteralPath $sentinel)) {
     throw "Installer update removed user data."
 }
@@ -147,6 +194,14 @@ foreach ($cacheSentinel in $webviewCacheSentinels) {
 }
 if (-not (Test-Path -LiteralPath $webviewStateSentinel)) {
     throw "Installer update removed preserved WebView state."
+}
+
+Invoke-Setup -RequestedInstallRoot $conflictingInstallRoot
+if (Test-Path -LiteralPath $startMenuShortcut) {
+    throw "Installer did not preserve the deselected Start Menu task."
+}
+if (-not (Test-Path -LiteralPath $desktopShortcut)) {
+    throw "Installer did not preserve the selected desktop task."
 }
 
 $uninstaller = Get-ChildItem -LiteralPath $installRootPath -Filter "unins*.exe" -File |
@@ -174,6 +229,12 @@ if (-not (Test-Path -LiteralPath $sentinel)) {
 }
 if (-not (Test-Path -LiteralPath $webviewStateSentinel)) {
     throw "Uninstaller removed preserved WebView state."
+}
+if (Test-Path -LiteralPath $startMenuShortcut) {
+    throw "Uninstaller left the Start Menu shortcut behind."
+}
+if (Test-Path -LiteralPath $desktopShortcut) {
+    throw "Uninstaller left the desktop shortcut behind."
 }
 
 Unblock-File -LiteralPath $setup

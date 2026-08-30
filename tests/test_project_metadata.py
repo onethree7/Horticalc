@@ -90,10 +90,30 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert "PrivilegesRequired=lowest" in installer_script
     assert "CloseApplications=yes" in installer_script
     assert "RestartApplications=no" in installer_script
+    assert "DisableDirPage=auto" in installer_script
+    assert "UsePreviousAppDir=yes" in installer_script
+    assert "UsePreviousTasks=yes" in installer_script
+    assert "Uninstallable=yes" in installer_script
+    assert "CreateUninstallRegKey=yes" in installer_script
     assert "postinstall skipifsilent" in installer_script
     assert 'Name: "{app}\\user"; Flags: uninsneveruninstall' in installer_script
     assert 'Name: "{app}\\logs"' in installer_script
-    assert 'Name: "{group}\\Horticalc"' in installer_script
+    assert 'Name: "startmenuicon"; Description: "Create a Start Menu shortcut"' in installer_script
+    assert 'Name: "desktopicon"; Description: "Create a desktop shortcut"' in installer_script
+    assert (
+        'Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Shortcuts:"; Flags: unchecked'
+        in installer_script
+    )
+    assert "checkedonce" not in installer_script
+    assert "Tasks: startmenuicon" in installer_script
+    assert 'Name: "{autodesktop}\\Horticalc"' in installer_script
+    assert "Horticalc maintenance" in installer_script
+    assert "Install Horticalc version {#AppVersion}" in installer_script
+    assert "Repair Horticalc" not in installer_script
+    assert "Uninstall Horticalc and close Setup" in installer_script
+    assert "WizardForm.DirEdit.Text := ExistingInstallPath" in installer_script
+    assert "The registered Horticalc uninstaller could not be found" in installer_script
+    assert "ExitAfterUninstall := True" in installer_script
     install_delete = installer_script.split("[InstallDelete]", 1)[1].split("[Files]", 1)[0]
     assert '"{app}\\user"' not in install_delete
     assert 'Name: "{app}\\user\\webview\\EBWebView\\Default\\Cache"' in install_delete
@@ -107,6 +127,9 @@ def test_release_builds_include_readme_and_clean_smoke_state() -> None:
     assert "Installer update removed user data" in installer_smoke
     assert "Installer update left stale WebView cache" in installer_smoke
     assert "Installer update removed preserved WebView state" in installer_smoke
+    assert "Installer repair did not restore a missing application file" in installer_smoke
+    assert "Installer created a second installation" in installer_smoke
+    assert "Installer did not preserve the selected desktop task" in installer_smoke
     assert "Uninstaller did not remove logs" in installer_smoke
     assert 'app_root / "LICENSE"' in release_workflow
     assert 'legacy_fertilizers = user_dir / "fertilizers.csv"' in release_workflow

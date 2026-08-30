@@ -19,6 +19,14 @@ preserve saved data and settings below `user/`. Updates clear only the embedded
 WebView HTTP and code caches so new frontend assets load immediately. Uninstall
 removes application files and `logs/`.
 
+On a first install, Setup lets the user choose the destination and offers a
+Start Menu shortcut (selected by default) plus an optional desktop shortcut.
+The registered per-user install location is reused for later runs, including
+when a conflicting `/DIR` argument is supplied. Those runs offer installation of
+the bundled version or uninstall; installation preserves the user folder and
+saved data, while uninstall removes the application and shortcuts but preserves
+`user/`.
+
 ## Build locally
 
 Install the release environment using the constraints file.

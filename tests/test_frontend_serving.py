@@ -31,6 +31,17 @@ def test_frontend_serves_every_es_module(api_client: TestClient) -> None:
         assert response.text.strip(), source
 
 
+def test_frontend_shell_and_assets_always_revalidate(api_client: TestClient) -> None:
+    for path in ("/", "/styles/responsive.css", "/app/main.js", "/i18n/runtime.js", "/request_gate.js"):
+        response = api_client.get(path)
+
+        assert response.status_code == 200, path
+        assert response.headers["cache-control"] == "no-cache", path
+        cached_response = api_client.get(path, headers={"if-none-match": response.headers["etag"]})
+        assert cached_response.status_code == 304, path
+        assert cached_response.headers["cache-control"] == "no-cache", path
+
+
 def test_frontend_main_busts_i18n_runtime_cache(api_client: TestClient) -> None:
     response = api_client.get("/app/main.js?v=4")
 

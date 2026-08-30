@@ -7,10 +7,13 @@ html {
 
 .app-body {
   box-sizing: border-box;
+  width: 100%;
+  height: calc(100% / var(--app-ui-scale));
   color-scheme: var(--app-color-scheme);
-  min-height: 100vh;
   padding-bottom: 0;
-  overflow: hidden;
+  overflow: hidden auto;
+  zoom: var(--app-ui-scale);
+  container-type: inline-size;
   background: var(--app-body-bg);
   color: var(--app-text);
   font-family: var(--app-font-family);
@@ -62,7 +65,7 @@ html {
   width: calc(100% - (var(--space-4) * 2));
   min-width: 0;
   max-width: 100%;
-  height: calc(100vh - (var(--space-4) * 2));
+  height: calc((100vh - (var(--space-4) * 2)) / var(--app-ui-scale));
   min-height: 42rem;
   margin: var(--space-4) auto;
   padding: var(--space-4);
@@ -332,17 +335,24 @@ html {
 }
 
 .rail-config-reset {
-  width: 100%;
+  width: min(100%, 20rem);
   margin-bottom: var(--space-3);
   border-color: color-mix(in srgb, var(--app-teal) 34%, transparent);
   color: color-mix(in srgb, white 82%, var(--app-teal));
 }
 
 .rail-config-grid--advanced {
+  width: min(100%, var(--solver-settings-measure));
+  grid-template-columns: repeat(2, minmax(20rem, 1fr));
   max-height: 22rem;
   overflow-y: auto;
   padding-right: var(--space-2);
   scrollbar-color: var(--app-scrollbar-thumb) var(--app-scrollbar-track);
+}
+
+.rail-config-grid--advanced label:not(.toggle) {
+  grid-template-columns: minmax(0, 1fr) var(--solver-number-field-measure);
+  align-items: center;
 }
 
 .rail-guide {

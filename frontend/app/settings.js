@@ -1,4 +1,10 @@
-import { DEFAULT_LITERS, DEFAULT_THEME, THEME_STORAGE_KEY } from "./constants.js";
+import {
+  DEFAULT_LITERS,
+  DEFAULT_THEME,
+  DEFAULT_UI_SCALE,
+  FALLBACK_UI_SCALES,
+  THEME_STORAGE_KEY,
+} from "./constants.js";
 import { qs } from "./dom.js";
 import { storageGet, storageSet } from "./storage.js";
 
@@ -21,6 +27,7 @@ export function createSettingsController({
   const liquidDoseUnitSelect = qs("#configLiquidDoseUnit");
   const themeSelect = qs("#themeSelect");
   const languageSelect = qs("#languageSelect");
+  const uiScaleSelect = qs("#uiScaleSelect");
   const solverHistoryLimitInput = qs("#solverHistoryLimit");
   const clearSolverHistoryButton = qs("#clearSolverHistory");
   const solverHistorySettingsStatus = qs("#solverHistorySettingsStatus");
@@ -28,6 +35,9 @@ export function createSettingsController({
   let solverHistoryLimit = 1000;
   let themeOptions = new Set([DEFAULT_THEME]);
   let defaultTheme = DEFAULT_THEME;
+  let uiScales = [...FALLBACK_UI_SCALES];
+  let defaultUiScale = DEFAULT_UI_SCALE;
+  let uiScale = DEFAULT_UI_SCALE;
 
   const normalizeTheme = (theme) => themeOptions.has(theme) ? theme : defaultTheme;
 
@@ -56,6 +66,20 @@ export function createSettingsController({
       option.textContent = i18n.t(option.dataset.i18n);
       return option;
     }));
+    const configuredUiScales = Array.isArray(options.uiScales)
+      ? options.uiScales.filter((scale) => Number.isInteger(scale) && scale > 0)
+      : [];
+    uiScales = configuredUiScales.length ? configuredUiScales : [...FALLBACK_UI_SCALES];
+    defaultUiScale = options.defaultUiScale;
+    if (!uiScales.includes(defaultUiScale)) {
+      defaultUiScale = uiScales.includes(DEFAULT_UI_SCALE) ? DEFAULT_UI_SCALE : uiScales[0];
+    }
+    uiScaleSelect?.replaceChildren(...uiScales.map((scale) => {
+      const option = document.createElement("option");
+      option.value = String(scale);
+      option.textContent = `${scale}%`;
+      return option;
+    }));
   }
 
   function applyTheme(theme) {
@@ -64,6 +88,42 @@ export function createSettingsController({
     if (themeSelect) themeSelect.value = nextTheme;
     storageSet(THEME_STORAGE_KEY, nextTheme);
     return nextTheme;
+  }
+
+  function applyUiScale(scale) {
+    const numericScale = Number(scale);
+    uiScale = uiScales.includes(numericScale) ? numericScale : defaultUiScale;
+    document.documentElement.style.setProperty("--app-ui-scale", String(uiScale / 100));
+    if (uiScaleSelect) uiScaleSelect.value = String(uiScale);
+    return uiScale;
+  }
+
+  function changeUiScale(direction) {
+    const currentIndex = uiScales.indexOf(uiScale);
+    const nextIndex = Math.min(uiScales.length - 1, Math.max(0, currentIndex + direction));
+    const nextScale = uiScales[nextIndex];
+    if (nextScale === uiScale) return;
+    persistPreferences({ ui_scale: applyUiScale(nextScale) });
+  }
+
+  function handleUiScaleShortcut(event) {
+    if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+    const isReset = event.key === "0";
+    const isIncrease = event.key === "+" || event.key === "=" || event.code === "NumpadAdd";
+    const isDecrease = event.key === "-" || event.key === "_" || event.code === "NumpadSubtract";
+    if (!isReset && !isIncrease && !isDecrease) return;
+    event.preventDefault();
+    if (isReset) {
+      persistPreferences({ ui_scale: applyUiScale(defaultUiScale) });
+    } else {
+      changeUiScale(isIncrease ? 1 : -1);
+    }
+  }
+
+  function handleUiScaleWheel(event) {
+    if (!(event.ctrlKey || event.metaKey) || event.altKey || event.deltaY === 0) return;
+    event.preventDefault();
+    changeUiScale(event.deltaY < 0 ? 1 : -1);
   }
 
   function renderOptions(select, definitions, selected) {
@@ -111,6 +171,11 @@ export function createSettingsController({
       i18n.setLocale(event.target.value);
       persistPreferences({ locale: i18n.getLocale() });
     });
+    uiScaleSelect?.addEventListener("change", (event) => {
+      persistPreferences({ ui_scale: applyUiScale(event.target.value) });
+    });
+    window.addEventListener("keydown", handleUiScaleShortcut);
+    window.addEventListener("wheel", handleUiScaleWheel, { passive: false });
     litersInput?.addEventListener("input", (event) => {
       const liters = units.displayVolumeToLiters(event.target.value);
       if (liters === null || liters <= 0) return;
@@ -179,6 +244,7 @@ export function createSettingsController({
       invalidateSolver: false,
     });
     applyTheme(preferences.theme || storageGet(THEME_STORAGE_KEY, DEFAULT_THEME));
+    applyUiScale(preferences.ui_scale ?? defaultUiScale);
     i18n.setLocale(preferences.locale || i18n.getLocale(), { persist: Boolean(preferences.locale) });
     if (languageSelect) languageSelect.value = i18n.getLocale();
     solverHistoryLimit = Number.isInteger(preferences.solver_history_limit)

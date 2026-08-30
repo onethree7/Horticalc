@@ -15,6 +15,11 @@
   --text-md: 0.9rem;
   --col-width-wide: 5.5rem;
   --col-width-standard: 4.6rem;
+  --workspace-form-measure: 72rem;
+  --workspace-comparison-measure: 96rem;
+  --solver-settings-measure: 64rem;
+  --solver-number-field-measure: 10rem;
+  --app-ui-scale: 1;
 
   background-color: #10141b;
   color: #e8edf2;
@@ -263,7 +268,7 @@ main {
 }
 
 .summary .nutrient-grid--summary col.col-row-label {
-  width: 6.2rem;
+  width: var(--summary-row-label-measure);
 }
 
 .summary .nutrient-grid--summary col.col-n-total {
@@ -472,7 +477,7 @@ main {
 
 .table-wrap--editor {
   overflow: auto;
-  max-height: min(70vh, 720px);
+  max-height: min(calc(70vh / var(--app-ui-scale)), 720px);
   max-width: 100%;
   -webkit-overflow-scrolling: touch;
 }
@@ -687,6 +692,8 @@ main {
 }
 
 .summary {
+  --summary-row-label-measure: 12rem;
+
   margin-top: var(--space-4);
 }
 
@@ -745,7 +752,8 @@ main {
 }
 
 .summary-scroll .table-card {
-  width: max-content;
+  width: 100%;
+  min-width: max-content;
   max-width: none;
 }
 
@@ -759,8 +767,7 @@ main {
 }
 
 .summary-scroll,
-.summary-scroll .summary-tables,
-.summary-scroll .table-card {
+.summary-scroll .summary-tables {
   min-width: 0;
 }
 
@@ -1005,6 +1012,17 @@ main {
   display: none;
 }
 
+#waterSection {
+  width: min(100%, var(--workspace-form-measure));
+  margin-inline: 0 auto;
+}
+
+#profileSection:has(~ #solverMode:not(.is-hidden)),
+#solverMode:not(.is-hidden) {
+  width: min(100%, var(--workspace-comparison-measure));
+  margin-inline: 0 auto;
+}
+
 .solver-settings {
   display: flex;
   gap: var(--space-4);
@@ -1173,7 +1191,7 @@ main {
 }
 
 .solver-picker {
-  height: min(18rem, 32vh);
+  height: min(18rem, calc(32vh / var(--app-ui-scale)));
   min-height: 10rem;
   margin: var(--space-2) 0 var(--space-3);
   overflow: auto;

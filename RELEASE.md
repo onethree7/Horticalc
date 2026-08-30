@@ -15,7 +15,9 @@ archive.
 `Horticalc.exe` is not a standalone binary: it requires the other files in its
 onedir application folder. The setup installs that folder under
 `%LocalAppData%\Programs\Horticalc` without elevation. Updates and uninstall
-preserve `user/`; uninstall removes application files and `logs/`.
+preserve saved data and settings below `user/`. Updates clear only the embedded
+WebView HTTP and code caches so new frontend assets load immediately. Uninstall
+removes application files and `logs/`.
 
 ## Build locally
 

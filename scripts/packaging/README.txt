@@ -10,8 +10,10 @@ The Windows installer is horticalc-<version>-windows-setup.exe. It installs for
 the current user under %LocalAppData%\Programs\Horticalc without
 administrator rights. The setup and executable are not Authenticode-signed;
 verify the official release checksum before accepting an Unknown publisher
-warning. Setup updates and uninstall both preserve user/, while uninstall
-removes logs/. The ZIP remains the fully supported portable alternative.
+warning. Setup updates preserve saved data and settings, while uninstall
+preserves user/ and removes logs/. Setup updates clear only WebView's HTTP and
+code caches so the updated interface loads immediately. The ZIP remains the
+fully supported portable alternative.
 
 Windows portable ZIP: before extracting, right-click the downloaded ZIP, open
 Properties, select Unblock, and click Apply. Then extract the complete

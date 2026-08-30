@@ -1,22 +1,44 @@
-@media (width <= 980px) {
-  :root {
-    --app-sticky-offset: 1rem;
+@container (width >= 1600px) {
+  .summary {
+    --summary-row-label-measure: 8rem;
   }
 
-  .app-body {
-    min-height: 100vh;
-    overflow: hidden auto;
+  .summary-scroll .table-card {
+    min-width: 100%;
   }
 
-  html {
-    overflow: hidden auto;
+  .summary-scroll table.grid.nutrient-grid--summary {
+    width: 100%;
+    display: table;
   }
 
+  .summary .nutrient-grid--summary col:not(.col-row-label) {
+    width: auto;
+  }
+
+  .summary .nutrient-grid--summary :is(thead th:first-child, .row-label) {
+    width: var(--summary-row-label-measure);
+    min-width: var(--summary-row-label-measure);
+    max-width: var(--summary-row-label-measure);
+  }
+
+  #waterValuesTable th:nth-child(2),
+  #waterValuesTable td:nth-child(2) {
+    width: 18rem;
+  }
+
+  #waterValuesTable th:nth-child(3),
+  #waterValuesTable td:nth-child(3) {
+    width: 10rem;
+  }
+}
+
+@container (width <= 980px) {
   .app-shell {
     grid-template-columns: 1fr;
     width: 100%;
     height: auto;
-    min-height: 100vh;
+    min-height: calc(100vh / var(--app-ui-scale));
     margin: 0;
     border-radius: 0;
     overflow: hidden;
@@ -51,7 +73,7 @@
   }
 
   .workspace {
-    height: min(72vh, 48rem);
+    height: min(calc(72vh / var(--app-ui-scale)), 48rem);
     min-height: 34rem;
   }
 
@@ -76,13 +98,14 @@
   .solver-auto-apply {
     justify-content: flex-start;
   }
+
+  .rail-config-grid--advanced,
+  .rail-config-grid--advanced label:not(.toggle) {
+    grid-template-columns: 1fr;
+  }
 }
 
-@media (width <= 640px) {
-  :root {
-    --app-sticky-offset: 1rem;
-  }
-
+@container (width <= 640px) {
   .app-rail {
     grid-template-columns: 1fr;
     padding: var(--space-3);
@@ -107,7 +130,7 @@
 
 }
 
-@media (width <= 560px) {
+@container (width <= 560px) {
   .rail-brand {
     grid-template-columns: 2.45rem minmax(0, 1fr);
   }

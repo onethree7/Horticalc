@@ -126,6 +126,18 @@ def test_locale_preference_rejects_unknown_locale(api_client: TestClient, monkey
     assert response.json()["detail"] == "Unknown locale"
 
 
+def test_ui_scale_preference_persists_only_supported_steps(api_client: TestClient, monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
+
+    response = api_client.put("/preferences", json={"ui_scale": 125})
+
+    assert response.status_code == 200
+    assert response.json()["ui_scale"] == 125
+    rejected = api_client.put("/preferences", json={"ui_scale": 123})
+    assert rejected.status_code == 400
+    assert rejected.json()["detail"] == "Unknown UI scale"
+
+
 def test_preferences_reject_unknown_solver_key_and_profile_path(api_client: TestClient, monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(paths, "app_root", lambda: tmp_path)
 

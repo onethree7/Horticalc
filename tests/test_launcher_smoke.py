@@ -446,6 +446,7 @@ def test_run_webview_uses_native_window_without_js_bridge(tmp_path, monkeypatch)
     assert observed["window_kwargs"]["width"] == 1280
     assert observed["window_kwargs"]["height"] == 900
     assert observed["window_kwargs"]["min_size"] == (640, 640)
+    assert observed["window_kwargs"]["zoomable"] is False
     assert observed["start_kwargs"] == {
         "gui": "edgechromium",
         "debug": False,

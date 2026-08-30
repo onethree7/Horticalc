@@ -19,6 +19,7 @@
   --workspace-comparison-measure: 96rem;
   --solver-settings-measure: 64rem;
   --solver-number-field-measure: 10rem;
+  --app-ui-scale: 1;
 
   background-color: #10141b;
   color: #e8edf2;
@@ -476,7 +477,7 @@ main {
 
 .table-wrap--editor {
   overflow: auto;
-  max-height: min(70vh, 720px);
+  max-height: min(calc(70vh / var(--app-ui-scale)), 720px);
   max-width: 100%;
   -webkit-overflow-scrolling: touch;
 }
@@ -1190,7 +1191,7 @@ main {
 }
 
 .solver-picker {
-  height: min(18rem, 32vh);
+  height: min(18rem, calc(32vh / var(--app-ui-scale)));
   min-height: 10rem;
   margin: var(--space-2) 0 var(--space-3);
   overflow: auto;

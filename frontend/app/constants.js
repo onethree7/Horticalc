@@ -3,6 +3,8 @@ export const DEFAULT_VOLUME_UNIT = "liter";
 export const DEFAULT_SOLID_DOSE_UNIT = "gram";
 export const DEFAULT_LIQUID_DOSE_UNIT = "milliliter";
 export const DEFAULT_THEME = "horticalc-dark";
+export const DEFAULT_UI_SCALE = 100;
+export const FALLBACK_UI_SCALES = [75, 80, 90, 100, 110, 125, 150];
 
 export const FALLBACK_VOLUME_UNITS = [
   { key: "liter", label: "Liter", symbol: "L", liters_per_unit: 1 },

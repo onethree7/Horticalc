@@ -1,4 +1,4 @@
-@media (width >= 1600px) {
+@container (width >= 1600px) {
   .summary {
     --summary-row-label-measure: 8rem;
   }
@@ -33,25 +33,12 @@
   }
 }
 
-@media (width <= 980px) {
-  :root {
-    --app-sticky-offset: 1rem;
-  }
-
-  .app-body {
-    min-height: 100vh;
-    overflow: hidden auto;
-  }
-
-  html {
-    overflow: hidden auto;
-  }
-
+@container (width <= 980px) {
   .app-shell {
     grid-template-columns: 1fr;
     width: 100%;
     height: auto;
-    min-height: 100vh;
+    min-height: calc(100vh / var(--app-ui-scale));
     margin: 0;
     border-radius: 0;
     overflow: hidden;
@@ -86,7 +73,7 @@
   }
 
   .workspace {
-    height: min(72vh, 48rem);
+    height: min(calc(72vh / var(--app-ui-scale)), 48rem);
     min-height: 34rem;
   }
 
@@ -118,11 +105,7 @@
   }
 }
 
-@media (width <= 640px) {
-  :root {
-    --app-sticky-offset: 1rem;
-  }
-
+@container (width <= 640px) {
   .app-rail {
     grid-template-columns: 1fr;
     padding: var(--space-3);
@@ -147,7 +130,7 @@
 
 }
 
-@media (width <= 560px) {
+@container (width <= 560px) {
   .rail-brand {
     grid-template-columns: 2.45rem minmax(0, 1fr);
   }

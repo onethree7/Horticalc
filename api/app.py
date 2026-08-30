@@ -263,6 +263,7 @@ class FertilizerPayload(BaseModel):
 class PreferencesPayload(BaseModel):
     theme: Optional[str] = Field(default=None, max_length=MAX_NAME_LENGTH)
     locale: Optional[str] = Field(default=None, max_length=MAX_NAME_LENGTH)
+    ui_scale: Optional[int] = None
     default_liters: Optional[FiniteFloat] = Field(default=None, gt=0)
     volume_unit: Optional[str] = Field(default=None, max_length=MAX_NAME_LENGTH)
     solid_dose_unit: Optional[str] = Field(default=None, max_length=MAX_NAME_LENGTH)
@@ -607,6 +608,8 @@ def _load_preference_options() -> dict[str, Any]:
     themes = data.get("themes")
     locales = data.get("locales")
     default_theme = data.get("default_theme")
+    ui_scales = data.get("ui_scales")
+    default_ui_scale = data.get("default_ui_scale")
     if (
         not isinstance(default_theme, str)
         or not isinstance(themes, list)
@@ -616,14 +619,27 @@ def _load_preference_options() -> dict[str, Any]:
         or not isinstance(locales, list)
         or not locales
         or any(not isinstance(locale, str) for locale in locales)
+        or not isinstance(ui_scales, list)
+        or not ui_scales
+        or any(isinstance(scale, bool) or not isinstance(scale, int) or scale <= 0 for scale in ui_scales)
+        or not isinstance(default_ui_scale, int)
+        or isinstance(default_ui_scale, bool)
+        or default_ui_scale not in ui_scales
     ):
         raise RuntimeError("Frontend preference options are invalid")
-    return {"default_theme": default_theme, "themes": themes, "locales": locales}
+    return {
+        "default_theme": default_theme,
+        "default_ui_scale": default_ui_scale,
+        "themes": themes,
+        "ui_scales": ui_scales,
+        "locales": locales,
+    }
 
 
 PREFERENCE_OPTIONS = _load_preference_options()
 THEME_OPTIONS = frozenset(PREFERENCE_OPTIONS["themes"])
 LOCALE_OPTIONS = frozenset(PREFERENCE_OPTIONS["locales"])
+UI_SCALE_OPTIONS = frozenset(PREFERENCE_OPTIONS["ui_scales"])
 
 
 def _solver_history_path() -> Path:
@@ -652,6 +668,8 @@ def put_preferences(payload: PreferencesPayload) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail="Unknown theme")
     if "locale" in updates and payload.locale not in LOCALE_OPTIONS:
         raise HTTPException(status_code=400, detail="Unknown locale")
+    if "ui_scale" in updates and payload.ui_scale not in UI_SCALE_OPTIONS:
+        raise HTTPException(status_code=400, detail="Unknown UI scale")
     if "volume_unit" in updates and payload.volume_unit not in VOLUME_UNIT_KEYS:
         raise HTTPException(status_code=400, detail="Unknown volume unit")
     if "solid_dose_unit" in updates and payload.solid_dose_unit not in MASS_UNIT_KEYS:

@@ -116,7 +116,9 @@ export async function fetchPreferenceOptions(message) {
   const data = await getJson("/schema/preferences", message);
   return {
     defaultTheme: data?.default_theme,
+    defaultUiScale: data?.default_ui_scale,
     themes: Array.isArray(data?.themes) ? data.themes : [],
+    uiScales: Array.isArray(data?.ui_scales) ? data.ui_scales : [],
     locales: Array.isArray(data?.locales) ? data.locales : [],
   };
 }

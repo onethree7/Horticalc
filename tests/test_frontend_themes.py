@@ -21,7 +21,9 @@ def test_theme_contract_is_synchronized_and_token_only() -> None:
 
     assert preferences == {
         "default_theme": PREFERENCE_OPTIONS["default_theme"],
+        "default_ui_scale": PREFERENCE_OPTIONS["default_ui_scale"],
         "themes": PREFERENCE_OPTIONS["themes"],
+        "ui_scales": PREFERENCE_OPTIONS["ui_scales"],
         "locales": PREFERENCE_OPTIONS["locales"],
     }
     for theme in preferences["themes"]:
@@ -31,6 +33,7 @@ def test_theme_contract_is_synchronized_and_token_only() -> None:
 
     assert 'id="themeSelect"' in markup
     assert 'id="languageSelect"' in markup
+    assert 'id="uiScaleSelect"' in markup
 
     themed_component_selector = re.compile(r'\[data-theme="[^"]+"\]\s+[.#\[]')
     assert not themed_component_selector.search(css)

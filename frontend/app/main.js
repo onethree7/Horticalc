@@ -3,6 +3,8 @@ import * as i18n from "../i18n/runtime.js?v=4";
 import {
   DEFAULT_LITERS,
   DEFAULT_THEME,
+  DEFAULT_UI_SCALE,
+  FALLBACK_UI_SCALES,
   FALLBACK_LIQUID_VOLUME_UNITS,
   FALLBACK_MASS_UNITS,
   FALLBACK_SOLVER_CONFIG_DEFINITIONS,
@@ -320,7 +322,9 @@ async function loadStartupResources() {
   return {
     preferenceOptions: resourceValue(results[0], {
       defaultTheme: DEFAULT_THEME,
+      defaultUiScale: DEFAULT_UI_SCALE,
       themes: [DEFAULT_THEME],
+      uiScales: [...FALLBACK_UI_SCALES],
       locales: i18n.supportedLocales,
     }, i18n.t("errors.loadPreferenceOptions"), errors),
     solverConfigDefinitions: resourceValue(

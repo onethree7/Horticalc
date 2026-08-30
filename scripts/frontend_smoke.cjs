@@ -39,6 +39,57 @@ async function assertFlexibleDesktopFrame(page) {
   await page.setViewportSize({ width: 1280, height: 900 });
 }
 
+async function assertUiScaleControls(page) {
+  const control = page.locator("#uiScaleSelect");
+  if (await control.inputValue() !== "100") {
+    throw new Error("UI scale did not start at 100%");
+  }
+
+  for (const scale of [75, 125, 150]) {
+    await control.selectOption(String(scale), { force: true });
+    await page.waitForFunction(
+      (expected) => document.documentElement.style.getPropertyValue("--app-ui-scale") === expected,
+      String(scale / 100),
+    );
+    const frame = await page.locator(".app-shell").evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        viewportWidth: document.documentElement.clientWidth,
+      };
+    });
+    const rightInset = frame.viewportWidth - frame.right;
+    if (frame.left < -1 || rightInset < -1 || frame.left > 12 || rightInset > 12
+        || Math.abs(frame.left - rightInset) > 1) {
+      throw new Error(`${scale}% UI scale moved the app frame edge: ${JSON.stringify(frame)}`);
+    }
+    await assertNoPageOverflow(page, `${scale}% UI scale`);
+  }
+
+  await control.selectOption("125", { force: true });
+  await page.waitForFunction(() => document.querySelector("#uiScaleSelect")?.value === "125");
+
+  await page.keyboard.press("Control+-");
+  await page.waitForFunction(() => document.querySelector("#uiScaleSelect")?.value === "110");
+  await page.keyboard.press("Control+0");
+  await page.waitForFunction(() => document.querySelector("#uiScaleSelect")?.value === "100");
+  if (await page.evaluate(
+    () => document.documentElement.style.getPropertyValue("--app-ui-scale"),
+  ) !== "1") {
+    throw new Error("Ctrl+0 did not restore the default UI scale");
+  }
+
+  await page.evaluate(() => {
+    globalThis.dispatchEvent(new globalThis.WheelEvent(
+      "wheel",
+      { ctrlKey: true, deltaY: -100, cancelable: true },
+    ));
+  });
+  await page.waitForFunction(() => document.querySelector("#uiScaleSelect")?.value === "110");
+  await control.selectOption("100", { force: true });
+}
+
 async function readWorkspaceGeometry(page, selectors) {
   return page.evaluate((requestedSelectors) => {
     const workspace = document.querySelector(".workspace");
@@ -659,6 +710,7 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
     await page.locator("#calculatorMode:not(.is-hidden)").waitFor();
     await assertNoPageOverflow(page, "desktop calculator");
     await assertFlexibleDesktopFrame(page);
+    await assertUiScaleControls(page);
     await assertContentAwareWorkspaceBreakpoints(page);
     await exerciseCalculatorFertilizerSearch(page);
     await exerciseSelectedCalculatorRowRemoval(page);

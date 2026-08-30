@@ -85,9 +85,11 @@ but stops normal history recording.
 ## Preferences and languages
 
 Configuration controls volume, solid-dose and liquid-dose display units, theme,
-language, and Solver-history retention. Horticalc provides German, English,
-Dutch, Spanish, and Simplified Chinese UI text. Data keys, element symbols,
-file formats, and API fields remain unchanged when the language changes.
+language, UI scale, and Solver-history retention. Use `Ctrl`+`+` and `Ctrl`+`-`
+to change the UI scale or `Ctrl`+`0` to return to 100%. `Ctrl` plus the mouse
+wheel uses the same scale steps. Horticalc provides German, English, Dutch,
+Spanish, and Simplified Chinese UI text. Data keys, element symbols, file
+formats, and API fields remain unchanged when the language changes.
 
 ## Files and backups
 

@@ -434,7 +434,7 @@ button:disabled:hover,
   position: fixed;
   z-index: 1000;
   box-sizing: border-box;
-  width: min(32rem, calc(100vw - 2rem));
+  width: min(32rem, calc((100vw / var(--app-ui-scale)) - 2rem));
   padding: var(--space-3);
   overflow: hidden;
   border: 1px solid var(--app-border);
@@ -451,8 +451,8 @@ button:disabled:hover,
 
 .solver-history-dialog {
   box-sizing: border-box;
-  width: min(54rem, calc(100vw - 2rem));
-  max-height: calc(100vh - 2rem);
+  width: min(54rem, calc((100vw / var(--app-ui-scale)) - 2rem));
+  max-height: calc((100vh / var(--app-ui-scale)) - 2rem);
   padding: var(--space-4);
   overflow: hidden;
   border: 1px solid var(--app-border);
@@ -480,7 +480,7 @@ button:disabled:hover,
 
 .solver-history-output {
   box-sizing: border-box;
-  max-height: min(62vh, 38rem);
+  max-height: min(calc(62vh / var(--app-ui-scale)), 38rem);
   margin: var(--space-3) 0;
   padding: var(--space-3);
   overflow: auto;

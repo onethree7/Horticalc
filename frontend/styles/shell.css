@@ -7,10 +7,14 @@ html {
 
 .app-body {
   box-sizing: border-box;
+  width: 100%;
+  height: calc(100% / var(--app-ui-scale));
   color-scheme: var(--app-color-scheme);
-  min-height: 100vh;
+  min-height: calc(100vh / var(--app-ui-scale));
   padding-bottom: 0;
-  overflow: hidden;
+  overflow: hidden auto;
+  zoom: var(--app-ui-scale);
+  container-type: inline-size;
   background: var(--app-body-bg);
   color: var(--app-text);
   font-family: var(--app-font-family);
@@ -62,7 +66,7 @@ html {
   width: calc(100% - (var(--space-4) * 2));
   min-width: 0;
   max-width: 100%;
-  height: calc(100vh - (var(--space-4) * 2));
+  height: calc((100vh - (var(--space-4) * 2)) / var(--app-ui-scale));
   min-height: 42rem;
   margin: var(--space-4) auto;
   padding: var(--space-4);

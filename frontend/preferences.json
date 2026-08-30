@@ -1,5 +1,7 @@
 {
   "default_theme": "horticalc-dark",
+  "default_ui_scale": 100,
+  "ui_scales": [75, 80, 90, 100, 110, 125, 150],
   "themes": [
     "horticalc-dark",
     "horticalc-light",

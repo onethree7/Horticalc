@@ -112,6 +112,6 @@ only while Horticalc is closed.
 - **Missing desktop renderer:** install WebView2 on Windows or GTK/WebKitGTK on
   Linux using the commands in [README.md](../README.md#system-requirements-and-startup-help).
 - **Application folder is not writable:** move the complete portable folder to
-  a writable location; do not run it inside an archive or from Program Files.
+  a writable location; do not run it inside an archive or protected system Folders.
 - **Unexpected startup failure:** inspect `logs/launcher.log` and include the
   relevant excerpt when reporting the issue.

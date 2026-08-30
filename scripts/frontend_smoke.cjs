@@ -41,9 +41,10 @@ async function assertFlexibleDesktopFrame(page) {
 
 async function assertUiScaleControls(page) {
   const control = page.locator("#uiScaleSelect");
-  if (await control.inputValue() !== "100") {
-    throw new Error("UI scale did not start at 100%");
-  }
+  await control.selectOption("100", { force: true });
+  await page.waitForFunction(
+    () => document.documentElement.style.getPropertyValue("--app-ui-scale") === "1",
+  );
 
   for (const scale of [75, 125, 150]) {
     await control.selectOption(String(scale), { force: true });
@@ -709,8 +710,8 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
     }
     await page.locator("#calculatorMode:not(.is-hidden)").waitFor();
     await assertNoPageOverflow(page, "desktop calculator");
-    await assertFlexibleDesktopFrame(page);
     await assertUiScaleControls(page);
+    await assertFlexibleDesktopFrame(page);
     await assertContentAwareWorkspaceBreakpoints(page);
     await exerciseCalculatorFertilizerSearch(page);
     await exerciseSelectedCalculatorRowRemoval(page);

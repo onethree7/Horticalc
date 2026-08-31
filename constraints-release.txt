@@ -28,7 +28,7 @@ pycairo==1.29.1; platform_system == "Linux"
 cffi==2.1.1
 pycparser==3.0
 pyinstaller==6.22.2
-pyinstaller-hooks-contrib==2026.6
+pyinstaller-hooks-contrib==2026.7
 altgraph==0.17.5
 packaging==26.3
 pefile==2024.8.26

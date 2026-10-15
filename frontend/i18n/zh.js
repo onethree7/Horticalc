@@ -1,4 +1,6 @@
 export default {
+  "workflow.stocksHint": "根据当前配方配制 A/B/C 母液",
+  "live.nitrogenFormsHint": "硝态氮、铵态氮和尿素氮占总氮的比例（%），均以 N 计。",
   "stock.suggest": "建议储液分配",
   "stock.reading": "母液与肥料相容性（打开 2 篇文章）",
   "stock.batchWater": "与反渗透水混合前的最终营养液用水",

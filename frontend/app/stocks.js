@@ -73,7 +73,7 @@ function textElement(tag, text, className = "") {
   return element;
 }
 
-export function createStocksController({ api, i18n, units, notifications, getRecipe, getWater, onDisplayResult, onSettingsChange }) {
+export function createStocksController({ api, i18n, units, notifications, getRecipe, getWater, onDisplayResult, onSettingsChange, onClose }) {
   const t = (key, params) => i18n.t(key, params);
   const requests = createLatestRequestGate();
   const panel = qs("#stockSolutionPanel");
@@ -220,7 +220,7 @@ export function createStocksController({ api, i18n, units, notifications, getRec
   async function update(suggestAssignments = false) {
     if (updateButton.disabled) return;
     const recipe = getRecipe();
-    if (!recipe) {
+    if (!recipe?.fertilizers.some((item) => item.grams > 0)) {
       status.textContent = t("stock.recalculate");
       return;
     }
@@ -263,7 +263,7 @@ export function createStocksController({ api, i18n, units, notifications, getRec
   }
 
   function mount() {
-    qs("#closeStocks").addEventListener("click", () => { close(); qs("#makeCalculatorStocks").focus(); });
+    qs("#closeStocks").addEventListener("click", onClose);
     updateButton.addEventListener("click", () => update());
     suggestButton.addEventListener("click", () => update(true));
     const readingLink = qs("#stockReading");
@@ -330,6 +330,7 @@ export function createStocksController({ api, i18n, units, notifications, getRec
 
   return {
     mount,
+    close,
     invalidate,
     refreshBatch,
     onBatchVolumeChange() { batchRefreshPending = opened; },
@@ -339,9 +340,6 @@ export function createStocksController({ api, i18n, units, notifications, getRec
       opened = true;
       panel.classList.remove("is-hidden");
       calculatorMode.classList.add("is-stock-view");
-      panel.setAttribute("tabindex", "-1");
-      panel.focus();
-      panel.scrollIntoView({ block: "start" });
       if (!current) await update();
       else renderPlan();
     },

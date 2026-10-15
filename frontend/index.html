@@ -172,6 +172,16 @@
               </span>
               <span class="workflow-step-arrow" aria-hidden="true">›</span>
             </button>
+            <button class="workflow-step" type="button" data-shell-view="stocks" data-testid="workflow-stocks">
+              <span class="workflow-step-index" aria-hidden="true">
+                <svg class="app-icon"><use href="#icon-components"></use></svg>
+              </span>
+              <span class="workflow-step-copy">
+                <span class="workflow-step-title" data-i18n="stock.title">Stock solutions</span>
+                <span class="workflow-step-hint" data-i18n="workflow.stocksHint">Prepare A/B/C from your recipe</span>
+              </span>
+              <span class="workflow-step-arrow" aria-hidden="true">›</span>
+            </button>
             <button class="workflow-step workflow-step--solver" type="button" data-shell-view="solver" data-testid="workflow-solver">
               <span class="workflow-step-index" aria-hidden="true">
                 <svg class="app-icon"><use href="#icon-solver"></use></svg>
@@ -381,7 +391,7 @@
       </section>
 
       <div class="mode-panel" id="calculatorMode" data-testid="calculator-view">
-        <section class="block stock-panel is-hidden" id="stockSolutionPanel" aria-labelledby="stockTitle">
+        <section class="block stock-panel is-hidden" id="stockSolutionPanel" data-panel-anchor="stocks" aria-labelledby="stockTitle">
           <div class="block-heading">
             <h2 id="stockTitle" data-i18n="stock.title">Stock solutions</h2>
             <button id="closeStocks" class="btn btn--outline" type="button" data-i18n="stock.back">Back to recipe</button>
@@ -440,7 +450,6 @@
             </div>
             <div class="heading-actions">
               <button id="copyCalculatorResults" class="btn btn--outline" type="button" data-i18n="common.copyClipboard" disabled>Copy to clipboard</button>
-              <button id="makeCalculatorStocks" class="btn btn--outline" type="button" data-i18n="stock.make" disabled>Make stock solutions</button>
               <button id="calculateBtn" class="btn btn--solver-primary" type="button" data-i18n="calculator.calculate">Calculate</button>
               <span class="inline-hint" id="copyCalculatorResultsStatus" aria-live="polite"></span>
             </div>

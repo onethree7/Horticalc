@@ -92,10 +92,11 @@ calculator = createCalculatorController({
   getSolverUrea: () => solver.ureaAsNh4,
   getSolverRecipe: () => solver.resultRecipe,
   getStockSettings: () => stocks?.attachment || null,
-  onRecipeApplied: (recipe) => stocks?.load(recipe.stock_solution || null),
+  onRecipeApplied(recipe) {
+    stocks?.load(recipe.stock_solution || null);
+    if (shell?.isActive("stocks")) shell.show("fertilizers");
+  },
   onResultStateChange(current) {
-    document.querySelector("#makeCalculatorStocks").disabled = !current
-      || !calculator.currentRequest?.fertilizers.some((item) => item.grams > 0);
     if (!current) stocks?.invalidate();
     else stocks?.refreshBatch();
   },
@@ -113,12 +114,13 @@ stocks = createStocksController({
     document.querySelector("#stockSidebarLabel").textContent = result ? i18n.t("stock.expected") : "";
   },
   onSettingsChange: () => storageSet(LAST_SOLUTION_CALCULATED_KEY, calculator.buildSolutionSnapshot()),
+  onClose: () => shell.show("fertilizers"),
 });
 
 async function openSolverStocks() {
   if (!calculator.applySolverResult({ switchToCalculator: true })) return;
   try {
-    if (await calculator.calculateAndRender()) await stocks.open();
+    if (await calculator.calculateAndRender()) shell.show("stocks");
   } catch (error) { notifications.reportError(error, i18n.t("stock.failed")); }
 }
 
@@ -315,7 +317,9 @@ shell = createShellController({
     if (nextView === "editor") editor.activate();
     if (nextView === "solver") solver.activate();
     if (nextView === "fertilizers") calculator.refreshLocalized();
-    stocks.setActive(nextView === "fertilizers");
+    stocks.setActive(nextView === "stocks");
+    if (nextView === "stocks") stocks.open();
+    else stocks.close();
   },
 });
 
@@ -423,7 +427,6 @@ async function init() {
   water.mount();
   calculator.mount();
   stocks.mount();
-  document.querySelector("#makeCalculatorStocks").addEventListener("click", () => stocks.open());
   document.querySelector("#makeSolverStocks").addEventListener("click", openSolverStocks);
   calculator.setFertilizers(resources.fertilizers);
   solver.setFertilizers(resources.fertilizers);

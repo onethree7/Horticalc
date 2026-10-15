@@ -1,4 +1,6 @@
 export default {
+  "workflow.stocksHint": "Preparar A/B/C a partir de la receta",
+  "live.nitrogenFormsHint": "Proporciones de nitrato, amonio y urea en el nitrógeno total (%), expresadas como N.",
   "stock.suggest": "Sugerir asignación de depósitos",
   "stock.reading": "Soluciones madre y compatibilidad de fertilizantes (abrir 2 artículos)",
   "stock.batchWater": "Agua de la solución final antes de mezclar con RO",

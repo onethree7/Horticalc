@@ -475,9 +475,18 @@ main {
   gap: var(--space-3);
 }
 
+#fertilizerEditorMode:not(.is-hidden),
+#fertilizerEditorMode > .block {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .table-wrap--editor {
+  flex: 1;
+  min-height: 10rem;
   overflow: auto;
-  max-height: min(calc(70vh / var(--app-ui-scale)), 720px);
   max-width: 100%;
   -webkit-overflow-scrolling: touch;
 }

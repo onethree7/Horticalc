@@ -20,6 +20,8 @@ import { storageSet } from "./storage.js";
 export function createCalculatorController({
   api, i18n, notifications, units, water, getSolverResult, getSolverAllowed,
   getSolverUrea, onCalculation, onShowCalculator,
+  getSolverRecipe, getStockSettings = () => null, onRecipeApplied = () => {},
+  onResultStateChange = () => {},
 }) {
 const fertilizerSelectTableWrap = qs("#fertilizerSelectTableWrap");
 const calculatorTableWrap = qs("#calculatorTableWrap");
@@ -40,6 +42,8 @@ let calculatorRows = [createCalculatorRow()];
 let calculatorSelectedIndex = 0;
 let calculatorScaleFactor = 1;
 let lastCalculation = null;
+let lastCalculationRequest = null;
+let ureaAsNh4 = false;
 let calculatorResultCurrent = false;
 let recalculateTimer;
 let fertilizerSelectTable;
@@ -50,6 +54,7 @@ let mounted = false;
 const setCalculatorResultCurrent = (current) => {
   calculatorResultCurrent = Boolean(current && lastCalculation);
   notifications.setCalculatorResultCurrent(calculatorResultCurrent);
+  onResultStateChange(calculatorResultCurrent);
 };
 
 function createCalculatorRow(name = "", grams = 0) {
@@ -82,19 +87,11 @@ function applyCalculatorScaleFactor(nextFactor) {
 }
 
 function applySolverResultToCalculator({ switchToCalculator = false } = {}) {
-  const lastSolveResult = getSolverResult();
-  if (!lastSolveResult) {
+  const recipe = getSolverRecipe();
+  if (!recipe) {
     notifications.reportError(null, t("solver.noResult"));
     return false;
   }
-  const fertilizers = (lastSolveResult.fertilizers || []).map((fert) => ({
-    name: fert.name,
-    grams: Number(fert.grams || 0),
-  }));
-  const recipe = {
-    liters: units.liters,
-    fertilizers,
-  };
   applyRecipe(recipe);
   scheduleRecalculate();
   notifications.setSolverApplyStatus(t("status.appliedCalculator"));
@@ -381,6 +378,7 @@ function buildPayload() {
     fertilizers: buildSelectedFertilizerEntries(),
     water_mg_l: water.buildWaterPayload(),
     osmosis_percent: water.osmosisPercent,
+    urea_as_nh4: ureaAsNh4,
   };
 }
 
@@ -388,8 +386,10 @@ async function calculateAndRender(payloadOverride = null, requestVersion = null)
   const activeVersion = requestVersion ?? calculationRequests.reserve();
   if (!calculationRequests.isCurrent(activeVersion)) return null;
   setCalculatorResultCurrent(false);
-  const data = await api.calculate(payloadOverride || buildPayload(), t("errors.calculateFailed"));
+  const payload = payloadOverride || buildPayload();
+  const data = await api.calculate(payload, t("errors.calculateFailed"));
   if (!calculationRequests.isCurrent(activeVersion)) return null;
+  lastCalculationRequest = JSON.parse(JSON.stringify(payload));
   renderCalculation(data);
   return data;
 }
@@ -412,6 +412,8 @@ function renderCalculation(data, { resultCurrent = true } = {}) {
 }
 
 function applyRecipe(recipe, { applyLiters = true } = {}) {
+  ureaAsNh4 = Boolean(recipe.urea_as_nh4);
+  onRecipeApplied(recipe);
   if (applyLiters && recipe && recipe.liters !== undefined && recipe.liters !== null) {
     units.setLiters(recipe.liters, { scaleBatch: false, recalculate: false, invalidateSolver: false });
   }
@@ -461,7 +463,10 @@ function removeFertilizerRow() {
 
 function buildRecipePayloadFromSelection(name) {
   const fertilizers = buildSelectedFertilizerEntries();
-  return buildRecipePayload(name, fertilizers, false);
+  const payload = buildRecipePayload(name, fertilizers, ureaAsNh4);
+  const stockSettings = getStockSettings();
+  if (stockSettings) payload.stock_solution = stockSettings;
+  return payload;
 }
 
 function buildRecipePayloadFromSolver(name) {
@@ -489,6 +494,8 @@ function buildSolutionSnapshot() {
     ...water.getSnapshot(),
     liters: units.liters,
     fertilizers,
+    urea_as_nh4: ureaAsNh4,
+    stock_solution: getStockSettings(),
   };
 }
 
@@ -588,6 +595,7 @@ return {
   calculateAndRender,
   collectSelectedFertilizerNames,
   get lastCalculation() { return lastCalculation; },
+  get currentRequest() { return calculatorResultCurrent ? JSON.parse(JSON.stringify(lastCalculationRequest)) : null; },
   get resultCurrent() { return calculatorResultCurrent; },
   mount,
   refreshDoseUnits() { renderSelectionTable(); renderCalculatorTable(); },

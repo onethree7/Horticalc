@@ -391,7 +391,7 @@ def run_webview(url: str, storage_path: Path, server: uvicorn.Server) -> None:
     ensure_renderer_available()
     webview.settings["ALLOW_DOWNLOADS"] = False
     webview.settings["ALLOW_FILE_URLS"] = False
-    webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = False
+    webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = True
     webview.settings["REMOTE_DEBUGGING_PORT"] = None
 
     window = webview.create_window(

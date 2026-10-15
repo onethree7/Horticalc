@@ -588,7 +588,16 @@ def save_water_profile(
 
 
 def load_recipe(path: Path) -> dict:
-    return _load_yaml(path)
+    recipe = _load_yaml(path)
+    if recipe.get("stock_solution") is not None:
+        from .stock_solutions import migrate_stock_settings
+
+        attachment = recipe["stock_solution"]
+        recipe["stock_solution"] = migrate_stock_settings(attachment).model_dump()
+        if attachment.get("schema_version", 1) == 1:
+            _atomic_write_text(_backup_path(path), path.read_text(encoding="utf-8"))
+            _save_yaml(path, recipe)
+    return recipe
 
 
 def load_nutrient_solution_data(path: Path) -> dict:

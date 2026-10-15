@@ -90,6 +90,8 @@ export const deleteNutrientSolutionData = (filename, message) =>
   deleteJson(`/nutrient-solutions/${encodeURIComponent(filename)}`, message);
 export const calculate = (payload, message) => postJson("/calculate", payload, message);
 export const solve = (payload, message) => postJson("/solve", payload, message);
+export const planStocks = (payload, message) => postJson("/stock-solutions/plan", payload, message);
+export const migrateStockSettings = (settings, message) => postJson("/stock-solutions/migrate-settings", { settings }, message);
 export const fetchSolverHistory = (message) => getJson("/solver-history", message);
 export const fetchSolverHistoryEntry = (entryId, message) =>
   getJson(`/solver-history/${encodeURIComponent(entryId)}`, message);

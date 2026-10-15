@@ -23,9 +23,68 @@ display unit converts the visible quantity without changing the stored batch or
 dose.
 
 Saved calculator recipes contain their batch, fertilizer doses, water profile,
-RO-water proportion, urea setting, and optional solver configuration. The star
+RO-water proportion, urea setting, optional solver configuration, and any stock
+preparation settings. The star
 beside the recipe selector marks favorites and moves them to the top of the
 list without changing their files.
+
+## Stock solutions
+
+Calculate a recipe, then choose **Make stock solutions**. The same action on a
+current Solver result transfers its recipe to Calculator and opens preparation.
+**Back to recipe** returns to the normal Calculator tables.
+
+Start with the finished volume of each stock and a concentration factor. The
+defaults are 1 L and 100×. At 100×, dose **10 mL of each stock per litre of final
+nutrient solution**: A and B together contribute 20 mL/L. The displayed batch
+doses include every populated stock. Empty containers are omitted.
+
+Choose **Suggest tank assignments** to fill open assignments from the existing
+fertilizer composition, or assign products yourself. Suggestions compare
+different products; an existing manufacturer blend stays together. They leave
+liquids, products without composition and products that do not fit unresolved.
+Existing choices are preserved. Add C if useful, or choose a separate addition
+to the final batch. At least one container must remain. All ingredients need
+an assignment and each populated container must hold enough stock for the batch
+before copying or printing. Changed product data require explicit review through
+**Assignment reviewed**; recalculating alone leaves the finding visible.
+Potential mixing risks remain visible after manual assignment;
+absence of a finding does not establish compatibility.
+
+Under **Preparation details**, set different volumes or factors per stock.
+Prepare all stocks with RO/distilled water, modeled as mineral-free. The water
+analysis and its RO proportion still describe the final nutrient batch. For a
+complete plan, the nutrient display includes the adjusted water contribution:
+stocks displace some batch water, using an additive-volume estimate.
+Fertilizer doses are unchanged.
+
+Dissolve each product according to its instructions, then make up to the stated
+**finished stock volume**. Dose the stocks separately into well-mixed water and
+make up to the **final batch volume**. Do not pour concentrates together. Follow
+product-specific preparation and storage instructions, particularly for
+silicates and chelates. A small trial under the intended storage conditions is
+useful; initial clarity does not establish shelf stability.
+
+Check assignments and preparation conditions against the product instructions.
+Calculated amounts do not confirm storage stability. **Stock solutions and
+fertilizer compatibility** opens the Science in Hydroponics article and the
+Frontiers in Agronomy review in the external browser from the desktop app.
+When using the UI in a browser, allow popups to open both articles.
+Use **Copy preparation sheet** for a formatted
+export with selected assignments, rounded
+water values and one RO proportion for the final batch. Ordinary text selection
+over the stock panel copies plain text instead of hidden HTML form options.
+
+Save through the existing recipe controls to keep the stock settings and source
+water analysis. A saved stock-bearing recipe restores that water snapshot,
+including unsaved analysis edits. Changing the batch volume scales recipe doses
+and automatically recalculates an open stock view after the recipe calculation.
+Stock volumes and concentration factors stay as configured: doubling the batch
+doubles its stock dose, while the amounts for a fixed stock container remain
+unchanged. Increase stock volume yourself if the larger batch exceeds its
+capacity. Other recipe or preparation edits make the sheet stale; choose
+**Update plan** before using or exporting new quantities.
+The feature plans preparation; it does not track bottles already mixed.
 
 ## Water analysis
 

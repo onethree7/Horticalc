@@ -24,6 +24,10 @@ display unit converts the visible quantity without changing the stored batch or
 dose. The sidebar shows nitrate, ammonium and urea shares as **NO3:NH4:UR
 (%)**, calculated from their nitrogen contributions.
 
+**Copy to clipboard** always includes nitrate-N, ammonium-N and urea-N below
+nitrogen total, even when those columns are collapsed on screen. The export ends
+with the ratios shown in the sidebar.
+
 Batch-volume changes scale doses without rounding the stored quantities.
 Display formatting does not limit the precision of small trace doses.
 
@@ -53,7 +57,7 @@ liquids, products without composition and products that do not fit unresolved.
 Existing choices are preserved. Add C if useful, or choose a separate addition
 to the final batch. At least one container must remain. All ingredients need
 an assignment and each populated container must hold enough stock for the batch
-before copying or printing. Changed product data require explicit review through
+before copying. Changed product data require explicit review through
 **Assignment reviewed**; recalculating alone leaves the finding visible.
 Potential mixing risks remain visible after manual assignment;
 absence of a finding does not establish compatibility.
@@ -77,9 +81,10 @@ Calculated amounts do not confirm storage stability. **Stock solutions and
 fertilizer compatibility** opens the Science in Hydroponics article and the
 Frontiers in Agronomy review in the external browser from the desktop app.
 When using the UI in a browser, allow popups to open both articles.
-Use **Copy preparation sheet** for a formatted
-export with selected assignments, rounded
-water values and one RO proportion for the final batch. Ordinary text selection
+Use **Copy to clipboard** for aligned fertilizer tables per stock, with an
+explicit concentration factor, dosing rate, yield and doses for the current
+batch. Preparation and review notes follow the tables. The stock export omits
+the batch-water analysis and RO proportion. Ordinary text selection
 over the stock panel copies plain text instead of hidden HTML form options.
 
 Save through the existing recipe controls to keep the stock settings and source

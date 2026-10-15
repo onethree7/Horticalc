@@ -398,7 +398,6 @@
           </div>
           <p id="stockContext" class="hint"></p>
           <p class="hint" data-i18n="stock.guidance">Tank suggestions use declared composition. Product formulations stay intact; solubility, pH, chelator type, temperature and shelf life are not evaluated. Review product instructions before preparing a concentrate.</p>
-          <p class="hint" data-i18n="stock.waterAssumption">Prepare stocks with RO/distilled water, modeled as mineral-free. The water analysis still applies to the final batch.</p>
           <div class="stock-controls">
             <label><span data-i18n="stock.volume">Finished volume per stock</span><span class="stock-input"><input id="stockVolume" class="input-field" type="text" inputmode="decimal" value="1" /><span class="stock-volume-unit">L</span></span></label>
             <label><span data-i18n="stock.factor">Concentration factor</span><span class="stock-input"><input id="stockFactor" class="input-field" type="text" inputmode="decimal" value="100" /><span>×</span></span></label>
@@ -413,8 +412,7 @@
           <div class="actions">
             <button id="suggestStocks" class="btn btn--outline" type="button" data-i18n="stock.suggest">Suggest tank assignments</button>
             <button id="updateStocks" class="btn btn--solver-primary" type="button" data-i18n="stock.update">Update plan</button>
-            <button id="copyStocks" class="btn btn--outline" type="button" disabled data-i18n="stock.copy">Copy preparation sheet</button>
-            <button id="printStocks" class="btn btn--outline" type="button" disabled data-i18n="stock.print">Print</button>
+            <button id="copyStocks" class="btn btn--outline" type="button" disabled data-i18n="common.copyClipboard">Copy to clipboard</button>
           </div>
           <p id="stockStatus" class="inline-hint" role="status" aria-live="polite"></p>
           <div id="stockOutput">
@@ -427,7 +425,6 @@
             <ul id="stockFindings" class="stock-findings"></ul>
           </div>
           <p><a id="stockReading" target="_blank" rel="noopener noreferrer" data-i18n="stock.reading">Stock solutions and fertilizer compatibility (open 2 articles)</a></p>
-          <pre id="stockPrintSheet"></pre>
         </section>
         <section class="block" data-panel-anchor="fertilizers" data-testid="fertilizer-selection-panel">
           <div class="section-heading">

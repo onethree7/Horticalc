@@ -40,3 +40,50 @@ export function buildAlignedRows(headers, rows, numericColumns = []) {
     return numeric.has(index) ? value.padStart(widths[index]) : value.padEnd(widths[index]);
   }).join("  ").trimEnd());
 }
+
+export function buildDoseTable(fertilizers, { t, units, fertilizerKinds = {} }) {
+  return buildAlignedRows(
+    [t("common.fertilizer"), t("common.amount"), t("common.unit")],
+    fertilizers.map(({ name, grams }) => {
+      const kind = fertilizerKinds[name];
+      const definition = kind ? { name, liquid: kind === "liquid" } : name;
+      return [name, units.formatDoseDisplay(Number(grams), definition), units.doseUnitDefinition(definition).symbol];
+    }),
+    [1],
+  );
+}
+
+function ratioValueText(value) {
+  const text = String(value || "").trim();
+  if (!text) return "-";
+  const markerIndex = text.indexOf("=");
+  return markerIndex >= 0 ? text.slice(markerIndex + 1) : text;
+}
+
+function formatRatioNumber(value) {
+  if (!Number.isFinite(value)) return "-";
+  return (Math.round(value * 10) / 10).toFixed(1).replace(/\.0$/, "");
+}
+
+function calciumMagnesiumRatio(value) {
+  const parts = ratioValueText(value).split(":").map(Number);
+  if (parts.length !== 2 || !parts.every(Number.isFinite)) return "-";
+  const [left, right] = parts;
+  if (left <= 0 && right <= 0) return "0 Ca : 0 Mg";
+  if (right <= 0) return `${formatRatioNumber(left)} Ca : 0 Mg`;
+  return `${formatRatioNumber(left / right)} Ca : 1 Mg`;
+}
+
+export function sidebarRatioRows(metrics = {}) {
+  const ratios = metrics.npk_ratios_ion || {};
+  const nitrogen = metrics.n_form_pct;
+  return [
+    ["Ca:Mg", calciumMagnesiumRatio(ratios["Ca:Mg"])],
+    ["N:K", ratioValueText(ratios["N:K"])],
+    ["Ca:K", ratioValueText(ratios["Ca:K"])],
+    ["NO3:NH4:UR (%)", nitrogen ? `${nitrogen.no3}:${nitrogen.nh4}:${nitrogen.urea}` : "-", "live.nitrogenFormsHint"],
+    ["SO4:P", ratioValueText(ratios["SO4:P"])],
+    ["P:K", ratioValueText(ratios["P:K"])],
+    ["Fe:Mg", ratioValueText(ratios["Fe:Mg"])],
+  ];
+}

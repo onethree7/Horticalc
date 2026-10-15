@@ -56,6 +56,12 @@ export const NUTRIENT_INTEGER_FORMATTER = new Intl.NumberFormat("en-US", {
   useGrouping: false,
 });
 
+export const NITROGEN_COLUMNS = [
+  { key: "N_NO3", label: "NO3", labelKey: "solver.nNo3" },
+  { key: "N_NH4", label: "NH4", labelKey: "solver.nNh4" },
+  { key: "N_UREA", label: "UREA", labelKey: "solver.nUrea" },
+];
+
 export const SUMMARY_COLUMN_ORDER = [
   { oxide: "N_total", element: "N_total", oxideHeaderLabelKey: "solver.nTotal", ionHeaderLabelKey: "solver.nTotal" },
   { oxide: "P2O5", element: "P", oxideHeaderLabel: "P2O5", ionHeaderLabel: "P" },

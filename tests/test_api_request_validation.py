@@ -1,5 +1,6 @@
 from dataclasses import replace
 
+import anyio
 import pytest
 from fastapi.testclient import TestClient
 
@@ -240,6 +241,35 @@ def test_request_body_limit_rejects_chunked_transfer(api_client: TestClient) -> 
     )
 
     assert response.status_code == 413
+
+
+def test_request_body_limit_preserves_transport_disconnect_after_body_replay() -> None:
+    chunks = [
+        {"type": "http.request", "body": b"first", "more_body": True},
+        {"type": "http.request", "body": b"second", "more_body": False},
+    ]
+    incoming = iter(chunks)
+    transport_disconnected = False
+
+    async def receive():
+        nonlocal transport_disconnected
+        message = next(incoming, None)
+        if message is not None:
+            return message
+        transport_disconnected = True
+        return {"type": "http.disconnect"}
+
+    async def send(_message):
+        pass
+
+    async def downstream(_scope, replay, _send):
+        for chunk in chunks:
+            assert await replay() == chunk
+        assert await replay() == {"type": "http.disconnect"}
+        assert transport_disconnected
+
+    middleware = api_app.RequestBodyLimitMiddleware(downstream, max_bytes=100)
+    anyio.run(middleware, {"type": "http", "headers": []}, receive, send)
 
 
 def test_solver_rejects_excessive_collection_cardinality(api_client: TestClient) -> None:

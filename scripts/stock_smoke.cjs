@@ -34,13 +34,13 @@ async function assertStockWorkflow(page, assertNoPageOverflow) {
   await page.locator("#updateStocks").click();
   await page.locator('#stockFindings [data-severity="review"]').waitFor();
   await page.locator("#copyStocks").click();
-  assert.match(await page.locator("#stockStatus").innerText(), /copied/i);
+  await page.locator("#stockStatus", { hasText: /copied/i }).waitFor();
   await page.evaluate(() => { globalThis.print = () => {}; });
   await page.locator("#printStocks").click();
   const printed = await page.locator("#stockPrintSheet").textContent();
   assert.match(printed, /Calcium and sulfate come from different products/);
   assert.match(printed, /1000\/|FINAL|final/);
-  assert.match(printed, /https:\/\/scienceinhydroponics.com/);
+  assert.ok(printed.split("\n").includes("Science in Hydroponics: https://scienceinhydroponics.com/2017/09/five-things-you-should-know-when-mixing-your-own-hydroponic-liquid-nutrients.html"));
   assert.doesNotMatch(printed, /Water contribution|No modeled nutrient difference/);
 
   await page.locator("#addStockC").click();

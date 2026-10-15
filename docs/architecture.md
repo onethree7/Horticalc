@@ -49,6 +49,10 @@ cookie and reject requests carrying a foreign `Origin`; the supported
 automation routes remain available to loopback clients without a desktop
 session.
 
+The request-body limit buffers and replays accepted body chunks. Once replay
+is complete, further receive calls use the transport so response handling
+observes the actual client connection lifetime.
+
 The frontend uses native ES modules with no production bundler or
 Python–JavaScript bridge. Feature controllers own their UI state; shared
 transport, formatting, units, and storage helpers remain independent of the

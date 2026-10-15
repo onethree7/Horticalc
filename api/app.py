@@ -149,7 +149,7 @@ class RequestBodyLimitMiddleware:
         async def replay_receive() -> Message:
             nonlocal message_index
             if message_index >= len(messages):
-                return {"type": "http.disconnect"}
+                return await receive()
             message = messages[message_index]
             message_index += 1
             return message

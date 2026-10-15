@@ -35,8 +35,8 @@ test("stock sheets retain small doses and distinguish stock water from final bat
   assert.match(sheet, /Precipitation depends on pH and concentration/);
   assert.doesNotMatch(sheet, /Metal form|chelator|not recorded/);
   assert.doesNotMatch(sheet, /Water contribution|Recipe \(mg\/L\)|After stock dosing|Difference \(mg\/L\)/);
-  assert.match(sheet, /https:\/\/scienceinhydroponics.com\/2017\/09\//);
-  assert.match(sheet, /Frontiers in Agronomy: https:\/\/www\.frontiersin\.org\/journals\/agronomy\/articles\/10\.3389\/fagro\.2026\.1823187\/full/);
+  assert.ok(sheet.split("\n").includes("Science in Hydroponics: https://scienceinhydroponics.com/2017/09/five-things-you-should-know-when-mixing-your-own-hydroponic-liquid-nutrients.html"));
+  assert.ok(sheet.split("\n").includes("Frontiers in Agronomy: https://www.frontiersin.org/journals/agronomy/articles/10.3389/fagro.2026.1823187/full"));
   assert.equal(buildStockPrintableText({ ...plan, complete: false, exportable: false }, t, units), "");
   assert.equal(buildStockPrintableText({ ...plan, exportable: false }, t, units), "");
 });

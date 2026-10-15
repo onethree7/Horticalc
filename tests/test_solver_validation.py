@@ -210,3 +210,142 @@ def test_water_profile_overshoot_remains_visible_in_errors() -> None:
     assert result.fertilizers == []
     assert result.errors_mg_l["Ca"] == pytest.approx(100.0, abs=1e-12)
     assert result.errors_percent["Ca"] == pytest.approx(100.0, abs=1e-12)
+
+
+@pytest.mark.parametrize("model", ["mass_nnls", "hierarchical", "nnls_tuning"])
+@pytest.mark.parametrize("urea_as_nh4", [False, True])
+@pytest.mark.parametrize("fixed_dose", [0.0, 0.02])
+def test_solver_urea_mode_matches_delivered_nitrogen_with_water_and_fixed_doses(
+    model: str, urea_as_nh4: bool, fixed_dose: float
+) -> None:
+    mm = load_molar_masses()
+    fertilizers = {name: Fertilizer(name, False, 1.0, {"UREA": 0.46}) for name in ("Variable", "Fixed")}
+    # One mmol/L of water ammonium supplies one mmol/L of elemental nitrogen.
+    water_nitrogen = mm["N"]
+    fertilizer_nitrogen = 46.0 + fixed_dose * 460.0
+    # Hierarchical stages retain optima within 1e-7 mg/L; allow twice that for the final LP.
+    concentration_tolerance = 2e-7
+    target_key = "N_NH4" if urea_as_nh4 else "N_UREA"
+    result = solve_recipe_data(
+        {
+            "liters": 1,
+            "fertilizers_allowed": list(fertilizers),
+            "fixed_grams": {"Fixed": fixed_dose},
+            "targets": {target_key: fertilizer_nitrogen + (water_nitrogen if urea_as_nh4 else 0)},
+            "urea_as_nh4": urea_as_nh4,
+            "solver_config": {"solver_model": model, "nitrogen_objective_mode": "n_forms_only"},
+        },
+        ferts=fertilizers,
+        mm=mm,
+        water_profile_data={"mg_per_l": {"NH4": mm["NH4"]}},
+    )
+
+    doses = {entry["name"]: entry["grams"] for entry in result.fertilizers}
+    assert doses["Variable"] == pytest.approx(0.1, rel=0, abs=concentration_tolerance / 460)
+    assert doses.get("Fixed", 0) == pytest.approx(fixed_dose, rel=0, abs=1e-12)
+    assert result.achieved_elements_mg_l["N_total"] == pytest.approx(
+        fertilizer_nitrogen + water_nitrogen, rel=0, abs=concentration_tolerance
+    )
+    assert result.errors_mg_l[target_key] == pytest.approx(0, rel=0, abs=concentration_tolerance)
+    assert result.achieved_elements_mg_l["N_UREA"] == pytest.approx(
+        0 if urea_as_nh4 else fertilizer_nitrogen, rel=0, abs=concentration_tolerance
+    )
+
+
+@pytest.mark.parametrize("model", ["mass_nnls", "hierarchical", "nnls_tuning"])
+def test_ammonium_mode_does_not_claim_to_supply_urea(model: str) -> None:
+    result = solve_recipe_data(
+        {
+            "liters": 1,
+            "fertilizers_allowed": ["Urea"],
+            "targets": {"N_UREA": 46},
+            "urea_as_nh4": True,
+            "solver_config": {"solver_model": model, "nitrogen_objective_mode": "n_forms_only"},
+        },
+        ferts={"Urea": Fertilizer("Urea", False, 1.0, {"UREA": 0.46})},
+        mm=load_molar_masses(),
+        water_profile_data={"mg_per_l": {}},
+    )
+
+    assert result.fertilizers == []
+    assert result.errors_mg_l["N_UREA"] == -46
+    if model == "hierarchical":
+        assert result.priority_stages[0]["max_error_mg_per_l"] == pytest.approx(46)
+
+
+@pytest.mark.parametrize("include_zero, expected_dose", [(True, 0.5), (False, 1.0)])
+def test_zero_nitrogen_form_target_remains_an_objective(include_zero: bool, expected_dose: float) -> None:
+    targets = {"N_NO3": 100, "K": 0}
+    if include_zero:
+        targets["N_NH4"] = 0
+    result = solve_recipe_data(
+        {
+            "liters": 1,
+            "fertilizers_allowed": ["Mixed"],
+            "targets": targets,
+            "solver_config": {"nitrogen_objective_mode": "n_forms_only", "singleton_underfill_enabled": False},
+        },
+        ferts={"Mixed": Fertilizer("Mixed", False, 1.0, {"NO3": 0.1, "NH4": 0.1})},
+        mm=load_molar_masses(),
+        water_profile_data={"mg_per_l": {}},
+    )
+
+    assert result.fertilizers[0]["grams"] == pytest.approx(expected_dose)
+    assert ("N_NH4" in result.objective_elements) is include_zero
+    assert "K" not in result.objective_elements
+
+
+@pytest.mark.parametrize("form, target_key", [("NH4", "N_NH4"), ("UREA", "N_UREA")])
+@pytest.mark.parametrize(
+    "relative_weighting, scale, expected_dose",
+    [(False, 1.0, 0.5), (True, 1.0, 1 / 10001), (True, 2.0, 4 / 10004)],
+)
+def test_tuning_scores_zero_nitrogen_objectives(
+    form: str, target_key: str, relative_weighting: bool, scale: float, expected_dose: float
+) -> None:
+    result = solve_recipe_data(
+        {
+            "liters": 1,
+            "fertilizers_allowed": ["Mixed"],
+            "targets": {"N_NO3": 100, target_key: 0, "K": 0},
+            "solver_config": {
+                "nitrogen_objective_mode": "n_forms_only",
+                "relative_weighting": relative_weighting,
+                "overshoot_penalty": 0,
+                "scale_eps_mg_per_l": scale,
+            },
+        },
+        ferts={"Mixed": Fertilizer("Mixed", False, 1.0, {"NO3": 0.1, form: 0.1})},
+        mm=load_molar_masses(),
+        water_profile_data={"mg_per_l": {}},
+    )
+
+    # Minimize (100*x - 100)^2 + (100*x)^2, with row scaling when enabled.
+    assert result.fertilizers[0]["grams"] == pytest.approx(expected_dose, rel=0, abs=1e-10)
+    assert result.achieved_elements_mg_l[target_key] == pytest.approx(100 * expected_dose, rel=0, abs=1e-8)
+    assert target_key in result.objective_elements
+    assert "K" not in result.objective_elements
+
+
+def test_zero_objective_tuning_accounts_for_fixed_doses_and_water() -> None:
+    mm = load_molar_masses()
+    result = solve_recipe_data(
+        {
+            "liters": 1,
+            "fertilizers_allowed": ["Mixed", "Fixed ammonium"],
+            "fixed_grams": {"Fixed ammonium": 0.1},
+            "targets": {"N_NO3": 100, "N_NH4": 0},
+            "solver_config": {"nitrogen_objective_mode": "n_forms_only"},
+        },
+        ferts={
+            "Mixed": Fertilizer("Mixed", False, 1.0, {"NO3": 0.1, "NH4": 0.1}),
+            "Fixed ammonium": Fertilizer("Fixed ammonium", False, 1.0, {"NH4": 0.1}),
+        },
+        mm=mm,
+        water_profile_data={"mg_per_l": {"NH4": 10 * mm["NH4"] / mm["N"]}},
+    )
+
+    # Fixed dose and water each supply 10 mg/L N; the variable optimum is 0.4 g.
+    doses = {entry["name"]: entry["grams"] for entry in result.fertilizers}
+    assert doses == pytest.approx({"Mixed": 0.4, "Fixed ammonium": 0.1}, rel=0, abs=1e-10)
+    assert result.achieved_elements_mg_l["N_NH4"] == pytest.approx(60, rel=0, abs=1e-8)

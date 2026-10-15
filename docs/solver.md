@@ -34,6 +34,7 @@ the reported solution.
 affected a solve.
 
 - Numeric zero targets are normally report-only.
+- In `n_forms_only` mode, explicit zero nitrogen-form targets remain objectives.
 - `Na` and `Cl` are always report-only.
 - `nitrogen_objective_mode` selects provided nitrogen targets, total nitrogen
   only, or individual nitrogen forms only. The default is `n_total_only`.
@@ -42,9 +43,14 @@ affected a solve.
   elemental `S` target.
 - Hierarchical target directions at priority `0` are report-only.
 
-`ignored_elements` remains part of accepted persisted/API data. The
-hierarchical model interprets each listed element as priority `0` in both
-directions; the GUI persists the canonical `target_priorities` representation.
+Urea mode applies to both optimization coefficients and reported results. With
+`urea_as_nh4=true`, fertilizer urea contributes to `N_NH4` instead of `N_UREA`;
+its contribution to total nitrogen is unchanged.
+
+`ignored_elements` remains part of accepted persisted/API data and survives GUI
+load/save cycles for every model. The hierarchical model displays each listed
+element at priority `0` in both directions. Editing either priority replaces
+that element's ignore entry with the selected directional priorities.
 
 ## NNLS + tuning
 
@@ -60,6 +66,10 @@ subject to 0 <= x <= per-product dose limit
 The standard path can apply relative weighting, iterative reweighted least
 squares (IRLS) overshoot penalties, an optional nitrogen-total governor, and
 dominant-supplier correction passes. These controls affect only `nnls_tuning`.
+
+Candidate comparisons include explicit zero nitrogen-form objectives. Their
+errors are measured against `scale_eps_mg_per_l`; non-zero targets use their
+percentage error. Zero targets outside the selected objectives stay report-only.
 
 ## Mass NNLS (experimental)
 

@@ -112,6 +112,13 @@ shipped resources; fertilizer edits are stored as catalogue deltas. WebView
 state lives in `user/webview/`, separate from Solver history and structured
 profiles.
 
+Preference updates serialize their read/merge/write operation within the API
+process and replace the file atomically. A write failure preserves the previous
+file. Changing history retention persists preferences before trimming history;
+a trim failure is reported without rolling back the saved preference. The
+frontend queues writes and reports failed operations without blocking later
+updates.
+
 The API owns validation and persistence. The core owns chemistry and
 optimization inputs but not filesystem or HTTP presentation. The UI owns
 display units, locale, navigation, and transient interaction state.

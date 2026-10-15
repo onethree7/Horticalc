@@ -41,6 +41,10 @@ export function createSettingsController({
 
   const normalizeTheme = (theme) => themeOptions.has(theme) ? theme : defaultTheme;
 
+  function savePreferences(updates) {
+    persistPreferences(updates).catch((error) => reportError(error, i18n.t("errors.saveFailed")));
+  }
+
   function themeTranslationKey(theme) {
     return `theme.${theme.split("-").map((part, index) => index === 0 ? part : `${part[0].toUpperCase()}${part.slice(1)}`).join("")}`;
   }
@@ -103,7 +107,7 @@ export function createSettingsController({
     const nextIndex = Math.min(uiScales.length - 1, Math.max(0, currentIndex + direction));
     const nextScale = uiScales[nextIndex];
     if (nextScale === uiScale) return;
-    persistPreferences({ ui_scale: applyUiScale(nextScale) });
+    savePreferences({ ui_scale: applyUiScale(nextScale) });
   }
 
   function handleUiScaleShortcut(event) {
@@ -114,7 +118,7 @@ export function createSettingsController({
     if (!isReset && !isIncrease && !isDecrease) return;
     event.preventDefault();
     if (isReset) {
-      persistPreferences({ ui_scale: applyUiScale(defaultUiScale) });
+      savePreferences({ ui_scale: applyUiScale(defaultUiScale) });
     } else {
       changeUiScale(isIncrease ? 1 : -1);
     }
@@ -165,14 +169,14 @@ export function createSettingsController({
     if (mounted) return;
     mounted = true;
     themeSelect?.addEventListener("change", (event) => {
-      persistPreferences({ theme: applyTheme(event.target.value) });
+      savePreferences({ theme: applyTheme(event.target.value) });
     });
     languageSelect?.addEventListener("change", (event) => {
       i18n.setLocale(event.target.value);
-      persistPreferences({ locale: i18n.getLocale() });
+      savePreferences({ locale: i18n.getLocale() });
     });
     uiScaleSelect?.addEventListener("change", (event) => {
-      persistPreferences({ ui_scale: applyUiScale(event.target.value) });
+      savePreferences({ ui_scale: applyUiScale(event.target.value) });
     });
     window.addEventListener("keydown", handleUiScaleShortcut);
     window.addEventListener("wheel", handleUiScaleWheel, { passive: false });
@@ -180,27 +184,28 @@ export function createSettingsController({
       const liters = units.displayVolumeToLiters(event.target.value);
       if (liters === null || liters <= 0) return;
       units.setLiters(liters, { scaleBatch: true, recalculate: true, invalidateSolver: true });
-      persistPreferences({ default_liters: liters });
+      savePreferences({ default_liters: liters });
       render();
     });
     litersInput?.addEventListener("change", render);
     volumeUnitSelect?.addEventListener("change", (event) => {
       units.setVolumeUnit(event.target.value);
-      persistPreferences({ volume_unit: units.volumeUnit });
+      savePreferences({ volume_unit: units.volumeUnit });
       render();
       onUnitsChange();
     });
     solidDoseUnitSelect?.addEventListener("change", (event) => {
       units.setSolidDoseUnit(event.target.value, true);
-      persistPreferences({ solid_dose_unit: units.solidDoseUnit });
+      savePreferences({ solid_dose_unit: units.solidDoseUnit });
       render();
     });
     liquidDoseUnitSelect?.addEventListener("change", (event) => {
       units.setLiquidDoseUnit(event.target.value, true);
-      persistPreferences({ liquid_dose_unit: units.liquidDoseUnit });
+      savePreferences({ liquid_dose_unit: units.liquidDoseUnit });
       render();
     });
     solverHistoryLimitInput?.addEventListener("change", async (event) => {
+      if (solverHistoryLimitInput.disabled) return;
       const rawValue = String(event.target.value).trim();
       const value = Number(rawValue);
       if (!rawValue || !Number.isInteger(value) || value < 0 || value > 10000) {
@@ -211,10 +216,19 @@ export function createSettingsController({
         event.target.value = String(solverHistoryLimit);
         return;
       }
-      solverHistoryLimit = value;
-      await persistPreferences({ solver_history_limit: value });
-      solverHistorySettingsStatus.textContent = i18n.t("history.limitSaved");
-      onSolverHistoryChange();
+      solverHistoryLimitInput.disabled = true;
+      solverHistorySettingsStatus.textContent = "";
+      try {
+        await persistPreferences({ solver_history_limit: value });
+        solverHistoryLimit = value;
+        solverHistorySettingsStatus.textContent = i18n.t("history.limitSaved");
+        onSolverHistoryChange();
+      } catch (error) {
+        solverHistoryLimitInput.value = String(solverHistoryLimit);
+        reportError(error, i18n.t("errors.saveFailed"));
+      } finally {
+        solverHistoryLimitInput.disabled = false;
+      }
     });
     clearSolverHistoryButton?.addEventListener("click", async () => {
       if (!window.confirm(i18n.t("history.confirmClear"))) return;
@@ -255,5 +269,5 @@ export function createSettingsController({
     render();
   }
 
-  return { mount, render, applyTheme };
+  return { mount, render };
 }

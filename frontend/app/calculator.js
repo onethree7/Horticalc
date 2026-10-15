@@ -12,7 +12,7 @@ import {
   qsa,
   renderTableRows,
 } from "./dom.js";
-import { buildAlignedRows, formatNumber, roundScaledValue } from "./formatting.js";
+import { buildAlignedRows, formatNumber } from "./formatting.js";
 import { applyScaledValues, bindScaleButtons } from "./scaling.js";
 import { createLatestRequestGate } from "../request_gate.js";
 import { storageSet } from "./storage.js";
@@ -62,7 +62,7 @@ function createCalculatorRow(name = "", grams = 0) {
   return {
     name,
     grams: normalizedGrams,
-    baseGrams: roundScaledValue(normalizedGrams),
+    baseGrams: normalizedGrams,
   };
 }
 
@@ -320,7 +320,7 @@ function renderCalculatorTable() {
     if (calculatorRow.baseGrams === undefined) {
       const currentAmount = Math.max(0, Number(calculatorRow.grams) || 0);
       calculatorRow.baseGrams =
-        calculatorScaleFactor > 0 ? roundScaledValue(currentAmount / calculatorScaleFactor) : 0;
+        calculatorScaleFactor > 0 ? currentAmount / calculatorScaleFactor : 0;
     }
 
     const indexCell = document.createElement("td");
@@ -344,7 +344,7 @@ function renderCalculatorTable() {
       }
       calculatorRow.grams = canonicalValue;
       calculatorRow.baseGrams =
-        calculatorScaleFactor > 0 ? roundScaledValue(canonicalValue / calculatorScaleFactor) : 0;
+        calculatorScaleFactor > 0 ? canonicalValue / calculatorScaleFactor : 0;
       scheduleRecalculate();
     });
     input.addEventListener("change", () => {
@@ -531,10 +531,10 @@ function initializeTables() {
 function scaleBatch(previousLiters, nextLiters) {
   const factor = nextLiters / previousLiters;
   calculatorRows.forEach((row) => {
-    const scaled = roundScaledValue((Number(row.grams) || 0) * factor);
+    const scaled = (Number(row.grams) || 0) * factor;
     row.grams = scaled;
     row.baseGrams = calculatorScaleFactor > 0
-      ? roundScaledValue(scaled / calculatorScaleFactor)
+      ? scaled / calculatorScaleFactor
       : scaled;
   });
   renderCalculatorTable();
@@ -596,11 +596,9 @@ return {
   collectSelectedFertilizerNames,
   get lastCalculation() { return lastCalculation; },
   get currentRequest() { return calculatorResultCurrent ? JSON.parse(JSON.stringify(lastCalculationRequest)) : null; },
-  get resultCurrent() { return calculatorResultCurrent; },
   mount,
   refreshDoseUnits() { renderSelectionTable(); renderCalculatorTable(); },
   refreshLocalized,
-  render: renderCalculation,
   scaleBatch,
   scheduleRecalculate,
   setFertilizers,

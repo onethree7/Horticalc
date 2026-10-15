@@ -53,6 +53,9 @@ in its standard installation directory. Build behavior is owned by
 `scripts/packaging/horticalc.spec`, the platform build scripts, and
 `scripts/packaging/horticalc.iss`.
 
+Windows scripts check native command exit codes and stop on failed version
+discovery, version-resource generation, packaging, or installer compilation.
+
 The Linux application is written to `dist/horticalc/`; the Windows application
 is written to `dist/Horticalc/`; and the installer is written to the repository
 root. Launch `dist/horticalc/horticalc` or

@@ -134,10 +134,10 @@ function handleWaterValueInput(key, rawValue, { updateCurrent = false, invalidat
   if (invalidate) waterProfileRequests.invalidate();
   const parsed = decimalInputValue(rawValue);
   waterValues[key] = waterUnit === "mol_l" ? molToMg(key, parsed) : parsed;
-  const updatedKeys = applyWaterHelpers(waterValues, getMolarMass);
-  updatedKeys
-    .filter((updatedKey) => updateCurrent || updatedKey !== key)
-    .forEach((updatedKey) => updateWaterInputValue(updatedKey));
+  const updatedKeys = applyWaterHelpers(waterValues);
+  updatedKeys.forEach((updatedKey) => {
+    if (updateCurrent || updatedKey !== key) updateWaterInputValue(updatedKey);
+  });
   scheduleRecalculate();
 }
 
@@ -630,12 +630,6 @@ function formatOxideValue(key, value) {
   return nutrientFormatter.format(value);
 }
 
-function buildWaterPayloadForApi(rawValues) {
-  const values = { ...rawValues };
-  applyWaterHelpers(values, getMolarMass);
-  return values;
-}
-
 function waterElementsForDisplay(elements) {
   if (waterUnit !== "mol_l") {
     return elements;
@@ -735,7 +729,9 @@ function applyWaterProfile(profile) {
   waterFieldDefinitions.forEach((field) => {
     waterValues[field.key] = Number(mg[field.key]) || 0;
   });
-  applyWaterHelpers(waterValues, getMolarMass);
+  // Augmented profiles contain equivalent P and PO4 values.
+  if (profile.normalized_mg_per_l) waterValues.PO4 = 0;
+  applyWaterHelpers(waterValues);
 
   waterProfileNameInput.value = profile.name || "";
   osmosisPercentInput.value = profile.osmosis_percent ?? 0;
@@ -744,6 +740,7 @@ function applyWaterProfile(profile) {
 }
 
 function renderWaterProfileOptions() {
+  const selected = waterProfileSelect.value;
   waterProfileSelect.innerHTML = "";
   const empty = document.createElement("option");
   empty.value = "";
@@ -756,6 +753,7 @@ function renderWaterProfileOptions() {
     option.textContent = profile.name || profile.filename;
     waterProfileSelect.appendChild(option);
   });
+  waterProfileSelect.value = selected;
   syncSelectedOptionTitle(waterProfileSelect);
 }
 
@@ -771,7 +769,7 @@ function renderWaterProfileOptions() {
   }
 
   function getPayload() {
-    return buildWaterPayloadForApi(waterValues);
+    return { ...waterValues };
   }
 
   function getSnapshot() {
@@ -820,18 +818,22 @@ function renderWaterProfileOptions() {
   }
 
   async function loadSelectedProfile() {
-    if (!waterProfileSelect.value) {
+    const filename = waterProfileSelect.value;
+    if (!filename) {
       notifications.reportError(null, t("errors.waterProfileRequired"));
       return;
     }
     const version = waterProfileRequests.reserve();
     try {
-      const profile = await api.fetchWaterProfileData(waterProfileSelect.value, t("errors.loadWaterProfile"));
-      if (!waterProfileRequests.isCurrent(version)) return;
+      const profile = await api.fetchWaterProfileData(filename, t("errors.loadWaterProfile"));
+      if (!waterProfileRequests.isCurrent(version) || waterProfileSelect.value !== filename) return;
       applyWaterProfile(profile);
-      api.persistPreferences({ last_water_profile: waterProfileSelect.value });
+      await api.persistPreferences({ last_water_profile: filename })
+        .catch((error) => notifications.reportError(error, t("errors.saveFailed")));
     } catch (error) {
-      if (waterProfileRequests.isCurrent(version)) notifications.reportError(error, t("errors.loadWaterProfile"));
+      if (waterProfileRequests.isCurrent(version) && waterProfileSelect.value === filename) {
+        notifications.reportError(error, t("errors.loadWaterProfile"));
+      }
     }
   }
 
@@ -843,7 +845,8 @@ function renderWaterProfileOptions() {
       waterProfileSelect.value = "default.yml";
       syncSelectedOptionTitle(waterProfileSelect);
       applyWaterProfile(profile);
-      api.persistPreferences({ last_water_profile: "default.yml" });
+      await api.persistPreferences({ last_water_profile: "default.yml" })
+        .catch((error) => notifications.reportError(error, t("errors.saveFailed")));
     } catch (error) {
       if (waterProfileRequests.isCurrent(version)) notifications.reportError(error, t("errors.loadWaterProfile"));
     }
@@ -912,7 +915,6 @@ function renderWaterProfileOptions() {
     renderEmptyCalculation,
     renderTable: renderWaterTable,
     restoreSnapshot,
-    setProfiles,
     setResources,
     setOsmosisPercent(value) { osmosisPercentInput.value = Number(value) || 0; },
     setSelectedProfile(filename) {

@@ -31,6 +31,7 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
   let favoriteRecipes = new Set();
   let favoriteNutrientSolutions = new Set();
   let mounted = false;
+  let favoriteWritePending = false;
   const t = (key, params) => i18n.t(key, params);
 
   function activeFavorites() {
@@ -46,7 +47,7 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
     syncSelectedOptionTitle(select);
     const favorite = Boolean(selected) && activeFavorites().has(selected);
     const label = t(favorite ? "profile.removeFavorite" : "profile.addFavorite");
-    favoriteButton.disabled = !selected;
+    favoriteButton.disabled = !selected || favoriteWritePending;
     favoriteButton.textContent = favorite ? "★" : "☆";
     favoriteButton.setAttribute("aria-pressed", String(favorite));
     favoriteButton.setAttribute("aria-label", label);
@@ -90,15 +91,26 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
 
   async function toggleFavorite() {
     const filename = select.value;
-    if (!filename) return;
+    if (!filename || favoriteWritePending) return;
     const favorites = activeFavorites();
-    if (favorites.has(filename)) favorites.delete(filename);
+    const wasFavorite = favorites.has(filename);
+    if (wasFavorite) favorites.delete(filename);
     else favorites.add(filename);
+    favoriteWritePending = true;
     const preferenceKey = mode === "solver" ? "favorite_nutrient_solutions" : "favorite_recipes";
     renderOptions();
     select.value = filename;
     refreshSelectionActions();
-    await api.persistPreferences({ [preferenceKey]: [...favorites] });
+    try {
+      await api.persistPreferences({ [preferenceKey]: [...favorites] });
+    } catch (error) {
+      if (wasFavorite) favorites.add(filename);
+      else favorites.delete(filename);
+      notifications.reportError(error, t("errors.saveFailed"));
+    } finally {
+      favoriteWritePending = false;
+      renderOptions();
+    }
   }
 
   async function deleteSelected() {
@@ -132,7 +144,12 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
         const preferenceKey = activeMode === "solver"
           ? "favorite_nutrient_solutions"
           : "favorite_recipes";
-        await api.persistPreferences({ [preferenceKey]: [...favorites] });
+        try {
+          await api.persistPreferences({ [preferenceKey]: [...favorites] });
+        } catch (error) {
+          favorites.add(filename);
+          notifications.reportError(error, t("errors.saveFailed"));
+        }
       }
       if (!requests.isCurrent(version) || mode !== activeMode) return;
       const replacement = updatedProfiles.find((profile) => profile.filename === filename);
@@ -162,31 +179,34 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
   }
 
   async function loadSelected() {
-    if (!select.value) {
+    const filename = select.value;
+    if (!filename) {
       notifications.reportError(null, t("errors.profileRequired"));
       return;
     }
     const version = requests.reserve();
     const activeMode = mode;
     const includeSolverSetup = includeSolverSetupInput.checked;
+    const isCurrent = () => requests.isCurrent(version) && mode === activeMode && select.value === filename;
     try {
       if (activeMode === "solver") {
-        const solution = await api.fetchNutrientSolutionData(select.value, t("errors.loadNutrientSolution"));
-        if (!requests.isCurrent(version) || mode !== activeMode) return;
+        const solution = await api.fetchNutrientSolutionData(filename, t("errors.loadNutrientSolution"));
+        if (!isCurrent()) return;
         await actions.applyNutrientSolution(solution, {
           includeSetup: includeSolverSetup,
-          isCurrent: () => requests.isCurrent(version),
+          isCurrent,
         });
-        if (!requests.isCurrent(version) || mode !== activeMode) return;
+        if (!isCurrent()) return;
         nameInput.value = solution.name || "";
       } else {
-        const recipe = await api.fetchRecipeData(select.value, t("errors.loadRecipe"));
-        if (!requests.isCurrent(version) || mode !== activeMode) return;
-        await actions.applyRecipeProfile(recipe, select.value, () => requests.isCurrent(version));
+        const recipe = await api.fetchRecipeData(filename, t("errors.loadRecipe"));
+        if (!isCurrent()) return;
+        await actions.applyRecipeProfile(recipe, filename, isCurrent);
+        if (!isCurrent()) return;
         nameInput.value = recipe.name || "";
       }
     } catch (error) {
-      if (requests.isCurrent(version) && mode === activeMode) {
+      if (isCurrent()) {
         notifications.reportError(error, t("errors.loadProfile"));
       }
     }

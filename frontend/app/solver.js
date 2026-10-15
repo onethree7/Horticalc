@@ -11,7 +11,6 @@ import {
   formatNumber,
   normalizeDecimalInputElement,
   parseDecimalInput,
-  roundScaledValue,
 } from "./formatting.js";
 import { applyScaledValues, bindScaleButtons, scaleAmountsByVolume } from "./scaling.js";
 import {
@@ -112,15 +111,16 @@ let solverAllowedFilter = "";
 let solverAllowedHideInactive = false;
 let searchTimer;
 let mounted = false;
+let solverIgnoredElements = new Set();
 
 const MASS_MODEL = "mass_nnls";
 const REPORT_ONLY_TARGETS = new Set(["Na", "Cl"]);
 const TARGET_PRIORITY_LEVELS = [1, 2, 3, 4, 0];
 
 function setTargetPriorities(priorities = {}, ignoredElements = []) {
-  const ignored = new Set(Array.isArray(ignoredElements) ? ignoredElements : []);
+  solverIgnoredElements = new Set(Array.isArray(ignoredElements) ? ignoredElements : []);
   solverTargetDefinitions.forEach(({ key }) => {
-    const reportOnly = REPORT_ONLY_TARGETS.has(key) || ignored.has(key);
+    const reportOnly = REPORT_ONLY_TARGETS.has(key) || solverIgnoredElements.has(key);
     const configured = priorities?.[key] || {};
     solverTargetPriorities[key] = {
       under: reportOnly ? 0 : normalizedPriority(configured.under),
@@ -131,7 +131,7 @@ function setTargetPriorities(priorities = {}, ignoredElements = []) {
 
 function serializedTargetPriorities() {
   return Object.fromEntries(solverTargetDefinitions.flatMap(({ key }) => {
-    if (REPORT_ONLY_TARGETS.has(key)) return [];
+    if (REPORT_ONLY_TARGETS.has(key) || solverIgnoredElements.has(key)) return [];
     const priorities = solverTargetPriorities[key] || {
       under: DEFAULT_TARGET_PRIORITY,
       over: DEFAULT_TARGET_PRIORITY,
@@ -144,12 +144,16 @@ function serializedTargetPriorities() {
 function buildCurrentSolverConfig() {
   return {
     ...buildSolverConfigPayload(solverConfigDefinitions, solverConfigControls),
+    ignored_elements: [...solverIgnoredElements],
     target_priorities: serializedTargetPriorities(),
   };
 }
 
-function persistCurrentSolverConfig() {
-  api.persistPreferences({ solver_config: buildCurrentSolverConfig() });
+function persistSolverConfig(config = buildCurrentSolverConfig()) {
+  return api.persistPreferences({ solver_config: config }).then(() => true).catch((error) => {
+    notifications.reportError(error, t("errors.saveFailed"));
+    return false;
+  });
 }
 
 function syncSolverModelControls() {
@@ -191,6 +195,7 @@ function applySolverTargetScaleFactor(nextFactor) {
   );
   updateSolverTargetScaleDisplay();
   renderSolverTargetsTable();
+  renderSolverResults(null);
 }
 
 function buildSolvePayload() {
@@ -230,7 +235,7 @@ function renderSolverTargetsTable() {
       const rawValue = Math.max(0, decimalInputValue(event.target.value));
       solverTargetValues[field.key] = rawValue;
       solverTargetBaseValues[field.key] =
-        solverTargetScaleFactor > 0 ? roundScaledValue(rawValue / solverTargetScaleFactor) : 0;
+        solverTargetScaleFactor > 0 ? rawValue / solverTargetScaleFactor : 0;
       renderSolverResults(null);
     });
     input.addEventListener("change", () => {
@@ -268,11 +273,12 @@ function renderSolverTargetsTable() {
           ? t(`solver.priority.${direction}Hint`, { element: field.label })
           : t("solver.priority.selectHierarchicalHint");
       select.addEventListener("change", () => {
+        solverIgnoredElements.delete(field.key);
         solverTargetPriorities[field.key][direction] = normalizedPriority(select.value);
         const current = solverTargetPriorities[field.key];
         row.classList.toggle("solver-target-report-only", current.under === 0 && current.over === 0);
         renderSolverResults(null);
-        persistCurrentSolverConfig();
+        persistSolverConfig();
       });
       cell.appendChild(select);
       return cell;
@@ -636,7 +642,7 @@ function missingFertilizers(names = []) {
   return names.filter((name) => !available.has(name));
 }
 
-function updateSolverAllowedFertilizers(names, mode = "merge", { rerenderPicker = true } = {}) {
+function updateSolverAllowedFertilizers(names, mode = "merge", { rerenderPicker = true, persist = true } = {}) {
   const uniqueNames = Array.from(new Set(names.filter(Boolean)));
   if (mode === "replace") {
     solverAllowedFertilizers.length = 0;
@@ -655,7 +661,7 @@ function updateSolverAllowedFertilizers(names, mode = "merge", { rerenderPicker 
     updateSolverAllowedCount();
   }
   renderSolverFixedTable();
-  persistSolverAllowedToStorage();
+  if (persist) persistSolverAllowedToStorage();
   renderSolverResults(null);
 }
 
@@ -700,12 +706,13 @@ function restoreSolverAllowedFromStorage(context = solverAllowedContext) {
   return true;
 }
 
-function setFertilizers(fertilizers) {
+function setFertilizers(fertilizers, { persist = true } = {}) {
   fertilizerOptions = fertilizers || [];
   const available = new Set(fertilizerOptions.map(({ name }) => name));
   updateSolverAllowedFertilizers(
     solverAllowedFertilizers.filter((name) => available.has(name)),
     "replace",
+    { persist },
   );
 }
 
@@ -742,9 +749,7 @@ function bindConfigEvents() {
         renderSolverTargetsTable();
       }
       renderSolverResults(null);
-      api.persistPreferences({
-        solver_config: buildCurrentSolverConfig(),
-      });
+      persistSolverConfig();
     });
     if (definition.type !== "boolean"
       && definition.type !== "string"
@@ -793,14 +798,13 @@ function mount({ configDefinitions = [], config = {} } = {}) {
   });
   solverAllowedClearButton?.addEventListener("click", () => updateSolverAllowedFertilizers([], "replace"));
   solverAutoApplyInput?.addEventListener("change", persistSolverAutoApplyPreference);
-  solverConfigResetDefaultsButton?.addEventListener("click", () => {
+  solverConfigResetDefaultsButton?.addEventListener("click", async () => {
     setTargetPriorities();
     applySolverConfig(solverConfigDefinitions, solverConfigControls);
     syncSolverModelControls();
     renderSolverTargetsTable();
     renderSolverResults(null);
-    api.persistPreferences({ solver_config: {} });
-    notifications.setSolverApplyStatus(t("solver.configResetDone"));
+    if (await persistSolverConfig({})) notifications.setSolverApplyStatus(t("solver.configResetDone"));
   });
   solverUreaToggle.addEventListener("change", () => renderSolverResults(null));
   solveButton.addEventListener("click", async () => {
@@ -868,7 +872,6 @@ return {
   refreshLocalized,
   renderResults: renderSolverResults,
   resetTargets: resetSolverTargets,
-  restoreAllowed: restoreSolverAllowedFromStorage,
   scaleFixedAmounts,
   setAllowedContext,
   setAllowedFertilizers: updateSolverAllowedFertilizers,

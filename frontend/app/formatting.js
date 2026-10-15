@@ -26,10 +26,6 @@ export function formatNumber(value, formatter = defaultNumberFormatter) {
   return Number.isFinite(value) ? formatter.format(value) : "-";
 }
 
-export function roundScaledValue(value) {
-  return Math.round(value * 1000) / 1000;
-}
-
 export function buildAlignedRows(headers, rows, numericColumns = []) {
   const allRows = headers ? [headers, ...rows] : rows;
   const widths = allRows.reduce((current, row) => {

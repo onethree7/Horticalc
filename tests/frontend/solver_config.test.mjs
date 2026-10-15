@@ -40,7 +40,7 @@ test("solver configuration retains schema bounds and normalizes input", () => {
   });
 });
 
-test("solver payload formatting removes zero entries without changing public keys", () => {
+test("solver payload retains zero targets and omits inactive fixed amounts", () => {
   assert.equal(formatClipboardIonLabel("N_total"), "N");
   assert.deepEqual(buildSolvePayload({
     liters: 10,
@@ -56,7 +56,7 @@ test("solver payload formatting removes zero entries without changing public key
     },
   }), {
     liters: 10,
-    targets: { K: 100 },
+    targets: { K: 100, Ca: 0 },
     water_profile: { mg_per_l: { Ca: 20 }, osmosis_percent: 25 },
     fertilizers_allowed: ["A"],
     fixed_grams: { B: 2 },
@@ -66,4 +66,18 @@ test("solver payload formatting removes zero entries without changing public key
       target_priorities: { N_total: { under: 1, over: 1 }, Cu: { under: 4, over: 4 } },
     },
   });
+});
+
+test("zero nitrogen form targets reach the domain objective selection", () => {
+  const payload = buildSolvePayload({
+    liters: 1,
+    targetValues: { N_NO3: 100, N_NH4: 0, N_UREA: 0 },
+    waterMgPerL: {},
+    osmosisPercent: 0,
+    allowedFertilizers: ["Mixed"],
+    fixedGrams: {},
+    ureaAsNh4: false,
+    solverConfig: { nitrogen_objective_mode: "n_forms_only" },
+  });
+  assert.deepEqual(payload.targets, { N_NO3: 100, N_NH4: 0, N_UREA: 0 });
 });

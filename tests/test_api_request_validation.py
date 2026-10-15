@@ -7,6 +7,22 @@ from fastapi.testclient import TestClient
 import api.app as api_app
 
 
+@pytest.mark.parametrize(
+    "route, payload, invalid_input",
+    [
+        ("/solve", '{"targets": [NaN]}', ["nan"]),
+        ("/solve", '{"targets": [Infinity, -Infinity]}', ["inf", "-inf"]),
+        ("/calculate", '{"liters": {"x": NaN}}', {"x": "nan"}),
+        ("/calculate", '{"liters": {"x": [Infinity]}}', {"x": ["inf"]}),
+    ],
+)
+def test_nested_non_finite_validation_inputs_return_422(api_client_no_raise, route, payload, invalid_input) -> None:
+    response = api_client_no_raise.post(route, content=payload, headers={"content-type": "application/json"})
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["input"] == invalid_input
+
+
 def test_yaml_save_rejects_malformed_or_non_object_payloads(api_client_no_raise: TestClient) -> None:
     malformed = api_client_no_raise.post(
         "/water-profiles",

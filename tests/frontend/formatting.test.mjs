@@ -5,7 +5,6 @@ import {
   buildAlignedRows,
   formatNumber,
   parseDecimalInput,
-  roundScaledValue,
 } from "../../frontend/app/formatting.js";
 
 test("decimal parsing accepts both supported separators and rejects invalid values", () => {
@@ -16,7 +15,7 @@ test("decimal parsing accepts both supported separators and rejects invalid valu
 });
 
 test("number and clipboard formatting are deterministic", () => {
-  assert.equal(roundScaledValue(1.23456), 1.235);
+  assert.equal(formatNumber(1.23456), "1.235");
   assert.equal(formatNumber(Number.NaN), "-");
   assert.deepEqual(
     buildAlignedRows(["name", "g"], [["A", "2"], ["long", "10"]], [1]),

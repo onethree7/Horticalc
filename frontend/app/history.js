@@ -1,5 +1,6 @@
 import { qs } from "./dom.js";
 import { buildSolverPrintableText } from "./solver_printable.js";
+import { createLatestRequestGate } from "../request_gate.js";
 
 const HISTORY_DEFAULT_LIMIT = 1000;
 const HISTORY_PREVIEW_MAX_LINES = 18;
@@ -47,6 +48,7 @@ export function createHistoryController({ api, i18n, notifications, units, onRes
   const copyButton = qs("#copySolverHistoryEntry");
   const restoreButton = qs("#restoreSolverHistoryEntry");
   const detailCache = new Map();
+  const dialogRequests = createLatestRequestGate();
   const t = (key, params) => i18n.t(key, params);
   let entries = [];
   let limit = HISTORY_DEFAULT_LIMIT;
@@ -126,6 +128,7 @@ export function createHistoryController({ api, i18n, notifications, units, onRes
   }
 
   async function openDetail(entry) {
+    const version = dialogRequests.reserve();
     activePreviewId = "";
     preview.classList.add("is-hidden");
     activeDialogDetail = null;
@@ -138,11 +141,13 @@ export function createHistoryController({ api, i18n, notifications, units, onRes
     else dialog.setAttribute("open", "");
     try {
       const detail = await fetchDetail(entry.id);
+      if (!dialogRequests.isCurrent(version) || !dialog.hasAttribute("open")) return;
       activeDialogDetail = detail;
       dialogOutput.textContent = detailText(detail);
       copyButton.disabled = false;
       restoreButton.disabled = false;
     } catch (error) {
+      if (!dialogRequests.isCurrent(version) || !dialog.hasAttribute("open")) return;
       dialogOutput.textContent = t("history.previewUnavailable");
       notifications.reportError(error, t("errors.loadSolverHistoryEntry"));
     }
@@ -235,7 +240,11 @@ export function createHistoryController({ api, i18n, notifications, units, onRes
       }
     });
     dialog.addEventListener("close", () => {
+      if (dialog.hasAttribute("open")) return;
+      dialogRequests.invalidate();
       activeDialogDetail = null;
+      copyButton.disabled = true;
+      restoreButton.disabled = true;
       dialogStatus.textContent = "";
     });
   }

@@ -1,0 +1,136 @@
+.is-stock-view > section:not(#stockSolutionPanel) {
+  display: none;
+}
+
+.stock-panel {
+  min-width: 0;
+}
+
+.stock-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-4);
+  margin-block: var(--space-4);
+}
+
+.stock-controls label {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.stock-controls input {
+  width: 9rem;
+  min-width: 0;
+}
+
+.stock-input,
+.stock-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stock-checkbox {
+  margin-block: var(--space-3);
+}
+
+.stock-tank-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-4);
+}
+
+.stock-tank {
+  padding: var(--space-4);
+  overflow-wrap: anywhere;
+}
+
+.stock-panel li {
+  margin-block: var(--space-2);
+}
+
+.stock-panel details {
+  margin-block: var(--space-4);
+}
+
+.stock-panel summary {
+  cursor: pointer;
+}
+
+#stockIngredients td:first-child {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+#stockIngredients td:nth-child(2) {
+  min-width: 10rem;
+}
+
+#stockIngredients td:last-child {
+  white-space: nowrap;
+}
+
+#stockIngredients select {
+  width: 100%;
+}
+
+.stock-findings [data-severity="review"] {
+  border-left: 3px solid var(--app-red, #d66f5e);
+  padding-left: var(--space-3);
+  font-weight: 700;
+}
+
+#stockOutput[hidden],
+#stockTankSettings[hidden],
+#stockPrintSheet {
+  display: none;
+}
+
+@media print {
+  html.printing-stocks {
+    height: auto;
+    overflow: visible;
+  }
+
+  body.printing-stocks {
+    height: auto;
+    overflow: visible;
+    background: white;
+    color: black;
+    text-shadow: none;
+    zoom: 1;
+  }
+
+  body.printing-stocks::after,
+  .printing-stocks .app-rail,
+  .printing-stocks #profileSection,
+  .printing-stocks .workspace > :not(#calculatorMode),
+  .printing-stocks #calculatorMode > :not(#stockSolutionPanel),
+  .printing-stocks #stockSolutionPanel > :not(#stockPrintSheet) {
+    display: none;
+  }
+
+  .printing-stocks :is(.app-shell, .workspace, #calculatorMode, #stockSolutionPanel) {
+    display: block;
+    width: auto;
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: white;
+    box-shadow: none;
+  }
+
+  .printing-stocks #stockPrintSheet {
+    display: block;
+    font: 10pt/1.5 sans-serif;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+}

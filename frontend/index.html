@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="styles/shell.css?v=layout15" />
     <link rel="stylesheet" href="styles/components.css?v=layout15" />
     <link rel="stylesheet" href="styles/responsive.css?v=layout15" />
+    <link rel="stylesheet" href="styles/stocks.css" />
   </head>
   <body class="compact app-body">
     <svg class="icon-sprite" aria-hidden="true" focusable="false">
@@ -259,6 +260,7 @@
           </div>
           <div class="live-meta">
             <span id="liveLastCalc" data-i18n="status.noCalculation">No calculation yet</span>
+            <span id="stockSidebarLabel"></span>
           </div>
         </aside>
       </aside>
@@ -379,6 +381,44 @@
       </section>
 
       <div class="mode-panel" id="calculatorMode" data-testid="calculator-view">
+        <section class="block stock-panel is-hidden" id="stockSolutionPanel" aria-labelledby="stockTitle">
+          <div class="block-heading">
+            <h2 id="stockTitle" data-i18n="stock.title">Stock solutions</h2>
+            <button id="closeStocks" class="btn btn--outline" type="button" data-i18n="stock.back">Back to recipe</button>
+          </div>
+          <p id="stockContext" class="hint"></p>
+          <p class="hint" data-i18n="stock.guidance">Tank suggestions use declared composition. Product formulations stay intact; solubility, pH, chelator type, temperature and shelf life are not evaluated. Review product instructions before preparing a concentrate.</p>
+          <p class="hint" data-i18n="stock.waterAssumption">Prepare stocks with RO/distilled water, modeled as mineral-free. The water analysis still applies to the final batch.</p>
+          <div class="stock-controls">
+            <label><span data-i18n="stock.volume">Finished volume per stock</span><span class="stock-input"><input id="stockVolume" class="input-field" type="text" inputmode="decimal" value="1" /><span class="stock-volume-unit">L</span></span></label>
+            <label><span data-i18n="stock.factor">Concentration factor</span><span class="stock-input"><input id="stockFactor" class="input-field" type="text" inputmode="decimal" value="100" /><span>×</span></span></label>
+            <button id="addStockC" class="btn btn--outline" type="button" data-i18n="stock.addC">Add C</button>
+          </div>
+          <details id="stockDetails">
+            <summary data-i18n="stock.details">Preparation details</summary>
+            <label class="stock-checkbox"><input id="stockIndependent" type="checkbox" /><span data-i18n="stock.independent">Set volume and strength separately for each stock</span></label>
+            <div id="stockTankSettings" class="stock-controls"></div>
+          </details>
+          <div class="table-wrap"><table class="grid grid--form" id="stockIngredients"><thead><tr><th data-i18n="editor.fertilizerName">Fertilizer name</th><th data-i18n="stock.assignment">Assignment</th><th data-i18n="stock.amount">Amount for stock</th></tr></thead><tbody></tbody></table></div>
+          <div class="actions">
+            <button id="suggestStocks" class="btn btn--outline" type="button" data-i18n="stock.suggest">Suggest tank assignments</button>
+            <button id="updateStocks" class="btn btn--solver-primary" type="button" data-i18n="stock.update">Update plan</button>
+            <button id="copyStocks" class="btn btn--outline" type="button" disabled data-i18n="stock.copy">Copy preparation sheet</button>
+            <button id="printStocks" class="btn btn--outline" type="button" disabled data-i18n="stock.print">Print</button>
+          </div>
+          <p id="stockStatus" class="inline-hint" role="status" aria-live="polite"></p>
+          <div id="stockOutput">
+            <div id="stockTankCards" class="stock-tank-grid"></div>
+            <p id="stockBatchDose"></p>
+            <ul id="stockSeparate"></ul>
+            <h3 data-i18n="stock.instructions">Preparation and dosing</h3>
+            <ol id="stockInstructions"></ol>
+            <h3 id="stockChecksTitle" data-i18n="stock.checks">Checks and guidance</h3>
+            <ul id="stockFindings" class="stock-findings"></ul>
+          </div>
+          <p><a id="stockReading" target="_blank" rel="noopener noreferrer" data-i18n="stock.reading">Stock solutions and fertilizer compatibility (open 2 articles)</a></p>
+          <pre id="stockPrintSheet"></pre>
+        </section>
         <section class="block" data-panel-anchor="fertilizers" data-testid="fertilizer-selection-panel">
           <div class="section-heading">
             <span class="heading-icon" aria-hidden="true"><svg class="app-icon"><use href="#icon-components"></use></svg></span>
@@ -400,6 +440,7 @@
             </div>
             <div class="heading-actions">
               <button id="copyCalculatorResults" class="btn btn--outline" type="button" data-i18n="common.copyClipboard" disabled>Copy to clipboard</button>
+              <button id="makeCalculatorStocks" class="btn btn--outline" type="button" data-i18n="stock.make" disabled>Make stock solutions</button>
               <button id="calculateBtn" class="btn btn--solver-primary" type="button" data-i18n="calculator.calculate">Calculate</button>
               <span class="inline-hint" id="copyCalculatorResultsStatus" aria-live="polite"></span>
             </div>
@@ -604,6 +645,7 @@
           <div class="actions result-actions">
             <button id="copySolverResults" class="btn btn--outline" type="button" data-i18n="common.copyClipboard">Copy to clipboard</button>
             <button id="applySolverToCalculatorInline" class="btn btn--outline" type="button" data-i18n="profile.viewInCalculator">View in calculator</button>
+            <button id="makeSolverStocks" class="btn btn--outline" type="button" data-i18n="stock.make" disabled>Make stock solutions</button>
             <span class="inline-hint" id="copySolverResultsStatus" aria-live="polite"></span>
             <span class="inline-hint" id="solverApplyStatus" aria-live="polite"></span>
           </div>

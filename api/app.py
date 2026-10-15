@@ -75,6 +75,7 @@ from horticalc.solver_history import (
     solver_history_summaries,
     trim_solver_history,
 )
+from horticalc.stock_solutions import StockSettings, StockWater, migrate_stock_settings, plan_stock_solutions
 from horticalc.units import (
     CANONICAL_LIQUID_DOSE_UNIT,
     CANONICAL_SOLID_DOSE_UNIT,
@@ -105,6 +106,7 @@ DESKTOP_ROUTE_PREFIXES = (
     "/nutrient-solutions",
     "/molar-masses",
     "/recipes",
+    "/stock-solutions",
 )
 
 
@@ -147,7 +149,7 @@ class RequestBodyLimitMiddleware:
         async def replay_receive() -> Message:
             nonlocal message_index
             if message_index >= len(messages):
-                return {"type": "http.disconnect"}
+                return await receive()
             message = messages[message_index]
             message_index += 1
             return message
@@ -231,14 +233,21 @@ async def security_headers(request: Request, call_next):
     return response
 
 
-@app.exception_handler(RequestValidationError)
-async def request_validation_error(_request: Request, exc: RequestValidationError) -> JSONResponse:
-    errors = exc.errors()
+def _validation_details(errors: list[dict]) -> list[dict]:
     for error in errors:
         invalid_input = error.get("input")
         if isinstance(invalid_input, float) and not math.isfinite(invalid_input):
             error["input"] = str(invalid_input)
-    return JSONResponse(status_code=422, content={"detail": errors})
+        if "ctx" in error:
+            error["ctx"] = {
+                key: str(value) if isinstance(value, ValueError) else value for key, value in error["ctx"].items()
+            }
+    return errors
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_error(_request: Request, exc: RequestValidationError) -> JSONResponse:
+    return JSONResponse(status_code=422, content={"detail": _validation_details(exc.errors())})
 
 
 FERTILIZERS: Dict[str, Fertilizer] = {}
@@ -372,6 +381,29 @@ class RecipePayload(BaseModel):
     water_profile: Optional[str] = Field(default=None, max_length=MAX_NAME_LENGTH)
     osmosis_percent: FiniteFloat | None = Field(default=0, ge=0, le=100)
     solver_config: Dict[str, Any] = Field(default_factory=dict, max_length=MAX_MAPPING_ITEMS)
+    stock_solution: StockSettings | None = None
+
+
+class StockPlanRequest(BaseModel):
+    recipe: RecipeRequest
+    settings: StockSettings = Field(default_factory=StockSettings)
+    suggest_assignments: bool = False
+
+
+class StockSettingsMigrationRequest(BaseModel):
+    settings: Dict[str, Any] = Field(max_length=MAX_MAPPING_ITEMS)
+
+
+class StockPlanResponse(BaseModel):
+    liters: FiniteFloat
+    ingredients: List[Dict[str, Any]]
+    tanks: List[Dict[str, Any]]
+    complete: bool
+    exportable: bool
+    makeup_water_liters: FiniteFloat
+    findings: List[Dict[str, Any]]
+    settings: StockSettings
+    final_solution: CalculationResponse | None
 
 
 async def _parse_request_payload(request: Request) -> dict:
@@ -397,12 +429,7 @@ def _validated_request_model(model_type: type[BaseModel], payload: dict) -> Base
     try:
         return model_type.model_validate(payload)
     except ValidationError as exc:
-        errors = exc.errors(include_url=False)
-        for error in errors:
-            invalid_input = error.get("input")
-            if isinstance(invalid_input, float) and not math.isfinite(invalid_input):
-                error["input"] = str(invalid_input)
-        raise HTTPException(status_code=422, detail=errors) from exc
+        raise HTTPException(status_code=422, detail=_validation_details(exc.errors(include_url=False))) from exc
 
 
 def _model_dump(model: BaseModel) -> dict:
@@ -970,7 +997,10 @@ def recipe(recipe_name: str) -> dict:
     )
     if not recipe_path.exists():
         raise HTTPException(status_code=404, detail="Recipe not found")
-    return load_recipe(recipe_path)
+    try:
+        return load_recipe(recipe_path)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.delete("/recipes/{recipe_name}")
@@ -1008,6 +1038,8 @@ async def save_recipe_profile(request: Request) -> dict:
         payload_out["water_profile"] = recipe.water_profile
     if recipe.osmosis_percent is not None:
         payload_out["osmosis_percent"] = recipe.osmosis_percent
+    if recipe.stock_solution is not None:
+        payload_out["stock_solution"] = recipe.stock_solution.model_dump()
 
     recipes_dir = _portable_layout().recipes
     recipe_path = _saved_yaml_path(recipes_dir, name, "Recipe name results in empty filename")
@@ -1015,9 +1047,7 @@ async def save_recipe_profile(request: Request) -> dict:
     return {"status": "ok", "filename": recipe_path.name}
 
 
-@app.post("/calculate", response_model=CalculationResponse)
-def calculate(payload: RecipeRequest) -> CalculationResponse:
-    _ensure_initialized()
+def _calculation_inputs(payload: RecipeRequest) -> tuple[dict, dict[str, float], float]:
     water_mg_l: Dict[str, float] = {}
     osmosis_percent = 0.0
     if payload.water_profile_name:
@@ -1043,6 +1073,39 @@ def calculate(payload: RecipeRequest) -> CalculationResponse:
         "fertilizers": [_model_dump(entry) for entry in payload.fertilizers],
         "urea_as_nh4": payload.urea_as_nh4,
     }
+    return recipe, water_mg_l, osmosis_percent
+
+
+@app.post("/stock-solutions/migrate-settings", response_model=StockSettings)
+def stock_settings_migration(payload: StockSettingsMigrationRequest) -> StockSettings:
+    try:
+        return migrate_stock_settings(payload.settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/stock-solutions/plan", response_model=StockPlanResponse)
+def stock_plan(payload: StockPlanRequest) -> StockPlanResponse:
+    _ensure_initialized()
+    recipe, water_mg_l, osmosis_percent = _calculation_inputs(payload.recipe)
+    try:
+        result = plan_stock_solutions(
+            recipe,
+            StockWater(mg_per_l=water_mg_l, osmosis_percent=osmosis_percent),
+            payload.settings,
+            FERTILIZERS,
+            MOLAR_MASSES,
+            suggest_assignments=payload.suggest_assignments,
+        )
+    except (ValueError, OverflowError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return StockPlanResponse(**result)
+
+
+@app.post("/calculate", response_model=CalculationResponse)
+def calculate(payload: RecipeRequest) -> CalculationResponse:
+    _ensure_initialized()
+    recipe, water_mg_l, osmosis_percent = _calculation_inputs(payload)
 
     try:
         result = compute_solution(

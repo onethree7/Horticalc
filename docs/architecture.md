@@ -17,7 +17,7 @@ The launcher reserves a loopback listening socket before claiming the
 single-instance lock and gives that socket directly to uvicorn. It waits for
 `/health`, then opens a pywebview window at the local origin. Windows selects
 WebView2; Linux selects GTK/WebKitGTK. The application does not open or control
-an external browser.
+an external browser during startup.
 
 A second launch authenticates to the hidden activation endpoint using the
 random token in the owner lock, restores the existing native window, and exits.
@@ -49,10 +49,49 @@ cookie and reject requests carrying a foreign `Origin`; the supported
 automation routes remain available to loopback clients without a desktop
 session.
 
+The request-body limit buffers and replays accepted body chunks. Once replay
+is complete, further receive calls use the transport so response handling
+observes the actual client connection lifetime.
+
 The frontend uses native ES modules with no production bundler or
 Python–JavaScript bridge. Feature controllers own their UI state; shared
 transport, formatting, units, and storage helpers remain independent of the
 feature DOM.
+
+Stock preparation is a Calculator subview owned by `frontend/app/stocks.js`.
+Calculator and Solver retain the accepted request alongside its result; changes
+to calculation inputs invalidate dependent preparation output. The composition
+root connects the controllers without cross-feature imports.
+
+`src/horticalc/stock_solutions.py` scales the selected recipe using the existing
+fertilizer definitions. It compares declared composition between different
+products, preserving each manufacturer's formulation as one ingredient. The
+same pair risks drive deterministic, best-effort tank suggestions and advisory
+findings. Calcium/phosphorus, calcium/sulfate, carbonate and silicon risks guide
+separation; magnesium/phosphorus prefers separation when a tank is available,
+but remains advisory because it depends on pH and concentration. Trace-metal
+contents alone do not trigger findings or separation suggestions. Liquid
+products and products without composition need manual assignment. Existing
+assignments are never overwritten by suggestions, and products that do not fit
+remain open.
+
+The planner has no filesystem or HTTP operations and does not alter Solver
+objectives. The API validates input and returns the preparation plan. Stocks
+retain reviewed material fingerprints until explicit reassessment. Export
+readiness is calculated by the planner from assignments, capacity and pending
+product changes; chemical guidance remains advisory. Batch-volume changes
+refresh an open preparation view after Calculator accepts its scaled request,
+using the existing request gate to discard superseded preparation responses.
+Configured stock volumes and concentration factors stay unchanged. Stocks
+use mineral-free RO/distilled preparation water. The existing core computes
+the diluted result using an additive-volume estimate for displaced batch
+water. It does not predict concentrate pH, solubility,
+temperature-dependent stability or shelf life. Recipe attachments persist
+settings and source-water context; derived output is recomputed.
+
+The reading action opens both external articles in the system browser through
+the desktop renderer's existing new-window handler. Text selection overlapping
+the stock panel is copied as plain text so HTML form options are not exported.
 
 ## AppRoot and persistence
 

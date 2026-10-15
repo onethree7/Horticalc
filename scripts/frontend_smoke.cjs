@@ -1,6 +1,7 @@
 const { chromium } = require("playwright");
 const fs = require("node:fs");
 const { URL } = require("node:url");
+const { assertStockWorkflow, assertSolverStockHandoff } = require("./stock_smoke.cjs");
 
 const baseUrl = process.env.HORTICALC_TEST_URL || "http://127.0.0.1:8765";
 const browserCandidates = process.platform === "win32"
@@ -972,6 +973,7 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
     await page.locator("#calculatorMode:not(.is-hidden)").waitFor();
     await page.locator("[data-shell-view='solver']").click();
     await page.locator("#solverMode:not(.is-hidden)").waitFor();
+    await assertSolverStockHandoff(page);
     const firstHistoryRow = page.locator("#solverHistoryList .rail-history-row").first();
     await firstHistoryRow.locator(".rail-history-pin").click();
     await firstHistoryRow.locator(".rail-history-pin[aria-pressed='true']").waitFor();
@@ -1006,6 +1008,7 @@ async function exerciseTargetProfileLoadModes(page, getLoadCount, savedFixedGram
     if (dialogs.length) throw new Error(`Application dialogs:\n${dialogs.join("\n")}`);
     await page.locator("#calculatorMode:not(.is-hidden)").waitFor();
     await assertCrossViewLocalization(page);
+    await assertStockWorkflow(page, assertNoPageOverflow);
 
     for (const width of [900, 600, 500]) {
       await page.setViewportSize({ width, height: 900 });

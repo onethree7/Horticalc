@@ -453,7 +453,7 @@ def test_run_webview_uses_native_window_without_js_bridge(tmp_path, monkeypatch)
         "private_mode": False,
         "storage_path": str(tmp_path),
     }
-    assert fake_webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] is False
+    assert fake_webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] is True
     assert fake_webview.settings["ALLOW_DOWNLOADS"] is False
     assert server.should_exit is True
 

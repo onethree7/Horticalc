@@ -93,6 +93,59 @@ fertilizers:
 shipped `default.yml` contains no fertilizer; other shipped recipes are
 zero-water reference calculations rather than crop recommendations.
 
+### Stock preparation attachment
+
+Recipes may contain an optional `stock_solution` object. Its validated schema
+is `StockSettings` in `src/horticalc/stock_solutions.py`:
+
+```yaml
+stock_solution:
+  schema_version: 2
+  tanks:
+    A: {liters: 1, factor: 100}
+    B: {liters: 1, factor: 100}
+  assignments:
+    Yara Tera CALCINIT: A
+  source_water: {mg_per_l: {Ca: 80}, osmosis_percent: 0}
+```
+
+Tank keys are A, B and optional C. Stock volumes are finished liters; factors
+must exceed 1. Assignments use a catalog material name and A/B/C, `separate`, or
+`null` for an unresolved assignment. Duplicate recipe rows are combined by name
+for preparation only. Empty tanks are not dosed.
+
+The attachment also records `material_fingerprints` for reassessment.
+Fingerprints bind material name, liquid flag, density/weight factor
+and composition, excluding Solver limits. Quantities and findings are computed
+again. A changed definition retains its previously reviewed fingerprint until
+the user explicitly confirms the assignment against the current product data.
+Missing attachments retain the ordinary recipe behavior. The UI restores
+`source_water` when present instead
+of resolving a potentially changed named water profile.
+
+For canonical recipe dose `q` in `V` liters, a stock of `S` finished liters at
+factor `F` contains `q / V * S * F` of that product. Dose `1000 / F` mL per final
+liter. The usual solid-g/liquid-mL convention applies; density conversion occurs
+in the existing calculation core. Water contributions are normalized separately
+and the source-water RO fraction applied once. Stocks use mineral-free
+RO/distilled water and displace batch water using an additive-volume estimate.
+
+Composition-based suggestions inspect pairs of different fertilizer products,
+not ingredients within one manufacturer formulation. They identify potential
+calcium/phosphorus, calcium/sulfate, magnesium/phosphorus, carbonate and silicon
+mixing risks. Trace-metal contents alone do not trigger a finding. Oxide
+declarations do not identify chemical species, chelators, pH or product
+solubility limits. Findings
+are advisory and do not establish either incompatibility or compatibility.
+
+Loading a version-one recipe attachment migrates mineral-free preparation-water
+settings to version two and saves the original file beside it with a
+`.legacy-backup` suffix (numbered when necessary). Mineralized preparation water
+is rejected with an explanation; the original file stays unchanged. The desktop
+snapshot uses the same migration through an internal endpoint and retains its
+original value under `last_solution_calculated_stock_backup`. Normal planning
+and saving accept only the current schema.
+
 ## Nutrient target profiles
 
 ```yaml

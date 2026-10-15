@@ -872,7 +872,6 @@ function renderWaterProfileOptions() {
     waterUnitToggle.addEventListener("change", (event) => {
       waterUnit = event.target.checked ? "mol_l" : "mg_l";
       renderWaterTable();
-      scheduleRecalculate();
     });
     summaryViewToggle?.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-summary-view]");

@@ -141,3 +141,29 @@ and the static frontend are implementation APIs for the desktop UI. They may be
 visible in OpenAPI, but they are not part of the supported external contract
 defined by this page. The persistence and desktop-data routes require the
 authenticated session established by the launcher and reject foreign origins.
+
+The desktop stock planner uses `POST /stock-solutions/plan`, under the same
+session and origin checks. It accepts `recipe` with the calculation input shape
+and `settings` with the version-two recipe stock-attachment shape described in
+[Data formats](data-formats.md#stock-preparation-attachment). The response
+contains material assignments, finished stock quantities, per-liter and batch
+dosing, advisory product-pair findings, the normalized settings, and the
+expected diluted solution with its adjusted water contribution. Set
+`suggest_assignments: true` to fill open assignments from declared composition;
+existing choices are preserved. Normal planning does not assign products
+automatically. `complete` is false and `final_solution` is null
+while any ingredient remains unassigned. Chemistry review findings do not
+disable the arithmetic. `exportable` requires complete assignments, sufficient
+stock capacity for the batch and reviewed product changes. A `material_changed`
+finding includes the current `fingerprint`; after explicit review the client
+copies it into `settings.material_fingerprints` and recalculates. Recalculation
+alone retains the previously reviewed fingerprint and the finding.
+Invalid stock dimensions or non-finite calculations are rejected. This route
+is internal to the desktop UI; the supported external
+calculation and Solver contracts are unchanged.
+
+`POST /stock-solutions/migrate-settings` accepts a persisted attachment in
+`settings` and returns current settings. It is used once for a saved desktop
+snapshot, under the same session/origin checks. Legacy mineralized preparation
+water returns `400` rather than being replaced silently; normal planning rejects
+legacy attachment fields with `422`.

@@ -65,6 +65,7 @@ const solverTargetScaleValue = qs("#solverTargetScaleValue");
 const solverPriorityLegend = qs("#solverPriorityLegend");
 const solveButton = qs("#solveBtn");
 const copySolverResultsButton = qs("#copySolverResults");
+const makeSolverStocksButton = qs("#makeSolverStocks");
 const solverAutoApplyInput = qs("#solverAutoApply");
 const applySolverToCalculatorInlineButton = qs("#applySolverToCalculatorInline");
 const saveSolverAsRecipeButton = qs("#saveSolverAsRecipe");
@@ -104,6 +105,7 @@ const summaryColumnOrder = SUMMARY_COLUMN_ORDER;
 let solverConfigDefinitions = [...FALLBACK_SOLVER_CONFIG_DEFINITIONS];
 let fertilizerOptions = [];
 let lastSolveResult = null;
+let lastSolveRequest = null;
 let solverTargetScaleFactor = 1;
 let solverAllowedContext = "global";
 let solverAllowedFilter = "";
@@ -469,7 +471,10 @@ function renderSolverFixedTable() {
 }
 
 function renderSolverResults(data) {
-  if (!data) solveRequests.invalidate();
+  if (!data) {
+    solveRequests.invalidate();
+    lastSolveRequest = null;
+  }
   lastSolveResult = data || null;
   updateSolverResultActions();
   solverTargetsResultsTableEl?.classList.toggle("is-hidden", !data);
@@ -556,7 +561,8 @@ async function copySolverResultsToClipboard() {
 
 async function solveRecipe() {
   const payload = buildSolvePayload();
-  return api.solve(payload, t("errors.solveFailed"));
+  const data = await api.solve(payload, t("errors.solveFailed"));
+  return { data, payload };
 }
 
 function applyNutrientSolution(solution) {
@@ -590,6 +596,7 @@ function resetSolverTargets() {
 function updateSolverResultActions() {
   const hasResult = !!(lastSolveResult && lastSolveResult.fertilizers && lastSolveResult.fertilizers.length);
   saveSolverAsRecipeButton.disabled = !hasResult;
+  makeSolverStocksButton.disabled = !hasResult;
   applySolverToCalculatorButton.disabled = !hasResult;
   if (copySolverResultsButton) {
     copySolverResultsButton.disabled = !hasResult;
@@ -803,8 +810,9 @@ function mount({ configDefinitions = [], config = {} } = {}) {
     }
     const version = solveRequests.reserve();
     try {
-      const data = await solveRecipe();
+      const { data, payload } = await solveRecipe();
       if (!solveRequests.isCurrent(version)) return;
+      lastSolveRequest = payload;
       renderSolverResults(data);
       onSolved(data);
       if (solverAutoApplyEnabled()) onApplyResult({ switchToCalculator: false });
@@ -841,6 +849,16 @@ return {
   get allowedFertilizers() { return [...solverAllowedFertilizers]; },
   get fixedGrams() { return { ...solverFixedGrams }; },
   get lastResult() { return lastSolveResult; },
+  get resultRecipe() {
+    if (!lastSolveResult || !lastSolveRequest) return null;
+    return JSON.parse(JSON.stringify({
+      liters: lastSolveRequest.liters,
+      fertilizers: lastSolveResult.fertilizers,
+      urea_as_nh4: lastSolveRequest.urea_as_nh4,
+      water_mg_l: lastSolveRequest.water_profile?.mg_per_l || {},
+      osmosis_percent: lastSolveRequest.water_profile?.osmosis_percent || 0,
+    }));
+  },
   get targets() { return { ...solverTargetValues }; },
   get ureaAsNh4() { return solverUreaToggle.checked; },
   get activeFixedAmountCount() { return activeSolverOverrideCount(); },

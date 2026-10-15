@@ -694,6 +694,7 @@ function ratioToOneText(value, leftLabel, rightLabel) {
 
 function renderIonRatios(metrics) {
   const ratios = metrics?.npk_ratios_ion || {};
+  const nitrogen = metrics?.n_form_pct;
   if (caMgRatioValue) {
     caMgRatioValue.textContent = ratioToOneText(ratios["Ca:Mg"], "Ca", "Mg");
   }
@@ -702,14 +703,26 @@ function renderIonRatios(metrics) {
   }
 
   ionRatioList.innerHTML = "";
-  ["N:K", "Ca:K", "Na:Mg", "SO4:P", "P:K", "Fe:Mg"].forEach((key) => {
+  const entries = [
+    ["N:K", ratios["N:K"]],
+    ["Ca:K", ratios["Ca:K"]],
+    ["NO3:NH4:UR (%)", nitrogen ? `${nitrogen.no3}:${nitrogen.nh4}:${nitrogen.urea}` : "-", "live.nitrogenFormsHint"],
+    ["SO4:P", ratios["SO4:P"]],
+    ["P:K", ratios["P:K"]],
+    ["Fe:Mg", ratios["Fe:Mg"]],
+  ];
+  entries.forEach(([name, ratio, titleKey]) => {
     const item = document.createElement("div");
     item.className = "ion-ratio-pill";
+    if (titleKey) {
+      item.dataset.i18nTitle = titleKey;
+      item.title = t(titleKey);
+    }
 
     const label = document.createElement("span");
-    label.textContent = key;
+    label.textContent = name;
     const value = document.createElement("strong");
-    value.textContent = ratioValueText(ratios[key]);
+    value.textContent = ratioValueText(ratio);
 
     item.append(label, value);
     ionRatioList.appendChild(item);

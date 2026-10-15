@@ -2,6 +2,7 @@ import { qs, qsa } from "./dom.js";
 
 const VIEW_CONFIG = {
   fertilizers: { mode: "calculator", anchor: "fertilizers" },
+  stocks: { mode: "calculator", anchor: "stocks" },
   water: { mode: "water", anchor: "water" },
   solver: { mode: "solver", anchor: "solver" },
   editor: { mode: "editor", anchor: "editor" },

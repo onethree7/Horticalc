@@ -1,4 +1,6 @@
 export default {
+  "workflow.stocksHint": "A/B/C uit het huidige recept",
+  "live.nitrogenFormsHint": "Aandelen nitraat-, ammonium- en ureumstikstof in de totale stikstof (%), uitgedrukt als N.",
   "stock.suggest": "Tankindeling voorstellen",
   "stock.reading": "Stockoplossingen en meststofcompatibiliteit (2 artikelen openen)",
   "stock.batchWater": "Water voor de uiteindelijke voeding vóór RO-menging",

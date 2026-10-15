@@ -12,9 +12,13 @@ async function assertStockWorkflow(page, assertNoPageOverflow) {
     const names = Array.from(document.querySelectorAll("#fertilizerSelectTable .searchable-combobox-input")).map((input) => input.value);
     return names.join("|") === "Yara Tera CALCINIT|K+S EPSO Top Bittersalz 16-39";
   });
-  await page.waitForFunction(() => !document.querySelector("#makeCalculatorStocks").disabled);
-  await page.locator("#makeCalculatorStocks").click();
+  await page.locator("#copyCalculatorResults:not([disabled])").waitFor();
+  const frameTop = await page.locator(".app-shell").evaluate((frame) => frame.getBoundingClientRect().top);
+  await page.locator("[data-shell-view='stocks']").click();
   await page.locator("#stockIngredients tbody tr").first().waitFor();
+  assert.equal(await page.locator(".app-shell").evaluate((frame) => frame.getBoundingClientRect().top), frameTop);
+  assert.equal(await page.locator('[data-shell-view="stocks"]').getAttribute("aria-current"), "page");
+  assert.equal(await page.locator('[data-shell-view="fertilizers"]').getAttribute("aria-current"), null);
   assert.equal(await page.locator("#copyStocks").isDisabled(), true);
   await page.locator("#suggestStocks").click();
   await page.waitForFunction(() => !document.querySelector("#copyStocks").disabled);
@@ -73,9 +77,9 @@ async function assertStockWorkflow(page, assertNoPageOverflow) {
   await page.locator("#profileSelect").selectOption("Browser_stock_plan.yml");
   await page.locator("#loadProfile").click();
   await page.locator("#stockSolutionPanel").waitFor({ state: "hidden" });
-  await page.waitForFunction(() => !document.querySelector("#makeCalculatorStocks").disabled);
+  await page.locator("#copyCalculatorResults:not([disabled])").waitFor();
   const restoredPlan = page.waitForResponse((response) => response.url().endsWith("/stock-solutions/plan"));
-  await page.locator("#makeCalculatorStocks").click();
+  await page.locator("[data-shell-view='stocks']").click();
   const mineralPlan = await (await restoredPlan).json();
   await page.locator("#stockIngredients tbody tr").first().waitFor();
   if (await page.locator("#copyStocks").isDisabled()) await page.locator("#suggestStocks").click();
@@ -104,7 +108,7 @@ async function assertStockWorkflow(page, assertNoPageOverflow) {
   for (const [locale, title] of [["de", "Stammlösungen"], ["nl", "Stockoplossingen"], ["es", "Soluciones madre"], ["zh", "母液"], ["en", "Stock solutions"]]) {
     await page.locator('[data-shell-view="water"]').click();
     await page.locator("#languageSelect").selectOption(locale);
-    await page.locator('[data-shell-view="fertilizers"]').click();
+    await page.locator('[data-shell-view="stocks"]').click();
     assert.equal(await page.locator("#stockTitle").innerText(), title);
     assert.equal(await page.locator("#copyStocks").isDisabled(), false);
   }
@@ -136,8 +140,8 @@ async function assertStockWorkflow(page, assertNoPageOverflow) {
     globalThis.localStorage.setItem("last_solution_calculated", JSON.stringify(snapshot));
   });
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => !document.querySelector("#makeCalculatorStocks").disabled);
-  await page.locator("#makeCalculatorStocks").click();
+  await page.locator("#copyCalculatorResults:not([disabled])").waitFor();
+  await page.locator("[data-shell-view='stocks']").click();
   await page.locator("#stockIngredients tbody tr").first().waitFor();
   if (await page.locator("#copyStocks").isDisabled()) await page.locator("#suggestStocks").click();
   await page.waitForFunction(() => !document.querySelector("#copyStocks").disabled);
@@ -153,14 +157,32 @@ async function assertStockWorkflow(page, assertNoPageOverflow) {
   await page.locator("#loadProfile").click();
   await resetCalculation;
   await page.waitForFunction(() => document.querySelectorAll("#fertilizerSelectTable .searchable-combobox-input").length === 1);
-  await page.waitForFunction(() => !document.querySelector("#makeCalculatorStocks").disabled);
-  await page.locator("#makeCalculatorStocks").click();
+  await page.locator("#copyCalculatorResults:not([disabled])").waitFor();
+  await page.locator("[data-shell-view='stocks']").click();
   await page.locator("#stockIngredients tbody tr").first().waitFor();
   if (await page.locator("#copyStocks").isDisabled()) await page.locator("#suggestStocks").click();
   await page.waitForFunction(() => !document.querySelector("#copyStocks").disabled);
   assert.equal(await page.locator("#stockFactor").inputValue(), "100");
   assert.equal(await page.locator("#stockIngredients tbody tr").count(), 1);
   await page.locator("#closeStocks").click();
+
+  await page.evaluate(() => {
+    const snapshot = JSON.parse(globalThis.localStorage.getItem("last_solution_calculated"));
+    snapshot.fertilizers = [];
+    snapshot.stock_solution = null;
+    globalThis.localStorage.setItem("last_solution_calculated", JSON.stringify(snapshot));
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.locator("#copyCalculatorResults:not([disabled])").waitFor();
+  await page.locator(".rail-settings").evaluate((element) => { element.open = true; });
+  await page.locator("#languageSelect").selectOption("en");
+  await page.locator('[data-shell-view="stocks"]').click();
+  await page.locator("#stockStatus", { hasText: "Calculate the current recipe first." }).waitFor();
+  assert.equal(await page.locator("#stockOutput").isVisible(), false);
+  assert.equal(await page.locator("#copyStocks").isDisabled(), true);
+  await page.locator("#closeStocks").click();
+  assert.equal(await page.locator('[data-shell-view="fertilizers"]').getAttribute("aria-current"), "page");
+  assert.equal(await page.locator("#calculatorTable").isVisible(), true);
 }
 
 async function assertStockReviewAndScaling(page) {
@@ -182,8 +204,8 @@ async function assertStockReviewAndScaling(page) {
   await page.locator("#profileSelect").selectOption("reference_calcinit_1g_per_l.yml");
   await page.locator("#loadProfile").click();
   await page.waitForFunction(() => document.querySelectorAll("#fertilizerSelectTable .searchable-combobox-input").length === 1);
-  await page.waitForFunction(() => !document.querySelector("#makeCalculatorStocks").disabled);
-  await page.locator("#makeCalculatorStocks").click();
+  await page.locator("#copyCalculatorResults:not([disabled])").waitFor();
+  await page.locator("[data-shell-view='stocks']").click();
   await page.locator("#stockFindings button", { hasText: "Assignment reviewed" }).waitFor();
   assert.equal(await page.locator("#copyStocks").isDisabled(), true);
   assert.equal(await page.locator("#addStockC").isDisabled(), true);
@@ -292,6 +314,8 @@ async function assertStockCopyAndControls(page) {
   assert.deepEqual(copied.types, ["text/plain"]);
   assert.match(copied.text, /Stock solutions/);
   assert.doesNotMatch(copied.text, /Choose…AB|Saved preparation-water analysis/);
+
+
 }
 
 async function assertSolverStockHandoff(page) {

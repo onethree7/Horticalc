@@ -1,4 +1,6 @@
 export default {
+  "workflow.stocksHint": "A/B/C aus dem aktuellen Rezept",
+  "live.nitrogenFormsHint": "Anteile von Nitrat-, Ammonium- und Harnstoffstickstoff am Gesamtstickstoff (%), jeweils als N.",
   "stock.suggest": "Tankzuordnung vorschlagen",
   "stock.reading": "Stammlösungen und Düngerkompatibilität (2 Artikel öffnen)",
   "stock.batchWater": "Wasser für die fertige Nährlösung vor RO-Mischung",

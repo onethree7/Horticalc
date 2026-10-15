@@ -1,7 +1,8 @@
 # Using Horticalc
 
-Horticalc opens as a native desktop application. Its four workflows share the
-same batch volume, water, fertilizer catalogue, units, and saved profiles.
+Horticalc opens as a native desktop application. Calculator, Solver, water
+analysis, fertilizer editing and stock preparation share the same batch volume,
+water, fertilizer catalogue, units, and saved profiles.
 
 ## Calculator
 
@@ -20,7 +21,8 @@ plus adds and selects a new row.
 The result separates fertilizer and water contributions and reports elemental
 and oxide concentrations, ions, ion balance, EC, and NPK ratios. Changing a
 display unit converts the visible quantity without changing the stored batch or
-dose.
+dose. The sidebar shows nitrate, ammonium and urea shares as **NO3:NH4:UR
+(%)**, calculated from their nitrogen contributions.
 
 Saved calculator recipes contain their batch, fertilizer doses, water profile,
 RO-water proportion, urea setting, optional solver configuration, and any stock
@@ -30,7 +32,9 @@ list without changing their files.
 
 ## Stock solutions
 
-Calculate a recipe, then choose **Make stock solutions**. The same action on a
+Calculate a recipe, then open **Stock solutions** in the main menu directly
+below **Calculator**. Without a calculated recipe, preparation shows a prompt
+to calculate one first. The **Make stock solutions** action on a
 current Solver result transfers its recipe to Calculator and opens preparation.
 **Back to recipe** returns to the normal Calculator tables.
 
@@ -102,6 +106,8 @@ values are mass fractions: `0.14` means 14%. A liquid product uses its weight
 factor as density when converting the displayed volume dose.
 
 Select an editor row and use minus to delete it from the editable list.
+The table fills the remaining workspace height at the selected interface scale;
+scroll inside it to reach further products while keeping the controls visible.
 
 **Solver max / L** limits the variable dose the Solver may select. An empty
 value means unlimited; `0` prevents variable selection while still allowing a

@@ -1,4 +1,6 @@
 export default {
+  "workflow.stocksHint": "Prepare A/B/C from your recipe",
+  "live.nitrogenFormsHint": "Nitrate, ammonium and urea shares of total nitrogen (%), each expressed as N.",
   "stock.suggest": "Suggest tank assignments",
   "stock.reading": "Stock solutions and fertilizer compatibility (open 2 articles)",
   "stock.batchWater": "Final batch water before RO mixing",

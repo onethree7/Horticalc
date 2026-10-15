@@ -84,53 +84,6 @@
 }
 
 #stockOutput[hidden],
-#stockTankSettings[hidden],
-#stockPrintSheet {
+#stockTankSettings[hidden] {
   display: none;
-}
-
-@media print {
-  html.printing-stocks {
-    height: auto;
-    overflow: visible;
-  }
-
-  body.printing-stocks {
-    height: auto;
-    overflow: visible;
-    background: white;
-    color: black;
-    text-shadow: none;
-    zoom: 1;
-  }
-
-  body.printing-stocks::after,
-  .printing-stocks .app-rail,
-  .printing-stocks #profileSection,
-  .printing-stocks .workspace > :not(#calculatorMode),
-  .printing-stocks #calculatorMode > :not(#stockSolutionPanel),
-  .printing-stocks #stockSolutionPanel > :not(#stockPrintSheet) {
-    display: none;
-  }
-
-  .printing-stocks :is(.app-shell, .workspace, #calculatorMode, #stockSolutionPanel) {
-    display: block;
-    width: auto;
-    height: auto;
-    max-height: none;
-    min-height: 0;
-    margin: 0;
-    padding: 0;
-    overflow: visible;
-    border: 0;
-    background: white;
-    box-shadow: none;
-  }
-
-  .printing-stocks #stockPrintSheet {
-    display: block;
-    font: 10pt/1.5 sans-serif;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
 }

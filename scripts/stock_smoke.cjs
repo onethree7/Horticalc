@@ -1,5 +1,13 @@
 const assert = require("node:assert/strict");
 
+async function copyResultText(page, button) {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.evaluate(() => globalThis.navigator.clipboard.writeText(""));
+  await page.locator(button).click();
+  await page.waitForFunction(async () => Boolean(await globalThis.navigator.clipboard.readText()));
+  return page.evaluate(async () => (await globalThis.navigator.clipboard.readText()).replace(/\r\n?/g, "\n"));
+}
+
 async function assertStockWorkflow(page, assertNoPageOverflow) {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.locator(".rail-settings").evaluate((element) => { element.open = true; });
@@ -13,6 +21,23 @@ async function assertStockWorkflow(page, assertNoPageOverflow) {
     return names.join("|") === "Yara Tera CALCINIT|K+S EPSO Top Bittersalz 16-39";
   });
   await page.locator("#copyCalculatorResults:not([disabled])").waitFor();
+  await page.locator('#summaryViewToggle button[data-summary-view="ion"]').click();
+  const nitrogenToggle = page.locator('#ionSummaryTable button[data-ion-n-toggle]');
+  if (await nitrogenToggle.getAttribute("aria-expanded") === "true") await nitrogenToggle.click();
+  const ratios = await page.locator("#ionRatioList .ion-ratio-pill").evaluateAll((items) =>
+    items.map((item) => [...item.children].map((element) => element.textContent.trim()))
+  );
+  const calciumMagnesium = await page.locator("#caMgRatio").innerText();
+  const collapsedCopy = await copyResultText(page, "#copyCalculatorResults");
+  assert.match(collapsedCopy, /^NO3-N\s+144$/m);
+  assert.match(collapsedCopy, /^NH4-N\s+11$/m);
+  assert.match(collapsedCopy, /^UREA-N\s+0$/m);
+  const ratioSection = collapsedCopy.slice(collapsedCopy.lastIndexOf("Ion ratios (mg/L)"));
+  for (const [label, value] of [["Ca:Mg", calciumMagnesium], ...ratios]) {
+    assert.ok(ratioSection.split("\n").some((line) => line.startsWith(label) && line.endsWith(value)), `${label}: ${value}\n${ratioSection}`);
+  }
+  await page.locator('#ionSummaryTable button[data-ion-n-toggle]').click();
+  assert.equal(await copyResultText(page, "#copyCalculatorResults"), collapsedCopy);
   const frameTop = await page.locator(".app-shell").evaluate((frame) => frame.getBoundingClientRect().top);
   await page.locator("[data-shell-view='stocks']").click();
   await page.locator("#stockIngredients tbody tr").first().waitFor();
@@ -37,15 +62,13 @@ async function assertStockWorkflow(page, assertNoPageOverflow) {
   await page.locator('#stockIngredients select[data-material="K+S EPSO Top Bittersalz 16-39"]').selectOption("A");
   await page.locator("#updateStocks").click();
   await page.locator('#stockFindings [data-severity="review"]').waitFor();
-  await page.locator("#copyStocks").click();
+  const copied = await copyResultText(page, "#copyStocks");
   await page.locator("#stockStatus", { hasText: /copied/i }).waitFor();
-  await page.evaluate(() => { globalThis.print = () => {}; });
-  await page.locator("#printStocks").click();
-  const printed = await page.locator("#stockPrintSheet").textContent();
-  assert.match(printed, /Calcium and sulfate come from different products/);
-  assert.match(printed, /1000\/|FINAL|final/);
-  assert.ok(printed.split("\n").includes("Science in Hydroponics: https://scienceinhydroponics.com/2017/09/five-things-you-should-know-when-mixing-your-own-hydroponic-liquid-nutrients.html"));
-  assert.doesNotMatch(printed, /Water contribution|No modeled nutrient difference/);
+  assert.equal(await page.locator("#printStocks, #stockPrintSheet").count(), 0);
+  assert.match(copied, /Calcium and sulfate come from different products/);
+  assert.match(copied, /1000\/|FINAL|final/);
+  assert.ok(copied.split("\n").includes("Science in Hydroponics: https://scienceinhydroponics.com/2017/09/five-things-you-should-know-when-mixing-your-own-hydroponic-liquid-nutrients.html"));
+  assert.doesNotMatch(copied, /Water contribution|No modeled nutrient difference/);
 
   await page.locator("#addStockC").click();
   await page.locator('#stockIngredients select[data-material="K+S EPSO Top Bittersalz 16-39"]').selectOption("C");
@@ -89,8 +112,7 @@ async function assertStockWorkflow(page, assertNoPageOverflow) {
   assert.equal(await page.locator("#stockSidebarLabel").innerText(), "Expected diluted result");
   assert.equal(await page.locator("#stockOutput table").count(), 0);
   assert.doesNotMatch(await page.locator("#stockOutput").innerText(), /Water contribution/);
-  await page.locator("#printStocks").click();
-  const mineralSheet = await page.locator("#stockPrintSheet").textContent();
+  const mineralSheet = await copyResultText(page, "#copyStocks");
   assert.match(mineralSheet, /200 mL A \+ 200 mL C/);
   assert.doesNotMatch(mineralSheet, /Water contribution|Recipe \(mg\/L\)|After stock dosing|Difference \(mg\/L\)/);
   await page.locator('#stockIngredients select[data-material="K+S EPSO Top Bittersalz 16-39"]').selectOption("");
@@ -188,7 +210,6 @@ async function assertStockWorkflow(page, assertNoPageOverflow) {
 async function assertStockReviewAndScaling(page) {
   await page.locator(".rail-settings").evaluate((element) => { element.open = true; });
   await page.locator("#languageSelect").selectOption("en");
-  await page.evaluate(() => { globalThis.print = () => {}; });
   const material = "Yara Tera CALCINIT";
   const oldFingerprint = "0".repeat(64);
   const recipeHandler = async (route) => {
@@ -257,14 +278,12 @@ async function assertStockReviewAndScaling(page) {
   await page.locator("#configLiters").fill("200");
   await page.locator("#stockStatus", { hasText: "Export blocked" }).waitFor();
   assert.equal(await page.locator("#copyStocks").isDisabled(), true);
-  assert.equal(await page.locator("#printStocks").isDisabled(), true);
   assert.match(await page.locator("#stockFindings").innerText(), /less stock/);
   await page.locator("#stockVolume").fill("2");
   await page.locator("#updateStocks").click();
   await page.waitForFunction(() => !document.querySelector("#copyStocks").disabled);
   assert.match(await page.locator("#stockBatchDose").innerText(), /2000 mL C/);
-  await page.locator("#printStocks").click();
-  assert.match(await page.locator("#stockPrintSheet").textContent(), /2000 mL C.*200 L FINAL/);
+  assert.match(await copyResultText(page, "#copyStocks"), /2000 mL C.*200 L FINAL/);
   await page.locator("#closeStocks").click();
   await page.unroute(recipeUrl, recipeHandler);
 }

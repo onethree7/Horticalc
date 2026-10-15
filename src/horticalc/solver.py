@@ -184,7 +184,9 @@ def _objective_keys(
     return keys
 
 
-def _fertilizer_element_contrib_per_g(fert: Fertilizer, mm: Dict[str, float]) -> Dict[str, float]:
+def _fertilizer_element_contrib_per_g(
+    fert: Fertilizer, mm: Dict[str, float], *, urea_as_nh4: bool = False
+) -> Dict[str, float]:
     elements: Dict[str, float] = {}
     wf = float(fert.weight_factor or 1.0)
 
@@ -195,7 +197,7 @@ def _fertilizer_element_contrib_per_g(fert: Fertilizer, mm: Dict[str, float]) ->
 
     for form, frac in fert.comp.items():
         mg_per_g = float(frac) * 1000.0 * wf
-        n_form_key = FERTILIZER_N_FORM_OUTPUT_KEYS.get(form)
+        n_form_key = FERTILIZER_N_FORM_OUTPUT_KEYS.get("NH4" if form == "UREA" and urea_as_nh4 else form)
         if n_form_key is not None:
             add("N_total", mg_per_g)
             add(n_form_key, mg_per_g)
@@ -293,10 +295,12 @@ def _build_matrix(
     mm: Dict[str, float],
     keys: List[str],
     liters: float,
+    *,
+    urea_as_nh4: bool = False,
 ) -> np.ndarray:
     matrix = np.zeros((len(keys), len(fertilizers)))
     for col, fert in enumerate(fertilizers):
-        contrib = _fertilizer_element_contrib_per_g(fert, mm)
+        contrib = _fertilizer_element_contrib_per_g(fert, mm, urea_as_nh4=urea_as_nh4)
         for row, key in enumerate(keys):
             matrix[row, col] = contrib.get(key, 0.0) / liters
     return matrix
@@ -380,8 +384,13 @@ def _score_percent_errors(
     objective_keys: List[str],
     targets_raw: Dict[str, float],
     achieved_elements: Dict[str, float],
+    *,
+    scale_eps_mg_per_l: float = 1.0,
 ) -> tuple[float, ...]:
-    return (max(_objective_percent_errors(objective_keys, targets_raw, achieved_elements), default=0.0),)
+    errors = _objective_percent_errors(
+        objective_keys, targets_raw, achieved_elements, scale_eps_mg_per_l=scale_eps_mg_per_l
+    )
+    return (max(errors, default=0.0),)
 
 
 def _signed_percent_error(target: float, achieved: float) -> float:
@@ -392,12 +401,17 @@ def _objective_percent_errors(
     objective_keys: List[str],
     targets_raw: Dict[str, float],
     achieved_elements: Dict[str, float],
+    *,
+    scale_eps_mg_per_l: float = 1.0,
 ) -> tuple[float, ...]:
     errors: list[float] = []
     for key in objective_keys:
         target = float(targets_raw.get(key, 0.0))
         achieved_val = float(achieved_elements.get(key, 0.0))
-        errors.append(abs(_signed_percent_error(target, achieved_val)))
+        error = (
+            achieved_val / scale_eps_mg_per_l * 100.0 if target == 0.0 else _signed_percent_error(target, achieved_val)
+        )
+        errors.append(abs(error))
     return tuple(errors)
 
 
@@ -500,6 +514,7 @@ def _singleton_supplier_pass(
     mode: str = "overshoot",
     use_potential_share: bool = False,
     upper_bounds_full: np.ndarray | None = None,
+    scale_eps_mg_per_l: float = 1.0,
 ) -> tuple[np.ndarray, Dict[str, float]]:
     adjusted = x_full.copy()
     skip = skip_keys or set()
@@ -551,8 +566,8 @@ def _singleton_supplier_pass(
             raise ValueError(f"Unknown singleton supplier mode: {mode}")
         achieved_new = recompute_achieved_fn(proposed)
         score_fn = _objective_percent_errors if mode == "overshoot" else _score_percent_errors
-        old_score = score_fn(objective_keys, targets_raw, achieved_elements)
-        new_score = score_fn(objective_keys, targets_raw, achieved_new)
+        old_score = score_fn(objective_keys, targets_raw, achieved_elements, scale_eps_mg_per_l=scale_eps_mg_per_l)
+        new_score = score_fn(objective_keys, targets_raw, achieved_new, scale_eps_mg_per_l=scale_eps_mg_per_l)
         improves = (mode == "overshoot" and achieved_new.get(key, 0.0) <= achieved_elements.get(key, 0.0)) or (
             mode == "underfill" and achieved_new.get(key, 0.0) >= achieved_elements.get(key, 0.0)
         )
@@ -677,6 +692,7 @@ class _VariantRunner:
             mode=mode,
             use_potential_share=use_potential_share,
             upper_bounds_full=problem.upper_bounds,
+            scale_eps_mg_per_l=problem.solver_config["scale_eps_mg_per_l"],
         )
         changed = bool(np.any(np.abs(updated_weights - weights) > 1e-12))
         return updated_weights, updated_elements, changed
@@ -750,11 +766,13 @@ class _VariantRunner:
                 self.problem.objective_keys,
                 self.problem.targets,
                 result[1],
+                scale_eps_mg_per_l=config["scale_eps_mg_per_l"],
             )
             unweighted_score = _score_percent_errors(
                 self.problem.objective_keys,
                 self.problem.targets,
                 unweighted[1],
+                scale_eps_mg_per_l=config["scale_eps_mg_per_l"],
             )
             if unweighted_score < weighted_score:
                 return unweighted
@@ -887,7 +905,9 @@ def _prepare_solve_problem(
         [targets.get(key, 0.0) - water_only.elements_mg_l.get(key, 0.0) for key in objective_keys],
         dtype=float,
     )
-    matrix = _build_matrix(allowed, molar_masses, objective_keys, liters)
+    matrix = _build_matrix(
+        allowed, molar_masses, objective_keys, liters, urea_as_nh4=bool(recipe.get("urea_as_nh4", False))
+    )
 
     return _PreparedProblem(
         recipe=recipe,

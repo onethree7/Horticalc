@@ -1,5 +1,3 @@
-import { roundScaledValue } from "./formatting.js";
-
 export function roundScaleFactor(value) {
   return Math.round(value * 100) / 100;
 }
@@ -10,7 +8,7 @@ export function scaledValues(definitions, nextFactor, getBaseValue) {
     factor,
     values: definitions.map((definition) => Math.max(
       0,
-      roundScaledValue((getBaseValue(definition) || 0) * factor),
+      (getBaseValue(definition) || 0) * factor,
     )),
   };
 }
@@ -25,7 +23,7 @@ export function scaleAmountsByVolume(values, previousLiters, nextLiters) {
   const factor = nextLiters / previousLiters;
   return Object.fromEntries(Object.entries(values).map(([key, value]) => [
     key,
-    roundScaledValue((Number(value) || 0) * factor),
+    (Number(value) || 0) * factor,
   ]));
 }
 

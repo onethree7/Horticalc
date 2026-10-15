@@ -11,7 +11,11 @@ $sourceDir = Join-Path $repoRoot "dist/Horticalc"
 $installerScript = Join-Path $repoRoot "scripts/packaging/horticalc.iss"
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
-    $Version = (& python -c "from horticalc import __version__; print(__version__)").Trim()
+    $Version = & python -c "from horticalc import __version__; print(__version__)"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Version discovery failed with exit code $LASTEXITCODE."
+    }
+    $Version = $Version.Trim()
 }
 if ([string]::IsNullOrWhiteSpace($ArtifactBaseName)) {
     $ArtifactBaseName = "horticalc-v$Version-windows-setup"

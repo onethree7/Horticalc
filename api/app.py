@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import os
+import threading
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -234,15 +235,16 @@ async def security_headers(request: Request, call_next):
 
 
 def _validation_details(errors: list[dict]) -> list[dict]:
-    for error in errors:
-        invalid_input = error.get("input")
-        if isinstance(invalid_input, float) and not math.isfinite(invalid_input):
-            error["input"] = str(invalid_input)
-        if "ctx" in error:
-            error["ctx"] = {
-                key: str(value) if isinstance(value, ValueError) else value for key, value in error["ctx"].items()
-            }
-    return errors
+    def safe_value(value: Any) -> Any:
+        if isinstance(value, ValueError) or isinstance(value, float) and not math.isfinite(value):
+            return str(value)
+        if isinstance(value, dict):
+            return {key: safe_value(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [safe_value(item) for item in value]
+        return value
+
+    return [safe_value(error) for error in errors]
 
 
 @app.exception_handler(RequestValidationError)
@@ -253,6 +255,7 @@ async def request_validation_error(_request: Request, exc: RequestValidationErro
 FERTILIZERS: Dict[str, Fertilizer] = {}
 MOLAR_MASSES: Dict[str, float] = {}
 PORTABLE_LAYOUT: PortableLayout | None = None
+_preferences_lock = threading.RLock()
 FRONTEND_DIR = app_root() / "frontend"
 
 
@@ -430,10 +433,6 @@ def _validated_request_model(model_type: type[BaseModel], payload: dict) -> Base
         return model_type.model_validate(payload)
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail=_validation_details(exc.errors(include_url=False))) from exc
-
-
-def _model_dump(model: BaseModel) -> dict:
-    return model.model_dump()
 
 
 def _safe_filename(name: str) -> str:
@@ -725,11 +724,12 @@ def put_preferences(payload: PreferencesPayload) -> dict[str, Any]:
                 updates[field_name],
                 field_name=field_name,
             )
-    preferences = load_user_preferences()
-    preferences.update(updates)
-    save_user_preferences(preferences)
-    if "solver_history_limit" in updates:
-        trim_solver_history(_solver_history_path(), _effective_solver_history_limit(preferences))
+    with _preferences_lock:
+        preferences = load_user_preferences()
+        preferences.update(updates)
+        save_user_preferences(preferences)
+        if "solver_history_limit" in updates:
+            trim_solver_history(_solver_history_path(), _effective_solver_history_limit(preferences))
     return preferences
 
 
@@ -1028,7 +1028,7 @@ async def save_recipe_profile(request: Request) -> dict:
     payload_out = {
         "name": name,
         "liters": recipe.liters,
-        "fertilizers": [_model_dump(entry) for entry in recipe.fertilizers],
+        "fertilizers": [entry.model_dump() for entry in recipe.fertilizers],
         "fertilizers_allowed": fertilizers_allowed,
         "urea_as_nh4": recipe.urea_as_nh4,
     }
@@ -1070,7 +1070,7 @@ def _calculation_inputs(payload: RecipeRequest) -> tuple[dict, dict[str, float],
 
     recipe = {
         "liters": payload.liters,
-        "fertilizers": [_model_dump(entry) for entry in payload.fertilizers],
+        "fertilizers": [entry.model_dump() for entry in payload.fertilizers],
         "urea_as_nh4": payload.urea_as_nh4,
     }
     return recipe, water_mg_l, osmosis_percent

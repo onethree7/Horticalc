@@ -95,12 +95,20 @@ def test_empty_injected_fertilizer_mapping_is_not_replaced(monkeypatch: pytest.M
         )
 
 
-def test_cli_domain_errors_exit_with_code_two(tmp_path: Path) -> None:
+def test_cli_domain_errors_exit_with_code_two(tmp_path: Path, isolated_app_root: Path) -> None:
     recipe = tmp_path / "invalid.yml"
     recipe.write_text("liters: 0\nfertilizers: []\n", encoding="utf-8")
 
     result = subprocess.run(
-        [sys.executable, "-m", "horticalc", str(recipe)],
+        [
+            sys.executable,
+            "-c",
+            "import sys; from pathlib import Path; from horticalc import paths; "
+            "paths.app_root = lambda: Path(sys.argv[1]); "
+            "from horticalc.__main__ import main; main(sys.argv[2:])",
+            str(isolated_app_root),
+            str(recipe),
+        ],
         cwd=ROOT,
         capture_output=True,
         text=True,

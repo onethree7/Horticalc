@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 from fastapi.testclient import TestClient
 
-from horticalc import paths
+import api.app as api_app
+from horticalc import data_io, paths
 from horticalc.data_io import load_user_preferences, save_user_preferences
 from tests.frontend_assets import frontend_path
 
@@ -231,3 +234,58 @@ def test_preferences_save_requires_object(monkeypatch, tmp_path) -> None:
         save_user_preferences(["invalid"])
 
     assert not paths.user_preferences_path(tmp_path).exists()
+
+
+def test_concurrent_preference_updates_preserve_disjoint_fields(monkeypatch) -> None:
+    first_read = threading.Event()
+    second_read = threading.Event()
+    read_lock = threading.Lock()
+    reads = 0
+
+    def overlapping_read():
+        nonlocal reads
+        preferences = load_user_preferences()
+        with read_lock:
+            reads += 1
+            first = reads == 1
+        if first:
+            first_read.set()
+            second_read.wait(timeout=0.5)
+        else:
+            second_read.set()
+        return preferences
+
+    monkeypatch.setattr(api_app, "load_user_preferences", overlapping_read)
+    with ThreadPoolExecutor(max_workers=2) as workers:
+        theme = workers.submit(api_app.put_preferences, api_app.PreferencesPayload(theme="soil"))
+        assert first_read.wait(timeout=5)
+        locale = workers.submit(api_app.put_preferences, api_app.PreferencesPayload(locale="de"))
+        theme.result(timeout=5)
+        locale.result(timeout=5)
+
+    assert load_user_preferences() == {"theme": "soil", "locale": "de"}
+
+
+def test_preference_replace_failure_preserves_confirmed_data(api_client_no_raise, monkeypatch) -> None:
+    save_user_preferences({"theme": "soil"})
+
+    def fail_replace(*_args):
+        raise OSError("disk unavailable")
+
+    monkeypatch.setattr(data_io.os, "replace", fail_replace)
+    response = api_client_no_raise.put("/preferences", json={"locale": "de"})
+
+    assert response.status_code == 500
+    assert load_user_preferences() == {"theme": "soil"}
+    assert list(paths.user_preferences_path().parent.glob(".preferences.json.tmp-*")) == []
+
+
+def test_retention_failure_reports_failure_after_preferences_are_persisted(api_client_no_raise, monkeypatch) -> None:
+    def fail_trim(*_args):
+        raise OSError("history unavailable")
+
+    monkeypatch.setattr(api_app, "trim_solver_history", fail_trim)
+    response = api_client_no_raise.put("/preferences", json={"solver_history_limit": 10})
+
+    assert response.status_code == 500
+    assert load_user_preferences()["solver_history_limit"] == 10

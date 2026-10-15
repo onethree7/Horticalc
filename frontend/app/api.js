@@ -54,16 +54,16 @@ export function loadPreferences() {
 }
 
 export function persistPreferences(updates) {
-  preferences = { ...preferences, ...updates };
-  preferenceWritePromise = preferenceWritePromise.then(() =>
+  const write = preferenceWritePromise.then(() =>
     putJson("/preferences", updates, "Unable to save preferences", { keepalive: true })
       .then((data) => {
         preferences = data && typeof data === "object" ? data : preferences;
         return preferences;
       })
-      .catch(() => preferences)
   );
-  return preferenceWritePromise;
+  // Recover the queue while leaving the operation's rejection with its caller.
+  preferenceWritePromise = write.catch(() => {});
+  return write;
 }
 
 export const fetchFertilizers = (message) => getJson("/fertilizers", message);

@@ -70,7 +70,7 @@ export function buildSolvePayload({
 }) {
   return {
     liters,
-    targets: positiveEntries(targetValues),
+    targets: { ...targetValues },
     water_profile: { mg_per_l: waterMgPerL, osmosis_percent: osmosisPercent },
     fertilizers_allowed: allowedFertilizers,
     fixed_grams: positiveEntries(fixedGrams),

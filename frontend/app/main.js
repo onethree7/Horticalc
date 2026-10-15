@@ -429,7 +429,7 @@ async function init() {
   stocks.mount();
   document.querySelector("#makeSolverStocks").addEventListener("click", openSolverStocks);
   calculator.setFertilizers(resources.fertilizers);
-  solver.setFertilizers(resources.fertilizers);
+  solver.setFertilizers(resources.fertilizers, { persist: false });
   solver.mount({ configDefinitions: resources.solverConfigDefinitions, config: preferences.solver_config || {} });
   editor.setData(resources.fertilizers, resources.fertilizerKeys);
   editor.mount();

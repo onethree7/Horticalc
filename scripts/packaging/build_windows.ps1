@@ -9,13 +9,23 @@ $env:HORTICALC_PROJECT_ROOT = $repoRoot
 
 $releaseVersion = $env:HORTICALC_VERSION
 if ([string]::IsNullOrWhiteSpace($releaseVersion)) {
-    $releaseVersion = (& python -c "from horticalc import __version__; print(__version__)").Trim()
+    $releaseVersion = & python -c "from horticalc import __version__; print(__version__)"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Version discovery failed with exit code $LASTEXITCODE."
+    }
+    $releaseVersion = $releaseVersion.Trim()
 }
 
 python scripts/packaging/write_windows_version_info.py --version $releaseVersion --output $versionInfoPath
+if ($LASTEXITCODE -ne 0) {
+    throw "Version resource generation failed with exit code $LASTEXITCODE."
+}
 $env:HORTICALC_VERSION_FILE = $versionInfoPath
 
 python -m PyInstaller --noconfirm --clean $specPath
+if ($LASTEXITCODE -ne 0) {
+    throw "PyInstaller failed with exit code $LASTEXITCODE."
+}
 
 $distRoot = Join-Path $repoRoot "dist"
 $appRoot = Join-Path $distRoot "Horticalc"

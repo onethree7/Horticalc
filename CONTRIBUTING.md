@@ -64,6 +64,10 @@ workflow smoke test. Set `HORTICALC_BROWSER_PATH` when the browser is outside a
 standard location. The repository does not declare a separate Node version;
 use a maintained Node.js release with npm.
 
+Tests use temporary application data rather than the checkout's `user/`
+directory. Browser subprocesses also receive an isolated application root;
+they do not load your local preferences, recipes, or catalogue overrides.
+
 The entrypoint runs Ruff format and lint checks, ESLint, Stylelint, frontend
 unit tests, the browser smoke test, and the complete Pytest suite. For a focused
 Pytest run:

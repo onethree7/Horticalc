@@ -11,7 +11,6 @@ from urllib.request import urlopen
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-SMOKE_SCRIPT = ROOT / "scripts" / "frontend_smoke.cjs"
 SESSION_TOKEN = "t" * 43
 
 
@@ -34,12 +33,14 @@ def _wait_for_server(url: str) -> None:
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is required")
-def test_frontend_workflows_execute_without_browser_errors() -> None:
+@pytest.mark.parametrize("smoke_script", ["frontend_smoke.cjs", "state_smoke.cjs"])
+def test_frontend_workflows_execute_without_browser_errors(isolated_app_root: Path, smoke_script: str) -> None:
     assert (ROOT / "node_modules" / "playwright").exists() or os.environ.get("NODE_PATH"), (
         "Run npm ci to install the Playwright browser test dependency"
     )
 
     port = _free_port()
+    shutil.copytree(ROOT / "frontend", isolated_app_root / "frontend")
     url = f"http://127.0.0.1:{port}"
     server_environment = {
         **os.environ,
@@ -49,12 +50,11 @@ def test_frontend_workflows_execute_without_browser_errors() -> None:
     server = subprocess.Popen(
         [
             os.fspath(Path(os.sys.executable)),
-            "-m",
-            "uvicorn",
-            "api.app:app",
-            "--host",
-            "127.0.0.1",
-            "--port",
+            "-c",
+            "import sys; from pathlib import Path; from horticalc import paths; "
+            "paths.app_root = lambda: Path(sys.argv[1]); import uvicorn; "
+            "uvicorn.run('api.app:app', host='127.0.0.1', port=int(sys.argv[2]))",
+            str(isolated_app_root),
             str(port),
         ],
         cwd=ROOT,
@@ -65,7 +65,10 @@ def test_frontend_workflows_execute_without_browser_errors() -> None:
     try:
         _wait_for_server(url)
         environment = {**os.environ, "HORTICALC_TEST_URL": f"{url}/?session={SESSION_TOKEN}"}
-        subprocess.run(["node", os.fspath(SMOKE_SCRIPT)], cwd=ROOT, env=environment, check=True)
+        result = subprocess.run(
+            ["node", os.fspath(ROOT / "scripts" / smoke_script)], cwd=ROOT, env=environment, check=False, timeout=120
+        )
+        assert result.returncode == 0
     finally:
         server.terminate()
         server.wait(timeout=5)

@@ -24,6 +24,9 @@ display unit converts the visible quantity without changing the stored batch or
 dose. The sidebar shows nitrate, ammonium and urea shares as **NO3:NH4:UR
 (%)**, calculated from their nitrogen contributions.
 
+Batch-volume changes scale doses without rounding the stored quantities.
+Display formatting does not limit the precision of small trace doses.
+
 Saved calculator recipes contain their batch, fertilizer doses, water profile,
 RO-water proportion, urea setting, optional solver configuration, and any stock
 preparation settings. The star
@@ -95,6 +98,13 @@ The feature plans preparation; it does not track bottles already mixed.
 Use **Water analysis** to load, edit, and save the water used by Calculator and
 Solver. Values describe the source water before reverse-osmosis mixing.
 
+Loaded profiles show their combined phosphorus as P and set PO4 to zero, so
+loading or saving a profile does not count the same phosphorus twice. Separately
+entered P and PO4 values add together.
+
+A pending load is ignored if a different profile is selected before it finishes.
+This also applies to recipe and Solver target-profile loading.
+
 The **RO-water proportion** is the percentage of the final batch modelled as
 pure RO water with `0 mg/L` dissolved input. At 25%, Horticalc uses 75% of every
 entered source-water concentration.
@@ -102,8 +112,9 @@ entered source-water concentration.
 ## Fertilizer editor
 
 Use **Fertilizer editor** to search and edit the effective catalogue. Composition
-values are mass fractions: `0.14` means 14%. A liquid product uses its weight
-factor as density when converting the displayed volume dose.
+values are entered as percentages: enter `14` for 14%. CSV and API composition
+values remain mass fractions (`0.14` for the same analysis). A liquid product uses
+its weight factor as density when converting the displayed volume dose.
 
 Select an editor row and use minus to delete it from the editable list.
 The table fills the remaining workspace height at the selected interface scale;
@@ -135,6 +146,9 @@ allowed fertilizers, fixed doses, urea mode, and solver settings. Loading with
 the option disabled changes only the targets. Horticalc checks referenced water
 and fertilizer names before replacing the current setup.
 
+Changing or scaling targets clears the previous result. Calculate again before
+copying, saving, applying, or preparing stocks from the new targets.
+
 The target-profile star is independent of recipe favorites. Delete is available
 only for user-saved recipes and target profiles. Deleting a user override of a
 shipped profile reveals the shipped profile again.
@@ -147,6 +161,9 @@ a run above normal history and protects it from retention and the regular clear
 action. The history limit counts unpinned runs; setting it to `0` retains pins
 but stops normal history recording.
 
+Closing a history dialog or opening another run discards pending responses for
+the old dialog. Copy and Restore use the run currently displayed.
+
 ## Preferences and languages
 
 Configuration controls volume, solid-dose and liquid-dose display units, theme,
@@ -155,6 +172,11 @@ to change the UI scale or `Ctrl`+`0` to return to 100%. `Ctrl` plus the mouse
 wheel uses the same scale steps. Horticalc provides German, English, Dutch,
 Spanish, and Simplified Chinese UI text. Data keys, element symbols, file
 formats, and API fields remain unchanged when the language changes.
+
+Changing language preserves the selected water profile and its analysis.
+Preference save failures are reported. Appearance and unit changes remain active
+for the session; failed history-limit and favorite changes return to their last
+confirmed values.
 
 ## Files and backups
 

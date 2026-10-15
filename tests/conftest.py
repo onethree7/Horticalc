@@ -2,16 +2,28 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from pathlib import Path
+from shutil import copytree
 
 import pytest
 from fastapi.testclient import TestClient
 
 import api.app as api_app
+from horticalc import paths
 from horticalc.activation import clear_activation_handler, configure_activation_token
 from horticalc.data_io import load_fertilizers, load_molar_masses
 from horticalc.paths import PortableLayout, shipped_fertilizers_path
 
 TEST_SESSION_TOKEN = "t" * 43
+
+
+@pytest.fixture(autouse=True)
+def isolated_app_root(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
+    root = Path(__file__).resolve().parents[1]
+    sandbox = tmp_path / "app"
+    for name in ("data", "recipes"):
+        copytree(root / name, sandbox / name)
+    monkeypatch.setattr(paths, "app_root", lambda: sandbox)
+    return sandbox
 
 
 def _authenticate(client: TestClient) -> None:
@@ -21,22 +33,9 @@ def _authenticate(client: TestClient) -> None:
 
 
 @pytest.fixture
-def isolated_api_layout(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> PortableLayout:
-    root = Path(__file__).resolve().parents[1]
-    sandbox = tmp_path / "api"
-    user = sandbox / "user"
-    layout = PortableLayout(
-        root=root,
-        user=user,
-        logs=sandbox / "logs",
-        fertilizers=shipped_fertilizers_path(root),
-        water_profiles=user / "water_profiles",
-        nutrient_solutions=user / "nutrient_solutions",
-        recipes=user / "recipes",
-    )
-    for directory in (layout.logs, layout.water_profiles, layout.nutrient_solutions, layout.recipes):
-        directory.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(api_app, "FERTILIZERS", load_fertilizers(shipped_fertilizers_path(root)))
+def isolated_api_layout(monkeypatch: pytest.MonkeyPatch, isolated_app_root: Path) -> PortableLayout:
+    layout = paths.ensure_portable_layout()
+    monkeypatch.setattr(api_app, "FERTILIZERS", load_fertilizers(shipped_fertilizers_path(isolated_app_root)))
     monkeypatch.setattr(api_app, "MOLAR_MASSES", load_molar_masses())
     monkeypatch.setattr(api_app, "PORTABLE_LAYOUT", layout)
     return layout

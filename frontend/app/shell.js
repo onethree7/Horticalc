@@ -77,7 +77,6 @@ export function createShellController({ i18n, onViewChange }) {
   }
 
   return {
-    get currentView() { return currentView; },
     isActive(view) { return currentView === view; },
     mount,
     refreshLocalized() { updateLiveResult(); },

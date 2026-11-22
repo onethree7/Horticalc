@@ -1,0 +1,8 @@
+fertilizers:
+- grams: 3
+  name: Cellmax BioRootBooster (EN chart)
+- grams: 2
+  name: Cellmax BioOrganic Grow (EN chart)
+liters: 1.0
+name: Cellmax bio min – Grow Phase1
+water_profile: default

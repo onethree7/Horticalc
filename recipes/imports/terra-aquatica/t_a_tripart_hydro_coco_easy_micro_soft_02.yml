@@ -1,0 +1,12 @@
+fertilizers:
+- grams: 10.0
+  name: T.A. TriPart Grow FR FREN01003
+- grams: 10.0
+  name: T.A. TriPart Micro Soft Water FR FREN02005
+- grams: 10.0
+  name: T.A. TriPart Bloom FR FREN04005
+liters: 10.0
+name: T.A. TriPart Hydro Coco - Easy - Micro Soft - 1st true leaves
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

@@ -195,6 +195,7 @@ export default {
   "profile.removeFavorite": "Profil aus Favoriten entfernen",
   "profile.delete": "Löschen",
   "profile.confirmDelete": "Profil ›{name}‹ wirklich löschen?",
+  "profile.plagronSchedules": "Plagron-Düngepläne nach Woche (Englisch)",
   "profile.recipeHint": "Rezepte lokal speichern oder laden. Solver-Zielprofile bleiben im Solver.",
   "profile.targetTitle": "Zielprofil",
   "profile.targetHint": "Zielprofile lokal speichern oder laden.",

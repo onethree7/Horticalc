@@ -1,0 +1,16 @@
+fertilizers:
+- grams: 1.0
+  name: House & Garden Drip Clean (UK)
+- grams: 3.0
+  name: House & Garden Roots Excelurator (UK)
+- grams: 7.0
+  name: House & Garden Amino Treatment (UK)
+- grams: 3.0
+  name: House & Garden Algen Extract (UK)
+- grams: 5.0
+  name: House & Garden Nitrogen Boost (UK)
+liters: 10.0
+name: F3
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

@@ -1,0 +1,11 @@
+# Source: https://terraaquatica.fr/img/cms/tableauAppli2025.pdf
+# Source SHA-256: cb976a946a7dfae1bc5568bf1e1e57afebb77cf3cc752053d2693517df8bcedc; page: 9.
+# Manufacturer transcription; default water is a neutral calculation placeholder.
+fertilizers:
+- grams: 9.0
+  name: T.A. DryPart Grow FR FREN70102
+liters: 10.0
+name: T.A. DryPart FR 2025 Soil - Easy - FinalPart - Growing
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

@@ -1,0 +1,8 @@
+fertilizers:
+- grams: 7
+  name: Growth Technology IONIC Hydro Bloom (Guide EN)
+- grams: 1
+  name: Growth Technology IONIC PK Boost (Guide EN)
+liters: 1.0
+name: Growth Technology hydro basic – Bloom
+water_profile: default

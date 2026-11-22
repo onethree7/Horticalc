@@ -195,6 +195,7 @@ export default {
   "profile.removeFavorite": "Profiel uit favorieten verwijderen",
   "profile.delete": "Verwijderen",
   "profile.confirmDelete": "Profiel ‘{name}’ verwijderen?",
+  "profile.plagronSchedules": "Plagron-voedingsschema’s per week (Engels)",
   "profile.recipeHint": "Recepten lokaal opslaan of laden. Solver-doelprofielen blijven in de solver.",
   "profile.targetTitle": "Doelprofiel",
   "profile.targetHint": "Doelprofielen lokaal opslaan of laden.",

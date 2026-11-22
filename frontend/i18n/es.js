@@ -195,6 +195,7 @@ export default {
   "profile.removeFavorite": "Quitar perfil de favoritos",
   "profile.delete": "Eliminar",
   "profile.confirmDelete": "¿Eliminar el perfil «{name}»?",
+  "profile.plagronSchedules": "Tablas semanales de fertilización de Plagron (inglés)",
   "profile.recipeHint": "Guardar o cargar recetas localmente. Los perfiles objetivo del Solver permanecen en el Solver.",
   "profile.targetTitle": "Perfil objetivo",
   "profile.targetHint": "Guardar o cargar perfiles objetivo localmente.",

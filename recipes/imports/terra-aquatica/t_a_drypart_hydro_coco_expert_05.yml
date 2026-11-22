@@ -1,0 +1,12 @@
+fertilizers:
+- grams: 18.0
+  name: T.A. DryPart Bloom FR FREN71102
+- grams: 2.0
+  name: T.A. Pro Bloom EU unconfirmed
+- grams: 4.0
+  name: T.A. Silicate EU unconfirmed
+liters: 10.0
+name: T.A. DryPart Hydro Coco - Expert - Flowering
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

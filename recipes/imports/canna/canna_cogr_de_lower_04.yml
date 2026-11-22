@@ -1,0 +1,18 @@
+fertilizers:
+- grams: 38.0
+  name: CANNA COGR VEGA A DE unconfirmed
+- grams: 38.0
+  name: CANNA COGR VEGA B DE unconfirmed
+- grams: 20.0
+  name: CANNA RHIZOTONIC DE TDS V2.0-0725
+- grams: 25.0
+  name: CANNAZYM DE TDS V2.0-0725
+- grams: 20.0
+  name: CANNABOOST DE TDS V2.0-0725
+- grams: 0.0
+  name: CANNA CALMAG AGENT DE TDS V2.0-0725
+liters: 10.0
+name: CANNA COGr DE - lower - W2
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

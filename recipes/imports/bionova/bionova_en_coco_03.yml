@@ -1,0 +1,18 @@
+fertilizers:
+- grams: 16
+  name: Bionova Coco Forte A (archived EN chart)
+- grams: 16
+  name: Bionova Coco Forte B (archived EN chart)
+- grams: 5
+  name: Bionova Roots (archived EN chart)
+- grams: 8
+  name: Bionova X-cel (archived EN chart)
+- grams: 6
+  name: Bionova The Missing Link (archived EN chart)
+- grams: 7
+  name: Bionova BN-Zym (archived EN chart)
+- grams: 2
+  name: Bionova Silution (archived EN chart)
+liters: 10.0
+name: Bionova coco – Flowering stage 2
+water_profile: default

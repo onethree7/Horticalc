@@ -1,0 +1,12 @@
+fertilizers:
+- grams: 3.5
+  name: Mills BASIS A (Regular EN chart)
+- grams: 1
+  name: Mills C4 (Regular EN chart)
+- grams: 0.2
+  name: Mills VITALIZE (Regular EN chart)
+- grams: 3.5
+  name: Mills BASIS B (Regular EN chart)
+liters: 1.0
+name: Mills Regular tap water EC 0.7 – Bloom W3
+water_profile: default

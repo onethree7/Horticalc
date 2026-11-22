@@ -1,0 +1,12 @@
+fertilizers:
+- grams: 1.0
+  name: Atami B’cuzz Silic Boost (EU 2024)
+- grams: 10.0
+  name: Atami Atazyme (EU 2024)
+- grams: 1.0
+  name: Atami ATA Clean (EU 2024)
+liters: 10.0
+name: Bloom2
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

@@ -1,0 +1,8 @@
+fertilizers:
+- grams: 4
+  name: Growth Technology GreenHaze Grow A (Guide EN)
+- grams: 4
+  name: Growth Technology GreenHaze Grow B (Guide EN)
+liters: 1.0
+name: Growth Technology greenhaze basic – Grow
+water_profile: default

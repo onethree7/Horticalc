@@ -1,0 +1,10 @@
+# Source: https://plagron.com/downloads/en/terra-bloom-tds
+# Source SHA-256: fe2c3e1d1f4881fda2b44abca3029fc920b65dc692416e93ee2514d5f7272e7b
+# Source page: 1
+# Manufacturer transcription; default water is a neutral calculation placeholder.
+fertilizers:
+- grams: 50.0
+  name: Plagron Terra Bloom
+liters: 10.0
+name: Plagron Terra Bloom – TDS base dose, maximum 5 mL/L
+water_profile: default

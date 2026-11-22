@@ -1,0 +1,12 @@
+fertilizers:
+- grams: 40.0
+  name: Advanced Nutrients pH Perfect Sensi Grow A (DE-Plan)
+- grams: 40.0
+  name: Advanced Nutrients pH Perfect Sensi Grow B (DE-Plan)
+- grams: 20.0
+  name: Advanced Nutrients B-52 (DE-Plan)
+liters: 10.0
+name: V4
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

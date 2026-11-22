@@ -1,5 +1,5 @@
 import { NUTRIENT_FORMATTER, SUMMARY_COLUMN_ORDER } from "./constants.js";
-import { buildAlignedRows, formatNumber } from "./formatting.js";
+import { buildAlignedRows, buildDoseTable, formatNumber } from "./formatting.js";
 import { formatClipboardIonLabel, solverResultDisplayKeys } from "./solver_payload.js";
 import { solverModelLabel, targetPrioritySummary } from "./solver_presentation.js";
 
@@ -29,22 +29,7 @@ export function buildSolverPrintableText({
     ),
   );
   lines.push("");
-  lines.push(
-    ...buildAlignedRows(
-      [t("common.fertilizer"), t("common.amount"), t("common.unit")],
-      fertilizers.map((fertilizer) => {
-        const name = fertilizer.name || "";
-        const kind = fertilizerKinds[name];
-        const definition = kind ? { name, liquid: kind === "liquid" } : name;
-        return [
-          name,
-          units.formatDoseDisplay(Number(fertilizer.grams), definition),
-          units.doseUnitDefinition(definition).symbol,
-        ];
-      }),
-      [1],
-    ),
-  );
+  lines.push(...buildDoseTable(fertilizers, { t, units, fertilizerKinds }));
 
   const npkMetrics = calculation?.npk_metrics || {};
   const ecValues = calculation?.ec?.ec_mS_per_cm || {};

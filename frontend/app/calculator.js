@@ -2,6 +2,7 @@ import {
   ION_FORMATTER,
   LAST_SOLUTION_CALCULATED_KEY,
   NUTRIENT_FORMATTER,
+  NITROGEN_COLUMNS,
   SUMMARY_COLUMN_ORDER,
 } from "./constants.js";
 import {
@@ -12,7 +13,7 @@ import {
   qsa,
   renderTableRows,
 } from "./dom.js";
-import { buildAlignedRows, formatNumber } from "./formatting.js";
+import { buildAlignedRows, buildDoseTable, formatNumber, sidebarRatioRows } from "./formatting.js";
 import { applyScaledValues, bindScaleButtons } from "./scaling.js";
 import { createLatestRequestGate } from "../request_gate.js";
 import { storageSet } from "./storage.js";
@@ -115,17 +116,7 @@ function buildCalculatorClipboardText() {
     ], [1])
   );
   lines.push("");
-  lines.push(
-    ...buildAlignedRows(
-      [t("common.fertilizer"), t("common.amount"), t("common.unit")],
-      fertilizers.map((fertilizer) => [
-        fertilizer.name,
-        units.formatDoseDisplay(fertilizer.grams, fertilizer.name),
-        units.doseUnitDefinition(fertilizer.name).symbol,
-      ]),
-      [1]
-    )
-  );
+  lines.push(...buildDoseTable(fertilizers, { t, units }));
 
   const npkMetrics = lastCalculation?.npk_metrics || {};
   lines.push("");
@@ -157,9 +148,12 @@ function buildCalculatorClipboardText() {
   lines.push(
     ...buildAlignedRows(
       null,
-      summaryColumnOrder.map((column) => [
-        t(column.ionHeaderLabelKey || column.ionHeaderLabel),
-        formatNumber(Number(elementValues[column.element]), nutrientFormatter),
+      summaryColumnOrder.flatMap((column) => [
+        [t(column.ionHeaderLabelKey || column.ionHeaderLabel),
+          formatNumber(Number(elementValues[column.element]), nutrientFormatter)],
+        ...(column.element === "N_total" ? NITROGEN_COLUMNS.map(({ key, labelKey }) => [
+          `${t(labelKey)}-N`, formatNumber(Number(elementValues[key] ?? 0), nutrientFormatter),
+        ]) : []),
       ]),
       [1]
     )
@@ -211,6 +205,10 @@ function buildCalculatorClipboardText() {
       [1]
     )
   );
+
+  lines.push("", t("live.ionRatios"), ...buildAlignedRows(
+    null, sidebarRatioRows(npkMetrics).map(([label, value]) => [label, value]), [1],
+  ));
 
   return lines.join("\n");
 }

@@ -23,3 +23,5 @@ coverage.xml
 # Local recipe schedules
 /recipes/[a][t][h][e][n][a]_blended_*.yml
 /recipes/[a][t][h][e][n][a]_pro_*.yml
+
+/recipes/imports/

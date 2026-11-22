@@ -41,7 +41,13 @@ foreach ($dir in $assetDirs) {
     if (Test-Path $destination) {
         Remove-Item -Recurse -Force $destination
     }
-    Copy-Item -Recurse -Force $source $destination
+    if ($dir -eq "recipes") {
+        New-Item -ItemType Directory -Path $destination | Out-Null
+        Get-ChildItem -LiteralPath $source -File -Filter "*.yml" |
+            Copy-Item -Destination $destination -Force
+    } else {
+        Copy-Item -Recurse -Force $source $destination
+    }
 }
 
 $readmeSource = Join-Path $repoRoot "scripts/packaging/README.txt"

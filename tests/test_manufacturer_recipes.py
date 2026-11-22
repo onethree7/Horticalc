@@ -1,6 +1,4 @@
-import json
 from pathlib import Path
-from shutil import copy2
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,9 +7,9 @@ from horticalc.core import compute_solution
 from horticalc.data_io import load_fertilizers, load_molar_masses, load_recipe
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = json.loads((ROOT / "recipes/imports/manifest.json").read_text(encoding="utf-8"))
-PHASES = [phase for program in MANIFEST["programs"] for phase in program["recipes"]]
-ACTIVE = [phase for phase in PHASES if phase["active"]]
+MANUFACTURER_RECIPES = sorted(
+    path for path in (ROOT / "recipes").glob("*.yml") if "# Source SHA-256:" in path.read_text(encoding="utf-8")
+)
 
 
 @pytest.fixture(scope="module")
@@ -19,19 +17,11 @@ def calculation_data():
     return load_fertilizers(ROOT / "data/fertilizers.csv"), load_molar_masses(ROOT / "data/molar_masses.yml")
 
 
-def test_every_recipe_ingredient_has_a_product_record() -> None:
-    names = {product["catalog_name"] for product in MANIFEST["products"]}
-    assert {row["name"] for phase in PHASES for row in phase["recipe"]["fertilizers"]} <= names
-
-
-@pytest.mark.parametrize("phase", ACTIVE, ids=lambda phase: Path(phase["file"]).stem)
-def test_manufacturer_recipe_resolves_ingredients_and_scales(phase, calculation_data) -> None:
+@pytest.mark.parametrize("path", MANUFACTURER_RECIPES, ids=lambda path: path.stem)
+def test_manufacturer_recipe_resolves_ingredients_and_scales(path, calculation_data) -> None:
     catalogue, masses = calculation_data
-    path = ROOT / phase["file"]
-    assert path.parent == ROOT / "recipes"
-    assert not phase["blockers"] and not phase["unmodeled_rows"]
     recipe = load_recipe(path)
-    assert recipe == phase["recipe"]
+    assert {row["name"] for row in recipe["fertilizers"]} <= catalogue.keys()
 
     actual = compute_solution(recipe, catalogue, masses, {}).to_dict()
     scaled_recipe = dict(
@@ -48,21 +38,16 @@ def test_manufacturer_recipe_resolves_ingredients_and_scales(phase, calculation_
 def test_recipe_selector_contains_active_imports_and_excludes_pending_files(
     api_client: TestClient, isolated_app_root: Path
 ) -> None:
-    pending = next(phase for phase in PHASES if not phase["active"])
-    pending_path = isolated_app_root / pending["file"]
-    pending_path.parent.mkdir(parents=True)
-    copy2(ROOT / pending["file"], pending_path)
+    nested_recipe = isolated_app_root / "recipes/imports/local_reference.yml"
+    nested_recipe.parent.mkdir()
+    nested_recipe.write_text("name: Local reference\nliters: 10\n", encoding="utf-8")
 
     response = api_client.get("/recipes")
     assert response.status_code == 200
     filenames = {row["filename"] for row in response.json()}
-
-    assert {Path(phase["file"]).name for phase in ACTIVE} <= filenames
-    for phase in PHASES:
-        if not phase["active"]:
-            assert (ROOT / phase["file"]).parent != ROOT / "recipes"
-            assert phase["blockers"]
-            assert Path(phase["file"]).name not in filenames
+    assert MANUFACTURER_RECIPES
+    assert {path.name for path in MANUFACTURER_RECIPES} <= filenames
+    assert nested_recipe.name not in filenames
 
 
 def test_plagron_coco_includes_hydro_roots_declared_nutrients(calculation_data) -> None:
@@ -213,14 +198,14 @@ def test_bac_calmag_preserves_printed_magnesium_value(calculation_data) -> None:
 
 
 @pytest.mark.parametrize(
-    ("name", "nitrogen", "unresolved_percent"),
+    ("name", "nitrogen"),
     [
-        ("BAC Organic Grow (EN SDS)", 53.3, 4.1),
-        ("BAC Organic Bloom (EN SDS)", 78.0, 0.2),
-        ("BAC Organic PK Booster (EN SDS)", 27.3, 2.1),
+        ("BAC Organic Grow (EN SDS)", 53.3),
+        ("BAC Organic Bloom (EN SDS)", 78.0),
+        ("BAC Organic PK Booster (EN SDS)", 27.3),
     ],
 )
-def test_bac_organic_profiles_only_count_declared_nitrate(calculation_data, name, nitrogen, unresolved_percent) -> None:
+def test_bac_organic_profiles_only_count_declared_nitrate(calculation_data, name, nitrogen) -> None:
     catalogue, masses = calculation_data
     recipe = {"liters": 1.0, "fertilizers": [{"name": name, "grams": 1.0}]}
 
@@ -228,9 +213,6 @@ def test_bac_organic_profiles_only_count_declared_nitrate(calculation_data, name
 
     assert result["elements_mg_per_l"]["N_total"] == pytest.approx(nitrogen)
     assert result["elements_mg_per_l"]["N_NO3"] == pytest.approx(nitrogen)
-    product = next(product for product in MANIFEST["products"] if product["catalog_name"] == name)
-    assert product["raw_unresolved_n_difference_percent"] == pytest.approx(unresolved_percent)
-    assert product["readiness_scope"] == "declared_nutrient_contributions_only"
 
 
 def test_dutchpro_massive_powder_uses_per_100g_declaration(calculation_data) -> None:
@@ -252,24 +234,15 @@ def test_plagron_silic_rock_keeps_organic_nitrogen_out_of_mineral_totals(calcula
     assert result["elements_mg_per_l"]["N_total"] == pytest.approx(5.4)
     assert result["oxides_mg_per_l"]["K2O"] == pytest.approx(18.36)
     assert result["oxides_mg_per_l"]["SiO2"] == pytest.approx(11.88)
-    product = next(p for p in MANIFEST["products"] if p["catalog_name"] == "Plagron Silic Rock")
-    assert product["raw_nutrients"]["N_organic"]["value"] == 1.0
-    assert "organic" in product["information"].lower()
 
 
-def test_partial_organic_profiles_do_not_release_complete_manufacturer_phases() -> None:
-    phases = [
-        phase
-        for phase in PHASES
-        if any(row["name"] in {"Plagron Power Buds", "Plagron Silic Rock"} for row in phase["recipe"]["fertilizers"])
+def test_power_buds_recipes_identify_their_calculation_scope() -> None:
+    recipes = [load_recipe(path) for path in MANUFACTURER_RECIPES]
+    using_power_buds = [
+        recipe for recipe in recipes if any(row["name"] == "Plagron Power Buds" for row in recipe["fertilizers"])
     ]
-    assert phases
-    for phase in phases:
-        if phase["active"]:
-            assert "declared mineral contributions" in phase["recipe"]["name"]
-            assert "Organic" in phase["calculation_scope"] or "organic" in phase["calculation_scope"]
-        else:
-            assert phase["blockers"]
+    assert using_power_buds
+    assert all("declared mineral contributions" in recipe["name"] for recipe in using_power_buds)
 
 
 def test_ta_silicate_retains_declared_total_mass_contributions(calculation_data) -> None:
@@ -287,13 +260,6 @@ def test_ta_silicate_retains_declared_total_mass_contributions(calculation_data)
 def test_bac_conflicting_nitrogen_declaration_stays_out_of_catalogue(calculation_data) -> None:
     catalogue, _ = calculation_data
     assert "BAC Coco Bloom A (EN SDS)" not in catalogue
-    product = next(p for p in MANIFEST["products"] if p["catalog_name"] == "BAC Coco Bloom A (EN SDS)")
-    assert product["ready"] is False
-    assert product["comp"] is None
-    assert product["raw_declared_percent"]["N_total"] == 10.0
-    assert product["raw_declared_percent"]["NO3"] == 9.4
-    assert product["raw_declared_percent"]["NH4"] == 0.7
-    assert product["blockers"]
 
 
 @pytest.mark.parametrize(
@@ -314,23 +280,6 @@ def test_hyperbloom_recipe_uses_fr_guaranteed_analysis(
     assert result["oxides_mg_per_l"]["K2O"] == pytest.approx(potassium_oxide)
 
 
-def test_hyperbloom_expert_additives_remain_blocked() -> None:
-    phases = [
-        phase
-        for program in MANIFEST["programs"]
-        if "drypart_fr_2025" in program["id"] and "expert" in program["id"] and "hyperbloom" in program["id"]
-        for phase in program["recipes"]
-        if phase["phase"] == "Ripening"
-    ]
-
-    assert len(phases) == 8
-    assert all(not phase["active"] for phase in phases)
-    assert all(
-        any("HyperBloom must be used alone according to the FR product description" in b for b in p["blockers"])
-        for p in phases
-    )
-
-
 def test_drypart_bloom_uses_label_confirmed_magnesium(calculation_data) -> None:
     catalogue, masses = calculation_data
     recipe = {"liters": 10.0, "fertilizers": [{"name": "T.A. DryPart Bloom FR FREN71102", "grams": 18.0}]}
@@ -338,7 +287,3 @@ def test_drypart_bloom_uses_label_confirmed_magnesium(calculation_data) -> None:
 
     assert result["elements_mg_per_l"]["N_total"] == pytest.approx(108.0)
     assert result["oxides_mg_per_l"]["MgO"] == pytest.approx(126.0)
-    product = next(p for p in MANIFEST["products"] if p["catalog_name"] == "T.A. DryPart Bloom FR FREN71102")
-    assert product["ready"] is True
-    assert product["label_review"]["visual_reviewed"] is True
-    assert any("7.Trioxyde" in field["value"] for field in product["raw_features"])

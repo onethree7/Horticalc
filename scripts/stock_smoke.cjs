@@ -14,9 +14,9 @@ async function assertStockWorkflow(page, assertNoPageOverflow) {
   await page.locator("#languageSelect").selectOption("en");
   await page.locator("#configVolumeUnit").selectOption("liter");
   await page.locator("#configSolidDoseUnit").selectOption("gram");
-  await page.locator("#profileSelect").selectOption("athena_pro_bluete_w1_7_core_weight_10l.yml");
+  await page.locator("#profileSelect").selectOption("athena_us_label_bloom_10l_01.yml");
   await page.locator("#loadProfile").click();
-  await page.waitForFunction(() => document.querySelector("#profileName").value.includes("Athena Pro"));
+  await page.waitForFunction(() => document.querySelector("#profileName").value.includes("Athena US Label Bloom"));
   const athenaCalculation = page.waitForResponse((response) => response.url().endsWith("/calculate"));
   await page.locator("#calculateBtn").click();
   assert.equal((await athenaCalculation).status(), 200);
@@ -26,7 +26,7 @@ async function assertStockWorkflow(page, assertNoPageOverflow) {
   );
   await page.locator("[data-shell-view='stocks']").click();
   assert.equal((await athenaPlan).status(), 200);
-  await page.locator('#stockIngredients select[data-material="Athena Pro Core 14-0-0"]').waitFor();
+  await page.locator('#stockIngredients select[data-material="Athena Bloom A (US label)"]').waitFor();
   await page.locator("#closeStocks").click();
   await page.locator("#profileSelect").selectOption("reference_calcinit_epso_top_1g_per_l_each.yml");
   await page.locator("#loadProfile").click();

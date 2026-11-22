@@ -1,0 +1,14 @@
+fertilizers:
+- grams: 30.0
+  name: Plagron Alga Bloom
+- grams: 10.0
+  name: Plagron Pure Zym
+- grams: 10.0
+  name: Plagron Green Sensation
+- grams: 10.0
+  name: Plagron Sugar Royal
+liters: 10.0
+name: Plagron 100%NATURAL DE catalogue - Batmix - W6
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

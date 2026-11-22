@@ -1,0 +1,14 @@
+fertilizers:
+- grams: 20.0
+  name: Gold Label Hydro A (UK)
+- grams: 20.0
+  name: Gold Label Hydro B (UK)
+- grams: 5.0
+  name: Gold Label Ultra MG (UK)
+- grams: 5.0
+  name: Gold Label Ultra PK (UK)
+liters: 10.0
+name: W8
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

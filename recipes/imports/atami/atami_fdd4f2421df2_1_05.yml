@@ -1,0 +1,12 @@
+fertilizers:
+- grams: 20.0
+  name: Atami B’CUZZ COCO A (CA 2026)
+- grams: 20.0
+  name: Atami B’CUZZ COCO B (CA 2026)
+- grams: 1.0
+  name: Atami B’CUZZ CALMAG (CA 2026)
+liters: 10.0
+name: Generative3
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

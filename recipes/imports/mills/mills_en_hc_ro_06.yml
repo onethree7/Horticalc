@@ -1,0 +1,12 @@
+fertilizers:
+- grams: 2
+  name: Mills BASIS A (High Concentrated EN chart)
+- grams: 0.4
+  name: Mills C4 (High Concentrated EN chart)
+- grams: 0.3
+  name: Mills VITALIZE (High Concentrated EN chart)
+- grams: 2
+  name: Mills BASIS B (High Concentrated EN chart)
+liters: 1.0
+name: Mills High Concentrated reverse osmosis water EC 0.0 – Bloom W4
+water_profile: default

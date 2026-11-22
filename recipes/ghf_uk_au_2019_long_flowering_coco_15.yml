@@ -1,0 +1,15 @@
+# Source: https://shop.greenhousefeeding.com/downloads/GHF_M%2BB_2019_UK-AU.pdf
+# Source SHA-256: c650480920cc2a28b1e2b8e57660448193899e12d0e36411ab1cec805c79f528; page: 10.
+# Manufacturer transcription; default water is a neutral calculation placeholder.
+fertilizers:
+- grams: 4.0
+  name: Green House Feeding Long Flowering (UK-AU 2019)
+- grams: 7.0
+  name: Green House Feeding Booster PK+
+- grams: 10.0
+  name: Green House Feeding Ca-EDTA
+liters: 10.0
+name: GHF UK/AU 2019 Long Flowering coco - Flowering W11
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

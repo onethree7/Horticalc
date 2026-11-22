@@ -1,0 +1,16 @@
+fertilizers:
+- grams: 33.0
+  name: CANNA COCO A DE unconfirmed
+- grams: 33.0
+  name: CANNA COCO B DE unconfirmed
+- grams: 20.0
+  name: CANNA RHIZOTONIC DE TDS V2.0-0725
+- grams: 25.0
+  name: CANNAZYM DE TDS V2.0-0725
+- grams: 7.0
+  name: CANNA CALMAG AGENT DE TDS V2.0-0725
+liters: 10.0
+name: CANNA COCO DE - upper - reused substrate - Days 6-25
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

@@ -1,0 +1,8 @@
+fertilizers:
+- grams: 40
+  name: BAC Coco Bloom A (EN SDS)
+- grams: 40
+  name: BAC Coco Bloom B (EN SDS)
+liters: 10.0
+name: BAC NL 2018 coco max – Bloom W1
+water_profile: default

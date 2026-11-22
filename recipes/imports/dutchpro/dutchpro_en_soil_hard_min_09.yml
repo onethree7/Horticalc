@@ -1,0 +1,14 @@
+fertilizers:
+- grams: 2.5
+  name: Dutchpro Bloom A (soil_hard)
+- grams: 2.5
+  name: Dutchpro Bloom B (soil_hard)
+- grams: 0.4
+  name: Dutchpro Silica von Liebig Special (EN chart)
+- grams: 1
+  name: Dutchpro Multi Total (EN chart)
+- grams: 1.5
+  name: Dutchpro Explode (EN chart)
+liters: 1.0
+name: Dutchpro soil_hard min – Bloom W7
+water_profile: default

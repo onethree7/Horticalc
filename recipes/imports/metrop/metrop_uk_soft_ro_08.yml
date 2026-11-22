@@ -1,0 +1,12 @@
+fertilizers:
+- grams: 100
+  name: Metrop MR2 (UK chart)
+- grams: 90
+  name: Metrop AminoXtrem (UK chart)
+- grams: 40
+  name: Metrop Calgreen (UK chart)
+- grams: 25
+  name: Metrop Enzymes (UK chart)
+liters: 100.0
+name: Metrop UK soft_ro – Bloom W7, 12 h
+water_profile: default

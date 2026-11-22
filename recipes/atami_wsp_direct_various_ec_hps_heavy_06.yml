@@ -1,0 +1,14 @@
+# Source: https://atami.com/wp-content/uploads/2026/09/Direct-to-reservoir_Various-EC_HPS_HEAVY.pdf
+# Source SHA-256: 69b93b822a6a0b21527e10b1f4a66ebb81b2a67de9e3606c0bac4816e0b516da
+# Source page: 1
+# Manufacturer transcription; default water is a neutral calculation placeholder.
+fertilizers:
+- grams: 4.2
+  name: Atami WSP A
+- grams: 3.9
+  name: Atami WSP B
+- grams: 3.7
+  name: Atami WSP C
+liters: 10.0
+name: Atami WSP Direct to Reservoir – Various EC HPS HEAVY – Flower Ripening
+water_profile: default

@@ -37,6 +37,12 @@ preparation settings. The star
 beside the recipe selector marks favorites and moves them to the top of the
 list without changing their files.
 
+Manufacturer recipes identify their source program, market/version and phase.
+Separate entries retain substrate choices and printed dose-range endpoints.
+Set your water analysis before using a recipe with the neutral default water.
+Sources and remaining imports are described in
+[Manufacturer imports](data-formats.md#manufacturer-imports).
+
 ## Stock solutions
 
 Calculate a recipe, then open **Stock solutions** in the main menu directly

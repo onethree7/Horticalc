@@ -1,0 +1,10 @@
+fertilizers:
+- grams: 1
+  name: Cellmax Allzymes (EN chart)
+- grams: 4
+  name: Cellmax Flower Stimulator (EN chart)
+- grams: 2
+  name: Cellmax PK-Booster (EN chart)
+liters: 1.0
+name: Cellmax coco max – Flowering Phase2
+water_profile: default

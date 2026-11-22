@@ -1,0 +1,12 @@
+# Source: https://atami.com/wp-content/uploads/2026/09/Direct-to-reservoir_Various-EC_LED_MEDIUM.pdf
+# Source SHA-256: b80c87df25d7f3165e4bcb2afe0a68539ade741a353784e692799728d736b550
+# Source page: 1
+# Manufacturer transcription; default water is a neutral calculation placeholder.
+fertilizers:
+- grams: 3.3
+  name: Atami WSP A
+- grams: 3.3
+  name: Atami WSP B
+liters: 10.0
+name: Atami WSP Direct to Reservoir – Various EC LED MEDIUM – Clone/Seedling
+water_profile: default

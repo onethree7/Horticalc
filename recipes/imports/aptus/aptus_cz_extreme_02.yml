@@ -1,0 +1,14 @@
+fertilizers:
+- grams: 1.5
+  name: Aptus Regulator (EU AH20)
+- grams: 6.0
+  name: Aptus P-Boost (EU AH20)
+- grams: 2.5
+  name: Aptus Topbooster (EU AH20)
+- grams: 12.5
+  name: Aptus All-in-One Liquid (EU AH20)
+liters: 10.0
+name: Early Flower
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

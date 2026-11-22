@@ -1,0 +1,12 @@
+# Source: https://drive.google.com/file/d/1Jq6KUEqmoOnGAo_wZpCY4aYKY5L551hY/view?usp=drive_link
+# Source SHA-256: 53b1ceab0ac2a26862185a24c65bcdb297f44fdb0f80b2116239b618c983625f
+# Source page: 2
+# Manufacturer transcription; default water is a neutral calculation placeholder.
+fertilizers:
+- grams: 40.0
+  name: Athena Bloom A (US label)
+- grams: 40.0
+  name: Athena Bloom B (US label)
+liters: 10.0
+name: Athena US Label Bloom A+B – Maximum, per 10 L
+water_profile: default

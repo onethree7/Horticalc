@@ -1,0 +1,12 @@
+fertilizers:
+- grams: 1.6
+  name: HY-PRO Generator (2025 EU)
+- grams: 50.0
+  name: HY-PRO Terra (2025 EU)
+- grams: 10.0
+  name: HY-PRO Epic Bloom (2025 EU)
+liters: 10.0
+name: F7
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

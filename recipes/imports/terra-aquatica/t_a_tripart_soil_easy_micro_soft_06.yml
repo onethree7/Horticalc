@@ -1,0 +1,8 @@
+fertilizers:
+- grams: 50.0
+  name: T.A. FinalPart EU unconfirmed
+liters: 10.0
+name: T.A. TriPart Soil - Easy - Micro Soft - Ripening
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

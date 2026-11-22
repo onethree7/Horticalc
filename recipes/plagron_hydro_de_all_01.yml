@@ -1,0 +1,15 @@
+# Source: https://plagron.com/downloads/de/grow-schedule-100-hydro
+# Source SHA-256: 28c228ff4a838aa5b852846a3f11a498f159f9c18bd191b3c9c8c0214e88911a; page: 1.
+# Manufacturer transcription; default water is a neutral calculation placeholder.
+fertilizers:
+- grams: 14.0
+  name: Plagron Hydro A
+- grams: 14.0
+  name: Plagron Hydro B
+- grams: 10.0
+  name: Plagron Hydro Roots
+liters: 10.0
+name: "Plagron Hydro (DE) - Week 1"
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

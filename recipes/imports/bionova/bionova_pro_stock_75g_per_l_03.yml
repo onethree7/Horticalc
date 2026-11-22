@@ -1,0 +1,10 @@
+fertilizers:
+- grams: 4.875
+  name: Bionova Pro A (archived EN chart)
+- grams: 4.875
+  name: Bionova Pro B (archived EN chart)
+- grams: 1.5
+  name: Bionova Pro CalMag (archived EN chart)
+liters: 10.0
+name: Bionova PRO stock_75g_per_l – Bloom W2
+water_profile: default

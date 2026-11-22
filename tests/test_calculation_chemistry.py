@@ -6,6 +6,18 @@ from horticalc.metrics import format_npks
 from horticalc.paths import repo_root
 
 
+def test_plagron_calmag_liquid_dose_matches_declared_analysis() -> None:
+    fertilizers = load_fertilizers(repo_root() / "data" / "fertilizers.csv")
+    recipe = {"liters": 10.0, "fertilizers": [{"name": "Plagron CalMag Pro", "grams": 10.0}]}
+
+    result = compute_solution(recipe, fertilizers, load_molar_masses(), water_mg_l={})
+
+    assert result.fertilizer_elements_mg_l["N_total"] == pytest.approx(64.26)
+    assert result.fertilizer_elements_mg_l["N_NO3"] == pytest.approx(64.26)
+    assert result.fertilizer_oxides_mg_l["CaO"] == pytest.approx(71.82)
+    assert result.fertilizer_oxides_mg_l["MgO"] == pytest.approx(41.58)
+
+
 def _ion_charge(label: str) -> int:
     if "^" in label:
         _, charge = label.split("^", 1)

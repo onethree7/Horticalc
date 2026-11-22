@@ -1,0 +1,14 @@
+fertilizers:
+- grams: 10
+  name: Bionova X-cel (archived EN chart)
+- grams: 6
+  name: Bionova The Missing Link (archived EN chart)
+- grams: 5
+  name: Bionova BN-Zym (archived EN chart)
+- grams: 10
+  name: Bionova Vitasol (archived EN chart)
+- grams: 2
+  name: Bionova Silution (archived EN chart)
+liters: 10.0
+name: Bionova aero_print – Flowering stage 8
+water_profile: default

@@ -1,0 +1,18 @@
+fertilizers:
+- grams: 28.0
+  name: CANNA AQUA VEGA A DE unconfirmed
+- grams: 28.0
+  name: CANNA AQUA VEGA B DE unconfirmed
+- grams: 20.0
+  name: CANNA RHIZOTONIC DE TDS V2.0-0725
+- grams: 25.0
+  name: CANNAZYM DE TDS V2.0-0725
+- grams: 20.0
+  name: CANNABOOST DE TDS V2.0-0725
+- grams: 0.0
+  name: CANNA CALMAG AGENT DE TDS V2.0-0725
+liters: 10.0
+name: CANNA AQUA DE - lower - reused substrate - W1
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

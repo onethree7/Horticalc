@@ -1,0 +1,12 @@
+# Source: https://atami.com/wp-content/uploads/2026/09/Direct-to-reservoir_Various-EC_HPS_LIGHT.pdf
+# Source SHA-256: 7f3f135418eb7ab84164b85975827ac6b449dc0d9e0b877b28ca954cb94966d2
+# Source page: 1
+# Manufacturer transcription; default water is a neutral calculation placeholder.
+fertilizers:
+- grams: 3.3
+  name: Atami WSP A
+- grams: 3.3
+  name: Atami WSP B
+liters: 10.0
+name: Atami WSP Direct to Reservoir – Various EC HPS LIGHT – Clone/Seedling
+water_profile: default

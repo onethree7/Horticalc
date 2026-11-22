@@ -1,0 +1,18 @@
+fertilizers:
+- grams: 8.0
+  name: T.A. NovaMax Grow EU unconfirmed
+- grams: 8.0
+  name: T.A. NovaMax Bloom EU unconfirmed
+- grams: 50.0
+  name: T.A. Seaweed EU unconfirmed
+- grams: 40.0
+  name: T.A. Humic EU unconfirmed
+- grams: 50.0
+  name: T.A. Bloom Booster EU unconfirmed
+- grams: 4.0
+  name: T.A. Silicate EU unconfirmed
+liters: 10.0
+name: T.A. NovaMax Soil - Expert - Roots Booster + Bloom Booster - Preflowering
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

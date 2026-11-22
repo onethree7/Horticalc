@@ -1,0 +1,11 @@
+fertilizers:
+- grams: 20.0
+  name: T.A. HyperBloom FR FREN72111 (guaranteed analysis)
+- grams: 2.0
+  name: T.A. Pro Bloom EU unconfirmed
+liters: 10.0
+name: T.A. DryPart FR 2025 Hydro Coco - Expert - Pro Roots + Pro Bloom + HyperBloom
+  - Ripening
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

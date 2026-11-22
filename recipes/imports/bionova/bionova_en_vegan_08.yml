@@ -1,0 +1,14 @@
+fertilizers:
+- grams: 5
+  name: Bionova Veganics Grow (archived EN chart)
+- grams: 35
+  name: Bionova Veganics Bloom (archived EN chart)
+- grams: 12
+  name: Bionova Vegan PK 3-5 (archived EN chart)
+- grams: 10
+  name: Bionova X-cel (archived EN chart)
+- grams: 6
+  name: Bionova The Missing Link (archived EN chart)
+liters: 10.0
+name: Bionova vegan – Flowering stage 7
+water_profile: default

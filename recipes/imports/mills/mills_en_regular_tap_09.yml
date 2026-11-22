@@ -1,0 +1,10 @@
+fertilizers:
+- grams: 3
+  name: Mills BASIS A (Regular EN chart)
+- grams: 2.5
+  name: Mills ULTIMATE PK (Regular EN chart)
+- grams: 3
+  name: Mills BASIS B (Regular EN chart)
+liters: 1.0
+name: Mills Regular tap water EC 0.7 – Bloom W7
+water_profile: default

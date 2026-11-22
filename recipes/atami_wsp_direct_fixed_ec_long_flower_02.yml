@@ -1,0 +1,12 @@
+# Source: https://atami.com/wp-content/uploads/2026/09/Direct-to-reservoir_Fixed-EC_LONG-flower.pdf
+# Source SHA-256: 52135922178b127ce939ca189a3dc0a7d4ccfc324128cccddd0004e2d4200324
+# Source page: 1
+# Manufacturer transcription; default water is a neutral calculation placeholder.
+fertilizers:
+- grams: 7.3
+  name: Atami WSP A
+- grams: 7.3
+  name: Atami WSP B
+liters: 10.0
+name: Atami WSP Direct to Reservoir – Fixed EC LONG flower – Stretch, Week 3
+water_profile: default

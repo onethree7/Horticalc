@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from pathlib import Path
-from shutil import copytree
+from shutil import copy2, copytree
 
 import pytest
 from fastapi.testclient import TestClient
@@ -20,8 +20,11 @@ TEST_SESSION_TOKEN = "t" * 43
 def isolated_app_root(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     root = Path(__file__).resolve().parents[1]
     sandbox = tmp_path / "app"
-    for name in ("data", "recipes"):
-        copytree(root / name, sandbox / name)
+    copytree(root / "data", sandbox / "data")
+    recipes = sandbox / "recipes"
+    recipes.mkdir()
+    for recipe in (root / "recipes").glob("*.yml"):
+        copy2(recipe, recipes / recipe.name)
     monkeypatch.setattr(paths, "app_root", lambda: sandbox)
     return sandbox
 

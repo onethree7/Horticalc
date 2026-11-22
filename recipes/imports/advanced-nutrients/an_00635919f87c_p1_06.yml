@@ -1,0 +1,30 @@
+fertilizers:
+- grams: 40.0
+  name: Advanced Nutrients pH Perfect Grow (GLOBAL-Plan)
+- grams: 40.0
+  name: Advanced Nutrients pH Perfect Micro (GLOBAL-Plan)
+- grams: 40.0
+  name: Advanced Nutrients pH Perfect Bloom (GLOBAL-Plan)
+- grams: 20.0
+  name: Advanced Nutrients Voodoo Juice (GLOBAL-Plan)
+- grams: 20.0
+  name: Advanced Nutrients Bud Factor X (GLOBAL-Plan)
+- grams: 20.0
+  name: Advanced Nutrients Rhino Skin (GLOBAL-Plan)
+- grams: 20.0
+  name: Advanced Nutrients Tarantula (GLOBAL-Plan)
+- grams: 20.0
+  name: Advanced Nutrients Piranha (GLOBAL-Plan)
+- grams: 20.0
+  name: Advanced Nutrients Big Bud (GLOBAL-Plan)
+- grams: 20.0
+  name: Advanced Nutrients Bud Ignitor (GLOBAL-Plan)
+- grams: 20.0
+  name: Advanced Nutrients Sensizym (GLOBAL-Plan)
+- grams: 20.0
+  name: Advanced Nutrients Bud Candy (GLOBAL-Plan)
+liters: 10.0
+name: F2
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

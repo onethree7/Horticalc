@@ -1,0 +1,8 @@
+fertilizers:
+- grams: 25
+  name: BAC Hydro Grow A (EN SDS)
+- grams: 25
+  name: BAC Hydro Grow B (EN SDS)
+liters: 10.0
+name: BAC UK 2017 hydro min – Veg W1
+water_profile: default

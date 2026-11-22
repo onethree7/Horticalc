@@ -90,8 +90,44 @@ fertilizers:
 ```
 
 `liters` must be positive. Fertilizer amounts are finite and non-negative. The
-shipped `default.yml` contains no fertilizer; other shipped recipes are
-zero-water reference calculations rather than crop recommendations.
+shipped `default.yml` contains no fertilizer. Reference recipes are zero-water
+calculations; manufacturer recipes transcribe source-specific published doses.
+
+### Manufacturer imports
+
+Manufacturer tables use the same recipe format. A file represents one source
+phase and one named variant. Calculable phases are shipped directly under
+`recipes/` and appear in the recipe selector. Drafts stay under
+`recipes/imports/` and are excluded from both the selector and shipped recipe
+glob. A blocked product affects its dependent phases, not other programs.
+
+Plagron Coco system feeding and Hydro include all eleven source weeks. The
+recipe names identify weeks where the calculation covers declared mineral
+contributions and excludes the organic nitrogen in Power Buds. Select a
+shipped Plagron recipe to open the English weekly tank-dose tables in Recipe
+management.
+
+In the source checkout, `recipes/imports/manifest.json` owns the source URLs
+and hashes, product declarations, market/version distinctions, program branches,
+raw cells and unresolved values. Its `file` paths are repository-relative;
+`active` identifies published phases. Each published YAML also carries source
+comments, so its provenance remains available in packaged copies.
+
+Substrates, water variants, exclusive additives and printed range endpoints
+remain separate. An unmapped dose or nutrient is retained in the draft's
+`unmodeled_rows` and blockers; it is not silently replaced with a zero profile.
+Declared contributions do not establish a complete chemical analysis. Product
+limitations, including unquantified ions or ambiguous trace declarations, are
+recorded with their source in the catalogue's `Information` field.
+Mineral-only profiles exclude separately declared organic nitrogen: their
+calculated `N_total` is not the label's total nitrogen. Declared total contents
+of mineral amendments do not establish dissolved concentrations, availability
+or a validated EC prediction.
+
+The neutral `default` water is a calculation placeholder, not the manufacturer's
+source-water analysis. Published EC values are not converted into invented
+water composition or Solver targets. The current file, source-hash and
+calculation checks are recorded in `recipes/imports/validation.json`.
 
 ### Stock preparation attachment
 

@@ -17,8 +17,12 @@ def test_green_house_calcium_edta_uses_catalog_name() -> None:
     assert [name for name in names if name.startswith("Green House Feeding ")] == [
         "Green House Feeding Booster PK+",
         "Green House Feeding Ca-EDTA",
+        "Green House Feeding Grow (UK-AU 2019)",
         "Green House Feeding Hybrids",
+        "Green House Feeding Hybrids (UK-AU 2019)",
+        "Green House Feeding Long Flowering (UK-AU 2019)",
         "Green House Feeding Short Flowering",
+        "Green House Feeding Short Flowering (UK-AU 2019)",
     ]
 
 

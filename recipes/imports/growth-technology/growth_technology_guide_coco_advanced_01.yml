@@ -1,0 +1,12 @@
+fertilizers:
+- grams: 7
+  name: Growth Technology IONIC Coco Grow (Guide EN)
+- grams: 1
+  name: Growth Technology GreenFuse Grow (Guide EN)
+- grams: 2
+  name: Growth Technology Nitrozyme (Guide EN)
+- grams: 1
+  name: Growth Technology Superdrive (Guide EN)
+liters: 1.0
+name: Growth Technology coco advanced – Grow
+water_profile: default

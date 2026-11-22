@@ -1,0 +1,14 @@
+# Source: https://atami.com/wp-content/uploads/2026/09/Direct-to-reservoir_Fixed-EC_INTERMEDIATE-flower.pdf
+# Source SHA-256: 237c0692f25684cf502b79f714189a28a583655ddbf0553785bddf230adec39a
+# Source page: 1
+# Manufacturer transcription; default water is a neutral calculation placeholder.
+fertilizers:
+- grams: 8.3
+  name: Atami WSP A
+- grams: 7.9
+  name: Atami WSP B
+- grams: 7.3
+  name: Atami WSP C
+liters: 10.0
+name: Atami WSP Direct to Reservoir – Fixed EC INTERMEDIATE flower – Generative, Weeks 4–9
+water_profile: default

@@ -3,11 +3,12 @@ import {
   ION_FORMATTER,
   NUTRIENT_FORMATTER,
   NUTRIENT_INTEGER_FORMATTER,
+  NITROGEN_COLUMNS,
   SUMMARY_COLUMN_ORDER,
   SUMMARY_VIEW_KEY,
 } from "./constants.js";
 import { qs, qsa, syncSelectedOptionTitle } from "./dom.js";
-import { decimalInputValue, formatNumber } from "./formatting.js";
+import { decimalInputValue, formatNumber, sidebarRatioRows } from "./formatting.js";
 import { createLatestRequestGate } from "../request_gate.js";
 import { storageGet, storageSet } from "./storage.js";
 
@@ -508,11 +509,7 @@ function renderIonSummaryTable(table, elements) {
   if (ionSummaryBadge) {
     ionSummaryBadge.textContent = "mg/L";
   }
-  const nitrogenColumns = [
-    { key: "N_NO3", label: "NO3", labelKey: "solver.nNo3" },
-    { key: "N_NH4", label: "NH4", labelKey: "solver.nNh4" },
-    { key: "N_UREA", label: "UREA", labelKey: "solver.nUrea" },
-  ];
+
   renderSummaryTable({
     table,
     headerLabels: (column) => t(column.ionHeaderLabelKey || column.ionHeaderLabel),
@@ -521,7 +518,7 @@ function renderIonSummaryTable(table, elements) {
     rowLabelClass: "row-label--ion",
     valueMap: elementMap,
     formatter: (column, value) => formatNutrientValue(column.element, value),
-    extraColumns: nitrogenColumns,
+    extraColumns: NITROGEN_COLUMNS,
     extraFormatter: (key, value) => formatNutrientValue(key, value),
   });
   table.classList.toggle("is-n-expanded", ionNitrogenExpanded);
@@ -654,57 +651,11 @@ function renderEcPair(ecValues, el18, el25) {
   el25.textContent = Number.isFinite(ec25) ? formatNumber(ec25) : "-";
 }
 
-function ratioValueText(value) {
-  const text = String(value || "").trim();
-  if (!text) {
-    return "-";
-  }
-  const markerIndex = text.indexOf("=");
-  return markerIndex >= 0 ? text.slice(markerIndex + 1) : text;
-}
-
-function formatRatioNumber(value) {
-  if (!Number.isFinite(value)) {
-    return "-";
-  }
-  const rounded = Math.round(value * 10) / 10;
-  return rounded.toFixed(1).replace(/\.0$/, "");
-}
-
-function ratioToOneText(value, leftLabel, rightLabel) {
-  const parts = ratioValueText(value).split(":").map((part) => Number(part));
-  if (parts.length !== 2 || !Number.isFinite(parts[0]) || !Number.isFinite(parts[1])) {
-    return "-";
-  }
-  const [left, right] = parts;
-  if (left <= 0 && right <= 0) {
-    return `0 ${leftLabel} : 0 ${rightLabel}`;
-  }
-  if (right <= 0) {
-    return `${formatRatioNumber(left)} ${leftLabel} : 0 ${rightLabel}`;
-  }
-  return `${formatRatioNumber(left / right)} ${leftLabel} : 1 ${rightLabel}`;
-}
-
 function renderIonRatios(metrics) {
-  const ratios = metrics?.npk_ratios_ion || {};
-  const nitrogen = metrics?.n_form_pct;
-  if (caMgRatioValue) {
-    caMgRatioValue.textContent = ratioToOneText(ratios["Ca:Mg"], "Ca", "Mg");
-  }
-  if (!ionRatioList) {
-    return;
-  }
-
+  const [[, calciumMagnesium], ...entries] = sidebarRatioRows(metrics);
+  if (caMgRatioValue) caMgRatioValue.textContent = calciumMagnesium;
+  if (!ionRatioList) return;
   ionRatioList.innerHTML = "";
-  const entries = [
-    ["N:K", ratios["N:K"]],
-    ["Ca:K", ratios["Ca:K"]],
-    ["NO3:NH4:UR (%)", nitrogen ? `${nitrogen.no3}:${nitrogen.nh4}:${nitrogen.urea}` : "-", "live.nitrogenFormsHint"],
-    ["SO4:P", ratios["SO4:P"]],
-    ["P:K", ratios["P:K"]],
-    ["Fe:Mg", ratios["Fe:Mg"]],
-  ];
   entries.forEach(([name, ratio, titleKey]) => {
     const item = document.createElement("div");
     item.className = "ion-ratio-pill";
@@ -716,7 +667,7 @@ function renderIonRatios(metrics) {
     const label = document.createElement("span");
     label.textContent = name;
     const value = document.createElement("strong");
-    value.textContent = ratioValueText(ratio);
+    value.textContent = ratio;
 
     item.append(label, value);
     ionRatioList.appendChild(item);

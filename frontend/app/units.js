@@ -105,7 +105,8 @@ export function createUnitService({ onLitersChange = () => {}, onDoseUnitsChange
     if (!Number.isFinite(numeric)) return "-";
     const abs = Math.abs(numeric);
     const decimals = abs >= 1 ? 4 : abs >= 0.01 ? 6 : 8;
-    return numeric.toFixed(decimals).replace(/(\.\d*?[1-9])0+$/, "$1").replace(/\.0+$/, "");
+    const formatted = numeric.toFixed(decimals).replace(/(\.\d*?[1-9])0+$/, "$1").replace(/\.0+$/, "");
+    return numeric !== 0 && Number(formatted) === 0 ? numeric.toExponential(4) : formatted;
   }
 
   return {

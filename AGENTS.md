@@ -14,6 +14,11 @@ Use **Plan → Edit → Verify** for every change.
   when required.
 - Do not change runtime behavior during documentation work unless the task also
   requests a code change.
+- Clipboard exports use `notifications.copyText()`, `buildAlignedRows()` for
+  columns and `buildDoseTable()` for fertilizer tables. Keep spacing in
+  `frontend/app/formatting.js` and quantities in the unit service; do not add
+  feature-specific padding or competing formatters. Share presentation with the
+  sidebar when exporting its values.
 
 ## Sources of truth
 

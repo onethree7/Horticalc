@@ -1,29 +1,28 @@
 import { qs, qsa } from "./dom.js";
-import { formatNumber, parseDecimalInput } from "./formatting.js";
+import { buildAlignedRows, buildDoseTable, parseDecimalInput } from "./formatting.js";
 import { createLatestRequestGate } from "../request_gate.js";
 
-const instructionKeys = ["stock.prepare", "stock.store", "stock.dilute", "stock.smallBatch"];
+const instructionKeys = ["stock.waterAssumption", "stock.prepare", "stock.store", "stock.dilute", "stock.smallBatch"];
 const readingSources = [
   { name: "Science in Hydroponics", url: "https://scienceinhydroponics.com/2017/09/five-things-you-should-know-when-mixing-your-own-hydroponic-liquid-nutrients.html" },
   { name: "Frontiers in Agronomy", url: "https://www.frontiersin.org/journals/agronomy/articles/10.3389/fagro.2026.1823187/full" },
 ];
-const numberFormatter = new Intl.NumberFormat("en-US", { maximumSignificantDigits: 6, useGrouping: false });
 
 function defaultStockSettings() {
   return { schema_version: 2, tanks: { A: { liters: 1, factor: 100 }, B: { liters: 1, factor: 100 } }, assignments: {}, material_fingerprints: {} };
 }
 
-function findingText(finding, t) {
-  const message = finding.code === "pair_risk"
+function findingMessage(finding, t) {
+  return finding.code === "pair_risk"
     ? finding.risks.map((risk) => t(`stock.risk.${risk}`)).join(" ") : t(`stock.finding.${finding.code}`);
-  return [finding.tank, finding.materials.join(", "), message].filter(Boolean).join(" · ");
+}
+
+function findingText(finding, t) {
+  return [finding.tank, finding.materials.join(", "), findingMessage(finding, t)].filter(Boolean).join(" · ");
 }
 
 function stockAmount(item, amount, units) {
-  const formatted = units.formatDoseDisplay(amount, item.name);
-  const value = amount > 0 && Number(formatted) === 0
-    ? (amount / units.displayDoseToCanonical(1, item.name)).toExponential(4) : formatted;
-  return `${value} ${units.doseUnitDefinition(item.name).symbol}`;
+  return `${units.formatDoseDisplay(amount, item.name)} ${units.doseUnitDefinition(item.name).symbol}`;
 }
 
 function stockVolumeValue(liters, units) {
@@ -41,27 +40,34 @@ function batchDose(plan, t) {
   return plan.tanks.map((tank) => `${Number(tank.dose_ml.toPrecision(6))} mL ${tank.id}`).join(" + ") || t("stock.separate");
 }
 
-export function buildStockPrintableText(plan, t, units) {
+export function buildStockClipboardText(plan, t, units) {
   if (!plan?.exportable) return "";
-  const lines = [t("stock.title"), t("stock.context", { volume: volume(plan.liters, units) }), ""];
-  const water = plan.settings.source_water;
-  const analysis = Object.entries(water.mg_per_l).filter(([, amount]) => amount > 0)
-    .map(([ion, amount]) => `${ion} ${formatNumber(amount, numberFormatter)} ${ion === "KH" ? "°dKH" : "mg/L"}`).join(", ");
-  lines.push(`${t("stock.batchWater")}: ${analysis || t("stock.ro")}`);
-  lines.push(`${t("water.osmosisPercent")}: ${formatNumber(water.osmosis_percent, numberFormatter)}`);
-  lines.push(t("stock.waterAssumption"));
-  lines.push("");
+  const lines = [t("stock.title"), t("stock.context", { volume: volume(plan.liters, units) })];
   for (const tank of plan.tanks) {
-    lines.push(t("stock.tankTitle", { tank: tank.id, volume: volume(tank.liters, units), factor: tank.factor }));
-    tank.ingredients.forEach((item) => lines.push(`${item.name}: ${stockAmount(item, item.stock_amount, units)}`));
-    lines.push(t("stock.dose", { dose: Number(tank.dose_ml_per_l.toPrecision(6)) }), t("stock.capacity", { volume: volume(tank.capacity_liters, units) }), "");
+    lines.push("", t("stock.tankTitle", { tank: tank.id, volume: volume(tank.liters, units), factor: tank.factor }));
+    lines.push(...buildAlignedRows(null, [
+      [t("stock.doseLabel"), `${Number(tank.dose_ml_per_l.toPrecision(6))} mL/L`],
+      [t("stock.capacityLabel"), volume(tank.capacity_liters, units)],
+    ], [1]));
+    lines.push("", ...buildDoseTable(
+      tank.ingredients.map(({ name, stock_amount }) => ({ name, grams: stock_amount })), { t, units },
+    ));
   }
-  lines.push(t("stock.batchDose", { dose: batchDose(plan, t), volume: volume(plan.liters, units) }));
-  plan.ingredients.filter((item) => item.assignment === "separate").forEach((item) => {
-    lines.push(`${t("stock.separate")}: ${item.name} — ${stockAmount(item, item.recipe_amount, units)}`);
-  });
-  lines.push("", ...instructionKeys.map((key) => t(key)), t("stock.guidance"));
-  if (plan.findings.length) lines.push("", t("stock.checks"), ...plan.findings.map((item) => `${t(`stock.${item.severity}`)}: ${findingText(item, t)}`));
+  lines.push("", t("stock.batchDose", { dose: batchDose(plan, t), volume: volume(plan.liters, units) }));
+  const separate = plan.ingredients.filter((item) => item.assignment === "separate");
+  if (separate.length) {
+    lines.push("", t("stock.separate"), ...buildDoseTable(
+      separate.map(({ name, recipe_amount }) => ({ name, grams: recipe_amount })), { t, units },
+    ));
+  }
+  lines.push("", t("stock.instructions"), ...instructionKeys.map((key) => `- ${t(key)}`), "", t("stock.guidance"));
+  if (plan.findings.length) {
+    lines.push("", t("stock.checks"));
+    plan.findings.forEach((item) => lines.push(
+      "", `${t(`stock.${item.severity}`)}${item.tank ? `: ${item.tank}` : ""}`,
+      ...item.materials.map((name) => `- ${name}`), findingMessage(item, t),
+    ));
+  }
   lines.push("", t("stock.reading"), ...readingSources.map(({ name, url }) => `${name}: ${url}`));
   return lines.join("\n");
 }
@@ -83,7 +89,6 @@ export function createStocksController({ api, i18n, units, notifications, getRec
   const factorInput = qs("#stockFactor");
   const independentInput = qs("#stockIndependent");
   const copyButton = qs("#copyStocks");
-  const printButton = qs("#printStocks");
   const updateButton = qs("#updateStocks");
   const suggestButton = qs("#suggestStocks");
   const addCButton = qs("#addStockC");
@@ -103,7 +108,6 @@ export function createStocksController({ api, i18n, units, notifications, getRec
     requests.invalidate();
     current = false;
     copyButton.disabled = true;
-    printButton.disabled = true;
     qs("#stockOutput").hidden = true;
     qsa("#stockIngredients tbody tr td:last-child").forEach((cell) => { cell.textContent = "—"; });
     if (opened) status.textContent = t("stock.stale");
@@ -212,7 +216,6 @@ export function createStocksController({ api, i18n, units, notifications, getRec
     qs("#stockChecksTitle").hidden = !plan.findings.length;
     qs("#stockOutput").hidden = !current;
     copyButton.disabled = !current || !plan.exportable;
-    printButton.disabled = copyButton.disabled;
     status.textContent = t(!current ? "stock.stale" : !plan.complete ? "stock.incomplete" : !plan.exportable ? "stock.exportBlocked" : plan.findings.length ? "stock.review" : "stock.calculated");
     displayResult();
   }
@@ -311,19 +314,9 @@ export function createStocksController({ api, i18n, units, notifications, getRec
     copyButton.addEventListener("click", async () => {
       if (!current || !plan?.exportable) return;
       try {
-        await notifications.copyText(buildStockPrintableText(plan, t, units));
+        await notifications.copyText(buildStockClipboardText(plan, t, units));
         status.textContent = t("status.copied");
       } catch (error) { notifications.reportError(error, t("errors.copyFailed")); }
-    });
-    printButton.addEventListener("click", () => {
-      if (!current || !plan?.exportable) return;
-      qs("#stockPrintSheet").textContent = buildStockPrintableText(plan, t, units);
-      document.body.classList.add("printing-stocks");
-      document.documentElement.classList.add("printing-stocks");
-      try { window.print(); } finally {
-        document.body.classList.remove("printing-stocks");
-        document.documentElement.classList.remove("printing-stocks");
-      }
     });
     renderSettings();
   }

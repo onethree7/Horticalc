@@ -700,6 +700,12 @@ main {
   font-size: var(--text-sm);
 }
 
+#plagronSchedules iframe {
+  width: 100%;
+  height: min(65vh, 40rem);
+  border: 0;
+}
+
 .summary {
   --summary-row-label-measure: 12rem;
 

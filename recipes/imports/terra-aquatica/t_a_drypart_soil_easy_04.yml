@@ -1,0 +1,10 @@
+fertilizers:
+- grams: 6.0
+  name: T.A. DryPart Grow FR FREN70102
+- grams: 6.0
+  name: T.A. DryPart Bloom FR FREN71102
+liters: 10.0
+name: T.A. DryPart Soil - Easy - Preflowering
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

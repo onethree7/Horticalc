@@ -1,0 +1,12 @@
+fertilizers:
+- grams: 2
+  name: Mills START-R (Regular EN chart)
+- grams: 2.5
+  name: Mills BASIS A (Regular EN chart)
+- grams: 0.2
+  name: Mills VITALIZE (Regular EN chart)
+- grams: 2.5
+  name: Mills BASIS B (Regular EN chart)
+liters: 1.0
+name: Mills Regular reverse osmosis water EC 0.0 – Growth W2
+water_profile: default

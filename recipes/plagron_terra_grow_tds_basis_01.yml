@@ -1,0 +1,10 @@
+# Source: https://plagron.com/downloads/en/terra-grow-tds
+# Source SHA-256: 166da85f739fa29f227fb81cade752197ca8037cc2c11a59eec27850baaf282f
+# Source page: 1
+# Manufacturer transcription; default water is a neutral calculation placeholder.
+fertilizers:
+- grams: 50.0
+  name: Plagron Terra Grow
+liters: 10.0
+name: Plagron Terra Grow – TDS base dose, maximum 5 mL/L
+water_profile: default

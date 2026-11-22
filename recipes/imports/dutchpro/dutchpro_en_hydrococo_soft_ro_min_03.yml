@@ -1,0 +1,14 @@
+fertilizers:
+- grams: 2
+  name: Dutchpro Bloom A (hydrococo_soft_ro)
+- grams: 2
+  name: Dutchpro Bloom B (hydrococo_soft_ro)
+- grams: 0.4
+  name: Dutchpro Silica von Liebig Special (EN chart)
+- grams: 1
+  name: Dutchpro Multi Total (EN chart)
+- grams: 1
+  name: Dutchpro Take Root (EN chart)
+liters: 1.0
+name: Dutchpro hydrococo_soft_ro min – Bloom W1
+water_profile: default

@@ -1,0 +1,10 @@
+fertilizers:
+- grams: 4
+  name: Growth Technology GreenHaze Bloom A (Guide EN)
+- grams: 4
+  name: Growth Technology GreenHaze Bloom B (Guide EN)
+- grams: 1
+  name: Growth Technology IONIC PK Boost (Guide EN)
+liters: 1.0
+name: Growth Technology greenhaze basic – Bloom
+water_profile: default

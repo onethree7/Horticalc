@@ -1,0 +1,13 @@
+fertilizers:
+- grams: 1.5
+  name: T.A. DryPart Grow FR FREN70102
+- grams: 2.0
+  name: T.A. Pro Roots EU unconfirmed
+- grams: 30.0
+  name: T.A. Humic EU unconfirmed
+liters: 10.0
+name: T.A. DryPart FR 2025 Soil - Expert - Pro Roots + Pro Bloom + HyperBloom - 1st
+  roots
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

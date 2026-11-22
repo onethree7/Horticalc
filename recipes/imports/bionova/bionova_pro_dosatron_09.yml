@@ -1,0 +1,10 @@
+fertilizers:
+- grams: 0.45
+  name: Bionova Pro A (archived EN chart)
+- grams: 0.45
+  name: Bionova Pro B (archived EN chart)
+- grams: 0.15
+  name: Bionova Pro CalMag (archived EN chart)
+liters: 1.0
+name: Bionova PRO dosatron – Bloom W8
+water_profile: default

@@ -1,0 +1,14 @@
+fertilizers:
+- grams: 7
+  name: Growth Technology IONIC Hydro Hardwater Bloom (Guide EN)
+- grams: 1
+  name: Growth Technology IONIC PK Boost (Guide EN)
+- grams: 1
+  name: Growth Technology GreenFuse Bloom (Guide EN)
+- grams: 0.5
+  name: Growth Technology Nitrozyme (Guide EN)
+- grams: 2
+  name: Growth Technology Superdrive (Guide EN)
+liters: 1.0
+name: Growth Technology hydro_hardwater advanced – Bloom
+water_profile: default

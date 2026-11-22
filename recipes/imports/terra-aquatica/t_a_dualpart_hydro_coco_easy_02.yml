@@ -1,0 +1,10 @@
+fertilizers:
+- grams: 15.0
+  name: T.A. DualPart Grow EU unconfirmed
+- grams: 10.0
+  name: T.A. DualPart Bloom EU unconfirmed
+liters: 10.0
+name: T.A. DualPart Hydro Coco - Easy - 1st true leaves
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

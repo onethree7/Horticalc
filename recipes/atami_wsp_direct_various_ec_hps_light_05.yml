@@ -1,0 +1,14 @@
+# Source: https://atami.com/wp-content/uploads/2026/09/Direct-to-reservoir_Various-EC_HPS_LIGHT.pdf
+# Source SHA-256: 7f3f135418eb7ab84164b85975827ac6b449dc0d9e0b877b28ca954cb94966d2
+# Source page: 1
+# Manufacturer transcription; default water is a neutral calculation placeholder.
+fertilizers:
+- grams: 3.9
+  name: Atami WSP A
+- grams: 3.7
+  name: Atami WSP B
+- grams: 3.4
+  name: Atami WSP C
+liters: 10.0
+name: Atami WSP Direct to Reservoir – Various EC HPS LIGHT – Flower Compacting
+water_profile: default

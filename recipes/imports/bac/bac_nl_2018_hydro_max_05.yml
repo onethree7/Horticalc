@@ -1,0 +1,8 @@
+fertilizers:
+- grams: 45
+  name: BAC Hydro Bloom A (EN SDS)
+- grams: 45
+  name: BAC Hydro Bloom B (EN SDS)
+liters: 10.0
+name: BAC NL 2018 hydro max – Bloom W3
+water_profile: default

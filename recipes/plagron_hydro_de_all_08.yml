@@ -1,0 +1,19 @@
+# Power Buds contributes declared potassium. Organic nitrogen is outside the calculation.
+# Source: https://plagron.com/downloads/de/grow-schedule-100-hydro
+# PDF SHA-256: 28c228ff4a838aa5b852846a3f11a498f159f9c18bd191b3c9c8c0214e88911a; page 1; column W8.
+# Importstand und Quellhinweise: ../manifest.json.
+# grams denotes mL for these liquids; default is only a neutral water placeholder.
+name: "Plagron Hydro (DE) - Week 8 (declared mineral contributions)"
+liters: 10.0
+water_profile: default
+osmosis_percent: 0
+urea_as_nh4: false
+fertilizers:
+- name: Plagron Hydro A
+  grams: 25.0
+- name: Plagron Hydro B
+  grams: 25.0
+- name: Plagron Green Sensation
+  grams: 10.0
+- name: Plagron Power Buds
+  grams: 10.0

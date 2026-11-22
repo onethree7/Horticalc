@@ -1,0 +1,20 @@
+fertilizers:
+- grams: 15.0
+  name: T.A. TriPart Grow FR FREN01003
+- grams: 15.0
+  name: T.A. TriPart Micro Hard Water FR FREN03005
+- grams: 10.0
+  name: T.A. TriPart Bloom FR FREN04005
+- grams: 50.0
+  name: T.A. Seaweed EU unconfirmed
+- grams: 40.0
+  name: T.A. Humic EU unconfirmed
+- grams: 2.0
+  name: T.A. Pro Bloom EU unconfirmed
+- grams: 4.0
+  name: T.A. Silicate EU unconfirmed
+liters: 10.0
+name: T.A. TriPart Soil - Expert - Micro Hard - Roots Booster + Pro Bloom - Preflowering
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

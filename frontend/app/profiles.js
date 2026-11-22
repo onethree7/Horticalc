@@ -12,6 +12,7 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
   const sectionTitle = qs("#profileSectionTitle");
   const sectionHint = qs("#profileSectionHint");
   const select = qs("#profileSelect");
+  const plagronSchedules = qs("#plagronSchedules");
   const favoriteButton = qs("#favoriteProfile");
   const loadButton = qs("#loadProfile");
   const deleteButton = qs("#deleteProfile");
@@ -44,6 +45,10 @@ export function createProfilesController({ api, i18n, notifications, actions }) 
 
   function refreshSelectionActions() {
     const selected = select.value;
+    plagronSchedules.hidden = mode !== "calculator" || !recipes.some((profile) =>
+      !profile.deletable && profile.filename === selected && selected.startsWith("plagron_")
+    );
+    if (plagronSchedules.hidden) plagronSchedules.open = false;
     syncSelectedOptionTitle(select);
     const favorite = Boolean(selected) && activeFavorites().has(selected);
     const label = t(favorite ? "profile.removeFavorite" : "profile.addFavorite");

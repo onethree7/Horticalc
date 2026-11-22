@@ -1,0 +1,11 @@
+fertilizers:
+- grams: 40.0
+  name: T.A. FinalPart EU unconfirmed
+- grams: 50.0
+  name: T.A. Bloom Booster EU unconfirmed
+liters: 10.0
+name: T.A. DryPart FR 2025 Soil - Expert - Roots Booster + Bloom Booster + FinalPart
+  - Ripening
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

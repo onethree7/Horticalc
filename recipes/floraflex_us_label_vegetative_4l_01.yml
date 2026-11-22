@@ -1,0 +1,13 @@
+# Source: https://www.floraflex.com/__l5e/assets-v1/510dba91-9a43-42df-8904-093e4d99bd46/v1_25lb_back.webp
+# Source SHA-256: 5445977cab3ba999781e213a131141bb2775204acf38f4ca3be7b066a7208f2f
+# Manufacturer transcription; default water is a neutral calculation placeholder.
+fertilizers:
+- grams: 1.0
+  name: FloraFlex V1 (US label)
+- grams: 1.0
+  name: FloraFlex V2 (US label)
+liters: 4.0
+name: FloraFlex US label vegetative - minimum - printed 4 L
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

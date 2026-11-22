@@ -1,0 +1,12 @@
+fertilizers:
+- grams: 30.0
+  name: Advanced Nutrients pH Perfect Sensi Grow A (GLOBAL-Plan)
+- grams: 30.0
+  name: Advanced Nutrients pH Perfect Sensi Grow B (GLOBAL-Plan)
+- grams: 20.0
+  name: Advanced Nutrients B-52 (GLOBAL-Plan)
+liters: 10.0
+name: V3
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

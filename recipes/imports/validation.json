@@ -1,0 +1,8 @@
+{
+  "status": "passed",
+  "active_recipe_files_calculated_and_scaled": 225,
+  "pending_recipe_files_with_blockers": 2456,
+  "source_files_hash_checked": 383,
+  "catalogue_matches_manifest": true,
+  "molar_masses_match_manifest": true
+}

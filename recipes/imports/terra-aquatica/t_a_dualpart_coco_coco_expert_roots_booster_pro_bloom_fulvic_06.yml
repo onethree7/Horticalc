@@ -1,0 +1,10 @@
+fertilizers:
+- grams: 50.0
+  name: T.A. FinalPart EU unconfirmed
+- grams: 2.0
+  name: T.A. Pro Bloom EU unconfirmed
+liters: 10.0
+name: T.A. DualPart Coco Coco - Expert - Roots Booster + Pro Bloom + Fulvic - Ripening
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

@@ -195,6 +195,7 @@ export default {
   "profile.removeFavorite": "Remove profile from favorites",
   "profile.delete": "Delete",
   "profile.confirmDelete": "Delete profile ‘{name}’?",
+  "profile.plagronSchedules": "Plagron weekly feeding charts (English)",
   "profile.recipeHint": "Save or load recipes locally. Solver target profiles stay in the solver.",
   "profile.targetTitle": "Target profile",
   "profile.targetHint": "Save or load target profiles locally.",

@@ -1,0 +1,14 @@
+fertilizers:
+- grams: 40.0
+  name: Plagron Alga Bloom
+- grams: 10.0
+  name: Plagron Power Roots
+- grams: 10.0
+  name: Plagron Pure Zym
+- grams: 10.0
+  name: Plagron Sugar Royal
+liters: 10.0
+name: Plagron 100%NATURAL DE catalogue - Promix - W4
+osmosis_percent: 0
+urea_as_nh4: false
+water_profile: default

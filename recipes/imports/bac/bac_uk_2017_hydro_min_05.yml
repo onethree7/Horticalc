@@ -1,0 +1,8 @@
+fertilizers:
+- grams: 35
+  name: BAC Hydro Bloom A (EN SDS)
+- grams: 35
+  name: BAC Hydro Bloom B (EN SDS)
+liters: 10.0
+name: BAC UK 2017 hydro min – Bloom W3
+water_profile: default

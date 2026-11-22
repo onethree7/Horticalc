@@ -195,6 +195,7 @@ export default {
   "profile.removeFavorite": "从收藏中移除配置",
   "profile.delete": "删除",
   "profile.confirmDelete": "确定删除配置“{name}”吗？",
+  "profile.plagronSchedules": "Plagron 每周施肥表（英语）",
   "profile.recipeHint": "本地保存或加载配方。Solver 目标配置保留在 Solver 中。",
   "profile.targetTitle": "目标配置",
   "profile.targetHint": "本地保存或加载目标配置。",

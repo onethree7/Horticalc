@@ -21,7 +21,12 @@ for dir in frontend data recipes; do
   src="$repo_root/$dir"
   dest="$app_root/$dir"
   rm -rf "$dest"
-  cp -a "$src" "$dest"
+  if [[ "$dir" == recipes ]]; then
+    mkdir -p "$dest"
+    cp -a "$src"/*.yml "$dest/"
+  else
+    cp -a "$src" "$dest"
+  fi
 done
 
 cp "$repo_root/scripts/packaging/README.txt" "$app_root/README.txt"

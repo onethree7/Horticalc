@@ -97,9 +97,7 @@ calculations; manufacturer recipes transcribe source-specific published doses.
 
 Manufacturer tables use the same recipe format. A file represents one source
 phase and one named variant. Calculable phases are shipped directly under
-`recipes/` and appear in the recipe selector. Drafts stay under
-`recipes/imports/` and are excluded from both the selector and shipped recipe
-glob. A blocked product affects its dependent phases, not other programs.
+`recipes/` and appear in the recipe selector.
 
 Plagron Coco system feeding and Hydro include all eleven source weeks. The
 recipe names identify weeks where the calculation covers declared mineral
@@ -107,15 +105,10 @@ contributions and excludes the organic nitrogen in Power Buds. Select a
 shipped Plagron recipe to open the English weekly tank-dose tables in Recipe
 management.
 
-In the source checkout, `recipes/imports/manifest.json` owns the source URLs
-and hashes, product declarations, market/version distinctions, program branches,
-raw cells and unresolved values. Its `file` paths are repository-relative;
-`active` identifies published phases. Each published YAML also carries source
-comments, so its provenance remains available in packaged copies.
+Published recipes carry source references in YAML comments.
 
 Substrates, water variants, exclusive additives and printed range endpoints
-remain separate. An unmapped dose or nutrient is retained in the draft's
-`unmodeled_rows` and blockers; it is not silently replaced with a zero profile.
+remain separate.
 Declared contributions do not establish a complete chemical analysis. Product
 limitations, including unquantified ions or ambiguous trace declarations, are
 recorded with their source in the catalogue's `Information` field.
@@ -126,8 +119,7 @@ or a validated EC prediction.
 
 The neutral `default` water is a calculation placeholder, not the manufacturer's
 source-water analysis. Published EC values are not converted into invented
-water composition or Solver targets. The current file, source-hash and
-calculation checks are recorded in `recipes/imports/validation.json`.
+water composition or Solver targets.
 
 ### Stock preparation attachment
 

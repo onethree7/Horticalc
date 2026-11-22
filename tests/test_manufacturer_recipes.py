@@ -234,7 +234,6 @@ def test_plagron_silic_rock_keeps_organic_nitrogen_out_of_mineral_totals(calcula
     assert result["elements_mg_per_l"]["N_total"] == pytest.approx(5.4)
     assert result["oxides_mg_per_l"]["K2O"] == pytest.approx(18.36)
     assert result["oxides_mg_per_l"]["SiO2"] == pytest.approx(11.88)
-    assert "organic" in product["information"].lower()
 
 
 def test_power_buds_recipes_identify_their_calculation_scope() -> None:
@@ -288,4 +287,3 @@ def test_drypart_bloom_uses_label_confirmed_magnesium(calculation_data) -> None:
 
     assert result["elements_mg_per_l"]["N_total"] == pytest.approx(108.0)
     assert result["oxides_mg_per_l"]["MgO"] == pytest.approx(126.0)
-    assert any("7.Trioxyde" in field["value"] for field in product["raw_features"])

@@ -58,6 +58,12 @@ Python–JavaScript bridge. Feature controllers own their UI state; shared
 transport, formatting, units, and storage helpers remain independent of the
 feature DOM.
 
+Clipboard exports share column alignment and fertilizer-table rendering in
+`frontend/app/formatting.js`, quantity formatting in the unit service and the
+clipboard transport in `frontend/app/notifications.js`. Sidebar ratio rows are
+shared with Calculator's export. Stock preparation exports plain text through
+this same path.
+
 Stock preparation is a Calculator subview owned by `frontend/app/stocks.js`.
 Calculator and Solver retain the accepted request alongside its result; changes
 to calculation inputs invalidate dependent preparation output. The composition

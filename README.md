@@ -47,13 +47,22 @@ fertilizers it may use, then review the proposed doses before applying them.
 
 ## Screenshots
 
-### Calculator
+### Calculator and theme palette
 
-![Calculator showing a fertilizer recipe and calculated doses](assets/screenshots/calculator.png)
+![Full-size 50 L Horticalc calculator with a labeled, softly sliced palette from 15 real Horticalc themes](assets/screenshots/flagship/flagship-calculator.png)
 
-### Solver
+The calculator view is one full-size screen capture. The palette beneath it
+uses crops of the selected Calculator tile from all 15 real theme captures,
+blended into a dark-to-light flow from blue and charcoal through greens and
+earth tones to pale green and cream. Fertilizer doses, dissolved ions, and ion
+balance stay visible in the main view.
 
-![Solver comparing nutrient targets with achieved values and fertilizer amounts](assets/screenshots/solver.png)
+### Solver and stock solutions
+
+![Full-width Solver and Stock Solutions captures, stacked for readability](assets/screenshots/flagship/flagship-workflows.png)
+
+Separate full-size captures are available for the [Solver](assets/screenshots/flagship/solver.png)
+and [Stock Solutions](assets/screenshots/flagship/stock-solutions.png).
 
 ## System requirements and startup help
 

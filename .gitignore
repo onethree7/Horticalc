@@ -20,8 +20,5 @@ coverage.xml
 /_repomix/
 /_docs_backup/
 
-# Local recipe schedules
-/recipes/[a][t][h][e][n][a]_blended_*.yml
-/recipes/[a][t][h][e][n][a]_pro_*.yml
-
+# Local recipe schedules or research
 /recipes/imports/
